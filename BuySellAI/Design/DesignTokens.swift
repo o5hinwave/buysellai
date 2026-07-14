@@ -21,6 +21,24 @@ extension Color {
         static let destructive = Color("Destructive")
         static let info = Color("Info")
         static let cameraBackdrop = Color("CameraBackdrop")
+
+        enum AccessibilityBorderToken: Equatable {
+            case standard
+            case strong
+        }
+
+        static func accessibilityBorderToken(differentiateWithoutColor: Bool) -> AccessibilityBorderToken {
+            differentiateWithoutColor ? .strong : .standard
+        }
+
+        static func accessibilityBorder(differentiateWithoutColor: Bool) -> Color {
+            switch accessibilityBorderToken(differentiateWithoutColor: differentiateWithoutColor) {
+            case .standard:
+                border
+            case .strong:
+                borderStrong
+            }
+        }
     }
 
     init(hex: UInt, alpha: Double = 1) {

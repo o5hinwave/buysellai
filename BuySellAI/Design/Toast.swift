@@ -44,7 +44,7 @@ struct ToastView: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
         .background(Color.brand.surfaceElevated, in: Capsule())
-        .overlay(Capsule().stroke(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border, lineWidth: 1))
+        .overlay(Capsule().stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1))
         .modifier(AppShadow.hover())
         .padding(.horizontal, Spacing.lg)
         .accessibilityElement(children: .combine)
@@ -60,6 +60,7 @@ struct SkeletonLine: View {
     @State private var phase = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.appReduceMotion) private var appReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         RoundedRectangle(cornerRadius: height / 2, style: .continuous)
@@ -67,7 +68,7 @@ struct SkeletonLine: View {
                 LinearGradient(
                     colors: [
                         Color.brand.secondary,
-                        Color.brand.border.opacity(0.45),
+                        Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor).opacity(0.45),
                         Color.brand.secondary
                     ],
                     startPoint: phase ? .leading : .trailing,

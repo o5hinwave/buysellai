@@ -213,6 +213,6 @@ private struct DotPager: View {
     }
 
     private var inactiveColor: Color {
-        differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border
+        Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor)
     }
 }

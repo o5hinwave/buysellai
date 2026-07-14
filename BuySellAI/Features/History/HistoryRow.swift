@@ -32,7 +32,7 @@ struct HistoryRow: View {
         .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border, lineWidth: 1)
+                .stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1)
         )
     }
 
