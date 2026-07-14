@@ -117,7 +117,7 @@ struct ListingSheet: View {
 
     private var bottomActions: some View {
         VStack(spacing: Spacing.sm) {
-            PrimaryPillButton(title: "Copy listing", systemImage: "doc.on.doc.fill") {
+            PrimaryPillButton(title: "Copy listing", systemImage: "doc.on.doc.fill", hapticStyle: nil) {
                 copyListing()
             }
             .disabled(store.phase != .success || store.listingText.isEmpty)

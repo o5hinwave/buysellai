@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct PrimaryPillButton: View {
     let title: String
     var systemImage: String?
     var fillsWidth = true
     var accessibilityHint: String?
+    var hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle? = .medium
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -13,7 +15,9 @@ struct PrimaryPillButton: View {
 
     var body: some View {
         Button(action: {
-            Haptics.impact(.medium)
+            if let hapticStyle {
+                Haptics.impact(hapticStyle)
+            }
             action()
         }) {
             HStack(spacing: Spacing.xs) {
