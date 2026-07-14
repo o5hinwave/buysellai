@@ -6,6 +6,7 @@
 "%@, %@" = "%@, %@";
 "%@, %@, %@" = "%@, %@, %@";
 "%@, estimated payout %d dollars, %d percent %@ average" = "%@, estimated payout %d dollars, %d percent %@ average";
+"%@, estimated payout %d dollars, average payout" = "%@, estimated payout %d dollars, average payout";
 "Account" = "Account";
 "Account deleted." = "Account deleted.";
 "Analyzing your photo…" = "Analyzing your photo…";

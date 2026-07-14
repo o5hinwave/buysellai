@@ -163,7 +163,7 @@ private struct SummaryButton: View {
             )
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(String.localizedFormat("%@, %@, %@", label.localized, estimate.id.displayName, estimate.payout.currency()))
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(label, for: estimate))
         .accessibilitySortPriority(label == "Best" ? 2 : 1)
     }
 }

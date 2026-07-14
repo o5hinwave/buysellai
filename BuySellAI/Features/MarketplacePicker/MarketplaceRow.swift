@@ -76,9 +76,22 @@ struct MarketplaceRow: View {
     }
 
     private var accessibilityLabel: String {
+        MarketplaceAccessibilityText.estimateLabel(for: estimate)
+    }
+}
+
+enum MarketplaceAccessibilityText {
+    static func estimateLabel(for estimate: MarketplaceEstimate) -> String {
         let dollars = Int(estimate.payout.doubleValue.rounded())
         let delta = Int(estimate.deltaPct.rounded())
-        let direction = (delta >= 0 ? "above" : "below").localized
+        guard delta != 0 else {
+            return String.localizedFormat("%@, estimated payout %d dollars, average payout", estimate.id.displayName, dollars)
+        }
+        let direction = (delta > 0 ? "above" : "below").localized
         return String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", estimate.id.displayName, dollars, abs(delta), direction)
+    }
+
+    static func summaryLabel(_ label: String, for estimate: MarketplaceEstimate) -> String {
+        String.localizedFormat("%@, %@", label.localized, estimateLabel(for: estimate))
     }
 }
