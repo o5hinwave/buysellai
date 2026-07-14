@@ -79,7 +79,7 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         case .stockx: "Sneakers & collectibles"
         case .goat: "Sneakers, authenticated"
         case .kidizen: "Kids clothes"
-        case .vinted: "Fashion, no seller fees"
+        case .vinted: "Fashion, no selling fees"
         case .vestiaire: "Luxury pre-owned"
         case .therealreal: "Authenticated luxury"
         case .swappa: "Used tech & phones"
@@ -88,7 +88,7 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         case .bonanza: "General resale, low fees"
         case .curtsy: "Women's fashion (mobile)"
         case .nextdoor: "Neighborhood local sales"
-        case .amazon: "Amazon seller — high reach, high fee"
+        case .amazon: "Amazon — high reach, high fee"
         case .shopify: "Your own storefront"
         case .rubylane: "Antiques & fine art"
         case .tcgplayer: "Trading cards"
@@ -167,4 +167,3 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         return String(displayName.prefix(1)).uppercased()
     }
 }
-

@@ -76,7 +76,8 @@ final class ArchitectureGuardrailTests: XCTestCase {
     func testAppCopyAvoidsForbiddenToneWords() throws {
         let patterns = [
             #"\b[Jj]ust\b"#,
-            #"\b[Ss]imply\b"#
+            #"\b[Ss]imply\b"#,
+            #"\b[Ss]eller\b"#
         ]
 
         try assertNoMatches(patterns, in: appTextFiles())
