@@ -41,8 +41,8 @@ struct PrimaryPillButton: View {
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
-        .accessibilityLabel(Text(title))
-        .accessibilityHint(Text(accessibilityHint ?? ""))
+        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
+        .accessibilityHint(Text(accessibilityHint.map { String(localized: String.LocalizationValue($0)) } ?? ""))
     }
 
     private var shouldReduceMotion: Bool { reduceMotion || appReduceMotion }
@@ -86,7 +86,7 @@ struct SecondaryPillButton: View {
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
     }
 }
 
@@ -121,7 +121,7 @@ struct GhostButton: View {
             )
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
     }
 }
 
@@ -150,7 +150,7 @@ struct IconCircleButton: View {
                 }
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(Text(accessibilityLabel))
+        .accessibilityLabel(Text(String(localized: String.LocalizationValue(accessibilityLabel))))
     }
 }
 

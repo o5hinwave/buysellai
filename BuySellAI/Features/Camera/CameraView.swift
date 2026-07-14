@@ -52,7 +52,7 @@ struct CameraView: View {
 
                 VStack {
                     HStack {
-                        IconCircleButton(systemImage: "xmark", accessibilityLabel: "Close camera", size: 40, material: true) {
+                        IconCircleButton(systemImage: "xmark", accessibilityLabel: String(localized: "Close camera"), size: 40, material: true) {
                             controller.stop()
                             onCancel()
                         }
@@ -61,7 +61,7 @@ struct CameraView: View {
 
                         IconCircleButton(
                             systemImage: flashOn ? "bolt.fill" : "bolt.slash",
-                            accessibilityLabel: flashOn ? "Turn flash off" : "Turn flash on",
+                            accessibilityLabel: String(localized: String.LocalizationValue(flashOn ? "Turn flash off" : "Turn flash on")),
                             size: 40,
                             material: true
                         ) {
@@ -89,10 +89,10 @@ struct CameraView: View {
                         }
                         .buttonStyle(PressButtonStyle())
                         .disabled(isCapturing)
-                        .accessibilityLabel("Take photo")
-                        .accessibilityHint("Captures the current view")
+                        .accessibilityLabel(String(localized: "Take photo"))
+                        .accessibilityHint(String(localized: "Captures the current view"))
 
-                        Text("Fit the whole item in the frame")
+                        Text(String(localized: "Fit the whole item in the frame"))
                             .brandFont(.caption)
                             .foregroundStyle(Color.brand.primaryForeground)
                             .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
@@ -105,7 +105,7 @@ struct CameraView: View {
                     ProgressView()
                         .tint(Color.brand.primaryForeground)
                         .scaleEffect(1.2)
-                        .accessibilityLabel("Capturing photo")
+                        .accessibilityLabel(String(localized: "Capturing photo"))
                 }
             }
         }
@@ -115,7 +115,7 @@ struct CameraView: View {
         VStack(spacing: Spacing.md) {
             ProgressView()
                 .tint(Color.brand.primaryForeground)
-            Text("Starting camera…")
+            Text(String(localized: "Starting camera…"))
                 .brandFont(.body)
                 .foregroundStyle(Color.brand.primaryForeground)
         }
@@ -124,7 +124,7 @@ struct CameraView: View {
 
     private var permissionDenied: some View {
         VStack(spacing: Spacing.lg) {
-            Text("Camera access needed to snap items.")
+            Text(String(localized: "Camera access needed to snap items."))
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
@@ -146,7 +146,7 @@ struct CameraView: View {
 
     private var cameraFailed: some View {
         VStack(spacing: Spacing.lg) {
-            Text("Camera couldn't start.")
+            Text(String(localized: "Camera couldn't start."))
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             SecondaryPillButton(title: "Close", fillsWidth: false) {

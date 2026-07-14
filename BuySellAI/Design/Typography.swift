@@ -110,15 +110,15 @@ struct BrandWordmark: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Text("BuySell")
+            Text(String(localized: "BuySell"))
                 .foregroundStyle(Color.brand.foreground)
-            Text(includeAI ? " AI" : "")
+            Text(includeAI ? String(localized: " AI") : "")
                 .foregroundStyle(Color.brand.foreground)
-            Text(".")
+            Text(String(localized: "."))
                 .foregroundStyle(Color.brand.primary)
         }
         .brandFont(size.style)
-        .accessibilityLabel(includeAI ? "BuySell AI" : "BuySell")
+        .accessibilityLabel(String(localized: includeAI ? "BuySell AI" : "BuySell"))
     }
 }
 
