@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum BrandTextStyle: Sendable {
+enum BrandTextStyle: CaseIterable, Sendable {
     case display
     case titleXL
     case titleLg
@@ -12,16 +12,34 @@ enum BrandTextStyle: Sendable {
     case button
 
     func font(legibilityWeight: LegibilityWeight? = nil) -> Font {
-        Font.custom(fontName, size: size, relativeTo: relativeTo)
-            .weight(weight(legibilityWeight: legibilityWeight))
+        Font.custom(fontResourceName(legibilityWeight: legibilityWeight), size: size, relativeTo: relativeTo)
     }
 
-    private var fontName: String {
+    func fontResourceName(legibilityWeight: LegibilityWeight? = nil) -> String {
+        legibilityWeight == .bold ? boldTextFontResourceName : standardFontResourceName
+    }
+
+    private var standardFontResourceName: String {
+        switch self {
+        case .display:
+            "SpaceGrotesk-Bold"
+        case .titleXL, .titleLg, .title, .button:
+            "SpaceGrotesk-SemiBold"
+        case .bodyLg, .caption:
+            "Inter-Medium"
+        case .body:
+            "Inter-Regular"
+        case .overline:
+            "Inter-SemiBold"
+        }
+    }
+
+    private var boldTextFontResourceName: String {
         switch self {
         case .display, .titleXL, .titleLg, .title, .button:
-            "Space Grotesk"
+            "SpaceGrotesk-Bold"
         case .bodyLg, .body, .caption, .overline:
-            "Inter"
+            "Inter-Bold"
         }
     }
 
@@ -59,22 +77,6 @@ enum BrandTextStyle: Sendable {
         }
     }
 
-    private func weight(legibilityWeight: LegibilityWeight?) -> Font.Weight {
-        if legibilityWeight == .bold {
-            return .bold
-        }
-
-        switch self {
-        case .display:
-            return .bold
-        case .titleXL, .titleLg, .title, .overline, .button:
-            return .semibold
-        case .bodyLg, .caption:
-            return .medium
-        case .body:
-            return .regular
-        }
-    }
 }
 
 extension Font {

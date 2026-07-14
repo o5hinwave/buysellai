@@ -14,4 +14,22 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: false), .standard)
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: true), .strong)
     }
+
+    func testBrandTextStylesUseStaticFontFacesAndBoldTextVariants() {
+        XCTAssertEqual(BrandTextStyle.display.fontResourceName(), "SpaceGrotesk-Bold")
+        XCTAssertEqual(BrandTextStyle.titleXL.fontResourceName(), "SpaceGrotesk-SemiBold")
+        XCTAssertEqual(BrandTextStyle.titleLg.fontResourceName(), "SpaceGrotesk-SemiBold")
+        XCTAssertEqual(BrandTextStyle.title.fontResourceName(), "SpaceGrotesk-SemiBold")
+        XCTAssertEqual(BrandTextStyle.bodyLg.fontResourceName(), "Inter-Medium")
+        XCTAssertEqual(BrandTextStyle.body.fontResourceName(), "Inter-Regular")
+        XCTAssertEqual(BrandTextStyle.caption.fontResourceName(), "Inter-Medium")
+        XCTAssertEqual(BrandTextStyle.overline.fontResourceName(), "Inter-SemiBold")
+        XCTAssertEqual(BrandTextStyle.button.fontResourceName(), "SpaceGrotesk-SemiBold")
+
+        for style in BrandTextStyle.allCases {
+            XCTAssertTrue(style.fontResourceName(legibilityWeight: .bold).hasSuffix("-Bold"))
+        }
+        XCTAssertEqual(BrandTextStyle.body.fontResourceName(legibilityWeight: .bold), "Inter-Bold")
+        XCTAssertEqual(BrandTextStyle.button.fontResourceName(legibilityWeight: .bold), "SpaceGrotesk-Bold")
+    }
 }

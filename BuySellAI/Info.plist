@@ -28,8 +28,14 @@
 	<string>BuySell uses your camera to snap photos of items you want to sell.</string>
 	<key>UIAppFonts</key>
 	<array>
-		<string>SpaceGrotesk.ttf</string>
-		<string>Inter.ttf</string>
+		<string>SpaceGrotesk-Regular.ttf</string>
+		<string>SpaceGrotesk-Medium.ttf</string>
+		<string>SpaceGrotesk-SemiBold.ttf</string>
+		<string>SpaceGrotesk-Bold.ttf</string>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
+		<string>Inter-Bold.ttf</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
