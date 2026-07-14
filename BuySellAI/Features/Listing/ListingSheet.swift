@@ -147,6 +147,9 @@ struct ListingSheet: View {
     private func copyListing() {
         let cleanText = store.listingText.trimmingCharacters(in: .whitespacesAndNewlines)
         UIPasteboard.general.string = cleanText
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-verify-clipboard") {
+            appStore.uiTestClipboardStatus = clipboardStatus(expected: cleanText)
+        }
         Haptics.notify(.success)
         appStore.saveListing(
             item: context.item,
@@ -159,5 +162,15 @@ struct ListingSheet: View {
             try? await Task.sleep(nanoseconds: 260_000_000)
             appStore.showToast(String.localizedFormat("Copied — paste it into %@", context.marketplace.displayName), style: .success)
         }
+    }
+
+    private func clipboardStatus(expected cleanText: String) -> String {
+        let copiedText = UIPasteboard.general.string ?? ""
+        let isTrimmed = copiedText == copiedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasPreamble = copiedText.localizedCaseInsensitiveContains("Here's your listing")
+            || copiedText.localizedCaseInsensitiveContains("Here’s your listing")
+        return copiedText == cleanText && isTrimmed && hasPreamble == false
+            ? "Clipboard exact listing text"
+            : "Clipboard mismatch"
     }
 }

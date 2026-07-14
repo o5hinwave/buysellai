@@ -23,6 +23,7 @@ final class AppStore {
     var marketplacePickerContext: MarketplacePickerContext?
     var listingContext: ListingContext?
     var toast: ToastMessage?
+    var uiTestClipboardStatus: String?
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var modelContext: ModelContext?
@@ -487,6 +488,15 @@ struct RootView: View {
                         try? await Task.sleep(nanoseconds: delay)
                         appStore.clearToast(id: toast.id)
                     }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let uiTestClipboardStatus = appStore.uiTestClipboardStatus {
+                Text(uiTestClipboardStatus)
+                    .font(.caption2)
+                    .frame(width: 1, height: 1)
+                    .opacity(0.01)
+                    .accessibilityIdentifier("ClipboardVerification")
             }
         }
         .task {
