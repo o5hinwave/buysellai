@@ -1,0 +1,6 @@
+DerivedData/
+*.xcuserstate
+xcuserdata/
+BuySellAI/App/Config.plist
+*.DS_Store
+

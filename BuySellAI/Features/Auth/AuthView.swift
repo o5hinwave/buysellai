@@ -1,0 +1,87 @@
+import SwiftUI
+
+struct AuthView: View {
+    @Environment(AppStore.self) private var appStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var store = AuthStore()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: Spacing.xl) {
+                    Spacer(minLength: Spacing.xl)
+
+                    VStack(spacing: Spacing.sm) {
+                        BrandWordmark(includeAI: true, size: .display)
+                        Text("Sign in to sync your listings across devices.")
+                            .font(.brandBody)
+                            .foregroundStyle(Color.brand.mutedForeground)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    VStack(spacing: Spacing.sm) {
+                        PrimaryPillButton(title: "Continue with Apple", systemImage: "apple.logo") {
+                            Task {
+                                do {
+                                    let session = try await store.signInWithApple()
+                                    appStore.setAppleSession(userID: session.userID, email: session.email)
+                                    dismiss()
+                                } catch {
+                                    appStore.showToast("Couldn't sign in with Apple.", style: .error)
+                                }
+                            }
+                        }
+
+                        SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill") {
+                            store.showsEmailForm.toggle()
+                        }
+
+                        if store.showsEmailForm {
+                            VStack(spacing: Spacing.sm) {
+                                TextField("Email", text: Binding(
+                                    get: { store.email },
+                                    set: { store.email = $0 }
+                                ))
+                                    .textInputAutocapitalization(.never)
+                                    .keyboardType(.emailAddress)
+                                    .textContentType(.emailAddress)
+                                    .font(.brandBody)
+                                    .padding(Spacing.md)
+                                    .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                                    .accessibilityLabel("Email")
+
+                                SecureField("Password", text: Binding(
+                                    get: { store.password },
+                                    set: { store.password = $0 }
+                                ))
+                                    .textContentType(.password)
+                                    .font(.brandBody)
+                                    .padding(Spacing.md)
+                                    .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                                    .accessibilityLabel("Password")
+
+                                SecondaryPillButton(title: "Sign in", systemImage: "arrow.right") {
+                                    do {
+                                        try store.signInWithEmail()
+                                    } catch {
+                                        appStore.showToast(error.localizedDescription, style: .error)
+                                    }
+                                }
+                            }
+                        }
+
+                        Button("Keep going without an account") {
+                            dismiss()
+                        }
+                        .font(.brandButton)
+                        .foregroundStyle(Color.brand.foreground)
+                        .frame(minHeight: 52)
+                        .accessibilityLabel("Keep going without an account")
+                    }
+                }
+                .padding(Spacing.xl)
+            }
+            .background(Color.brand.background)
+        }
+    }
+}
