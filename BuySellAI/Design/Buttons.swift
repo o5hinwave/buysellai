@@ -126,11 +126,17 @@ struct GhostButton: View {
 }
 
 struct IconCircleButton: View {
+    static let minimumTapTarget: CGFloat = 44
+
     let systemImage: String
     let accessibilityLabel: String
     var size: CGFloat = 44
     var material = false
     let action: () -> Void
+
+    static func tapTargetSize(for visualSize: CGFloat) -> CGFloat {
+        max(visualSize, minimumTapTarget)
+    }
 
     var body: some View {
         Button(action: {
@@ -148,6 +154,8 @@ struct IconCircleButton: View {
                         Circle().fill(Color.brand.secondary)
                     }
                 }
+                .frame(width: Self.tapTargetSize(for: size), height: Self.tapTargetSize(for: size))
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel(Text(accessibilityLabel.localized))
