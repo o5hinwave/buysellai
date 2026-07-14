@@ -53,6 +53,7 @@ struct MarketplacePickerSheet: View {
                     }
                     .padding(Spacing.xl)
                     .background(.regularMaterial)
+                    .accessibilitySortPriority(3)
                 }
             }
         }
@@ -81,6 +82,7 @@ struct MarketplacePickerSheet: View {
             }
         }
         .padding(.top, Spacing.md)
+        .accessibilitySortPriority(2)
     }
 
     private var fallbackRows: some View {
@@ -89,6 +91,7 @@ struct MarketplacePickerSheet: View {
                 .font(.brandCaption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .padding(Spacing.xl)
+                .accessibilitySortPriority(2)
 
             ForEach(Marketplace.allCases) { marketplace in
                 Button {
@@ -111,6 +114,7 @@ struct MarketplacePickerSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(marketplace.displayName), \(marketplace.blurb)")
+                .accessibilitySortPriority(1)
             }
         }
     }
@@ -156,5 +160,6 @@ private struct SummaryButton: View {
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel("\(label), \(estimate.id.displayName), \(estimate.payout.currency())")
+        .accessibilitySortPriority(label == "Best" ? 2 : 1)
     }
 }

@@ -63,6 +63,7 @@ struct ListingSheet: View {
                 appStore.closeFlow()
             }
         }
+        .accessibilitySortPriority(4)
     }
 
     private var loading: some View {
@@ -79,6 +80,7 @@ struct ListingSheet: View {
             .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         }
         .accessibilityElement(children: .combine)
+        .accessibilitySortPriority(3)
     }
 
     private var listingText: some View {
@@ -91,6 +93,7 @@ struct ListingSheet: View {
             .padding(Spacing.lg)
             .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
             .accessibilityLabel("Generated listing text")
+            .accessibilitySortPriority(3)
     }
 
     private func error(_ message: String) -> some View {
@@ -104,6 +107,7 @@ struct ListingSheet: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 260)
+        .accessibilitySortPriority(3)
     }
 
     private var bottomActions: some View {
@@ -112,6 +116,7 @@ struct ListingSheet: View {
                 copyListing()
             }
             .disabled(store.phase != .success || store.listingText.isEmpty)
+            .accessibilitySortPriority(3)
 
             HStack(spacing: Spacing.sm) {
                 GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
@@ -121,12 +126,14 @@ struct ListingSheet: View {
                     Task { await store.generate(accessToken: appStore.session?.accessToken) }
                 }
             }
+            .accessibilitySortPriority(2)
 
             Text("Tip: paste, add photos, hit list. That's it.")
                 .font(.brandCaption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .multilineTextAlignment(.center)
                 .padding(.top, Spacing.xxs)
+                .accessibilitySortPriority(1)
         }
         .padding(Spacing.lg)
         .background(.regularMaterial)

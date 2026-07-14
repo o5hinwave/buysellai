@@ -66,6 +66,7 @@ struct MarketplaceRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilitySortPriority(1)
     }
 
     private var deltaText: String {
@@ -80,4 +81,3 @@ struct MarketplaceRow: View {
         return "\(estimate.id.displayName), estimated payout \(dollars) dollars, \(abs(delta)) percent \(direction) average"
     }
 }
-

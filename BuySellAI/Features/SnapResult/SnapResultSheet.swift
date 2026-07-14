@@ -56,6 +56,7 @@ struct SnapResultSheet: View {
         }
         .frame(maxWidth: .infinity, minHeight: 360)
         .accessibilityElement(children: .combine)
+        .accessibilitySortPriority(3)
     }
 
     private func resultView(item: DetectedItem) -> some View {
@@ -92,6 +93,7 @@ struct SnapResultSheet: View {
                     }
                 }
             }
+            .accessibilitySortPriority(5)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
@@ -103,6 +105,7 @@ struct SnapResultSheet: View {
                     }
                 }
             }
+            .accessibilitySortPriority(4)
 
             PrimaryPillButton(title: "Looks right — pick where to sell") {
                 store.commitEdits()
@@ -113,6 +116,7 @@ struct SnapResultSheet: View {
                     appStore.presentMarketplacePicker(item: item, imageData: context.imageData)
                 }
             }
+            .accessibilitySortPriority(3)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: Spacing.sm) {
                 GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
@@ -128,6 +132,7 @@ struct SnapResultSheet: View {
                     store.cycleCondition()
                 }
             }
+            .accessibilitySortPriority(2)
         }
     }
 
@@ -146,6 +151,7 @@ struct SnapResultSheet: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 420)
+        .accessibilitySortPriority(3)
     }
 
     private enum Field {
