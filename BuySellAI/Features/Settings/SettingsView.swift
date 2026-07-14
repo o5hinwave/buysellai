@@ -133,16 +133,16 @@ private struct DeleteAccountView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("Delete account")
-                .font(.brandTitleXL)
+                .brandFont(.titleXL)
                 .foregroundStyle(Color.brand.foreground)
 
             Text("Type DELETE to confirm.")
-                .font(.brandBody)
+                .brandFont(.body)
                 .foregroundStyle(Color.brand.mutedForeground)
 
             TextField("DELETE", text: $confirmation)
                 .textInputAutocapitalization(.characters)
-                .font(.brandBody)
+                .brandFont(.body)
                 .padding(Spacing.md)
                 .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
 

@@ -11,7 +11,7 @@ struct ChipButton: View {
             action()
         }) {
             Text(String(localized: String.LocalizationValue(title)))
-                .font(.brandCaption)
+                .brandFont(.caption)
                 .foregroundStyle(tint)
                 .lineLimit(1)
                 .padding(.horizontal, Spacing.md)

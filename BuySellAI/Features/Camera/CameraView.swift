@@ -93,7 +93,7 @@ struct CameraView: View {
                         .accessibilityHint("Captures the current view")
 
                         Text("Fit the whole item in the frame")
-                            .font(.brandCaption)
+                            .brandFont(.caption)
                             .foregroundStyle(Color.brand.primaryForeground)
                             .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
                     }
@@ -116,7 +116,7 @@ struct CameraView: View {
             ProgressView()
                 .tint(Color.brand.primaryForeground)
             Text("Starting camera…")
-                .font(.brandBody)
+                .brandFont(.body)
                 .foregroundStyle(Color.brand.primaryForeground)
         }
         .accessibilityElement(children: .combine)
@@ -125,7 +125,7 @@ struct CameraView: View {
     private var permissionDenied: some View {
         VStack(spacing: Spacing.lg) {
             Text("Camera access needed to snap items.")
-                .font(.brandTitle)
+                .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
 
@@ -147,7 +147,7 @@ struct CameraView: View {
     private var cameraFailed: some View {
         VStack(spacing: Spacing.lg) {
             Text("Camera couldn't start.")
-                .font(.brandTitle)
+                .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             SecondaryPillButton(title: "Close", fillsWidth: false) {
                 controller.stop()

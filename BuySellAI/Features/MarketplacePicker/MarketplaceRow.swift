@@ -10,7 +10,7 @@ struct MarketplaceIcon: View {
             .frame(width: size, height: size)
             .overlay {
                 Text(marketplace.shortMark)
-                    .font(.brandCaption)
+                    .brandFont(.caption)
                     .foregroundStyle(marketplace.brandTint)
                     .minimumScaleFactor(0.65)
                     .lineLimit(1)
@@ -34,12 +34,12 @@ struct MarketplaceRow: View {
 
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(estimate.id.displayName)
-                        .font(.brandBodyLg)
+                        .brandFont(.bodyLg)
                         .foregroundStyle(Color.brand.foreground)
                         .lineLimit(1)
 
                     Text(estimate.id.blurb)
-                        .font(.brandCaption)
+                        .brandFont(.caption)
                         .foregroundStyle(Color.brand.mutedForeground)
                         .lineLimit(2)
                 }
@@ -48,7 +48,7 @@ struct MarketplaceRow: View {
 
                 VStack(spacing: 2) {
                     Text(estimate.payout.currency())
-                        .font(.brandCaption)
+                        .brandFont(.caption)
                         .foregroundStyle(Color.brand.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)

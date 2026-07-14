@@ -1,15 +1,107 @@
 import SwiftUI
 
+enum BrandTextStyle: Sendable {
+    case display
+    case titleXL
+    case titleLg
+    case title
+    case bodyLg
+    case body
+    case caption
+    case overline
+    case button
+
+    func font(legibilityWeight: LegibilityWeight? = nil) -> Font {
+        Font.custom(fontName, size: size, relativeTo: relativeTo)
+            .weight(weight(legibilityWeight: legibilityWeight))
+    }
+
+    private var fontName: String {
+        switch self {
+        case .display, .titleXL, .titleLg, .title, .button:
+            "Space Grotesk"
+        case .bodyLg, .body, .caption, .overline:
+            "Inter"
+        }
+    }
+
+    private var size: CGFloat {
+        switch self {
+        case .display: 44
+        case .titleXL: 32
+        case .titleLg: 24
+        case .title: 20
+        case .bodyLg, .button: 17
+        case .body: 15
+        case .caption: 13
+        case .overline: 11
+        }
+    }
+
+    private var relativeTo: Font.TextStyle {
+        switch self {
+        case .display:
+            .largeTitle
+        case .titleXL:
+            .title
+        case .titleLg:
+            .title2
+        case .title:
+            .title3
+        case .bodyLg, .body:
+            .body
+        case .caption:
+            .caption
+        case .overline:
+            .caption2
+        case .button:
+            .headline
+        }
+    }
+
+    private func weight(legibilityWeight: LegibilityWeight?) -> Font.Weight {
+        if legibilityWeight == .bold {
+            return .bold
+        }
+
+        switch self {
+        case .display:
+            return .bold
+        case .titleXL, .titleLg, .title, .overline, .button:
+            return .semibold
+        case .bodyLg, .caption:
+            return .medium
+        case .body:
+            return .regular
+        }
+    }
+}
+
 extension Font {
-    static let brandDisplay = Font.custom("Space Grotesk", size: 44, relativeTo: .largeTitle).weight(.bold)
-    static let brandTitleXL = Font.custom("Space Grotesk", size: 32, relativeTo: .title).weight(.semibold)
-    static let brandTitleLg = Font.custom("Space Grotesk", size: 24, relativeTo: .title2).weight(.semibold)
-    static let brandTitle = Font.custom("Space Grotesk", size: 20, relativeTo: .title3).weight(.semibold)
-    static let brandBodyLg = Font.custom("Inter", size: 17, relativeTo: .body).weight(.medium)
-    static let brandBody = Font.custom("Inter", size: 15, relativeTo: .body)
-    static let brandCaption = Font.custom("Inter", size: 13, relativeTo: .caption).weight(.medium)
-    static let brandOverline = Font.custom("Inter", size: 11, relativeTo: .caption2).weight(.semibold)
-    static let brandButton = Font.custom("Space Grotesk", size: 17, relativeTo: .headline).weight(.semibold)
+    static let brandDisplay = BrandTextStyle.display.font()
+    static let brandTitleXL = BrandTextStyle.titleXL.font()
+    static let brandTitleLg = BrandTextStyle.titleLg.font()
+    static let brandTitle = BrandTextStyle.title.font()
+    static let brandBodyLg = BrandTextStyle.bodyLg.font()
+    static let brandBody = BrandTextStyle.body.font()
+    static let brandCaption = BrandTextStyle.caption.font()
+    static let brandOverline = BrandTextStyle.overline.font()
+    static let brandButton = BrandTextStyle.button.font()
+}
+
+extension View {
+    func brandFont(_ style: BrandTextStyle) -> some View {
+        modifier(BrandFontModifier(style: style))
+    }
+}
+
+private struct BrandFontModifier: ViewModifier {
+    let style: BrandTextStyle
+    @Environment(\.legibilityWeight) private var legibilityWeight
+
+    func body(content: Content) -> some View {
+        content.font(style.font(legibilityWeight: legibilityWeight))
+    }
 }
 
 struct BrandWordmark: View {
@@ -25,7 +117,7 @@ struct BrandWordmark: View {
             Text(".")
                 .foregroundStyle(Color.brand.primary)
         }
-        .font(size.font)
+        .brandFont(size.style)
         .accessibilityLabel(includeAI ? "BuySell AI" : "BuySell")
     }
 }
@@ -35,11 +127,11 @@ enum WordmarkSize {
     case large
     case display
 
-    var font: Font {
+    var style: BrandTextStyle {
         switch self {
-        case .regular: .brandTitle
-        case .large: .brandTitleXL
-        case .display: .brandDisplay
+        case .regular: .title
+        case .large: .titleXL
+        case .display: .display
         }
     }
 }

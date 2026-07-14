@@ -48,12 +48,12 @@ struct ListingSheet: View {
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("Listing for \(context.marketplace.displayName)")
-                    .font(.brandOverline)
+                    .brandFont(.overline)
                     .tracking(0.88)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .textCase(.uppercase)
                 Text(context.marketplace.displayName)
-                    .font(.brandTitleLg)
+                    .brandFont(.titleLg)
                     .foregroundStyle(Color.brand.foreground)
             }
 
@@ -69,7 +69,7 @@ struct ListingSheet: View {
     private var loading: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             Text("Writing your listing…")
-                .font(.brandTitle)
+                .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 ForEach(0..<8, id: \.self) { index in
@@ -85,7 +85,7 @@ struct ListingSheet: View {
 
     private var listingText: some View {
         Text(store.listingText)
-            .font(.brandBody)
+            .brandFont(.body)
             .foregroundStyle(Color.brand.foreground)
             .lineSpacing(4)
             .textSelection(.enabled)
@@ -99,7 +99,7 @@ struct ListingSheet: View {
     private func error(_ message: String) -> some View {
         VStack(spacing: Spacing.lg) {
             Text(message)
-                .font(.brandBodyLg)
+                .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
             PrimaryPillButton(title: "Regenerate", systemImage: "arrow.clockwise") {
@@ -129,7 +129,7 @@ struct ListingSheet: View {
             .accessibilitySortPriority(2)
 
             Text("Tip: paste, add photos, hit list. That's it.")
-                .font(.brandCaption)
+                .brandFont(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .multilineTextAlignment(.center)
                 .padding(.top, Spacing.xxs)

@@ -37,7 +37,7 @@ struct ToastView: View {
             Image(systemName: toast.style.icon)
                 .foregroundStyle(toast.style.tint)
             Text(toast.text)
-                .font(.brandCaption)
+                .brandFont(.caption)
                 .foregroundStyle(Color.brand.foreground)
                 .fixedSize(horizontal: false, vertical: true)
         }

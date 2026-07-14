@@ -36,7 +36,7 @@ struct MarketplacePickerSheet: View {
                 } header: {
                     VStack(alignment: .leading, spacing: Spacing.md) {
                         Text("Pick where to sell")
-                            .font(.brandTitleLg)
+                            .brandFont(.titleLg)
                             .foregroundStyle(Color.brand.foreground)
 
                         if let best = estimates.first(where: { $0.badge == .best }),
@@ -88,7 +88,7 @@ struct MarketplacePickerSheet: View {
     private var fallbackRows: some View {
         VStack(spacing: 0) {
             Text("Couldn't compute prices. Tap a marketplace anyway to draft a listing.")
-                .font(.brandCaption)
+                .brandFont(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .padding(Spacing.xl)
                 .accessibilitySortPriority(2)
@@ -101,10 +101,10 @@ struct MarketplacePickerSheet: View {
                         MarketplaceIcon(marketplace: marketplace)
                         VStack(alignment: .leading, spacing: Spacing.xxs) {
                             Text(marketplace.displayName)
-                                .font(.brandBodyLg)
+                                .brandFont(.bodyLg)
                                 .foregroundStyle(Color.brand.foreground)
                             Text(marketplace.blurb)
-                                .font(.brandCaption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Color.brand.mutedForeground)
                         }
                         Spacer()
@@ -130,7 +130,7 @@ private struct SummaryButton: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(label)
-                    .font(.brandOverline)
+                    .brandFont(.overline)
                     .tracking(0.88)
                     .foregroundStyle(label == "Best" ? Color.brand.success : Color.brand.mutedForeground)
                     .padding(.horizontal, Spacing.sm)
@@ -141,11 +141,11 @@ private struct SummaryButton: View {
                     MarketplaceIcon(marketplace: estimate.id, size: 32)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(estimate.id.displayName)
-                            .font(.brandCaption)
+                            .brandFont(.caption)
                             .foregroundStyle(Color.brand.foreground)
                             .lineLimit(1)
                         Text(estimate.payout.currency())
-                            .font(.brandBodyLg)
+                            .brandFont(.bodyLg)
                             .foregroundStyle(Color.brand.foreground)
                     }
                 }

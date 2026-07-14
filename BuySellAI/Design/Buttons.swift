@@ -26,7 +26,7 @@ struct PrimaryPillButton: View {
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.82)
             }
-            .font(.brandButton)
+            .brandFont(.button)
             .foregroundStyle(Color.brand.primaryForeground)
             .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 56)
             .padding(.horizontal, fillsWidth ? 0 : Spacing.xl)
@@ -72,7 +72,7 @@ struct SecondaryPillButton: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
             }
-            .font(.brandButton)
+            .brandFont(.button)
             .foregroundStyle(Color.brand.foreground)
             .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: minHeight)
             .padding(.horizontal, fillsWidth ? 0 : Spacing.lg)
@@ -110,7 +110,7 @@ struct GhostButton: View {
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.8)
             }
-            .font(.brandCaption)
+            .brandFont(.caption)
             .foregroundStyle(Color.brand.foreground)
             .frame(maxWidth: .infinity, minHeight: 48)
             .padding(.horizontal, Spacing.sm)

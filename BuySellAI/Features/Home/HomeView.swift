@@ -22,14 +22,14 @@ struct HomeView: View {
 
                             VStack(spacing: Spacing.sm) {
                                 Text("Sell anything in three taps.")
-                                    .font(.brandDisplay)
+                                    .brandFont(.display)
                                     .foregroundStyle(Color.brand.foreground)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(3)
                                     .minimumScaleFactor(0.78)
 
                                 Text("Snap a photo. Pick a marketplace. Copy your listing.")
-                                    .font(.brandBody)
+                                    .brandFont(.body)
                                     .foregroundStyle(Color.brand.mutedForeground)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(3)
@@ -86,7 +86,7 @@ struct HomeView: View {
                     }
                 } header: {
                     Text("Recent listings")
-                        .font(.brandOverline)
+                        .brandFont(.overline)
                         .foregroundStyle(Color.brand.mutedForeground)
                         .textCase(.uppercase)
                         .tracking(0.88)
@@ -108,7 +108,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 BrandWordmark()
                 Text("Snap · Pick · Sell")
-                    .font(.brandCaption)
+                    .brandFont(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
             }
 
@@ -122,7 +122,7 @@ struct HomeView: View {
                 }
             } label: {
                 Text(appStore.session == nil ? "Sign in" : "Sign out")
-                    .font(.brandCaption)
+                    .brandFont(.caption)
                     .foregroundStyle(Color.brand.foreground)
                     .lineLimit(1)
                     .padding(.horizontal, Spacing.md)
@@ -148,7 +148,7 @@ struct HomeView: View {
 private struct EmptyHistoryView: View {
     var body: some View {
         Text("Your past listings will show up here.")
-            .font(.brandCaption)
+            .brandFont(.caption)
             .foregroundStyle(Color.brand.mutedForeground)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 96)

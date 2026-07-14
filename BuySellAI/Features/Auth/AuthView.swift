@@ -14,7 +14,7 @@ struct AuthView: View {
                     VStack(spacing: Spacing.sm) {
                         BrandWordmark(includeAI: true, size: .display)
                         Text("Sign in to sync your listings across devices.")
-                            .font(.brandBody)
+                            .brandFont(.body)
                             .foregroundStyle(Color.brand.mutedForeground)
                             .multilineTextAlignment(.center)
                     }
@@ -45,7 +45,7 @@ struct AuthView: View {
                                     .textInputAutocapitalization(.never)
                                     .keyboardType(.emailAddress)
                                     .textContentType(.emailAddress)
-                                    .font(.brandBody)
+                                    .brandFont(.body)
                                     .padding(Spacing.md)
                                     .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                                     .accessibilityLabel("Email")
@@ -55,7 +55,7 @@ struct AuthView: View {
                                     set: { store.password = $0 }
                                 ))
                                     .textContentType(.password)
-                                    .font(.brandBody)
+                                    .brandFont(.body)
                                     .padding(Spacing.md)
                                     .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                                     .accessibilityLabel("Password")
@@ -77,7 +77,7 @@ struct AuthView: View {
                         Button("Keep going without an account") {
                             dismiss()
                         }
-                        .font(.brandButton)
+                        .brandFont(.button)
                         .foregroundStyle(Color.brand.foreground)
                         .frame(minHeight: 52)
                         .accessibilityLabel("Keep going without an account")

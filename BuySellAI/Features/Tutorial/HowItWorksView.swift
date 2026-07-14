@@ -15,7 +15,7 @@ struct HowItWorksView: View {
                 Button("Skip") {
                     onClose()
                 }
-                .font(.brandButton)
+                .brandFont(.button)
                 .foregroundStyle(Color.brand.foreground)
                 .frame(minWidth: 64, minHeight: 44)
                 .accessibilityLabel("Skip")
@@ -127,14 +127,14 @@ private struct TutorialSlidePage: View {
 
             VStack(spacing: Spacing.sm) {
                 Text(slide.title)
-                    .font(.brandDisplay)
+                    .brandFont(.display)
                     .foregroundStyle(Color.brand.foreground)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .minimumScaleFactor(0.72)
 
                 Text(slide.body)
-                    .font(.brandBody)
+                    .brandFont(.body)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
@@ -172,7 +172,7 @@ private struct TutorialIllustration: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 44, weight: .bold))
                     Text("$45")
-                        .font(.brandTitleXL)
+                        .brandFont(.titleXL)
                 }
                 .foregroundStyle(Color.brand.primary)
             case 3:

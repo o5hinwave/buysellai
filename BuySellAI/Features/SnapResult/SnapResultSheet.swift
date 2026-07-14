@@ -40,12 +40,12 @@ struct SnapResultSheet: View {
             ProgressView()
                 .tint(Color.brand.primary)
             Text("Analyzing your photo…")
-                .font(.brandTitle)
+                .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             if store.showStillWorking {
                 VStack(spacing: Spacing.sm) {
                     Text("Still working… tap Retry to try again.")
-                        .font(.brandCaption)
+                        .brandFont(.caption)
                         .foregroundStyle(Color.brand.destructive)
                         .multilineTextAlignment(.center)
                     SecondaryPillButton(title: "Retry", fillsWidth: false) {
@@ -69,7 +69,7 @@ struct SnapResultSheet: View {
                         get: { store.nameText },
                         set: { store.nameText = $0 }
                     ))
-                        .font(.brandTitleLg)
+                        .brandFont(.titleLg)
                         .foregroundStyle(Color.brand.foreground)
                         .focused($focusedField, equals: .name)
                         .submitLabel(.done)
@@ -78,13 +78,13 @@ struct SnapResultSheet: View {
 
                     HStack(spacing: Spacing.xs) {
                         Text("~$")
-                            .font(.brandTitle)
+                            .brandFont(.title)
                             .foregroundStyle(Color.brand.primary)
                         TextField("Price", text: Binding(
                             get: { store.priceText },
                             set: { store.priceText = $0 }
                         ))
-                            .font(.brandTitle)
+                            .brandFont(.title)
                             .foregroundStyle(Color.brand.primary)
                             .keyboardType(.decimalPad)
                             .focused($focusedField, equals: .price)
@@ -140,7 +140,7 @@ struct SnapResultSheet: View {
         VStack(spacing: Spacing.lg) {
             PhotoThumbnail(data: context.imageData, size: 156)
             Text(message)
-                .font(.brandBodyLg)
+                .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
             PrimaryPillButton(title: "Try again", systemImage: "arrow.clockwise") {

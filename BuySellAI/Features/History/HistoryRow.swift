@@ -10,13 +10,13 @@ struct HistoryRow: View {
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(entry.itemName)
-                    .font(.brandBodyLg)
+                    .brandFont(.bodyLg)
                     .foregroundStyle(Color.brand.foreground)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
                 Text("\(entry.marketplace.displayName) · \(relativeDate(entry.createdAt))")
-                    .font(.brandCaption)
+                    .brandFont(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .lineLimit(1)
             }
