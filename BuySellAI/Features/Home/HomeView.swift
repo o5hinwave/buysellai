@@ -97,7 +97,7 @@ struct HomeView: View {
             .scrollContentBackground(.hidden)
             .background(Color.brand.background)
             .refreshable {
-                appStore.loadHistory()
+                await appStore.loadHistory()
             }
         }
     }

@@ -26,9 +26,12 @@ final class AppStore {
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var modelContext: ModelContext?
+    @ObservationIgnored private var historyReader: HistoryReader?
+    @ObservationIgnored private let remoteHistoryClient: RemoteHistoryClient
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient()) {
         self.defaults = defaults
+        self.remoteHistoryClient = remoteHistoryClient
         if ProcessInfo.processInfo.arguments.contains("--reset-tutorial") {
             defaults.removeObject(forKey: Keys.hasSeenHowItWorks)
         }
@@ -36,8 +39,13 @@ final class AppStore {
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
 
-        if let appleID = Keychain.load(Keys.appleUserID) {
-            self.session = AuthSession(userID: appleID, email: nil, accessToken: nil)
+        if let userID = Keychain.load(Keys.authUserID) ?? Keychain.load(Keys.appleUserID) {
+            self.session = AuthSession(
+                userID: userID,
+                email: Keychain.load(Keys.authEmail),
+                accessToken: Keychain.load(Keys.supabaseAccessToken),
+                refreshToken: Keychain.load(Keys.supabaseRefreshToken)
+            )
         }
     }
 
@@ -56,7 +64,7 @@ final class AppStore {
     func configure(modelContext: ModelContext) {
         guard self.modelContext == nil else { return }
         self.modelContext = modelContext
-        loadHistory()
+        self.historyReader = HistoryReader(modelContainer: modelContext.container)
     }
 
     func markTutorialSeen() {
@@ -120,13 +128,18 @@ final class AppStore {
         isShowingCamera = false
     }
 
-    func loadHistory() {
-        guard let modelContext else { return }
+    func loadHistory() async {
+        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+            do {
+                history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+            } catch {
+                showToast(error.localizedDescription, style: .error)
+            }
+            return
+        }
+
         do {
-            let descriptor = FetchDescriptor<HistoryEntryModel>(
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )
-            history = try modelContext.fetch(descriptor).map(\.entry)
+            history = try await loadLocalHistory()
         } catch {
             showToast("Couldn't load recent listings.", style: .error)
         }
@@ -148,18 +161,47 @@ final class AppStore {
             listingText: listingText
         )
 
+        history.insert(entry, at: 0)
+
+        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+            Task {
+                do {
+                    try await remoteHistoryClient.upsertHistory([entry], accessToken: accessToken)
+                } catch {
+                    history.removeAll { $0.id == entry.id }
+                    showToast(error.localizedDescription, style: .error)
+                }
+            }
+            return
+        }
+
         if let modelContext {
-            modelContext.insert(HistoryEntryModel(entry: entry))
             do {
+                modelContext.insert(HistoryEntryModel(entry: entry))
                 try modelContext.save()
             } catch {
+                history.removeAll { $0.id == entry.id }
                 showToast("Couldn't save this listing.", style: .error)
             }
         }
-        history.insert(entry, at: 0)
     }
 
     func deleteHistory(_ entry: HistoryEntry) {
+        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+            let previous = history
+            history.removeAll { $0.id == entry.id }
+            Task {
+                do {
+                    try await remoteHistoryClient.deleteHistory(id: entry.id, accessToken: accessToken)
+                    Haptics.notify(.warning)
+                } catch {
+                    history = previous
+                    showToast(error.localizedDescription, style: .error)
+                }
+            }
+            return
+        }
+
         guard let modelContext else {
             history.removeAll { $0.id == entry.id }
             return
@@ -180,6 +222,21 @@ final class AppStore {
     }
 
     func clearHistory() {
+        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+            let previous = history
+            history.removeAll()
+            Task {
+                do {
+                    try await remoteHistoryClient.clearHistory(accessToken: accessToken)
+                    showToast("History cleared.", style: .success)
+                } catch {
+                    history = previous
+                    showToast(error.localizedDescription, style: .error)
+                }
+            }
+            return
+        }
+
         guard let modelContext else {
             history.removeAll()
             return
@@ -212,13 +269,35 @@ final class AppStore {
     func signOut() {
         session = nil
         Keychain.delete(Keys.appleUserID)
+        Keychain.delete(Keys.authUserID)
+        Keychain.delete(Keys.authEmail)
+        Keychain.delete(Keys.supabaseAccessToken)
+        Keychain.delete(Keys.supabaseRefreshToken)
+        Task { await loadHistory() }
         showToast("Signed out.", style: .success)
     }
 
-    func setAppleSession(userID: String, email: String?) {
-        session = AuthSession(userID: userID, email: email, accessToken: nil)
-        try? Keychain.save(userID, for: Keys.appleUserID)
-        showToast("Signed in.", style: .success)
+    func setSession(_ session: AuthSession) async {
+        self.session = session
+        persist(session)
+
+        guard let accessToken = session.accessToken, accessToken.isEmpty == false else {
+            showToast("Signed in.", style: .success)
+            return
+        }
+
+        do {
+            let localHistory = try await loadLocalHistory()
+            if localHistory.isEmpty == false {
+                try await remoteHistoryClient.upsertHistory(localHistory, accessToken: accessToken)
+                try clearLocalHistory()
+            }
+            history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+            let text = localHistory.isEmpty ? "Signed in." : "Signed in. Listings synced."
+            showToast(text, style: .success)
+        } catch {
+            showToast(error.localizedDescription, style: .error)
+        }
     }
 
     func showToast(_ text: String, style: ToastStyle) {
@@ -229,6 +308,39 @@ final class AppStore {
         guard toast?.id == id else { return }
         toast = nil
     }
+
+    private func loadLocalHistory() async throws -> [HistoryEntry] {
+        if let historyReader {
+            return try await historyReader.entries()
+        }
+        guard let modelContext else { return [] }
+        let descriptor = FetchDescriptor<HistoryEntryModel>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return try modelContext.fetch(descriptor).map(\.entry)
+    }
+
+    private func clearLocalHistory() throws {
+        guard let modelContext else { return }
+        try modelContext.delete(model: HistoryEntryModel.self)
+        try modelContext.save()
+    }
+
+    private func persist(_ session: AuthSession) {
+        try? Keychain.save(session.userID, for: Keys.authUserID)
+        try? Keychain.save(session.userID, for: Keys.appleUserID)
+        saveOptional(session.email, for: Keys.authEmail)
+        saveOptional(session.accessToken, for: Keys.supabaseAccessToken)
+        saveOptional(session.refreshToken, for: Keys.supabaseRefreshToken)
+    }
+
+    private func saveOptional(_ value: String?, for key: String) {
+        guard let value, value.isEmpty == false else {
+            Keychain.delete(key)
+            return
+        }
+        try? Keychain.save(value, for: key)
+    }
 }
 
 private enum Keys {
@@ -236,6 +348,10 @@ private enum Keys {
     static let reduceMotion = "reduceMotion"
     static let hasSeenHowItWorks = "hasSeenHowItWorks"
     static let appleUserID = "appleUserID"
+    static let authUserID = "authUserID"
+    static let authEmail = "authEmail"
+    static let supabaseAccessToken = "supabaseAccessToken"
+    static let supabaseRefreshToken = "supabaseRefreshToken"
 }
 
 struct RootView: View {
@@ -312,6 +428,7 @@ struct RootView: View {
         }
         .task {
             appStore.configure(modelContext: modelContext)
+            await appStore.loadHistory()
             try? await Task.sleep(nanoseconds: 300_000_000)
             withAnimation(AppMotion.animation(reduceMotion: appStore.reduceMotion || osReduceMotion)) {
                 showSplash = false

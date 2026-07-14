@@ -151,6 +151,14 @@ struct AuthSession: Codable, Sendable, Hashable {
     let userID: String
     var email: String?
     var accessToken: String?
+    var refreshToken: String?
+
+    init(userID: String, email: String? = nil, accessToken: String? = nil, refreshToken: String? = nil) {
+        self.userID = userID
+        self.email = email
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+    }
 }
 
 enum ThemePreference: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -216,4 +224,3 @@ extension Decimal {
         return output
     }
 }
-

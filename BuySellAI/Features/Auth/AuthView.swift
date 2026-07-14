@@ -24,7 +24,7 @@ struct AuthView: View {
                             Task {
                                 do {
                                     let session = try await store.signInWithApple()
-                                    appStore.setAppleSession(userID: session.userID, email: session.email)
+                                    await appStore.setSession(session)
                                     dismiss()
                                 } catch {
                                     appStore.showToast("Couldn't sign in with Apple.", style: .error)
@@ -61,10 +61,14 @@ struct AuthView: View {
                                     .accessibilityLabel("Password")
 
                                 SecondaryPillButton(title: "Sign in", systemImage: "arrow.right") {
-                                    do {
-                                        try store.signInWithEmail()
-                                    } catch {
-                                        appStore.showToast(error.localizedDescription, style: .error)
+                                    Task {
+                                        do {
+                                            let session = try await store.signInWithEmail()
+                                            await appStore.setSession(session)
+                                            dismiss()
+                                        } catch {
+                                            appStore.showToast(error.localizedDescription, style: .error)
+                                        }
                                     }
                                 }
                             }
