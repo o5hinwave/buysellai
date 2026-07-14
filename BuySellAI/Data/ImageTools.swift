@@ -13,7 +13,9 @@ enum ImageTools {
 
         let scale = min(1, maxLongEdge / longest)
         let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
         let rendered = renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
@@ -21,7 +23,9 @@ enum ImageTools {
     }
 
     static func sampleJPEG() -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 480))
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 480), format: format)
         let image = renderer.image { context in
             UIColor.systemOrange.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 640, height: 480))
@@ -34,4 +38,3 @@ enum ImageTools {
         return image.jpegData(compressionQuality: 0.85) ?? Data()
     }
 }
-
