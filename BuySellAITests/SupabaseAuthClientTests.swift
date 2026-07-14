@@ -75,6 +75,99 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.refreshToken, "email-refresh")
     }
 
+    func testEmailSignInMalformedJSONMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"refresh_token":"missing access token"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
+    func testEmailSignInTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testEmailSignInRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testEmailSignInNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 401,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: "person@example.com", password: "wrong")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(401))
+        }
+    }
+
+    func testEmailSignInTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let data = attempts == 1
+                ? Data()
+                : Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"user-456","email":"person@example.com"}}"#.utf8)
+            return (response, data)
+        }
+
+        let session = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "user-456")
+        XCTAssertEqual(session.accessToken, "retry-access")
+    }
+
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> SupabaseAuthClient {
         SupabaseAuthMockURLProtocol.handler = handler
         let configuration = URLSessionConfiguration.ephemeral

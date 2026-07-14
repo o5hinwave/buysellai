@@ -104,6 +104,105 @@ final class RemoteHistoryClientTests: XCTestCase {
         try await client.upsertHistory([entry], accessToken: "access-token")
     }
 
+    func testFetchHistoryMalformedJSONMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"id":"not an array"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.fetchHistory(accessToken: "access-token")
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
+    func testFetchHistoryTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.fetchHistory(accessToken: "access-token")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testUpsertHistoryNonSuccessStatusMapsToServerError() async throws {
+        let entry = HistoryEntry(
+            id: UUID(),
+            createdAt: Date(),
+            itemName: "Lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(20),
+            imageThumbnail: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp"
+        )
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 403,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.upsertHistory([entry], accessToken: "access-token")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
+    func testDeleteHistoryRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testClearHistoryTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.clearHistory(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> RemoteHistoryClient {
         RemoteHistoryMockURLProtocol.handler = handler
         let configuration = URLSessionConfiguration.ephemeral

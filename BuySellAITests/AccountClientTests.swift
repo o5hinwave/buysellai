@@ -58,6 +58,56 @@ final class AccountClientTests: XCTestCase {
         }
     }
 
+    func testDeleteAccountTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            try await client.deleteAccount(accessToken: "access-token")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testDeleteAccountNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 403,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.deleteAccount(accessToken: "access-token")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
+    func testDeleteAccountTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.deleteAccount(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> AccountClient {
         AccountMockURLProtocol.handler = handler
         let configuration = URLSessionConfiguration.ephemeral
