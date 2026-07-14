@@ -2,6 +2,46 @@ import XCTest
 @testable import BuySellAI
 
 final class MarketplaceEstimatorTests: XCTestCase {
+    func testMarketplaceCatalogMatchesSpecOrderAndBlurbs() {
+        let expected: [(Marketplace, String, String)] = [
+            (.ebay, "eBay", "Broadest audience, small fees"),
+            (.craigslist, "Craigslist", "Local, no fees, cash"),
+            (.facebook, "Facebook", "Facebook Marketplace — free local reach"),
+            (.poshmark, "Poshmark", "Fashion & closet items"),
+            (.mercari, "Mercari", "Ship anything, casual buyers"),
+            (.offerup, "OfferUp", "Local pickup, mobile-first"),
+            (.depop, "Depop", "Vintage & Gen-Z fashion"),
+            (.whatnot, "Whatnot", "Live-stream selling"),
+            (.grailed, "Grailed", "Menswear, streetwear, designer"),
+            (.reverb, "Reverb", "Music gear"),
+            (.etsy, "Etsy", "Handmade, vintage, craft"),
+            (.stockx, "StockX", "Sneakers & collectibles"),
+            (.goat, "GOAT", "Sneakers, authenticated"),
+            (.kidizen, "Kidizen", "Kids clothes"),
+            (.vinted, "Vinted", "Fashion, no seller fees"),
+            (.vestiaire, "Vestiaire", "Luxury pre-owned"),
+            (.therealreal, "The RealReal", "Authenticated luxury"),
+            (.swappa, "Swappa", "Used tech & phones"),
+            (.tradesy, "Tradesy", "Designer bags & shoes"),
+            (.chairish, "Chairish", "Vintage furniture & decor"),
+            (.bonanza, "Bonanza", "General resale, low fees"),
+            (.curtsy, "Curtsy", "Women's fashion (mobile)"),
+            (.nextdoor, "Nextdoor", "Neighborhood local sales"),
+            (.amazon, "Amazon", "Amazon seller — high reach, high fee"),
+            (.shopify, "Shopify", "Your own storefront"),
+            (.rubylane, "Ruby Lane", "Antiques & fine art"),
+            (.tcgplayer, "TCGplayer", "Trading cards")
+        ]
+
+        XCTAssertEqual(Marketplace.allCases, expected.map(\.0))
+        XCTAssertEqual(Marketplace.allCases.count, 27)
+
+        for (marketplace, displayName, blurb) in expected {
+            XCTAssertEqual(marketplace.displayName, displayName)
+            XCTAssertEqual(marketplace.blurb, blurb)
+        }
+    }
+
     func testEstimatorReturnsEveryMarketplaceWithBestAndLowestBadges() {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(100))
 
@@ -29,4 +69,3 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertTrue(estimates.allSatisfy { $0.payout.doubleValue >= 1 })
     }
 }
-
