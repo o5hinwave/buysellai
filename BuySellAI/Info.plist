@@ -26,6 +26,11 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>BuySell uses your camera to snap photos of items you want to sell.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>SpaceGrotesk.ttf</string>
+		<string>Inter.ttf</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -48,4 +53,3 @@
 	</array>
 </dict>
 </plist>
-
