@@ -14,13 +14,13 @@ struct SettingsView: View {
 
         NavigationStack {
             List {
-                Section("Account") {
+                Section("Account".localized) {
                     HStack {
-                        Text(appStore.session?.email ?? (appStore.session == nil ? "Not signed in" : "Signed in with Apple"))
+                        Text(appStore.session?.email ?? (appStore.session == nil ? "Not signed in" : "Signed in with Apple").localized)
                         Spacer()
                     }
 
-                    Button(appStore.session == nil ? "Sign in" : "Sign out") {
+                    Button((appStore.session == nil ? "Sign in" : "Sign out").localized) {
                         if appStore.session == nil {
                             dismiss()
                             appStore.isShowingAuth = true
@@ -28,75 +28,75 @@ struct SettingsView: View {
                             appStore.signOut()
                         }
                     }
-                    .accessibilityLabel(appStore.session == nil ? "Sign in" : "Sign out")
+                    .accessibilityLabel((appStore.session == nil ? "Sign in" : "Sign out").localized)
                 }
 
-                Section("Appearance") {
-                    Picker("Theme", selection: $store.theme) {
+                Section("Appearance".localized) {
+                    Picker("Theme".localized, selection: $store.theme) {
                         ForEach(ThemePreference.allCases) { theme in
-                            Text(theme.display).tag(theme)
+                            Text(theme.display.localized).tag(theme)
                         }
                     }
                     .pickerStyle(.segmented)
 
-                    Toggle("Reduce Motion", isOn: $store.reduceMotion)
+                    Toggle("Reduce Motion".localized, isOn: $store.reduceMotion)
                 }
 
-                Section("App") {
-                    Button("How it works") {
+                Section("App".localized) {
+                    Button("How it works".localized) {
                         dismiss()
                         appStore.isShowingTutorial = true
                     }
-                    .accessibilityLabel("How it works")
+                    .accessibilityLabel("How it works".localized)
 
-                    Button("Clear history", role: .destructive) {
+                    Button("Clear history".localized, role: .destructive) {
                         showClearConfirmation = true
                     }
-                    .accessibilityLabel("Clear history")
+                    .accessibilityLabel("Clear history".localized)
 
-                    Button("Rate BuySell") {
+                    Button("Rate BuySell".localized) {
                         requestReview()
                     }
-                    .accessibilityLabel("Rate BuySell")
+                    .accessibilityLabel("Rate BuySell".localized)
                 }
 
-                Section("About") {
+                Section("About".localized) {
                     HStack {
-                        Text("Version")
+                        Text("Version".localized)
                         Spacer()
                         Text(versionString)
                             .foregroundStyle(Color.brand.mutedForeground)
                     }
 
-                    Button("Privacy policy") {
+                    Button("Privacy policy".localized) {
                         safariDestination = URL(string: "https://buysell.ai/privacy").map(SafariDestination.init)
                     }
-                    .accessibilityLabel("Privacy policy")
+                    .accessibilityLabel("Privacy policy".localized)
 
-                    Button("Terms") {
+                    Button("Terms".localized) {
                         safariDestination = URL(string: "https://buysell.ai/terms").map(SafariDestination.init)
                     }
-                    .accessibilityLabel("Terms")
+                    .accessibilityLabel("Terms".localized)
                 }
 
                 if appStore.session != nil {
-                    Section("Danger zone") {
-                        NavigationLink("Delete account") {
+                    Section("Danger zone".localized) {
+                        NavigationLink("Delete account".localized) {
                             DeleteAccountView()
                         }
                     }
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("Settings".localized)
             .scrollContentBackground(.hidden)
             .background(Color.brand.background)
-            .confirmationDialog("Delete this listing? This can't be undone.", isPresented: $showClearConfirmation, titleVisibility: .visible) {
-                Button("Clear history", role: .destructive) {
+            .confirmationDialog("Clear all listing history? This can't be undone.".localized, isPresented: $showClearConfirmation, titleVisibility: .visible) {
+                Button("Clear history".localized, role: .destructive) {
                     appStore.clearHistory()
                 }
-                .accessibilityLabel("Clear history")
-                Button("Cancel", role: .cancel) {}
-                    .accessibilityLabel("Cancel")
+                .accessibilityLabel("Clear history".localized)
+                Button("Cancel".localized, role: .cancel) {}
+                    .accessibilityLabel("Cancel".localized)
             }
             .sheet(item: $safariDestination) { destination in
                 SafariView(url: destination.url)
@@ -112,7 +112,7 @@ struct SettingsView: View {
 
     private func requestReview() {
         guard reviewPromptGate.shouldRequestReview(for: appVersion) else {
-            appStore.showToast("Thanks for rating BuySell.", style: .success)
+            appStore.showToast("Thanks for rating BuySell.".localized, style: .success)
             return
         }
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
@@ -132,15 +132,15 @@ private struct DeleteAccountView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            Text("Delete account")
+            Text("Delete account".localized)
                 .brandFont(.titleXL)
                 .foregroundStyle(Color.brand.foreground)
 
-            Text("Type DELETE to confirm.")
+            Text("Type DELETE to confirm.".localized)
                 .brandFont(.body)
                 .foregroundStyle(Color.brand.mutedForeground)
 
-            TextField("DELETE", text: $confirmation)
+            TextField("DELETE".localized, text: $confirmation)
                 .textInputAutocapitalization(.characters)
                 .brandFont(.body)
                 .padding(Spacing.md)
@@ -166,8 +166,8 @@ private struct DeleteAccountView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Close") { dismiss() }
-                    .accessibilityLabel("Close delete account")
+                Button("Close".localized) { dismiss() }
+                    .accessibilityLabel("Close delete account".localized)
             }
         }
     }

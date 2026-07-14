@@ -15,7 +15,7 @@ struct HistoryRow: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
-                Text("\(entry.marketplace.displayName) · \(relativeDate(entry.createdAt))")
+                Text(String.localizedFormat("%@ · %@", entry.marketplace.displayName, relativeDate(entry.createdAt)))
                     .brandFont(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .lineLimit(1)

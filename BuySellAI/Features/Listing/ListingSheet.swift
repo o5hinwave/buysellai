@@ -47,7 +47,7 @@ struct ListingSheet: View {
             MarketplaceIcon(marketplace: context.marketplace)
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text("Listing for \(context.marketplace.displayName)")
+                Text(String.localizedFormat("Listing for %@", context.marketplace.displayName))
                     .brandFont(.overline)
                     .tracking(0.88)
                     .foregroundStyle(Color.brand.mutedForeground)
@@ -68,7 +68,7 @@ struct ListingSheet: View {
 
     private var loading: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Writing your listing…")
+            Text("Writing your listing…".localized)
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -92,7 +92,7 @@ struct ListingSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Spacing.lg)
             .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .accessibilityLabel("Generated listing text")
+            .accessibilityLabel("Generated listing text".localized)
             .accessibilitySortPriority(3)
     }
 
@@ -128,7 +128,7 @@ struct ListingSheet: View {
             }
             .accessibilitySortPriority(2)
 
-            Text("Tip: paste, add photos, hit list. That's it.")
+            Text("Tip: paste, add photos, hit list. That's it.".localized)
                 .brandFont(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .multilineTextAlignment(.center)
@@ -152,7 +152,7 @@ struct ListingSheet: View {
         appStore.closeFlow()
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 260_000_000)
-            appStore.showToast("Copied — paste it into \(context.marketplace.displayName)", style: .success)
+            appStore.showToast(String.localizedFormat("Copied — paste it into %@", context.marketplace.displayName), style: .success)
         }
     }
 }

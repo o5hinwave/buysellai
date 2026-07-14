@@ -13,7 +13,7 @@ struct AuthView: View {
 
                     VStack(spacing: Spacing.sm) {
                         BrandWordmark(includeAI: true, size: .display)
-                        Text("Sign in to sync your listings across devices.")
+                        Text("Sign in to sync your listings across devices.".localized)
                             .brandFont(.body)
                             .foregroundStyle(Color.brand.mutedForeground)
                             .multilineTextAlignment(.center)
@@ -27,7 +27,7 @@ struct AuthView: View {
                                     await appStore.setSession(session)
                                     dismiss()
                                 } catch {
-                                    appStore.showToast("Couldn't sign in with Apple.", style: .error)
+                                    appStore.showToast("Couldn't sign in with Apple.".localized, style: .error)
                                 }
                             }
                         }
@@ -38,7 +38,7 @@ struct AuthView: View {
 
                         if store.showsEmailForm {
                             VStack(spacing: Spacing.sm) {
-                                TextField("Email", text: Binding(
+                                TextField("Email".localized, text: Binding(
                                     get: { store.email },
                                     set: { store.email = $0 }
                                 ))
@@ -48,9 +48,9 @@ struct AuthView: View {
                                     .brandFont(.body)
                                     .padding(Spacing.md)
                                     .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                                    .accessibilityLabel("Email")
+                                    .accessibilityLabel("Email".localized)
 
-                                SecureField("Password", text: Binding(
+                                SecureField("Password".localized, text: Binding(
                                     get: { store.password },
                                     set: { store.password = $0 }
                                 ))
@@ -58,7 +58,7 @@ struct AuthView: View {
                                     .brandFont(.body)
                                     .padding(Spacing.md)
                                     .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                                    .accessibilityLabel("Password")
+                                    .accessibilityLabel("Password".localized)
 
                                 SecondaryPillButton(title: "Sign in", systemImage: "arrow.right") {
                                     Task {
@@ -74,13 +74,13 @@ struct AuthView: View {
                             }
                         }
 
-                        Button("Keep going without an account") {
+                        Button("Keep going without an account".localized) {
                             dismiss()
                         }
                         .brandFont(.button)
                         .foregroundStyle(Color.brand.foreground)
                         .frame(minHeight: 52)
-                        .accessibilityLabel("Keep going without an account")
+                        .accessibilityLabel("Keep going without an account".localized)
                     }
                 }
                 .padding(Spacing.xl)

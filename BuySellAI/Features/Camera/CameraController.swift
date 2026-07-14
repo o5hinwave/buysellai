@@ -159,9 +159,9 @@ enum CameraError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noCamera: "Camera isn't available on this device."
-        case .configurationFailed: "Camera couldn't start."
-        case .captureFailed: "Photo couldn't be captured."
+        case .noCamera: "Camera isn't available on this device.".localized
+        case .configurationFailed: "Camera couldn't start.".localized
+        case .captureFailed: "Photo couldn't be captured.".localized
         }
     }
 }

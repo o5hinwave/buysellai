@@ -10,7 +10,7 @@ struct ChipButton: View {
             Haptics.impact(.light)
             action()
         }) {
-            Text(String(localized: String.LocalizationValue(title)))
+            Text(title.localized)
                 .brandFont(.caption)
                 .foregroundStyle(tint)
                 .lineLimit(1)
@@ -19,7 +19,6 @@ struct ChipButton: View {
                 .background(tint.opacity(0.12), in: Capsule())
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(title.localized))
     }
 }
-

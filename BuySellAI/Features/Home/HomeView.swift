@@ -21,14 +21,14 @@ struct HomeView: View {
                                 .accessibilityHidden(true)
 
                             VStack(spacing: Spacing.sm) {
-                                Text(String(localized: "Sell anything in three taps."))
+                                Text("Sell anything in three taps.".localized)
                                     .brandFont(.display)
                                     .foregroundStyle(Color.brand.foreground)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(3)
                                     .minimumScaleFactor(0.78)
 
-                                Text(String(localized: "Snap a photo. Pick a marketplace. Copy your listing."))
+                                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
                                     .brandFont(.body)
                                     .foregroundStyle(Color.brand.mutedForeground)
                                     .multilineTextAlignment(.center)
@@ -39,7 +39,7 @@ struct HomeView: View {
                                 PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill") {
                                     appStore.startSnapFlow()
                                 }
-                                .accessibilityHint(String(localized: "Opens the camera"))
+                                .accessibilityHint("Opens the camera".localized)
 
                                 SecondaryPillButton(title: "How it works") {
                                     store.isShowingTutorial = true
@@ -73,10 +73,10 @@ struct HomeView: View {
                                 Button(role: .destructive) {
                                     appStore.deleteHistory(entry)
                                 } label: {
-                                    Label(String(localized: "Delete listing"), systemImage: "trash")
+                                    Label("Delete listing".localized, systemImage: "trash")
                                 }
                                 .tint(Color.brand.destructive)
-                                .accessibilityLabel(String(localized: "Delete listing"))
+                                .accessibilityLabel("Delete listing".localized)
                             }
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.brand.background)
@@ -85,7 +85,7 @@ struct HomeView: View {
                         }
                     }
                 } header: {
-                    Text(String(localized: "Recent listings"))
+                    Text("Recent listings".localized)
                         .brandFont(.overline)
                         .foregroundStyle(Color.brand.mutedForeground)
                         .textCase(.uppercase)
@@ -107,7 +107,7 @@ struct HomeView: View {
         HStack(spacing: Spacing.sm) {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 BrandWordmark()
-                Text(String(localized: "Snap · Pick · Sell"))
+                Text("Snap · Pick · Sell".localized)
                     .brandFont(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
             }
@@ -121,7 +121,7 @@ struct HomeView: View {
                     appStore.signOut()
                 }
             } label: {
-                Text(String(localized: String.LocalizationValue(appStore.session == nil ? "Sign in" : "Sign out")))
+                Text((appStore.session == nil ? "Sign in" : "Sign out").localized)
                     .brandFont(.caption)
                     .foregroundStyle(Color.brand.foreground)
                     .lineLimit(1)
@@ -130,9 +130,9 @@ struct HomeView: View {
                     .background(Color.brand.secondary, in: Capsule())
             }
             .buttonStyle(PressButtonStyle())
-            .accessibilityLabel(String(localized: String.LocalizationValue(appStore.session == nil ? "Sign in" : "Sign out")))
+            .accessibilityLabel((appStore.session == nil ? "Sign in" : "Sign out").localized)
 
-            IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: String(localized: "Settings")) {
+            IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: "Settings") {
                 appStore.isShowingSettings = true
             }
             .frame(width: 44, height: 44)
@@ -141,13 +141,13 @@ struct HomeView: View {
     }
 
     private func historyAccessibilityLabel(_ entry: HistoryEntry) -> String {
-        "\(entry.itemName), \(entry.marketplace.displayName), \(relativeDate(entry.createdAt))"
+        String.localizedFormat("%@, %@, %@", entry.itemName, entry.marketplace.displayName, relativeDate(entry.createdAt))
     }
 }
 
 private struct EmptyHistoryView: View {
     var body: some View {
-        Text(String(localized: "Your past listings will show up here."))
+        Text("Your past listings will show up here.".localized)
             .brandFont(.caption)
             .foregroundStyle(Color.brand.mutedForeground)
             .multilineTextAlignment(.center)

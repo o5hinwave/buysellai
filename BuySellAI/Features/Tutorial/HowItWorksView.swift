@@ -12,13 +12,13 @@ struct HowItWorksView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Skip") {
+                Button("Skip".localized) {
                     onClose()
                 }
                 .brandFont(.button)
                 .foregroundStyle(Color.brand.foreground)
                 .frame(minWidth: 64, minHeight: 44)
-                .accessibilityLabel("Skip")
+                .accessibilityLabel("Skip".localized)
 
                 Spacer()
             }
@@ -51,7 +51,7 @@ struct HowItWorksView: View {
 
             HStack {
                 DotPager(index: index, count: slides.count)
-                    .accessibilityValue("Step \(index + 1) of \(slides.count)")
+                    .accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, slides.count))
 
                 Spacer()
 
@@ -126,14 +126,14 @@ private struct TutorialSlidePage: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: Spacing.sm) {
-                Text(slide.title)
+                Text(slide.title.localized)
                     .brandFont(.display)
                     .foregroundStyle(Color.brand.foreground)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .minimumScaleFactor(0.72)
 
-                Text(slide.body)
+                Text(slide.body.localized)
                     .brandFont(.body)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -142,8 +142,8 @@ private struct TutorialSlidePage: View {
             .padding(.horizontal, Spacing.xl)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(slide.title) \(slide.body)")
-        .accessibilityValue("Step \(step) of \(total)")
+        .accessibilityLabel(String.localizedFormat("%@ %@", slide.title.localized, slide.body.localized))
+        .accessibilityValue(String.localizedFormat("Step %d of %d", step, total))
     }
 }
 
@@ -171,7 +171,7 @@ private struct TutorialIllustration: View {
                 VStack(spacing: Spacing.sm) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 44, weight: .bold))
-                    Text("$45")
+                    Text("$45".localized)
                         .brandFont(.titleXL)
                 }
                 .foregroundStyle(Color.brand.primary)

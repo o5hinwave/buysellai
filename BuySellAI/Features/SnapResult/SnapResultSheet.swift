@@ -39,12 +39,12 @@ struct SnapResultSheet: View {
             PhotoThumbnail(data: context.imageData, size: 112)
             ProgressView()
                 .tint(Color.brand.primary)
-            Text("Analyzing your photo…")
+            Text("Analyzing your photo…".localized)
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
             if store.showStillWorking {
                 VStack(spacing: Spacing.sm) {
-                    Text("Still working… tap Retry to try again.")
+                    Text("Still working… tap Retry to try again.".localized)
                         .brandFont(.caption)
                         .foregroundStyle(Color.brand.destructive)
                         .multilineTextAlignment(.center)
@@ -65,7 +65,7 @@ struct SnapResultSheet: View {
                 PhotoThumbnail(data: context.imageData, size: 64)
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    TextField("Item name", text: Binding(
+                    TextField("Item name".localized, text: Binding(
                         get: { store.nameText },
                         set: { store.nameText = $0 }
                     ))
@@ -74,13 +74,13 @@ struct SnapResultSheet: View {
                         .focused($focusedField, equals: .name)
                         .submitLabel(.done)
                         .onSubmit { store.commitEdits() }
-                        .accessibilityLabel("Item name")
+                        .accessibilityLabel("Item name".localized)
 
                     HStack(spacing: Spacing.xs) {
                         Text("~$")
                             .brandFont(.title)
                             .foregroundStyle(Color.brand.primary)
-                        TextField("Price", text: Binding(
+                        TextField("Price".localized, text: Binding(
                             get: { store.priceText },
                             set: { store.priceText = $0 }
                         ))
@@ -89,7 +89,7 @@ struct SnapResultSheet: View {
                             .keyboardType(.decimalPad)
                             .focused($focusedField, equals: .price)
                             .onSubmit { store.commitEdits() }
-                            .accessibilityLabel("Estimated price")
+                            .accessibilityLabel("Estimated price".localized)
                     }
                 }
             }
@@ -180,6 +180,6 @@ struct PhotoThumbnail: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .accessibilityLabel("Item photo")
+        .accessibilityLabel("Item photo".localized)
     }
 }

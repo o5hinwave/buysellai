@@ -35,7 +35,7 @@ struct MarketplacePickerSheet: View {
                     }
                 } header: {
                     VStack(alignment: .leading, spacing: Spacing.md) {
-                        Text("Pick where to sell")
+                        Text("Pick where to sell".localized)
                             .brandFont(.titleLg)
                             .foregroundStyle(Color.brand.foreground)
 
@@ -87,7 +87,7 @@ struct MarketplacePickerSheet: View {
 
     private var fallbackRows: some View {
         VStack(spacing: 0) {
-            Text("Couldn't compute prices. Tap a marketplace anyway to draft a listing.")
+            Text("Couldn't compute prices. Tap a marketplace anyway to draft a listing.".localized)
                 .brandFont(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .padding(Spacing.xl)
@@ -103,7 +103,7 @@ struct MarketplacePickerSheet: View {
                             Text(marketplace.displayName)
                                 .brandFont(.bodyLg)
                                 .foregroundStyle(Color.brand.foreground)
-                            Text(marketplace.blurb)
+                            Text(marketplace.blurb.localized)
                                 .brandFont(.caption)
                                 .foregroundStyle(Color.brand.mutedForeground)
                         }
@@ -113,7 +113,7 @@ struct MarketplacePickerSheet: View {
                     .frame(minHeight: 72)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(marketplace.displayName), \(marketplace.blurb)")
+                .accessibilityLabel(String.localizedFormat("%@, %@", marketplace.displayName, marketplace.blurb.localized))
                 .accessibilitySortPriority(1)
             }
         }
@@ -129,7 +129,7 @@ private struct SummaryButton: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(label)
+                Text(label.localized)
                     .brandFont(.overline)
                     .tracking(0.88)
                     .foregroundStyle(label == "Best" ? Color.brand.success : Color.brand.mutedForeground)
@@ -159,7 +159,7 @@ private struct SummaryButton: View {
             )
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel("\(label), \(estimate.id.displayName), \(estimate.payout.currency())")
+        .accessibilityLabel(String.localizedFormat("%@, %@, %@", label.localized, estimate.id.displayName, estimate.payout.currency()))
         .accessibilitySortPriority(label == "Best" ? 2 : 1)
     }
 }

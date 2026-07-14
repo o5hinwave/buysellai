@@ -21,7 +21,7 @@ struct PrimaryPillButton: View {
                     Image(systemName: systemImage)
                         .imageScale(.medium)
                 }
-                Text(String(localized: String.LocalizationValue(title)))
+                Text(title.localized)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.82)
@@ -41,8 +41,8 @@ struct PrimaryPillButton: View {
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
-        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
-        .accessibilityHint(Text(accessibilityHint.map { String(localized: String.LocalizationValue($0)) } ?? ""))
+        .accessibilityLabel(Text(title.localized))
+        .accessibilityHint(Text(accessibilityHint?.localized ?? ""))
     }
 
     private var shouldReduceMotion: Bool { reduceMotion || appReduceMotion }
@@ -68,7 +68,7 @@ struct SecondaryPillButton: View {
                 if let systemImage {
                     Image(systemName: systemImage)
                 }
-                Text(String(localized: String.LocalizationValue(title)))
+                Text(title.localized)
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
             }
@@ -86,7 +86,7 @@ struct SecondaryPillButton: View {
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
-        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
+        .accessibilityLabel(Text(title.localized))
     }
 }
 
@@ -105,7 +105,7 @@ struct GhostButton: View {
                 if let systemImage {
                     Image(systemName: systemImage)
                 }
-                Text(String(localized: String.LocalizationValue(title)))
+                Text(title.localized)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.8)
@@ -121,7 +121,7 @@ struct GhostButton: View {
             )
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(Text(String(localized: String.LocalizationValue(title))))
+        .accessibilityLabel(Text(title.localized))
     }
 }
 
@@ -150,7 +150,7 @@ struct IconCircleButton: View {
                 }
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(Text(String(localized: String.LocalizationValue(accessibilityLabel))))
+        .accessibilityLabel(Text(accessibilityLabel.localized))
     }
 }
 

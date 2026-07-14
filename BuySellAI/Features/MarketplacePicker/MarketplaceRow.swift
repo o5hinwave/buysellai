@@ -38,7 +38,7 @@ struct MarketplaceRow: View {
                         .foregroundStyle(Color.brand.foreground)
                         .lineLimit(1)
 
-                    Text(estimate.id.blurb)
+                    Text(estimate.id.blurb.localized)
                         .brandFont(.caption)
                         .foregroundStyle(Color.brand.mutedForeground)
                         .lineLimit(2)
@@ -77,7 +77,7 @@ struct MarketplaceRow: View {
     private var accessibilityLabel: String {
         let dollars = Int(estimate.payout.doubleValue.rounded())
         let delta = Int(estimate.deltaPct.rounded())
-        let direction = delta >= 0 ? "above" : "below"
-        return "\(estimate.id.displayName), estimated payout \(dollars) dollars, \(abs(delta)) percent \(direction) average"
+        let direction = (delta >= 0 ? "above" : "below").localized
+        return String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", estimate.id.displayName, dollars, abs(delta), direction)
     }
 }

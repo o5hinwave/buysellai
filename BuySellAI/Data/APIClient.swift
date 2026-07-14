@@ -178,19 +178,19 @@ enum APIError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .offline:
-            "You're offline. Reconnect and try again."
+            "You're offline. Reconnect and try again.".localized
         case .timeout:
-            "That took too long. Try again."
+            "That took too long. Try again.".localized
         case .rateLimited:
-            "Too many tries right now. Give it a minute."
+            "Too many tries right now. Give it a minute.".localized
         case .server:
-            "BuySell is having trouble. Try again."
+            "BuySell is having trouble. Try again.".localized
         case .decoding:
-            "BuySell got an answer it couldn't read."
+            "BuySell got an answer it couldn't read.".localized
         case .notConfigured:
-            "Backend is not configured yet."
+            "Backend is not configured yet.".localized
         case .unknown:
-            "Something went wrong. Try again."
+            "Something went wrong. Try again.".localized
         }
     }
 }

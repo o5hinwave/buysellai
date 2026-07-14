@@ -147,7 +147,7 @@ final class AppStore {
         do {
             history = try await loadLocalHistory()
         } catch {
-            showToast("Couldn't load recent listings.", style: .error)
+            showToast("Couldn't load recent listings.".localized, style: .error)
         }
     }
 
@@ -187,7 +187,7 @@ final class AppStore {
                 try modelContext.save()
             } catch {
                 history.removeAll { $0.id == entry.id }
-                showToast("Couldn't save this listing.", style: .error)
+                showToast("Couldn't save this listing.".localized, style: .error)
             }
         }
     }
@@ -223,7 +223,7 @@ final class AppStore {
             history.removeAll { $0.id == entry.id }
             Haptics.notify(.warning)
         } catch {
-            showToast("Couldn't delete this listing.", style: .error)
+            showToast("Couldn't delete this listing.".localized, style: .error)
         }
     }
 
@@ -234,7 +234,7 @@ final class AppStore {
             Task {
                 do {
                     try await remoteHistoryClient.clearHistory(accessToken: accessToken)
-                    showToast("History cleared.", style: .success)
+                    showToast("History cleared.".localized, style: .success)
                 } catch {
                     history = previous
                     showToast(error.localizedDescription, style: .error)
@@ -251,9 +251,9 @@ final class AppStore {
             try modelContext.delete(model: HistoryEntryModel.self)
             try modelContext.save()
             history.removeAll()
-            showToast("History cleared.", style: .success)
+            showToast("History cleared.".localized, style: .success)
         } catch {
-            showToast("Couldn't clear history.", style: .error)
+            showToast("Couldn't clear history.".localized, style: .error)
         }
     }
 
@@ -276,7 +276,7 @@ final class AppStore {
         session = nil
         clearStoredSession()
         Task { await loadHistory() }
-        showToast("Signed out.", style: .success)
+        showToast("Signed out.".localized, style: .success)
     }
 
     func deleteAccount() async -> Bool {
@@ -291,7 +291,7 @@ final class AppStore {
             clearStoredSession()
             history.removeAll()
             try? clearLocalHistory()
-            showToast("Account deleted.", style: .success)
+            showToast("Account deleted.".localized, style: .success)
             return true
         } catch {
             showToast(error.localizedDescription, style: .error)
@@ -304,7 +304,7 @@ final class AppStore {
         persist(session)
 
         guard let accessToken = session.accessToken, accessToken.isEmpty == false else {
-            showToast("Signed in.", style: .success)
+            showToast("Signed in.".localized, style: .success)
             return
         }
 
@@ -315,7 +315,7 @@ final class AppStore {
                 try clearLocalHistory()
             }
             history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
-            let text = localHistory.isEmpty ? "Signed in." : "Signed in. Listings synced."
+            let text = (localHistory.isEmpty ? "Signed in." : "Signed in. Listings synced.").localized
             showToast(text, style: .success)
         } catch {
             showToast(error.localizedDescription, style: .error)
