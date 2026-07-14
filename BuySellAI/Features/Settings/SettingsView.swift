@@ -47,14 +47,17 @@ struct SettingsView: View {
                         dismiss()
                         appStore.isShowingTutorial = true
                     }
+                    .accessibilityLabel("How it works")
 
                     Button("Clear history", role: .destructive) {
                         showClearConfirmation = true
                     }
+                    .accessibilityLabel("Clear history")
 
                     Button("Rate BuySell") {
                         requestReview()
                     }
+                    .accessibilityLabel("Rate BuySell")
                 }
 
                 Section("About") {
@@ -68,10 +71,12 @@ struct SettingsView: View {
                     Button("Privacy policy") {
                         safariDestination = URL(string: "https://buysell.ai/privacy").map(SafariDestination.init)
                     }
+                    .accessibilityLabel("Privacy policy")
 
                     Button("Terms") {
                         safariDestination = URL(string: "https://buysell.ai/terms").map(SafariDestination.init)
                     }
+                    .accessibilityLabel("Terms")
                 }
 
                 if appStore.session != nil {
@@ -89,7 +94,9 @@ struct SettingsView: View {
                 Button("Clear history", role: .destructive) {
                     appStore.clearHistory()
                 }
+                .accessibilityLabel("Clear history")
                 Button("Cancel", role: .cancel) {}
+                    .accessibilityLabel("Cancel")
             }
             .sheet(item: $safariDestination) { destination in
                 SafariView(url: destination.url)
@@ -160,6 +167,7 @@ private struct DeleteAccountView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Close") { dismiss() }
+                    .accessibilityLabel("Close delete account")
             }
         }
     }

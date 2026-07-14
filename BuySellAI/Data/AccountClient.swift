@@ -1,8 +1,6 @@
 import Foundation
 
 actor AccountClient {
-    static let shared = AccountClient()
-
     private let session: URLSession
     private let injectedConfig: AppConfig?
 

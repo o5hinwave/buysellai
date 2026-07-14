@@ -78,6 +78,26 @@ final class APIClientTests: XCTestCase {
         }
     }
 
+    func testNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Book","category":"Books","condition":"good","currentPrice":8}"#.utf8))
+        }
+
+        let response = try await client.analyze(image: Data([1]))
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(response.name, "Book")
+        XCTAssertEqual(response.currentPrice, Decimal(8))
+    }
+
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> APIClient {
         MockURLProtocol.handler = handler
         let configuration = URLSessionConfiguration.ephemeral

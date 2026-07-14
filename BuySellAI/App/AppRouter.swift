@@ -33,7 +33,7 @@ final class AppStore {
     init(
         defaults: UserDefaults = .standard,
         remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient(),
-        accountClient: AccountClient = .shared
+        accountClient: AccountClient = AccountClient()
     ) {
         self.defaults = defaults
         self.remoteHistoryClient = remoteHistoryClient

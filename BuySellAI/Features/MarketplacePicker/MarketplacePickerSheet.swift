@@ -4,6 +4,7 @@ struct MarketplacePickerSheet: View {
     let context: MarketplacePickerContext
 
     @Environment(AppStore.self) private var appStore
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @State private var estimates: [MarketplaceEstimate] = []
     @State private var didCompute = false
 
@@ -26,7 +27,7 @@ struct MarketplacePickerSheet: View {
                                 .padding(.horizontal, Spacing.xl)
                                 Divider()
                                     .padding(.leading, 88)
-                                    .foregroundStyle(Color.brand.border)
+                                    .foregroundStyle(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border)
                             }
                         }
                     } else {
@@ -109,6 +110,7 @@ struct MarketplacePickerSheet: View {
                     .frame(minHeight: 72)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(marketplace.displayName), \(marketplace.blurb)")
             }
         }
     }

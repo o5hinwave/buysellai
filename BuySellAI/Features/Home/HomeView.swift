@@ -76,6 +76,7 @@ struct HomeView: View {
                                     Label("Delete listing", systemImage: "trash")
                                 }
                                 .tint(Color.brand.destructive)
+                                .accessibilityLabel("Delete listing")
                             }
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.brand.background)

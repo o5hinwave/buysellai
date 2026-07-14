@@ -105,45 +105,57 @@ actor APIClient {
             return try await send(request, decoding: decoding)
         } catch APIError.server(let code) where (500...599).contains(code) {
             logger.warning("Retrying transient server error \(code)")
-            return try await send(request, decoding: decoding)
+            return try await sendMapped(request, decoding: decoding)
         } catch let error as URLError where error.code == .networkConnectionLost {
             logger.warning("Retrying network connection lost")
+            return try await sendMapped(request, decoding: decoding)
+        } catch {
+            throw mapTransport(error)
+        }
+    }
+
+    private func sendMapped<Response: Decodable>(_ request: URLRequest, decoding: Response.Type) async throws -> Response {
+        do {
             return try await send(request, decoding: decoding)
+        } catch {
+            throw mapTransport(error)
         }
     }
 
     private func send<Response: Decodable>(_ request: URLRequest, decoding: Response.Type) async throws -> Response {
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.unknown
-            }
-            switch httpResponse.statusCode {
-            case 200...299:
-                do {
-                    return try JSONDecoder.api.decode(Response.self, from: data)
-                } catch {
-                    throw APIError.decoding
-                }
-            case 429:
-                throw APIError.rateLimited
-            default:
-                throw APIError.server(httpResponse.statusCode)
-            }
-        } catch let error as APIError {
-            throw error
-        } catch let error as URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                throw APIError.offline
-            case .timedOut:
-                throw APIError.timeout
-            default:
-                throw APIError.unknown
-            }
-        } catch {
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unknown
         }
+        switch httpResponse.statusCode {
+        case 200...299:
+            do {
+                return try JSONDecoder.api.decode(Response.self, from: data)
+            } catch {
+                throw APIError.decoding
+            }
+        case 429:
+            throw APIError.rateLimited
+        default:
+            throw APIError.server(httpResponse.statusCode)
+        }
+    }
+
+    private func mapTransport(_ error: Error) -> Error {
+        if let error = error as? APIError {
+            return error
+        }
+        if let error = error as? URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                return APIError.offline
+            case .timedOut:
+                return APIError.timeout
+            default:
+                return APIError.unknown
+            }
+        }
+        return APIError.unknown
     }
 }
 

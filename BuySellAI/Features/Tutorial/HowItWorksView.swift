@@ -198,15 +198,21 @@ private struct TutorialIllustration: View {
 private struct DotPager: View {
     let index: Int
     let count: Int
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    @Environment(\.appReduceMotion) private var appReduceMotion
 
     var body: some View {
         HStack(spacing: Spacing.xs) {
             ForEach(0..<count, id: \.self) { dot in
                 Capsule()
-                    .fill(dot == index ? Color.brand.primary : Color.brand.border)
+                    .fill(dot == index ? Color.brand.primary : inactiveColor)
                     .frame(width: dot == index ? 24 : 8, height: 8)
             }
         }
-        .animation(AppMotion.spring, value: index)
+        .animation(AppMotion.animation(reduceMotion: appReduceMotion), value: index)
+    }
+
+    private var inactiveColor: Color {
+        differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border
     }
 }
