@@ -78,6 +78,49 @@ final class APIClientTests: XCTestCase {
         }
     }
 
+    func testMalformedAnalyzeJSONMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Lamp","category":"Home"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.analyze(image: Data([1]))
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
+    func testTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.analyze(image: Data([1]))
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 418, httpVersion: nil, headerFields: nil))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.analyze(image: Data([1]))
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(418))
+        }
+    }
+
     func testNetworkConnectionLostRetriesOnce() async throws {
         var attempts = 0
         let client = try makeClient { request in
@@ -96,6 +139,27 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
         XCTAssertEqual(response.name, "Book")
         XCTAssertEqual(response.currentPrice, Decimal(8))
+    }
+
+    func testTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let url = try XCTUnwrap(request.url)
+            if attempts == 1 {
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Chair","category":"Furniture","condition":"fair","currentPrice":25}"#.utf8))
+        }
+
+        let response = try await client.analyze(image: Data([1]))
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(response.name, "Chair")
+        XCTAssertEqual(response.currentPrice, Decimal(25))
     }
 
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> APIClient {
