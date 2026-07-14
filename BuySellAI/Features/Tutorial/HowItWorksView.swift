@@ -51,7 +51,6 @@ struct HowItWorksView: View {
 
             HStack {
                 DotPager(index: index, count: slides.count)
-                    .accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, slides.count))
 
                 Spacer()
 
@@ -198,6 +197,7 @@ private struct TutorialIllustration: View {
 private struct DotPager: View {
     let index: Int
     let count: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @Environment(\.appReduceMotion) private var appReduceMotion
 
@@ -209,7 +209,10 @@ private struct DotPager: View {
                     .frame(width: dot == index ? 24 : 8, height: 8)
             }
         }
-        .animation(AppMotion.animation(reduceMotion: appReduceMotion), value: index)
+        .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: index)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Tutorial progress".localized)
+        .accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, count))
     }
 
     private var inactiveColor: Color {
