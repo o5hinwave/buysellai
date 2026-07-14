@@ -23,9 +23,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        let ebay = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "eBay")).firstMatch
-        XCTAssertTrue(ebay.waitForExistence(timeout: 5))
-        ebay.tap()
+        tapMarketplace("ebay", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -107,9 +105,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        let ebay = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "eBay")).firstMatch
-        XCTAssertTrue(ebay.waitForExistence(timeout: 5))
-        ebay.tap()
+        tapMarketplace("ebay", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -141,9 +137,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        let ebay = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "eBay")).firstMatch
-        XCTAssertTrue(ebay.waitForExistence(timeout: 5))
-        ebay.tap()
+        tapMarketplace("ebay", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -188,6 +182,25 @@ final class BuySellAIUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences"]
         app.launch()
         app.terminate()
+    }
+
+    private func tapMarketplace(
+        _ rawValue: String,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let row = app.buttons["MarketplaceRow.\(rawValue)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "Missing marketplace row: \(rawValue)", file: file, line: line)
+
+        var attempts = 0
+        while row.isHittable == false && attempts < 6 {
+            app.swipeUp()
+            attempts += 1
+        }
+
+        XCTAssertTrue(row.isHittable, "Marketplace row was not hittable: \(rawValue)", file: file, line: line)
+        row.tap()
     }
 
     private func assertSettingsState(_ expected: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {

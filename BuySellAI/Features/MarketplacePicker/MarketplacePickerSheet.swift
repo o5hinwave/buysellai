@@ -116,6 +116,7 @@ struct MarketplacePickerSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String.localizedFormat("%@, %@", marketplace.displayName, marketplace.blurb.localized))
+                .accessibilityIdentifier("MarketplaceRow.\(marketplace.rawValue)")
                 .accessibilitySortPriority(1)
             }
         }
@@ -164,6 +165,7 @@ private struct SummaryButton: View {
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(label, for: estimate))
+        .accessibilityIdentifier("MarketplaceSummary.\(label.lowercased()).\(estimate.id.rawValue)")
         .accessibilitySortPriority(label == "Best" ? 2 : 1)
     }
 }

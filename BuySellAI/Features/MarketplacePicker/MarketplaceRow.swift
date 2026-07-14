@@ -67,6 +67,7 @@ struct MarketplaceRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityIdentifier("MarketplaceRow.\(estimate.id.rawValue)")
         .accessibilitySortPriority(1)
     }
 
