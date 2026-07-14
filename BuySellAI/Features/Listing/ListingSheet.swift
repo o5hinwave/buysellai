@@ -40,6 +40,11 @@ struct ListingSheet: View {
         .task {
             await store.generateIfNeeded(accessToken: appStore.session?.accessToken)
         }
+        .onChange(of: store.phase) { _, phase in
+            if case .failed(let message) = phase {
+                appStore.showToast(message, style: .error)
+            }
+        }
     }
 
     private var header: some View {

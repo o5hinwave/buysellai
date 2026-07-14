@@ -27,6 +27,11 @@ actor APIClient {
     }
 
     func analyze(image: Data, accessToken: String? = nil) async throws -> AnalyzeResponse {
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-analyze-offline") {
+            try await Task.sleep(nanoseconds: 250_000_000)
+            throw APIError.offline
+        }
+
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return AnalyzeResponse(name: "Vintage brass table lamp", category: "Home", condition: "good", currentPrice: Decimal(45))

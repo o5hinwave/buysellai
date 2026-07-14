@@ -32,6 +32,11 @@ struct SnapResultSheet: View {
         .task {
             await store.analyzeIfNeeded(accessToken: appStore.session?.accessToken)
         }
+        .onChange(of: store.phase) { _, phase in
+            if case .failed(let message) = phase {
+                appStore.showToast(message, style: .error)
+            }
+        }
     }
 
     private var loadingView: some View {

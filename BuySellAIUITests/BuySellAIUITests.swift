@@ -75,4 +75,22 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Your past listings will show up here."].waitForExistence(timeout: 3))
         XCTAssertFalse(listing.exists)
     }
+
+    func testAnalyzeOfflineShowsToastAndRetryButton() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-analyze-offline"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let offlineMessage = app.staticTexts["You're offline. Reconnect and try again."]
+        XCTAssertTrue(offlineMessage.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Try again"].waitForExistence(timeout: 2))
+
+        let toast = app.descendants(matching: .any)["Toast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["You're offline. Reconnect and try again."].exists)
+    }
 }
