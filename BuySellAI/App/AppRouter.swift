@@ -38,6 +38,9 @@ final class AppStore {
         self.defaults = defaults
         self.remoteHistoryClient = remoteHistoryClient
         self.accountClient = accountClient
+        if ProcessInfo.processInfo.arguments.contains("--reset-auth") {
+            Self.clearStoredSessionValues()
+        }
         if ProcessInfo.processInfo.arguments.contains("--reset-tutorial") {
             defaults.removeObject(forKey: Keys.hasSeenHowItWorks)
         }
@@ -74,6 +77,10 @@ final class AppStore {
         guard self.modelContext == nil else { return }
         self.modelContext = modelContext
         self.historyReader = HistoryReader(modelContainer: modelContext.container)
+        if ProcessInfo.processInfo.arguments.contains("--reset-history") {
+            try? clearLocalHistory()
+            history.removeAll()
+        }
     }
 
     func markTutorialSeen() {
@@ -373,6 +380,10 @@ final class AppStore {
     }
 
     private func clearStoredSession() {
+        Self.clearStoredSessionValues()
+    }
+
+    private static func clearStoredSessionValues() {
         Keychain.delete(Keys.appleUserID)
         Keychain.delete(Keys.authUserID)
         Keychain.delete(Keys.authEmail)

@@ -93,4 +93,38 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(toast.waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["You're offline. Reconnect and try again."].exists)
     }
+
+    func testGuestHistoryPersistsAfterCopyAndRelaunch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        let ebay = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "eBay")).firstMatch
+        XCTAssertTrue(ebay.waitForExistence(timeout: 5))
+        ebay.tap()
+
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: copy)
+        waitForExpectations(timeout: 5)
+        copy.tap()
+
+        let listing = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Vintage brass table lamp")).firstMatch
+        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+
+        app.terminate()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
+        app.launch()
+
+        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+    }
 }
