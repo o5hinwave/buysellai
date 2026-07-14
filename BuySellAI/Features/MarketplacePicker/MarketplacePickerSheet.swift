@@ -118,6 +118,7 @@ private struct SummaryButton: View {
     let label: String
     let estimate: MarketplaceEstimate
     let action: () -> Void
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         Button(action: action) {
@@ -148,11 +149,10 @@ private struct SummaryButton: View {
             .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(Color.brand.border, lineWidth: 1)
+                    .stroke(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel("\(label), \(estimate.id.displayName), \(estimate.payout.currency())")
     }
 }
-

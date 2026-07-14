@@ -13,7 +13,9 @@ struct HomeView: View {
                         header
 
                         VStack(spacing: Spacing.lg) {
-                            SigmaHeroView()
+                            Image("SigmaHero")
+                                .resizable()
+                                .scaledToFit()
                                 .frame(width: 176, height: 176)
                                 .shadow(color: Color.brand.primary.opacity(0.35), radius: 30, x: 0, y: 12)
                                 .accessibilityHidden(true)
@@ -142,30 +144,6 @@ struct HomeView: View {
     }
 }
 
-private struct SigmaHeroView: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 48, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.brand.primary, Color(hex: 0xFFB067)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .stroke(Color.white.opacity(0.4), lineWidth: 2)
-                .padding(18)
-
-            Image(systemName: "camera.viewfinder")
-                .font(.system(size: 64, weight: .bold))
-                .foregroundStyle(Color.brand.primaryForeground)
-                .shadow(color: Color.black.opacity(0.12), radius: 12, y: 6)
-        }
-    }
-}
-
 private struct EmptyHistoryView: View {
     var body: some View {
         Text("Your past listings will show up here.")
@@ -183,4 +161,3 @@ private func relativeDate(_ date: Date) -> String {
     formatter.unitsStyle = .short
     return formatter.localizedString(for: date, relativeTo: Date())
 }
-

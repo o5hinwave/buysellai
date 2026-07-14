@@ -60,6 +60,13 @@ final class CameraController: NSObject, @unchecked Sendable {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
                 let settings = AVCapturePhotoSettings()
+                if let pixelFormat = settings.availablePreviewPhotoPixelFormatTypes.first {
+                    settings.previewPhotoFormat = [
+                        kCVPixelBufferPixelFormatTypeKey as String: pixelFormat,
+                        kCVPixelBufferWidthKey as String: 512,
+                        kCVPixelBufferHeightKey as String: 512
+                    ]
+                }
                 if self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = flashOn ? .on : .off
                 }

@@ -5,9 +5,15 @@ actor APIClient {
     static let shared = APIClient()
 
     private let session: URLSession
+    private let injectedConfig: AppConfig?
+    private let isUITesting: Bool
     private let logger = Logger(subsystem: "BuySellAI", category: "API")
 
-    init(session: URLSession? = nil) {
+    init(
+        session: URLSession? = nil,
+        config: AppConfig? = nil,
+        isUITesting: Bool = ProcessInfo.processInfo.arguments.contains("--ui-testing")
+    ) {
         if let session {
             self.session = session
         } else {
@@ -16,15 +22,17 @@ actor APIClient {
             configuration.timeoutIntervalForResource = 20
             self.session = URLSession(configuration: configuration)
         }
+        self.injectedConfig = config
+        self.isUITesting = isUITesting
     }
 
     func analyze(image: Data, accessToken: String? = nil) async throws -> AnalyzeResponse {
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+        if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return AnalyzeResponse(name: "Vintage brass table lamp", category: "Home", condition: "good", currentPrice: Decimal(45))
         }
 
-        let config = try AppConfig.load()
+        let config = try loadConfig()
         let payload = AnalyzeRequest(imageDataUrl: "data:image/jpeg;base64,\(image.base64EncodedString())")
         let request = try makeRequest(
             path: "analyze-image",
@@ -36,7 +44,7 @@ actor APIClient {
     }
 
     func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+        if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return """
             TITLE:
@@ -47,7 +55,7 @@ actor APIClient {
             """
         }
 
-        let config = try AppConfig.load()
+        let config = try loadConfig()
         let itemPayload = ListingItemPayload(
             name: item.name,
             category: item.category.display,
@@ -63,7 +71,14 @@ actor APIClient {
             body: payload
         )
         let response = try await perform(request, decoding: GenerateListingResponse.self)
-        return response.listing.trimmingCharacters(in: .whitespacesAndNewlines)
+        return response.listing
+    }
+
+    private func loadConfig() throws -> AppConfig {
+        if let injectedConfig {
+            return injectedConfig
+        }
+        return try AppConfig.load()
     }
 
     private func makeRequest<Body: Encodable>(
@@ -204,4 +219,3 @@ private extension JSONDecoder {
         return decoder
     }
 }
-

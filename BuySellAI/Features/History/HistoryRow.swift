@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryRow: View {
     let entry: HistoryEntry
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -31,7 +32,7 @@ struct HistoryRow: View {
         .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(Color.brand.border, lineWidth: 1)
+                .stroke(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border, lineWidth: 1)
         )
     }
 
@@ -60,4 +61,3 @@ private func relativeDate(_ date: Date) -> String {
     formatter.unitsStyle = .short
     return formatter.localizedString(for: date, relativeTo: Date())
 }
-

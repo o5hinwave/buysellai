@@ -94,6 +94,7 @@ struct GhostButton: View {
     let title: String
     var systemImage: String?
     let action: () -> Void
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         Button(action: {
@@ -116,7 +117,7 @@ struct GhostButton: View {
             .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(Color.brand.border, lineWidth: 1)
+                    .stroke(differentiateWithoutColor ? Color.brand.borderStrong : Color.brand.border, lineWidth: 1)
             )
         }
         .buttonStyle(PressButtonStyle())
@@ -138,7 +139,7 @@ struct IconCircleButton: View {
         }) {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(material ? Color.white : Color.brand.foreground)
+                .foregroundStyle(material ? Color.brand.primaryForeground : Color.brand.foreground)
                 .frame(width: size, height: size)
                 .background {
                     if material {
@@ -164,4 +165,3 @@ struct PressButtonStyle: ButtonStyle {
             .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: configuration.isPressed)
     }
 }
-

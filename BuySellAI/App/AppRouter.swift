@@ -29,6 +29,9 @@ final class AppStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        if ProcessInfo.processInfo.arguments.contains("--reset-tutorial") {
+            defaults.removeObject(forKey: Keys.hasSeenHowItWorks)
+        }
         let storedTheme = defaults.string(forKey: Keys.theme).flatMap(ThemePreference.init(rawValue:))
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
@@ -239,6 +242,7 @@ struct RootView: View {
     @Environment(AppStore.self) private var appStore
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var osReduceMotion
+    @Environment(\.legibilityWeight) private var legibilityWeight
     @State private var showSplash = true
 
     var body: some View {
@@ -255,6 +259,7 @@ struct RootView: View {
         }
         .preferredColorScheme(appStore.preferredColorScheme)
         .environment(\.appReduceMotion, appStore.reduceMotion || osReduceMotion)
+        .fontWeight(legibilityWeight == .bold ? .bold : nil)
         .dynamicTypeLimit()
         .fullScreenCover(isPresented: $store.isShowingCamera) {
             CameraView(

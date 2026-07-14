@@ -11,6 +11,7 @@ struct CameraView: View {
     @State private var state: CameraStartResult?
     @State private var flashOn = false
     @State private var isCapturing = false
+    @State private var bracketOpacity = 0.6
 
     var body: some View {
         ZStack {
@@ -20,13 +21,13 @@ struct CameraView: View {
                     .ignoresSafeArea()
                     .overlay(cameraOverlay)
             case .denied:
-                Color.black.ignoresSafeArea()
+                Color.brand.cameraBackdrop.ignoresSafeArea()
                 permissionDenied
             case .failed:
-                Color.black.ignoresSafeArea()
+                Color.brand.cameraBackdrop.ignoresSafeArea()
                 cameraFailed
             case nil:
-                Color.black.ignoresSafeArea()
+                Color.brand.cameraBackdrop.ignoresSafeArea()
                 starting
             }
         }
@@ -39,9 +40,15 @@ struct CameraView: View {
         GeometryReader { proxy in
             ZStack {
                 CameraCornerBrackets()
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    .stroke(Color.brand.primaryForeground, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     .frame(width: min(proxy.size.width - 64, 320), height: min((proxy.size.width - 64) * 4 / 3, proxy.size.height * 0.56))
-                    .opacity(reduceMotion || appReduceMotion ? 0.82 : 1)
+                    .opacity(reduceMotion || appReduceMotion ? 0.82 : bracketOpacity)
+                    .task {
+                        guard reduceMotion == false, appReduceMotion == false else { return }
+                        withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                            bracketOpacity = 1
+                        }
+                    }
 
                 VStack {
                     HStack {
@@ -73,10 +80,10 @@ struct CameraView: View {
                         } label: {
                             ZStack {
                                 Circle()
-                                    .stroke(Color.white, lineWidth: 5)
+                                    .stroke(Color.brand.primaryForeground, lineWidth: 5)
                                     .frame(width: 76, height: 76)
                                 Circle()
-                                    .fill(Color.white)
+                                    .fill(Color.brand.primaryForeground)
                                     .frame(width: 64, height: 64)
                             }
                         }
@@ -87,16 +94,16 @@ struct CameraView: View {
 
                         Text("Fit the whole item in the frame")
                             .font(.brandCaption)
-                            .foregroundStyle(Color.white)
-                            .shadow(color: .black.opacity(0.5), radius: 4, y: 2)
+                            .foregroundStyle(Color.brand.primaryForeground)
+                            .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
                     }
                     .padding(.bottom, proxy.safeAreaInsets.bottom + Spacing.xxl)
                 }
 
                 if isCapturing {
-                    Color.black.opacity(0.24).ignoresSafeArea()
+                    Color.brand.cameraBackdrop.opacity(0.24).ignoresSafeArea()
                     ProgressView()
-                        .tint(.white)
+                        .tint(Color.brand.primaryForeground)
                         .scaleEffect(1.2)
                         .accessibilityLabel("Capturing photo")
                 }
@@ -107,10 +114,10 @@ struct CameraView: View {
     private var starting: some View {
         VStack(spacing: Spacing.md) {
             ProgressView()
-                .tint(.white)
+                .tint(Color.brand.primaryForeground)
             Text("Starting camera…")
                 .font(.brandBody)
-                .foregroundStyle(Color.white)
+                .foregroundStyle(Color.brand.primaryForeground)
         }
         .accessibilityElement(children: .combine)
     }
@@ -198,4 +205,3 @@ struct CameraCornerBrackets: Shape {
         return path
     }
 }
-

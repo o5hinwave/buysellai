@@ -64,6 +64,19 @@ struct HowItWorksView: View {
         }
         .background(Color.brand.background.ignoresSafeArea())
         .accessibilityElement(children: .contain)
+        .focusable()
+        .onKeyPress(.space) {
+            advance()
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            advance()
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            retreat()
+            return .handled
+        }
     }
 
     private var transition: AnyTransition {
@@ -197,4 +210,3 @@ private struct DotPager: View {
         .animation(AppMotion.spring, value: index)
     }
 }
-

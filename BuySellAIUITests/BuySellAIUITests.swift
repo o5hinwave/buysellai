@@ -1,6 +1,10 @@
 import XCTest
 
 final class BuySellAIUITests: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
+
     func testTutorialCanBeSkippedAndHappyPathCopiesListingWithUITestHooks() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
@@ -33,5 +37,22 @@ final class BuySellAIUITests: XCTestCase {
         let toast = app.descendants(matching: .any)["Toast"]
         let recentListing = app.staticTexts["Vintage brass table lamp"]
         XCTAssertTrue(toast.waitForExistence(timeout: 2) || recentListing.waitForExistence(timeout: 5))
+    }
+
+    func testFirstLaunchTutorialAppearsOnce() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-tutorial"]
+        app.launch()
+
+        let skip = app.buttons["Skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 3))
+        skip.tap()
+        app.terminate()
+
+        app.launchArguments = ["--ui-testing"]
+        app.launch()
+
+        XCTAssertFalse(app.buttons["Skip"].waitForExistence(timeout: 1))
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
 }

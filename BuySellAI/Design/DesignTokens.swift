@@ -20,6 +20,7 @@ extension Color {
         static let warning = Color("Warning")
         static let destructive = Color("Destructive")
         static let info = Color("Info")
+        static let cameraBackdrop = Color("CameraBackdrop")
     }
 
     init(hex: UInt, alpha: Double = 1) {
