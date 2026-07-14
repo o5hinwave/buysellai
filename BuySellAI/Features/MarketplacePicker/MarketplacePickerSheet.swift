@@ -95,7 +95,9 @@ struct MarketplacePickerSheet: View {
 
             ForEach(Marketplace.allCases) { marketplace in
                 Button {
-                    appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
+                    MarketplaceSelectionFeedback.perform {
+                        appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
+                    }
                 } label: {
                     HStack(spacing: Spacing.md) {
                         MarketplaceIcon(marketplace: marketplace)
@@ -127,7 +129,9 @@ private struct SummaryButton: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            MarketplaceSelectionFeedback.perform(action)
+        } label: {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(label.localized)
                     .brandFont(.overline)

@@ -25,10 +25,11 @@ struct MarketplaceRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: {
-            Haptics.impact(.light)
-            action()
-        }) {
+        Button {
+            MarketplaceSelectionFeedback.perform {
+                action()
+            }
+        } label: {
             HStack(spacing: Spacing.md) {
                 MarketplaceIcon(marketplace: estimate.id)
 
