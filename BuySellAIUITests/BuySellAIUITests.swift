@@ -156,4 +156,51 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(clipboardStatus.waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["Clipboard mismatch"].exists)
     }
+
+    func testSettingsThemeAndReduceMotionPersistAcrossRelaunch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences", "--ui-testing-state-probe"]
+        app.launch()
+
+        assertSettingsState("Settings state: system, reduce motion off", in: app)
+
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+
+        let reduceMotion = app.switches["Reduce Motion"]
+        XCTAssertTrue(reduceMotion.waitForExistence(timeout: 5))
+        reduceMotion.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+
+        let darkTheme = app.buttons["Dark"]
+        XCTAssertTrue(darkTheme.waitForExistence(timeout: 5))
+        darkTheme.tap()
+
+        assertSettingsState("Settings state: dark, reduce motion on", in: app)
+
+        app.terminate()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-state-probe"]
+        app.launch()
+
+        assertSettingsState("Settings state: dark, reduce motion on", in: app)
+
+        app.terminate()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences"]
+        app.launch()
+        app.terminate()
+    }
+
+    private func assertSettingsState(_ expected: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        if app.staticTexts[expected].waitForExistence(timeout: 5) {
+            return
+        }
+
+        let probes = app.staticTexts.matching(identifier: "SettingsStateProbe")
+        if probes.firstMatch.waitForExistence(timeout: 1) {
+            let labels = probes.allElementsBoundByIndex.map(\.label)
+            XCTAssertTrue(labels.contains(expected), "Expected \(expected), saw probes: \(labels)", file: file, line: line)
+        } else {
+            XCTFail("Missing settings probe for expected state: \(expected)", file: file, line: line)
+        }
+    }
 }

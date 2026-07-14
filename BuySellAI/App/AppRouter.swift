@@ -48,6 +48,10 @@ final class AppStore {
         if ProcessInfo.processInfo.arguments.contains("--skip-tutorial") {
             defaults.set(true, forKey: Keys.hasSeenHowItWorks)
         }
+        if ProcessInfo.processInfo.arguments.contains("--reset-preferences") {
+            defaults.removeObject(forKey: Keys.theme)
+            defaults.removeObject(forKey: Keys.reduceMotion)
+        }
         let storedTheme = defaults.string(forKey: Keys.theme).flatMap(ThemePreference.init(rawValue:))
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
@@ -68,6 +72,11 @@ final class AppStore {
         case .light: .light
         case .dark: .dark
         }
+    }
+
+    var uiTestSettingsStateDescription: String {
+        let reduceMotionValue = reduceMotion ? "on" : "off"
+        return "Settings state: \(theme.rawValue), reduce motion \(reduceMotionValue)"
     }
 
     var shouldShowTutorialOnLaunch: Bool {
@@ -497,6 +506,15 @@ struct RootView: View {
                     .frame(width: 1, height: 1)
                     .opacity(0.01)
                     .accessibilityIdentifier("ClipboardVerification")
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing-state-probe") {
+                Text(appStore.uiTestSettingsStateDescription)
+                    .font(.caption2)
+                    .padding(4)
+                    .background(Color.brand.surface)
+                    .accessibilityIdentifier("SettingsStateProbe")
             }
         }
         .task {

@@ -40,6 +40,13 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
 
                     Toggle("Reduce Motion".localized, isOn: $store.reduceMotion)
+
+                    if ProcessInfo.processInfo.arguments.contains("--ui-testing-state-probe") {
+                        Text(appStore.uiTestSettingsStateDescription)
+                            .font(.caption2)
+                            .foregroundStyle(Color.brand.mutedForeground)
+                            .accessibilityIdentifier("SettingsStateProbe")
+                    }
                 }
 
                 Section("App".localized) {
