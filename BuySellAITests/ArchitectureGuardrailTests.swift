@@ -73,6 +73,15 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoMatches(patterns, in: appTextFiles())
     }
 
+    func testAppCopyAvoidsForbiddenToneWords() throws {
+        let patterns = [
+            #"\b[Jj]ust\b"#,
+            #"\b[Ss]imply\b"#
+        ]
+
+        try assertNoMatches(patterns, in: appTextFiles())
+    }
+
     func testAppSourcesDoNotForceUnwrap() throws {
         try assertNoMatches([#"[A-Za-z0-9_\)\]]!"#], in: appSwiftFiles())
     }

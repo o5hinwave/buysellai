@@ -110,7 +110,7 @@ private struct TutorialSlide: Identifiable {
         TutorialSlide(title: "Snap a photo.", body: "Point, tap, done. We handle the rest.", illustration: 1),
         TutorialSlide(title: "We figure out what it is.", body: "Name, category, condition, price — in seconds.", illustration: 2),
         TutorialSlide(title: "Pick where to sell.", body: "We rank every marketplace by how much you'd get.", illustration: 3),
-        TutorialSlide(title: "Copy and paste.", body: "Your listing is written for you. Just paste it in.", illustration: 4)
+        TutorialSlide(title: "Copy and paste.", body: "Your listing is written for you. Paste it in.", illustration: 4)
     ]
 }
 
