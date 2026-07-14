@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppStore.self) private var appStore
+    @State private var pendingDeletion: HistoryEntry?
 
     var body: some View {
         @Bindable var store = appStore
@@ -69,9 +70,9 @@ struct HomeView: View {
                                 HistoryRow(entry: entry)
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
-                                    appStore.deleteHistory(entry)
+                                    pendingDeletion = entry
                                 } label: {
                                     Label("Delete listing".localized, systemImage: "trash")
                                 }
@@ -99,6 +100,21 @@ struct HomeView: View {
             .background(Color.brand.background)
             .refreshable {
                 await appStore.loadHistory()
+            }
+            .confirmationDialog(
+                "Delete this listing? This can't be undone.".localized,
+                isPresented: deleteConfirmationBinding,
+                titleVisibility: .visible
+            ) {
+                Button("Delete listing".localized, role: .destructive) {
+                    confirmDelete()
+                }
+                .accessibilityLabel("Delete listing".localized)
+
+                Button("Cancel".localized, role: .cancel) {
+                    pendingDeletion = nil
+                }
+                .accessibilityLabel("Cancel".localized)
             }
         }
     }
@@ -142,6 +158,23 @@ struct HomeView: View {
 
     private func historyAccessibilityLabel(_ entry: HistoryEntry) -> String {
         String.localizedFormat("%@, %@, %@", entry.itemName, entry.marketplace.displayName, relativeDate(entry.createdAt))
+    }
+
+    private var deleteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDeletion != nil },
+            set: { isPresented in
+                if isPresented == false {
+                    pendingDeletion = nil
+                }
+            }
+        )
+    }
+
+    private func confirmDelete() {
+        guard let pendingDeletion else { return }
+        appStore.deleteHistory(pendingDeletion)
+        self.pendingDeletion = nil
     }
 }
 

@@ -55,4 +55,24 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Skip"].waitForExistence(timeout: 1))
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
+
+    func testSwipeDeleteShowsConfirmationAndRemovesHistoryEntry() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]
+        app.launch()
+
+        let listing = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Vintage brass table lamp")).firstMatch
+        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+        listing.swipeLeft()
+
+        let swipeDelete = app.buttons["Delete listing"]
+        XCTAssertTrue(swipeDelete.waitForExistence(timeout: 2))
+        swipeDelete.tap()
+
+        XCTAssertTrue(app.staticTexts["Delete this listing? This can't be undone."].waitForExistence(timeout: 2))
+        app.buttons["Delete listing"].tap()
+
+        XCTAssertTrue(app.staticTexts["Your past listings will show up here."].waitForExistence(timeout: 3))
+        XCTAssertFalse(listing.exists)
+    }
 }

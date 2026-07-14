@@ -41,6 +41,9 @@ final class AppStore {
         if ProcessInfo.processInfo.arguments.contains("--reset-tutorial") {
             defaults.removeObject(forKey: Keys.hasSeenHowItWorks)
         }
+        if ProcessInfo.processInfo.arguments.contains("--skip-tutorial") {
+            defaults.set(true, forKey: Keys.hasSeenHowItWorks)
+        }
         let storedTheme = defaults.string(forKey: Keys.theme).flatMap(ThemePreference.init(rawValue:))
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
@@ -135,6 +138,11 @@ final class AppStore {
     }
 
     func loadHistory() async {
+        if ProcessInfo.processInfo.arguments.contains("--seed-history") {
+            history = [Self.uiTestingHistoryEntry]
+            return
+        }
+
         if let accessToken = session?.accessToken, accessToken.isEmpty == false {
             do {
                 history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
@@ -370,6 +378,20 @@ final class AppStore {
         Keychain.delete(Keys.authEmail)
         Keychain.delete(Keys.supabaseAccessToken)
         Keychain.delete(Keys.supabaseRefreshToken)
+    }
+
+    private static var uiTestingHistoryEntry: HistoryEntry {
+        HistoryEntry(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            itemName: "Vintage brass table lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(45),
+            imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
+            marketplace: .ebay,
+            listingText: "TITLE:\nVintage brass table lamp\n\nDESCRIPTION:\nWarm brass table lamp in good condition."
+        )
     }
 }
 
