@@ -37,6 +37,18 @@ struct SnapResultSheet: View {
                 appStore.showToast(message, style: .error)
             }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if focusedField != nil {
+                    Spacer()
+                    Button("Done".localized) {
+                        store.commitEdits()
+                        focusedField = nil
+                    }
+                    .accessibilityLabel("Done".localized)
+                }
+            }
+        }
     }
 
     private var loadingView: some View {
