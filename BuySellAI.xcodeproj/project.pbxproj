@@ -37,6 +37,7 @@
 		7D3C4AC52C3E11A700F10A01 /* Exceptions for "BuySellAI" folder in "BuySellAI" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				App/Config.plist.example,
 				BuySellAI.entitlements,
 				Info.plist,
 			);

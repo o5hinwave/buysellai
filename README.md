@@ -70,12 +70,27 @@ xcodebuild test \
   -maximum-concurrent-test-simulator-destinations 1
 ```
 
+Release archive compile/package check:
+
+```sh
+xcodebuild archive \
+  -project BuySellAI.xcodeproj \
+  -scheme BuySellAI \
+  -configuration Release \
+  -destination 'generic/platform=iOS' \
+  -archivePath /tmp/BuySellAI-nosign.xcarchive \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+The no-sign archive validates the Release iPhoneOS build and package contents. A fully signed App Store archive still requires selecting a real Apple development team in Xcode.
+
 ## Assumptions
 
 - Supabase project values were not present in the blank repository. The API client is implemented against the requested `analyze-image` and `generate-listing` contracts, and the app shows friendly configuration errors until `Config.plist` is supplied.
 - Supabase Auth must have Apple enabled for full server-backed Sign in with Apple. Without backend config, Apple sign-in still stores the Apple user identifier locally and leaves guest history local.
 - Space Grotesk and Inter are bundled from Google Fonts under the Open Font License and registered through `UIAppFonts`.
 - Sign in with Apple has a native nonce-based coordinator, Supabase token exchange, Keychain token persistence, and guest-to-account history migration. Delete account is wired to a `delete-account` Edge Function and still requires that backend function to be deployed.
+- `Config.plist.example` is kept in the repo for setup instructions but excluded from the app target so placeholder backend values are not shipped in the bundle.
 - Real-device camera latency, Accessibility Inspector contrast checks, and App Store archive validation still need physical-device QA.
 
 ## Milestone Status
@@ -89,4 +104,4 @@ xcodebuild test \
 - M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
 - M8 Tutorial: built. Five-slide first-launch walkthrough with swipe and reduce-motion support.
 - M9 Settings + polish: built. Theme, reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
-- M10 QA: partial. Unit and UI tests pass in simulator; real-device acceptance pass remains.
+- M10 QA: partial. Unit and UI tests pass in simulator, and a no-sign Release iPhoneOS archive compiles and validates with a 2.3 MB app bundle. A signed archive is blocked until an Apple development team is configured; real-device acceptance pass remains.
