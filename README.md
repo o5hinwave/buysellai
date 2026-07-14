@@ -46,6 +46,19 @@ using (user_id = auth.uid())
 with check (user_id = auth.uid());
 ```
 
+Account deletion calls a Supabase Edge Function:
+
+```txt
+POST /functions/v1/delete-account
+Authorization: Bearer <supabaseAccessToken>
+apikey: <SUPABASE_ANON_KEY>
+Content-Type: application/json
+
+{}
+```
+
+The function should verify `auth.uid()`, delete the user-owned data covered by RLS, then delete the auth user server-side with privileged credentials.
+
 ## Verify
 
 ```sh
@@ -62,7 +75,7 @@ xcodebuild test \
 - Supabase project values were not present in the blank repository. The API client is implemented against the requested `analyze-image` and `generate-listing` contracts, and the app shows friendly configuration errors until `Config.plist` is supplied.
 - Supabase Auth must have Apple enabled for full server-backed Sign in with Apple. Without backend config, Apple sign-in still stores the Apple user identifier locally and leaves guest history local.
 - Space Grotesk and Inter are bundled from Google Fonts under the Open Font License and registered through `UIAppFonts`.
-- Sign in with Apple has a native nonce-based coordinator, Supabase token exchange, Keychain token persistence, and guest-to-account history migration. Delete-account remains `TODO(agent): needs backend`.
+- Sign in with Apple has a native nonce-based coordinator, Supabase token exchange, Keychain token persistence, and guest-to-account history migration. Delete account is wired to a `delete-account` Edge Function and still requires that backend function to be deployed.
 - Real-device camera latency, Accessibility Inspector contrast checks, and App Store archive validation still need physical-device QA.
 
 ## Milestone Status
@@ -75,5 +88,5 @@ xcodebuild test \
 - M6 History: built. SwiftData guest persistence, Home list, delete, reopen listing.
 - M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
 - M8 Tutorial: built. Five-slide first-launch walkthrough with swipe and reduce-motion support.
-- M9 Settings + polish: built. Theme, reduce motion, history clearing, about links, account actions.
+- M9 Settings + polish: built. Theme, reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
 - M10 QA: partial. Unit and UI tests pass in simulator; real-device acceptance pass remains.

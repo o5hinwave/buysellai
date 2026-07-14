@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showClearConfirmation = false
     @State private var safariDestination: SafariDestination?
+    private let reviewPromptGate = ReviewPromptGate()
 
     var body: some View {
         @Bindable var store = appStore
@@ -103,8 +104,16 @@ struct SettingsView: View {
     }
 
     private func requestReview() {
+        guard reviewPromptGate.shouldRequestReview(for: appVersion) else {
+            appStore.showToast("Thanks for rating BuySell.", style: .success)
+            return
+        }
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
         SKStoreReviewController.requestReview(in: scene)
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
     }
 }
 
@@ -112,6 +121,7 @@ private struct DeleteAccountView: View {
     @Environment(AppStore.self) private var appStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmation = ""
+    @State private var isDeletingAccount = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -129,11 +139,18 @@ private struct DeleteAccountView: View {
                 .padding(Spacing.md)
                 .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
 
-            PrimaryPillButton(title: "Delete account") {
-                // TODO(agent): needs backend delete-account endpoint.
-                appStore.showToast(APIError.notConfigured.localizedDescription, style: .error)
+            PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account") {
+                guard isDeletingAccount == false else { return }
+                isDeletingAccount = true
+                Task {
+                    let didDelete = await appStore.deleteAccount()
+                    isDeletingAccount = false
+                    if didDelete {
+                        dismiss()
+                    }
+                }
             }
-            .disabled(confirmation != "DELETE")
+            .disabled(confirmation != "DELETE" || isDeletingAccount)
 
             Spacer()
         }

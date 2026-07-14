@@ -28,10 +28,16 @@ final class AppStore {
     @ObservationIgnored private var modelContext: ModelContext?
     @ObservationIgnored private var historyReader: HistoryReader?
     @ObservationIgnored private let remoteHistoryClient: RemoteHistoryClient
+    @ObservationIgnored private let accountClient: AccountClient
 
-    init(defaults: UserDefaults = .standard, remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient()) {
+    init(
+        defaults: UserDefaults = .standard,
+        remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient(),
+        accountClient: AccountClient = .shared
+    ) {
         self.defaults = defaults
         self.remoteHistoryClient = remoteHistoryClient
+        self.accountClient = accountClient
         if ProcessInfo.processInfo.arguments.contains("--reset-tutorial") {
             defaults.removeObject(forKey: Keys.hasSeenHowItWorks)
         }
@@ -268,13 +274,29 @@ final class AppStore {
 
     func signOut() {
         session = nil
-        Keychain.delete(Keys.appleUserID)
-        Keychain.delete(Keys.authUserID)
-        Keychain.delete(Keys.authEmail)
-        Keychain.delete(Keys.supabaseAccessToken)
-        Keychain.delete(Keys.supabaseRefreshToken)
+        clearStoredSession()
         Task { await loadHistory() }
         showToast("Signed out.", style: .success)
+    }
+
+    func deleteAccount() async -> Bool {
+        guard let accessToken = session?.accessToken, accessToken.isEmpty == false else {
+            showToast(APIError.notConfigured.localizedDescription, style: .error)
+            return false
+        }
+
+        do {
+            try await accountClient.deleteAccount(accessToken: accessToken)
+            session = nil
+            clearStoredSession()
+            history.removeAll()
+            try? clearLocalHistory()
+            showToast("Account deleted.", style: .success)
+            return true
+        } catch {
+            showToast(error.localizedDescription, style: .error)
+            return false
+        }
     }
 
     func setSession(_ session: AuthSession) async {
@@ -340,6 +362,14 @@ final class AppStore {
             return
         }
         try? Keychain.save(value, for: key)
+    }
+
+    private func clearStoredSession() {
+        Keychain.delete(Keys.appleUserID)
+        Keychain.delete(Keys.authUserID)
+        Keychain.delete(Keys.authEmail)
+        Keychain.delete(Keys.supabaseAccessToken)
+        Keychain.delete(Keys.supabaseRefreshToken)
     }
 }
 
