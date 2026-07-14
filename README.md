@@ -19,7 +19,7 @@ Then fill in:
 
 `Config.plist` is git-ignored.
 
-Keep AI provider secrets, including Gemini keys, out of the iOS bundle. Add them to the Supabase Edge Function environment instead, then let the app call the existing `analyze-image` and `generate-listing` functions through Supabase.
+Keep AI provider secrets, including Gemini keys, out of the iOS bundle. Add them to the Supabase Edge Function environment instead, using the variable name expected by the deployed functions (commonly `GEMINI_API_KEY`), then let the app call the existing `analyze-image` and `generate-listing` functions through Supabase.
 
 Signed-in history sync expects a PostgREST `history` table protected by RLS:
 
@@ -104,4 +104,4 @@ The no-sign archive validates the Release iPhoneOS build and package contents. A
 - M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
 - M8 Tutorial: built. Five-slide first-launch walkthrough with swipe and reduce-motion support.
 - M9 Settings + polish: built. Theme, app-wide reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
-- M10 QA: partial. 48 unit/UI tests pass in simulator, including offline analyze retry/toast, API/auth/history/account timeout, non-2xx, rate-limit, retry mapping, decoded-response malformed JSON mapping, exact clipboard-copy, settings preference persistence, marketplace catalog parity, marketplace-pick haptic feedback, delete-history warning haptic feedback, accessible-border contrast token selection, icon-button tap-target minimums, iPhone portrait plist coverage, guest history relaunch persistence, and one-time guest-to-account history migration paths, and a no-sign Release iPhoneOS archive compiles and validates with a 2.3 MB app bundle. A signed archive is blocked until an Apple development team is configured; real-device acceptance pass remains.
+- M10 QA: partial. 51 unit/UI tests pass in simulator, including offline analyze retry/toast, API/auth/history/account timeout, non-2xx, rate-limit, retry mapping, decoded-response malformed JSON mapping, exact clipboard-copy, settings preference persistence, marketplace catalog parity, marketplace-pick haptic feedback, delete-history warning haptic feedback, accessible-border contrast token selection, icon-button tap-target minimums, iPhone portrait plist coverage, app config secret-handling guardrails, guest history relaunch persistence, and one-time guest-to-account history migration paths, and a no-sign Release iPhoneOS archive compiles and validates with a 2.3 MB app bundle. A signed archive is blocked until an Apple development team is configured; real-device acceptance pass remains.
