@@ -224,7 +224,7 @@ final class AppStore {
             Task {
                 do {
                     try await remoteHistoryClient.deleteHistory(id: entry.id, accessToken: accessToken)
-                    Haptics.notify(.warning)
+                    HistoryDeletionFeedback.perform()
                 } catch {
                     history = previous
                     showToast(error.localizedDescription, style: .error)
@@ -235,6 +235,7 @@ final class AppStore {
 
         guard let modelContext else {
             history.removeAll { $0.id == entry.id }
+            HistoryDeletionFeedback.perform()
             return
         }
         do {
@@ -246,7 +247,7 @@ final class AppStore {
             matches.forEach(modelContext.delete)
             try modelContext.save()
             history.removeAll { $0.id == entry.id }
-            Haptics.notify(.warning)
+            HistoryDeletionFeedback.perform()
         } catch {
             showToast("Couldn't delete this listing.".localized, style: .error)
         }
