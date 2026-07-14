@@ -12,6 +12,7 @@ struct CameraView: View {
     @State private var flashOn = false
     @State private var isCapturing = false
     @State private var bracketOpacity = 0.6
+    @State private var captureErrorToast: ToastMessage?
 
     var body: some View {
         ZStack {
@@ -29,6 +30,19 @@ struct CameraView: View {
             case nil:
                 Color.brand.cameraBackdrop.ignoresSafeArea()
                 starting
+            }
+        }
+        .overlay(alignment: .top) {
+            if let captureErrorToast {
+                ToastView(toast: captureErrorToast)
+                    .padding(.top, Spacing.xl)
+                    .transition(AppMotion.toastTransition(reduceMotion: reduceMotion || appReduceMotion))
+                    .task(id: captureErrorToast.id) {
+                        try? await Task.sleep(nanoseconds: 2_300_000_000)
+                        if self.captureErrorToast?.id == captureErrorToast.id {
+                            self.captureErrorToast = nil
+                        }
+                    }
             }
         }
         .task {
@@ -174,6 +188,11 @@ struct CameraView: View {
             } catch {
                 await MainActor.run {
                     isCapturing = false
+                    Haptics.notify(.error)
+                    captureErrorToast = ToastMessage(
+                        text: CameraError.captureFailed.localizedDescription,
+                        style: .error
+                    )
                 }
             }
         }

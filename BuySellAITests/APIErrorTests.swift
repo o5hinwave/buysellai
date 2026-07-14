@@ -11,4 +11,8 @@ final class APIErrorTests: XCTestCase {
         XCTAssertEqual(APIError.notConfigured.localizedDescription, "Backend is not configured yet.")
         XCTAssertEqual(APIError.unknown.localizedDescription, "Something went wrong. Try again.")
     }
+
+    func testCameraCaptureFailureUsesFriendlyCopy() {
+        XCTAssertEqual(CameraError.captureFailed.localizedDescription, "Photo couldn't be captured.")
+    }
 }
