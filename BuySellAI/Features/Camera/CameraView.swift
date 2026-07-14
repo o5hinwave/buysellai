@@ -48,6 +48,9 @@ struct CameraView: View {
         .task {
             state = await controller.start()
         }
+        .onDisappear {
+            controller.stop()
+        }
     }
 
     private var cameraOverlay: some View {
