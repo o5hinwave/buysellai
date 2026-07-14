@@ -152,6 +152,8 @@ private struct DeleteAccountView: View {
                 .brandFont(.body)
                 .padding(Spacing.md)
                 .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .accessibilityLabel("Delete confirmation".localized)
+                .accessibilityHint("Type DELETE to confirm.".localized)
 
             PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account") {
                 guard isDeletingAccount == false else { return }
