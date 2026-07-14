@@ -103,5 +103,5 @@ The no-sign archive validates the Release iPhoneOS build and package contents. A
 - M6 History: built. SwiftData guest persistence, Home list, delete, reopen listing.
 - M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
 - M8 Tutorial: built. Five-slide first-launch walkthrough with swipe and reduce-motion support.
-- M9 Settings + polish: built. Theme, reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
+- M9 Settings + polish: built. Theme, app-wide reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
 - M10 QA: partial. 23 unit/UI tests pass in simulator, including offline analyze retry/toast, exact clipboard-copy, settings preference persistence, and guest history relaunch persistence paths, and a no-sign Release iPhoneOS archive compiles and validates with a 2.3 MB app bundle. A signed archive is blocked until an Apple development team is configured; real-device acceptance pass remains.

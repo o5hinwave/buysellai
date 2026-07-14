@@ -443,7 +443,7 @@ struct RootView: View {
                     .transition(.opacity)
             } else {
                 HomeView()
-                    .transition(.opacity.combined(with: .offset(y: 8)))
+                    .transition(AppMotion.screenTransition(reduceMotion: shouldReduceMotion))
             }
         }
         .preferredColorScheme(appStore.preferredColorScheme)
@@ -491,7 +491,7 @@ struct RootView: View {
             if let toast = appStore.toast {
                 ToastView(toast: toast)
                     .padding(.top, Spacing.md)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(AppMotion.toastTransition(reduceMotion: shouldReduceMotion))
                     .task(id: toast.id) {
                         let delay: UInt64 = ProcessInfo.processInfo.arguments.contains("--ui-testing") ? 5_000_000_000 : 2_300_000_000
                         try? await Task.sleep(nanoseconds: delay)
@@ -529,6 +529,10 @@ struct RootView: View {
                 appStore.isShowingTutorial = true
             }
         }
+    }
+
+    private var shouldReduceMotion: Bool {
+        appStore.reduceMotion || osReduceMotion
     }
 }
 

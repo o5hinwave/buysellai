@@ -71,6 +71,14 @@ enum AppMotion {
     static func animation(reduceMotion: Bool) -> Animation {
         reduceMotion ? quick : spring
     }
+
+    static func screenTransition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 8))
+    }
+
+    static func toastTransition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity)
+    }
 }
 
 private struct AppReduceMotionKey: EnvironmentKey {

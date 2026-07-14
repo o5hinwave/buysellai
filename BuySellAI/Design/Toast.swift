@@ -59,6 +59,7 @@ struct SkeletonLine: View {
 
     @State private var phase = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var appReduceMotion
 
     var body: some View {
         RoundedRectangle(cornerRadius: height / 2, style: .continuous)
@@ -74,12 +75,19 @@ struct SkeletonLine: View {
                 )
             )
             .frame(width: width, height: height)
-            .task {
-                guard !reduceMotion else { return }
+            .task(id: shouldReduceMotion) {
+                if shouldReduceMotion {
+                    phase = false
+                    return
+                }
                 withAnimation(.linear(duration: 1.1).repeatForever(autoreverses: false)) {
                     phase = true
                 }
             }
             .accessibilityHidden(true)
+    }
+
+    private var shouldReduceMotion: Bool {
+        reduceMotion || appReduceMotion
     }
 }
