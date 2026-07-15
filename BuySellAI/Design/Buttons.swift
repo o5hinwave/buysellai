@@ -36,7 +36,7 @@ struct PrimaryPillButton: View {
             .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 56)
             .padding(.horizontal, fillsWidth ? 0 : Spacing.xl)
             .background(Color.brand.primary, in: Capsule())
-            .shadow(color: showsGlow ? Color.brand.primary.opacity(0.35) : .clear, radius: showsGlow ? 30 : 0, x: 0, y: showsGlow ? 12 : 0)
+            .modifier(PrimaryGlowModifier(isEnabled: showsGlow))
         }
         .buttonStyle(.plain)
         .scaleEffect(pressed && !shouldReduceMotion ? 0.96 : 1)
@@ -52,6 +52,18 @@ struct PrimaryPillButton: View {
 
     private var shouldReduceMotion: Bool {
         AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
+    }
+}
+
+private struct PrimaryGlowModifier: ViewModifier {
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.modifier(AppShadow.primaryGlow())
+        } else {
+            content
+        }
     }
 }
 

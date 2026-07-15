@@ -182,6 +182,7 @@ final class DesignAccessibilityTests: XCTestCase {
 
     func testPrimaryGlowIsScopedToHomeSnapButton() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
         let appSources = try appSwiftFiles()
             .filter { $0.lastPathComponent != "HomeView.swift" }
@@ -189,7 +190,10 @@ final class DesignAccessibilityTests: XCTestCase {
             .joined(separator: "\n")
 
         XCTAssertNotNil(buttons.range(of: "var showsGlow = false"))
-        XCTAssertNotNil(buttons.range(of: "showsGlow ? Color.brand.primary.opacity(0.35) : .clear"))
+        XCTAssertNotNil(designTokens.range(of: "static func primaryGlow() -> some ViewModifier"))
+        XCTAssertNotNil(designTokens.range(of: "ShadowModifier(color: Color.brand.primary.opacity(0.35), radius: 30, y: 12)"))
+        XCTAssertNotNil(buttons.range(of: "PrimaryGlowModifier(isEnabled: showsGlow)"))
+        XCTAssertNotNil(buttons.range(of: "content.modifier(AppShadow.primaryGlow())"))
         XCTAssertNotNil(home.range(of: #"PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill", showsGlow: true)"#))
         XCTAssertNil(appSources.range(of: "showsGlow: true"))
     }
