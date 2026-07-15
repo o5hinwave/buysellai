@@ -113,6 +113,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the condition""#))
     }
 
+    func testSnapResultStillWorkingHintAnnouncesAlertAndRetryAction() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"import UIKit"#))
+        XCTAssertNotNil(source.range(of: #".onChange(of: store.showStillWorking)"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityIdentifier("SnapResult.StillWorkingAlert")"#))
+        XCTAssertNotNil(source.range(of: #"UIAccessibility.post("#))
+        XCTAssertNotNil(source.range(of: #"notification: .announcement"#))
+        XCTAssertNotNil(source.range(of: #"SecondaryPillButton(title: "Retry""#))
+    }
+
     func testHomeDisplayHeadlineSupportsAccessibilityThreeWithoutSingleLineTruncation() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)

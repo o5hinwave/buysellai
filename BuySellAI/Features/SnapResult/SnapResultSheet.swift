@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SnapResultSheet: View {
     let context: SnapResultContext
@@ -37,6 +38,9 @@ struct SnapResultSheet: View {
                 appStore.showToast(message, style: .error)
             }
         }
+        .onChange(of: store.showStillWorking) { _, isShowing in
+            announceStillWorkingAlertIfNeeded(isShowing)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 if focusedField != nil {
@@ -65,6 +69,8 @@ struct SnapResultSheet: View {
                         .brandFont(.caption)
                         .foregroundStyle(Color.brand.destructive)
                         .multilineTextAlignment(.center)
+                        .accessibilityIdentifier("SnapResult.StillWorkingAlert")
+                        .accessibilityLabel("Still working… tap Retry to try again.".localized)
                     SecondaryPillButton(title: "Retry", fillsWidth: false) {
                         Task { await store.analyze(accessToken: appStore.session?.accessToken) }
                     }
@@ -74,6 +80,14 @@ struct SnapResultSheet: View {
         .frame(maxWidth: .infinity, minHeight: 360)
         .accessibilityElement(children: .combine)
         .accessibilitySortPriority(3)
+    }
+
+    private func announceStillWorkingAlertIfNeeded(_ isShowing: Bool) {
+        guard isShowing else { return }
+        UIAccessibility.post(
+            notification: .announcement,
+            argument: "Still working… tap Retry to try again.".localized
+        )
     }
 
     private func resultView(item: DetectedItem) -> some View {
