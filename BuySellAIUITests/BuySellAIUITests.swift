@@ -368,6 +368,35 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(toast.waitForExistence(timeout: 2))
     }
 
+    func testCameraSampleCapturePresentsResultThumbnailWithinSimulatorBudget() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--ui-testing-camera-ready",
+            "--ui-testing-camera-sample-capture"
+        ]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let shutter = app.buttons["Take photo"]
+        XCTAssertTrue(shutter.waitForExistence(timeout: 5))
+
+        let startedAt = Date()
+        shutter.tap()
+
+        let itemPhoto = app.descendants(matching: .any)["Item photo"]
+        XCTAssertTrue(itemPhoto.waitForExistence(timeout: 5))
+        XCTAssertLessThan(
+            Date().timeIntervalSince(startedAt),
+            5,
+            "Captured photo should reach the result thumbnail within the simulator QA budget; physical shutter-to-sheet timing remains a device QA gate."
+        )
+    }
+
     func testCameraDeniedShowsSettingsFallbackAndCanClose() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-camera-denied"]
