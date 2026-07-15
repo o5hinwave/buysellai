@@ -44,6 +44,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(BrandTextStyle.button.fontResourceName(legibilityWeight: .bold), "SpaceGrotesk-Bold")
     }
 
+    func testAuthWordmarkUsesBuySellAIWithoutOrangePeriod() throws {
+        let auth = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
+        let typography = try String(contentsOf: projectURL("BuySellAI/Design/Typography.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(typography.range(of: "var showsPeriod = true"))
+        XCTAssertNotNil(typography.range(of: "if showsPeriod"))
+        XCTAssertNotNil(auth.range(of: #"BrandWordmark(includeAI: true, showsPeriod: false, size: .display)"#))
+    }
+
     func testMarketplaceAccessibilityLabelsDescribePayoutAndDelta() {
         let below = MarketplaceEstimate(id: .ebay, payout: Decimal(41), deltaPct: -8.2, badge: .none)
         XCTAssertEqual(

@@ -13,7 +13,7 @@ struct AuthView: View {
                     Spacer(minLength: Spacing.xl)
 
                     VStack(spacing: Spacing.sm) {
-                        BrandWordmark(includeAI: true, size: .display)
+                        BrandWordmark(includeAI: true, showsPeriod: false, size: .display)
                         Text("Sign in to sync your listings across devices.".localized)
                             .brandFont(.body)
                             .foregroundStyle(Color.brand.mutedForeground)
