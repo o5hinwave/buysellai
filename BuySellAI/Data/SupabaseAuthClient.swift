@@ -28,7 +28,8 @@ actor SupabaseAuthClient {
             userID: appleUserID,
             email: email ?? response.user?.email,
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken
+            refreshToken: response.refreshToken,
+            appleUserID: appleUserID
         )
     }
 
@@ -53,7 +54,8 @@ actor SupabaseAuthClient {
             userID: session.userID,
             email: response.user?.email ?? session.email,
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken
+            refreshToken: response.refreshToken,
+            appleUserID: session.appleUserID
         )
     }
 

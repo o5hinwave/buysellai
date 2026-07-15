@@ -152,12 +152,20 @@ struct AuthSession: Codable, Sendable, Hashable {
     var email: String?
     var accessToken: String?
     var refreshToken: String?
+    var appleUserID: String?
 
-    init(userID: String, email: String? = nil, accessToken: String? = nil, refreshToken: String? = nil) {
+    init(
+        userID: String,
+        email: String? = nil,
+        accessToken: String? = nil,
+        refreshToken: String? = nil,
+        appleUserID: String? = nil
+    ) {
         self.userID = userID
         self.email = email
         self.accessToken = accessToken
         self.refreshToken = refreshToken
+        self.appleUserID = appleUserID
     }
 }
 

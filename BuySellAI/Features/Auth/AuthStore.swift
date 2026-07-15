@@ -25,7 +25,7 @@ final class AuthStore {
         defer { isSigningIn = false }
         let result = try await appleCoordinator.signIn()
         guard let identityToken = result.identityToken, identityToken.isEmpty == false else {
-            return AuthSession(userID: result.userID, email: result.email)
+            return AuthSession(userID: result.userID, email: result.email, appleUserID: result.userID)
         }
         do {
             return try await supabaseAuthClient.exchangeAppleIdentityToken(
@@ -35,7 +35,7 @@ final class AuthStore {
                 email: result.email
             )
         } catch APIError.notConfigured {
-            return AuthSession(userID: result.userID, email: result.email)
+            return AuthSession(userID: result.userID, email: result.email, appleUserID: result.userID)
         }
     }
 

@@ -42,6 +42,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         )
 
         XCTAssertEqual(session.userID, "apple-user")
+        XCTAssertEqual(session.appleUserID, "apple-user")
         XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "supabase-access")
         XCTAssertEqual(session.refreshToken, "refresh-token")
@@ -70,6 +71,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         let session = try await client.signInWithEmail(email: "person@example.com", password: "secret")
 
         XCTAssertEqual(session.userID, "user-123")
+        XCTAssertNil(session.appleUserID)
         XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "email-access")
         XCTAssertEqual(session.refreshToken, "email-refresh")

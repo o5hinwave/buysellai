@@ -61,7 +61,8 @@ final class AppStore {
                 userID: userID,
                 email: Keychain.load(Keys.authEmail),
                 accessToken: Keychain.load(Keys.supabaseAccessToken),
-                refreshToken: Keychain.load(Keys.supabaseRefreshToken)
+                refreshToken: Keychain.load(Keys.supabaseRefreshToken),
+                appleUserID: Keychain.load(Keys.appleUserID)
             )
         }
     }
@@ -376,7 +377,7 @@ final class AppStore {
 
     private func persist(_ session: AuthSession) {
         try? Keychain.save(session.userID, for: Keys.authUserID)
-        try? Keychain.save(session.userID, for: Keys.appleUserID)
+        saveOptional(session.appleUserID, for: Keys.appleUserID)
         saveOptional(session.email, for: Keys.authEmail)
         saveOptional(session.accessToken, for: Keys.supabaseAccessToken)
         saveOptional(session.refreshToken, for: Keys.supabaseRefreshToken)
