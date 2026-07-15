@@ -315,13 +315,41 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let offlineMessage = app.staticTexts["You're offline. Reconnect and try again."]
+        let offlineMessage = app.descendants(matching: .any)["You're offline. Reconnect and try again."]
         XCTAssertTrue(offlineMessage.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Try again"].waitForExistence(timeout: 2))
 
         let toast = app.descendants(matching: .any)["Toast"]
         XCTAssertTrue(toast.waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts["You're offline. Reconnect and try again."].exists)
+    }
+
+    func testCameraShutterOfflineAnalyzeShowsThumbnailToastAndRetryButton() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--ui-testing-camera-ready",
+            "--ui-testing-camera-sample-capture",
+            "--ui-testing-analyze-offline"
+        ]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let shutter = app.buttons["Take photo"]
+        XCTAssertTrue(shutter.waitForExistence(timeout: 5))
+        shutter.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["Item photo"].waitForExistence(timeout: 5))
+        let offlineMessage = app.descendants(matching: .any)["You're offline. Reconnect and try again."]
+        XCTAssertTrue(offlineMessage.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Try again"].waitForExistence(timeout: 2))
+
+        let toast = app.descendants(matching: .any)["Toast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 2))
     }
 
     func testCameraDeniedShowsSettingsFallbackAndCanClose() {

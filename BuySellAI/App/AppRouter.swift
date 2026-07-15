@@ -31,6 +31,7 @@ final class AppStore {
     @ObservationIgnored private let remoteHistoryClient: RemoteHistoryClient
     @ObservationIgnored private let accountClient: AccountClient
     @ObservationIgnored private let flowTransitionDelayNanoseconds: UInt64
+    @ObservationIgnored private var pendingCapturedPhotoData: Data?
     @ObservationIgnored private var flowGeneration = 0
     @ObservationIgnored private var historyMutationGeneration = 0
 
@@ -113,6 +114,7 @@ final class AppStore {
 
     func startSnapFlow() {
         advanceFlowGeneration()
+        pendingCapturedPhotoData = nil
         let uiTestingCameraMode = ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-denied") ||
             ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-ready")
         if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
@@ -125,8 +127,19 @@ final class AppStore {
 
     func handleCapturedPhoto(_ data: Data) {
         advanceFlowGeneration()
+        pendingCapturedPhotoData = data
         isShowingCamera = false
+    }
+
+    func presentPendingCapturedPhoto() {
+        guard let data = pendingCapturedPhotoData else { return }
+        pendingCapturedPhotoData = nil
         snapResultContext = SnapResultContext(imageData: data)
+    }
+
+    func cancelCamera() {
+        pendingCapturedPhotoData = nil
+        isShowingCamera = false
     }
 
     func presentMarketplacePicker(item: DetectedItem, imageData: Data) {
@@ -173,6 +186,7 @@ final class AppStore {
 
     func closeFlow() {
         advanceFlowGeneration()
+        pendingCapturedPhotoData = nil
         snapResultContext = nil
         marketplacePickerContext = nil
         listingContext = nil
@@ -565,10 +579,12 @@ struct RootView: View {
         .environment(\.appReduceMotion, appStore.reduceMotion)
         .fontWeight(legibilityWeight == .bold ? .bold : nil)
         .dynamicTypeLimit()
-        .fullScreenCover(isPresented: $store.isShowingCamera) {
+        .fullScreenCover(isPresented: $store.isShowingCamera, onDismiss: {
+            appStore.presentPendingCapturedPhoto()
+        }) {
             CameraView(
                 onCapture: { data in appStore.handleCapturedPhoto(data) },
-                onCancel: { appStore.isShowingCamera = false }
+                onCancel: { appStore.cancelCamera() }
             )
         }
         .fullScreenCover(isPresented: $store.isShowingTutorial) {

@@ -191,6 +191,19 @@ struct CameraView: View {
     private func capture() {
         guard !isCapturing else { return }
         Haptics.impact(.medium)
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-sample-capture") {
+            isCapturing = true
+            Task {
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                await MainActor.run {
+                    controller.stop()
+                    isCapturing = false
+                    onCapture(ImageTools.sampleJPEG())
+                }
+            }
+            return
+        }
+
         isCapturing = true
         Task {
             do {

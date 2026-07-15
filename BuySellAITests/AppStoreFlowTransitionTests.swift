@@ -5,7 +5,7 @@ import XCTest
 final class AppStoreFlowTransitionTests: XCTestCase {
     private let transitionDelay: UInt64 = 20_000_000
 
-    func testCapturedPhotoPresentsSnapResultImmediatelyWithThumbnailData() {
+    func testCapturedPhotoPresentsSnapResultAfterCameraDismissalWithThumbnailData() {
         let store = makeStore()
         let imageData = ImageTools.sampleJPEG()
 
@@ -13,6 +13,10 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         store.handleCapturedPhoto(imageData)
 
         XCTAssertFalse(store.isShowingCamera)
+        XCTAssertNil(store.snapResultContext)
+
+        store.presentPendingCapturedPhoto()
+
         XCTAssertEqual(store.snapResultContext?.imageData, imageData)
         XCTAssertNil(store.marketplacePickerContext)
         XCTAssertNil(store.listingContext)
