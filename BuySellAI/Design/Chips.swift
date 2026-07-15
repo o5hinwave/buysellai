@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ChipButton: View {
+    static let minimumTapTarget: CGFloat = 44
+
     let title: String
     var tint: Color = Color.brand.primary
     var accessibilityLabel: String?
@@ -17,7 +19,7 @@ struct ChipButton: View {
                 .foregroundStyle(tint)
                 .lineLimit(1)
                 .padding(.horizontal, Spacing.md)
-                .frame(minHeight: 40)
+                .frame(minHeight: Self.minimumTapTarget)
                 .background(tint.opacity(0.12), in: Capsule())
         }
         .buttonStyle(PressButtonStyle())

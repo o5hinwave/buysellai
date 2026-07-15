@@ -10,6 +10,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(IconCircleButton.tapTargetSize(for: 56), 56)
     }
 
+    func testChipButtonsKeepMinimumTapTarget() {
+        XCTAssertEqual(ChipButton.minimumTapTarget, 44)
+    }
+
     func testAccessibleBorderUsesStrongTokenWhenDifferentiatingWithoutColor() {
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: false), .standard)
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: true), .strong)
