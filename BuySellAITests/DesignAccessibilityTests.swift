@@ -155,6 +155,18 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(settings.components(separatedBy: ".accessibilitySortPriority").count - 1, 6)
     }
 
+    func testAuthEmailSignInUsesNavigationPush() throws {
+        let authView = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
+        let authStore = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthStore.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(authView.range(of: #"NavigationStack(path: $path)"#))
+        XCTAssertNotNil(authView.range(of: #"path.append(.email)"#))
+        XCTAssertNotNil(authView.range(of: #".navigationDestination(for: AuthRoute.self)"#))
+        XCTAssertNotNil(authView.range(of: #"private struct EmailSignInView"#))
+        XCTAssertNil(authView.range(of: "showsEmailForm"))
+        XCTAssertNil(authStore.range(of: "showsEmailForm"))
+    }
+
     func testDeleteAccountNavigationLinkHasExplicitVoiceOverLabel() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 

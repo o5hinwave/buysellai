@@ -4,9 +4,10 @@ struct AuthView: View {
     @Environment(AppStore.self) private var appStore
     @Environment(\.dismiss) private var dismiss
     @State private var store = AuthStore()
+    @State private var path: [AuthRoute] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: Spacing.xl) {
                     Spacer(minLength: Spacing.xl)
@@ -36,48 +37,9 @@ struct AuthView: View {
                         .accessibilitySortPriority(3)
 
                         SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill") {
-                            store.showsEmailForm.toggle()
+                            path.append(.email)
                         }
                         .accessibilitySortPriority(2)
-
-                        if store.showsEmailForm {
-                            VStack(spacing: Spacing.sm) {
-                                TextField("Email".localized, text: Binding(
-                                    get: { store.email },
-                                    set: { store.email = $0 }
-                                ))
-                                    .textInputAutocapitalization(.never)
-                                    .keyboardType(.emailAddress)
-                                    .textContentType(.emailAddress)
-                                    .brandFont(.body)
-                                    .padding(Spacing.md)
-                                    .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                                    .accessibilityLabel("Email".localized)
-
-                                SecureField("Password".localized, text: Binding(
-                                    get: { store.password },
-                                    set: { store.password = $0 }
-                                ))
-                                    .textContentType(.password)
-                                    .brandFont(.body)
-                                    .padding(Spacing.md)
-                                    .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                                    .accessibilityLabel("Password".localized)
-
-                                SecondaryPillButton(title: "Sign in", systemImage: "arrow.right") {
-                                    Task {
-                                        do {
-                                            let session = try await store.signInWithEmail()
-                                            await appStore.setSession(session)
-                                            dismiss()
-                                        } catch {
-                                            appStore.showToast(error.localizedDescription, style: .error)
-                                        }
-                                    }
-                                }
-                            }
-                            .accessibilitySortPriority(1.5)
-                        }
 
                         Button("Keep going without an account".localized) {
                             dismiss()
@@ -92,6 +54,95 @@ struct AuthView: View {
                 .padding(Spacing.xl)
             }
             .background(Color.brand.background)
+            .navigationDestination(for: AuthRoute.self) { route in
+                switch route {
+                case .email:
+                    EmailSignInView(
+                        store: store,
+                        onSignIn: { session in
+                            await appStore.setSession(session)
+                            dismiss()
+                        },
+                        onError: { message in
+                            appStore.showToast(message, style: .error)
+                        }
+                    )
+                }
+            }
         }
+    }
+}
+
+private enum AuthRoute: Hashable {
+    case email
+}
+
+private struct EmailSignInView: View {
+    let store: AuthStore
+    let onSignIn: (AuthSession) async -> Void
+    let onError: (String) -> Void
+
+    @FocusState private var focusedField: Field?
+
+    var body: some View {
+        @Bindable var store = store
+
+        VStack(spacing: Spacing.sm) {
+            TextField("Email".localized, text: $store.email)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.emailAddress)
+                .textContentType(.emailAddress)
+                .brandFont(.body)
+                .padding(Spacing.md)
+                .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .focused($focusedField, equals: .email)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .password }
+                .accessibilityLabel("Email".localized)
+                .accessibilitySortPriority(3)
+
+            SecureField("Password".localized, text: $store.password)
+                .textContentType(.password)
+                .brandFont(.body)
+                .padding(Spacing.md)
+                .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .focused($focusedField, equals: .password)
+                .submitLabel(.go)
+                .onSubmit { signIn(store) }
+                .accessibilityLabel("Password".localized)
+                .accessibilitySortPriority(2)
+
+            PrimaryPillButton(title: "Sign in", systemImage: "arrow.right") {
+                signIn(store)
+            }
+            .disabled(store.email.isEmpty || store.password.isEmpty || store.isSigningIn)
+            .accessibilitySortPriority(1)
+
+            Spacer()
+        }
+        .padding(Spacing.xl)
+        .background(Color.brand.background)
+        .navigationTitle("Email".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            focusedField = .email
+        }
+    }
+
+    private func signIn(_ store: AuthStore) {
+        guard store.email.isEmpty == false, store.password.isEmpty == false else { return }
+        Task {
+            do {
+                let session = try await store.signInWithEmail()
+                await onSignIn(session)
+            } catch {
+                onError(error.localizedDescription)
+            }
+        }
+    }
+
+    private enum Field {
+        case email
+        case password
     }
 }

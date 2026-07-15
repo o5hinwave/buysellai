@@ -9,7 +9,6 @@ import Security
 final class AuthStore {
     var email = ""
     var password = ""
-    var showsEmailForm = false
     var isSigningIn = false
     var errorMessage: String?
 
