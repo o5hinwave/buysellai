@@ -63,10 +63,12 @@ struct CameraView: View {
 
     private var cameraOverlay: some View {
         GeometryReader { proxy in
+            let viewfinderSize = CameraViewfinderLayout.size(in: proxy.size)
+
             ZStack {
                 CameraCornerBrackets()
                     .stroke(Color.brand.primaryForeground, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                    .frame(width: min(proxy.size.width - 64, 320), height: min((proxy.size.width - 64) * 4 / 3, proxy.size.height * 0.56))
+                    .frame(width: viewfinderSize.width, height: viewfinderSize.height)
                     .opacity(shouldReduceMotion ? 0.82 : bracketOpacity)
                     .task(id: shouldReduceMotion) {
                         if shouldReduceMotion {
@@ -228,6 +230,24 @@ struct CameraView: View {
 
     private var shouldReduceMotion: Bool {
         AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
+    }
+}
+
+enum CameraViewfinderLayout {
+    static let horizontalInset: CGFloat = 24
+    static let aspectRatio: CGFloat = 4.0 / 3.0
+    static let maxHeightFraction: CGFloat = 0.56
+
+    static func size(in container: CGSize) -> CGSize {
+        let availableWidth = max(0, container.width - horizontalInset * 2)
+        let maxHeight = max(0, container.height * maxHeightFraction)
+        let idealHeight = availableWidth * aspectRatio
+
+        if idealHeight <= maxHeight {
+            return CGSize(width: availableWidth, height: idealHeight)
+        }
+
+        return CGSize(width: maxHeight / aspectRatio, height: maxHeight)
     }
 }
 

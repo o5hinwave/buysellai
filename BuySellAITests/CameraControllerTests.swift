@@ -3,6 +3,23 @@ import XCTest
 @testable import BuySellAI
 
 final class CameraControllerTests: XCTestCase {
+    func testCameraViewfinderUsesTwentyFourPointHorizontalInsetAndThreeByFourGuide() {
+        let size = CameraViewfinderLayout.size(in: CGSize(width: 390, height: 844))
+
+        XCTAssertEqual(CameraViewfinderLayout.horizontalInset, 24)
+        XCTAssertEqual(size.width, 342, accuracy: 0.001)
+        XCTAssertEqual(size.height, 456, accuracy: 0.001)
+        XCTAssertEqual(size.height / size.width, CameraViewfinderLayout.aspectRatio, accuracy: 0.001)
+    }
+
+    func testCameraViewfinderPreservesAspectRatioWhenHeightConstrained() {
+        let size = CameraViewfinderLayout.size(in: CGSize(width: 390, height: 520))
+
+        XCTAssertEqual(size.height, 291.2, accuracy: 0.001)
+        XCTAssertEqual(size.width, 218.4, accuracy: 0.001)
+        XCTAssertEqual(size.height / size.width, CameraViewfinderLayout.aspectRatio, accuracy: 0.001)
+    }
+
     func testCaptureVideoRotationAngleMatchesDeviceOrientation() {
         XCTAssertEqual(CameraVideoRotation.angle(for: .portrait), 90)
         XCTAssertEqual(CameraVideoRotation.angle(for: .landscapeLeft), 0)
