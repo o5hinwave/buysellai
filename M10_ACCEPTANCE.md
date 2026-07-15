@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `276` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `280` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused App Store validation preflight result bundle `/tmp/buysell-app-store-validation-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-app-store-validation-preflight.xcresult`, no-sign archive `/tmp/buysell-app-store-validation-nosign.xcarchive`, verifier log `/tmp/buysell-app-store-validation-nosign.log`, signed-preflight blocker log `/tmp/buysell-app-store-validation-signed-preflight.log`, App Store export blocker log `/tmp/buysell-app-store-validation-export-preflight.log`, App Store validation blocker log `/tmp/buysell-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-app-store-validation-real-device-preflight.log`, secret-scan log `/tmp/buysell-app-store-validation-secret-scan.log`.
+- Latest local evidence: focused real-device acceptance preflight result bundle `/tmp/buysell-real-device-acceptance-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-real-device-acceptance-preflight.xcresult`, no-sign archive `/tmp/buysell-real-device-acceptance-nosign.xcarchive`, verifier log `/tmp/buysell-real-device-acceptance-nosign.log`, signed-preflight blocker log `/tmp/buysell-real-device-acceptance-signed-preflight.log`, App Store export blocker log `/tmp/buysell-real-device-acceptance-export-preflight.log`, App Store validation blocker log `/tmp/buysell-real-device-acceptance-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-real-device-acceptance-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-real-device-acceptance-evidence.log`, secret-scan log `/tmp/buysell-real-device-acceptance-secret-scan.log`.
 
 ## Commands
 
@@ -79,6 +79,18 @@ Until a trusted physical device is connected, record the known blocker:
 ALLOW_MISSING_DEVICE=1 bash Scripts/preflight_m10_real_device.sh
 ```
 
+Run the real-device manual acceptance evidence check after completing the device pass:
+
+```sh
+bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
+```
+
+Until the physical-device QA pass is complete, record the known blocker:
+
+```sh
+ALLOW_PENDING_ACCEPTANCE=1 bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
+```
+
 Run the secret-pattern scan:
 
 ```sh
@@ -97,27 +109,40 @@ The scan should print `M10 secret scan passed`.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.
+- [ ] Record a passing 15-item real-device acceptance evidence table.
 
 ## Real-Device Acceptance
 
-Record the device model, iOS version, backend project, tester, and date before checking these items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device.
+Record the metadata before checking the items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device, then update every Result to `Pass` and replace every `TBD` evidence note.
 
-- [ ] Cold launch reaches Home in under 1 second with no flicker.
-- [ ] Tapping `Snap to sell` opens a live camera preview within 400 ms.
-- [ ] Shutter capture presents the result sheet within 300 ms and includes a valid thumbnail.
-- [ ] Analyze returns a name and price for a common household item.
-- [ ] Marketplace picker shows the full platform list with plausible payouts and correct Best/Lowest badges.
-- [ ] Copy places only listing text on the clipboard, with no leading whitespace or preamble.
-- [ ] Recent listing appears on Home immediately after copy and includes a working thumbnail.
-- [ ] Swipe-to-delete removes the listing and fires warning haptic feedback.
-- [ ] Guest history persists after killing and reopening the app.
-- [ ] Signed-in history sync persists after killing and reopening the app.
-- [ ] Reduce Motion in Settings reduces app-wide animation.
-- [ ] Dark mode keeps every screen readable with acceptable contrast.
-- [ ] iPhone landscape rotation keeps the app portrait and stable.
-- [ ] VoiceOver can complete Home to Camera to Result to Picker to Listing to Copy without ambiguity.
-- [ ] Airplane mode allows capture, then analyze fails with `You're offline. Reconnect and try again.` plus retry.
-- [ ] Sign in with Apple migrates guest history once without duplicates.
+| Field | Value |
+| --- | --- |
+| Device model | TBD |
+| iOS version | TBD |
+| Backend project | TBD |
+| Tester | TBD |
+| Date | TBD |
+| Release build | TBD |
+| Signed archive | TBD |
+| App Store validation | TBD |
+
+| ID | Criterion | Result | Evidence |
+| --- | --- | --- | --- |
+| A01 | Cold launch reaches Home in under 1 second with no flicker. | Pending | TBD |
+| A02 | Tapping `Snap to sell` opens a live camera preview within 400 ms. | Pending | TBD |
+| A03 | Shutter capture presents the result sheet within 300 ms and includes a valid thumbnail. | Pending | TBD |
+| A04 | Analyze returns a name and price for a common household item. | Pending | TBD |
+| A05 | Marketplace picker shows the same platforms as §8.5 with plausible payouts and correct Best/Lowest badges. | Pending | TBD |
+| A06 | Copy places only listing text on the clipboard, with no leading whitespace or generated preamble. | Pending | TBD |
+| A07 | Recent listing appears on Home immediately after copy and includes a working thumbnail. | Pending | TBD |
+| A08 | Swipe-to-delete removes the listing and fires warning haptic feedback. | Pending | TBD |
+| A09 | Kill and re-open the app -> history persists (guest via SwiftData; signed-in via server). | Pending | TBD |
+| A10 | Reduce Motion in Settings reduces app-wide animation. | Pending | TBD |
+| A11 | Dark mode keeps every screen readable with acceptable contrast. | Pending | TBD |
+| A12 | iPhone landscape rotation keeps the app portrait and stable. | Pending | TBD |
+| A13 | VoiceOver can complete Home -> Camera -> Result -> Picker -> Listing -> Copy without ambiguity. | Pending | TBD |
+| A14 | Airplane mode allows capture, then analyze fails with `You're offline. Reconnect and try again.` plus retry. | Pending | TBD |
+| A15 | Sign in with Apple migrates guest history once without duplicates. | Pending | TBD |
 
 ## Result Log
 

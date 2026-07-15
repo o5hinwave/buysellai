@@ -48,10 +48,73 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "trusted iPhone or iPad with Developer Mode enabled"))
     }
 
+    func testRealDeviceAcceptanceEvidenceScriptRequiresMetadataAndPromptRows() throws {
+        let scriptURL = projectURL("Scripts/verify_m10_real_device_acceptance.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertNotNil(script.range(of: "ALLOW_PENDING_ACCEPTANCE"))
+        XCTAssertNotNil(script.range(of: "expected exactly 15 real-device acceptance rows"))
+        XCTAssertNotNil(script.range(of: "M10 real-device acceptance pending"))
+        XCTAssertNotNil(script.range(of: "M10 real-device acceptance evidence passed"))
+        XCTAssertNotNil(script.range(of: "Device model"))
+        XCTAssertNotNil(script.range(of: "iOS version"))
+        XCTAssertNotNil(script.range(of: "Backend project"))
+        XCTAssertNotNil(script.range(of: "Release build"))
+        XCTAssertNotNil(script.range(of: "App Store validation"))
+        XCTAssertNotNil(script.range(of: "A01"))
+        XCTAssertNotNil(script.range(of: "A15"))
+    }
+
+    func testRealDeviceAcceptanceDocsRouteManualEvidenceThroughScript() throws {
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md"))
+        XCTAssertNotNil(readme.range(of: "ALLOW_PENDING_ACCEPTANCE=1"))
+        XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md"))
+        XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_ACCEPTANCE=1"))
+        XCTAssertNotNil(m10.range(of: "Record a passing 15-item real-device acceptance evidence table"))
+    }
+
+    func testRealDeviceAcceptanceDocsContainExactlyFifteenPromptRows() throws {
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+        let expectedIDs = (1...15).map { String(format: "A%02d", $0) }
+
+        XCTAssertEqual(acceptanceIDs(in: m10), expectedIDs)
+        XCTAssertNotNil(m10.range(of: "history persists (guest via SwiftData; signed-in via server)"))
+        XCTAssertNotNil(m10.range(of: "VoiceOver can complete Home -> Camera -> Result -> Picker -> Listing -> Copy"))
+        XCTAssertNil(m10.range(of: "Guest history persists after killing"))
+        XCTAssertNil(m10.range(of: "Signed-in history sync persists after killing"))
+    }
+
+    func testRealDeviceAcceptanceDocsStartPendingUntilDeviceEvidenceIsRecorded() throws {
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+        let pendingRows = m10.components(separatedBy: "| Pending | TBD |").count - 1
+
+        XCTAssertEqual(pendingRows, 15)
+        XCTAssertNotNil(m10.range(of: "| Device model | TBD |"))
+        XCTAssertNotNil(m10.range(of: "| Signed archive | TBD |"))
+        XCTAssertNotNil(m10.range(of: "| App Store validation | TBD |"))
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func acceptanceIDs(in markdown: String) -> [String] {
+        markdown
+            .split(separator: "\n")
+            .compactMap { line -> String? in
+                let columns = line.split(separator: "|", omittingEmptySubsequences: false)
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                guard columns.count >= 5, columns[1].range(of: #"^A[0-9]{2}$"#, options: .regularExpression) != nil else {
+                    return nil
+                }
+                return columns[1]
+            }
     }
 }
