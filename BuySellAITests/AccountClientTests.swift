@@ -12,6 +12,7 @@ final class AccountClientTests: XCTestCase {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/delete-account")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")

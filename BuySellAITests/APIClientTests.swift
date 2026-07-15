@@ -12,6 +12,7 @@ final class APIClientTests: XCTestCase {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/analyze-image")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
@@ -65,6 +66,7 @@ final class APIClientTests: XCTestCase {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/analyze-image")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
 
@@ -89,6 +91,7 @@ final class APIClientTests: XCTestCase {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
@@ -118,6 +121,7 @@ final class APIClientTests: XCTestCase {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
 

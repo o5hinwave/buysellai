@@ -16,6 +16,7 @@ final class SupabaseAuthClientTests: XCTestCase {
             XCTAssertEqual(components.path, "/auth/v1/token")
             XCTAssertEqual(components.queryItems?.first(where: { $0.name == "grant_type" })?.value, "id_token")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
@@ -78,6 +79,7 @@ final class SupabaseAuthClientTests: XCTestCase {
             let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
             XCTAssertEqual(components.path, "/auth/v1/token")
             XCTAssertEqual(components.queryItems?.first(where: { $0.name == "grant_type" })?.value, "password")
+            XCTAssertEqual(request.timeoutInterval, 20)
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
@@ -108,6 +110,7 @@ final class SupabaseAuthClientTests: XCTestCase {
             XCTAssertEqual(components.path, "/auth/v1/token")
             XCTAssertEqual(components.queryItems?.first(where: { $0.name == "grant_type" })?.value, "refresh_token")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
