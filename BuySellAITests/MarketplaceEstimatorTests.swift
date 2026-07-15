@@ -143,6 +143,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertTrue(estimates.allSatisfy { $0.payout.doubleValue >= 1 })
     }
 
+    func testEstimatorPreservesDecimalBaseWithoutDoublePrecisionLoss() throws {
+        let base = try XCTUnwrap(Decimal(string: "9007199254740993"))
+        let estimates = MarketplaceEstimator.estimates(for: base)
+        let byMarketplace = Dictionary(uniqueKeysWithValues: estimates.map { ($0.id, $0.payout) })
+
+        XCTAssertEqual(byMarketplace[.craigslist], base)
+        XCTAssertNotEqual(byMarketplace[.craigslist], Decimal(base.doubleValue))
+    }
+
     private func loadLocalizedStrings() throws -> [String: String] {
         let data = try Data(contentsOf: projectURL("BuySellAI/Resources/Localizable.strings"))
         let propertyList = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)

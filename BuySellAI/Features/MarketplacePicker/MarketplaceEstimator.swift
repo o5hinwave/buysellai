@@ -2,10 +2,10 @@ import Foundation
 
 enum MarketplaceEstimator {
     static func estimates(for base: Decimal) -> [MarketplaceEstimate] {
-        let positiveBase = max(base.doubleValue, 1)
+        let positiveBase = base < Decimal(1) ? Decimal(1) : base
         let rawEstimates = Marketplace.allCases.map { marketplace -> (Marketplace, Decimal) in
-            let payout = (Decimal(positiveBase) * marketplace.feeMultiplier - marketplace.fixedDeduction).rounded(scale: 0)
-            return (marketplace, max(payout.doubleValue, 1).decimal)
+            let payout = (positiveBase * marketplace.feeMultiplier - marketplace.fixedDeduction).rounded(scale: 0)
+            return (marketplace, payout < Decimal(1) ? Decimal(1) : payout)
         }
 
         let average = rawEstimates
@@ -30,8 +30,3 @@ enum MarketplaceEstimator {
         }
     }
 }
-
-private extension Double {
-    var decimal: Decimal { Decimal(self) }
-}
-
