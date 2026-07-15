@@ -147,12 +147,14 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     let listingText: String
 }
 
-struct AuthSession: Codable, Sendable, Hashable {
+struct AuthSession: Codable, Identifiable, Sendable, Hashable {
     let userID: String
     var email: String?
     var accessToken: String?
     var refreshToken: String?
     var appleUserID: String?
+
+    var id: String { userID }
 
     init(
         userID: String,

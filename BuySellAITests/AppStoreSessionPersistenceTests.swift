@@ -65,6 +65,17 @@ final class AppStoreSessionPersistenceTests: XCTestCase {
         XCTAssertEqual(store.session?.email, "person@example.com")
     }
 
+    func testAuthSessionIdentityUsesUserID() {
+        let session = AuthSession(
+            userID: "server-user",
+            email: "person@example.com",
+            accessToken: "access-token",
+            refreshToken: "refresh-token"
+        )
+
+        XCTAssertEqual(session.id, "server-user")
+    }
+
     private func makeStore() -> AppStore {
         let suiteName = "BuySellAI.AppStoreSessionPersistenceTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
