@@ -38,8 +38,10 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    .accessibilityLabel("Theme".localized)
 
                     Toggle("Reduce Motion".localized, isOn: $store.reduceMotion)
+                        .accessibilityLabel("Reduce Motion".localized)
 
                     if ProcessInfo.processInfo.arguments.contains("--ui-testing-state-probe") {
                         Text(appStore.uiTestSettingsStateDescription)

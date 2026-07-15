@@ -140,6 +140,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Delete account".localized)"#))
     }
 
+    func testSettingsPreferenceControlsHaveExplicitVoiceOverLabels() throws {
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(settings.range(of: #"Picker("Theme".localized"#))
+        XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Theme".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"Toggle("Reduce Motion".localized"#))
+        XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Reduce Motion".localized)"#))
+    }
+
     func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
