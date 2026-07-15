@@ -144,6 +144,18 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"SecondaryPillButton(title: "Retry""#))
     }
 
+    func testSnapResultErrorStateOffersRetakeBeforeRetry() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+        let errorRange = try XCTUnwrap(source.range(of: "private func errorView(message: String) -> some View"))
+        let fieldRange = try XCTUnwrap(source.range(of: "private enum Field"))
+        let errorSource = String(source[errorRange.lowerBound..<fieldRange.lowerBound])
+
+        let retakeRange = try XCTUnwrap(errorSource.range(of: #"PrimaryPillButton(title: "Retake photo", systemImage: "camera.rotate")"#))
+        let retryRange = try XCTUnwrap(errorSource.range(of: #"SecondaryPillButton(title: "Try again", systemImage: "arrow.clockwise")"#))
+
+        XCTAssertLessThan(retakeRange.lowerBound, retryRange.lowerBound)
+    }
+
     func testHomeDisplayHeadlineSupportsAccessibilityThreeWithoutSingleLineTruncation() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)

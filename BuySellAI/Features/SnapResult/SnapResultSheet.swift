@@ -182,11 +182,11 @@ struct SnapResultSheet: View {
                 .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
-            PrimaryPillButton(title: "Try again", systemImage: "arrow.clockwise") {
-                Task { await store.analyze(accessToken: appStore.session?.accessToken) }
-            }
-            SecondaryPillButton(title: "Retake photo", systemImage: "camera.rotate") {
+            PrimaryPillButton(title: "Retake photo", systemImage: "camera.rotate") {
                 appStore.retakePhoto(keeping: context.preferredMarketplace)
+            }
+            SecondaryPillButton(title: "Try again", systemImage: "arrow.clockwise") {
+                Task { await store.analyze(accessToken: appStore.session?.accessToken) }
             }
         }
         .frame(maxWidth: .infinity, minHeight: 420)
