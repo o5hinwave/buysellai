@@ -82,6 +82,19 @@ final class ListingStoreTests: XCTestCase {
         XCTAssertEqual(store.listingText, "Fresh listing")
     }
 
+    func testGenerateCancellationUsesFriendlyRetryCopy() async {
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _ in throw CancellationError() }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
+    }
+
     private func waitUntil(
         _ condition: () -> Bool,
         file: StaticString = #filePath,

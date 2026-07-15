@@ -209,6 +209,44 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
     }
 
+    func testListingRetakeKeepsMarketplaceAndSkipsPicker() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        tapMarketplace("ebay", in: app)
+
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+
+        let retake = app.buttons["Wrong item — retake"]
+        XCTAssertTrue(retake.waitForExistence(timeout: 5))
+        retake.tap()
+
+        if looksRight.waitForExistence(timeout: 5) == false {
+            let rawCancellation = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "CancellationError")).firstMatch
+            XCTAssertFalse(rawCancellation.exists)
+
+            let retry = app.buttons["Try again"]
+            XCTAssertTrue(retry.waitForExistence(timeout: 2))
+            retry.tap()
+            XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        }
+        looksRight.tap()
+
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["MarketplaceRow.ebay"].exists)
+        XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
+    }
+
     func testCopyListingWritesOnlyListingTextToPasteboard() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history", "--ui-testing-verify-clipboard"]

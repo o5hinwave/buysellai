@@ -68,6 +68,9 @@ final class ListingStore {
             guard currentGeneration == generation else { return }
             listingText = generatedText
             phase = .success
+        } catch is CancellationError {
+            guard currentGeneration == generation else { return }
+            phase = .failed(APIError.unknown.localizedDescription)
         } catch {
             guard currentGeneration == generation else { return }
             phase = .failed(error.localizedDescription)

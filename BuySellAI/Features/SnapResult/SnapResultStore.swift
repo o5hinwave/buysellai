@@ -57,6 +57,7 @@ final class SnapResultStore {
 
         do {
             let response = try await analyzeHandler(imageData, accessToken)
+            guard generation == analysisGeneration else { return }
             let detected = DetectedItem(
                 name: response.name,
                 category: Category(apiValue: response.category),
@@ -68,7 +69,12 @@ final class SnapResultStore {
             priceText = NSDecimalNumber(decimal: detected.priceEstimate).stringValue
             phase = .success
             Haptics.notify(.success)
+        } catch is CancellationError {
+            guard generation == analysisGeneration else { return }
+            phase = .failed(APIError.unknown.localizedDescription)
+            Haptics.notify(.error)
         } catch {
+            guard generation == analysisGeneration else { return }
             phase = .failed(error.localizedDescription)
             Haptics.notify(.error)
         }

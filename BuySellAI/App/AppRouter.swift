@@ -37,7 +37,7 @@ final class AppStore {
         defaults: UserDefaults = .standard,
         remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient(),
         accountClient: AccountClient = AccountClient(),
-        flowTransitionDelayNanoseconds: UInt64 = 180_000_000
+        flowTransitionDelayNanoseconds: UInt64 = 320_000_000
     ) {
         self.defaults = defaults
         self.remoteHistoryClient = remoteHistoryClient
