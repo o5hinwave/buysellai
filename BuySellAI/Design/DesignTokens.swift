@@ -21,6 +21,9 @@ extension Color {
         static let destructive = Color("Destructive")
         static let info = Color("Info")
         static let cameraBackdrop = Color("CameraBackdrop")
+        static let launchBackground = Color(hex: 0xFFFFFF)
+        static let launchForeground = Color(hex: 0x121212)
+        static let launchPrimary = Color(hex: 0xFF7A26)
 
         enum AccessibilityBorderToken: Equatable {
             case standard

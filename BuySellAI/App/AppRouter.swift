@@ -626,8 +626,12 @@ struct RootView: View {
 struct SplashView: View {
     var body: some View {
         ZStack {
-            Color.brand.background.ignoresSafeArea()
-            BrandWordmark(size: .display)
+            Color.brand.launchBackground.ignoresSafeArea()
+            BrandWordmark(
+                size: .display,
+                foreground: Color.brand.launchForeground,
+                periodColor: Color.brand.launchPrimary
+            )
         }
     }
 }

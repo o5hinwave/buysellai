@@ -50,6 +50,33 @@ final class InfoPlistTests: XCTestCase {
         }
     }
 
+    func testLaunchScreenUsesFixedWhiteBrandWordmark() throws {
+        let storyboard = try String(
+            contentsOf: projectURL("BuySellAI/Resources/Base.lproj/LaunchScreen.storyboard"),
+            encoding: .utf8
+        )
+
+        XCTAssertNil(storyboard.range(of: "systemBackgroundColor"))
+        XCTAssertNil(storyboard.range(of: "activityIndicatorView"))
+        XCTAssertNotNil(storyboard.range(of: #"text="BuySell""#))
+        XCTAssertNotNil(storyboard.range(of: #"text=".""#))
+        XCTAssertNotNil(storyboard.range(of: #"red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB""#))
+        XCTAssertNotNil(storyboard.range(of: #"red="0.07058823529" green="0.07058823529" blue="0.07058823529""#))
+        XCTAssertNotNil(storyboard.range(of: #"red="1" green="0.47843137250000001" blue="0.14901960780000001""#))
+    }
+
+    func testSwiftUISplashUsesLaunchColorTokens() throws {
+        let appRouter = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+        let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(appRouter.range(of: "Color.brand.launchBackground"))
+        XCTAssertNotNil(appRouter.range(of: "Color.brand.launchForeground"))
+        XCTAssertNotNil(appRouter.range(of: "Color.brand.launchPrimary"))
+        XCTAssertNotNil(designTokens.range(of: "static let launchBackground = Color(hex: 0xFFFFFF)"))
+        XCTAssertNotNil(designTokens.range(of: "static let launchForeground = Color(hex: 0x121212)"))
+        XCTAssertNotNil(designTokens.range(of: "static let launchPrimary = Color(hex: 0xFF7A26)"))
+    }
+
     private func projectInfoPlist(file: StaticString = #filePath, line: UInt = #line) throws -> [String: Any] {
         let candidates = [projectURL("BuySellAI/Info.plist")]
 

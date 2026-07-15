@@ -109,15 +109,17 @@ private struct BrandFontModifier: ViewModifier {
 struct BrandWordmark: View {
     var includeAI = false
     var size: WordmarkSize = .regular
+    var foreground = Color.brand.foreground
+    var periodColor = Color.brand.primary
 
     var body: some View {
         HStack(spacing: 0) {
             Text("BuySell".localized)
-                .foregroundStyle(Color.brand.foreground)
+                .foregroundStyle(foreground)
             Text(includeAI ? " AI".localized : "")
-                .foregroundStyle(Color.brand.foreground)
+                .foregroundStyle(foreground)
             Text(".".localized)
-                .foregroundStyle(Color.brand.primary)
+                .foregroundStyle(periodColor)
         }
         .brandFont(size.style)
         .accessibilityLabel((includeAI ? "BuySell AI" : "BuySell").localized)
