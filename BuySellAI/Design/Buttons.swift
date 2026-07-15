@@ -40,6 +40,7 @@ struct PrimaryPillButton: View {
         }
         .buttonStyle(.plain)
         .scaleEffect(pressed && !shouldReduceMotion ? 0.96 : 1)
+        .opacity(pressed ? 0.82 : 1)
         .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: pressed)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
@@ -99,6 +100,7 @@ struct SecondaryPillButton: View {
         }
         .buttonStyle(.plain)
         .scaleEffect(pressed && !shouldReduceMotion ? 0.96 : 1)
+        .opacity(pressed ? 0.82 : 1)
         .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: pressed)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)

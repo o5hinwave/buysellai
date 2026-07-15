@@ -293,6 +293,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(designTokens.range(of: #"static let screen = Animation.easeOut(duration: 0.2)"#))
         XCTAssertNotNil(designTokens.range(of: "static func screenAnimation(reduceMotion: Bool) -> Animation"))
         XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 3)
+        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".opacity(pressed ? 0.82 : 1)").count - 1, 2)
+        XCTAssertNotNil(buttons.range(of: ".opacity(configuration.isPressed ? 0.82 : 1)"))
         XCTAssertNotNil(toast.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
         XCTAssertNotNil(camera.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
         XCTAssertNotNil(camera.range(of: ".task(id: shouldReduceMotion)"))
