@@ -140,16 +140,15 @@ final class CameraController: NSObject, @unchecked Sendable {
         guard configured == false else { return }
 
         session.beginConfiguration()
+        defer { session.commitConfiguration() }
         session.sessionPreset = .photo
 
         guard let device = Self.preferredBackCamera() else {
-            session.commitConfiguration()
             throw CameraError.noCamera
         }
 
         let input = try AVCaptureDeviceInput(device: device)
         guard session.canAddInput(input), session.canAddOutput(photoOutput) else {
-            session.commitConfiguration()
             throw CameraError.configurationFailed
         }
 
@@ -169,7 +168,6 @@ final class CameraController: NSObject, @unchecked Sendable {
 
         videoDevice = device
         configured = true
-        session.commitConfiguration()
     }
 
     private static func preferredBackCamera() -> AVCaptureDevice? {
