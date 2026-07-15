@@ -52,4 +52,38 @@ final class DesignAccessibilityTests: XCTestCase {
             "Facebook, estimated payout 43 dollars, average payout"
         )
     }
+
+    func testChipAccessibilityLabelsDescribeControlAndCurrentValue() {
+        XCTAssertEqual(
+            ChipAccessibilityText.valueLabel("Category", value: "Furniture"),
+            "Category, Furniture"
+        )
+        XCTAssertEqual(
+            ChipAccessibilityText.valueLabel("Condition", value: "Like New"),
+            "Condition, Like New"
+        )
+    }
+
+    func testButtonsAvoidEmptyAccessibilityHints() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "optionalAccessibilityHint(accessibilityHint)"))
+        XCTAssertNil(source.range(of: #"accessibilityHint\?\.\S+\s*\?\?\s*"""#, options: .regularExpression))
+    }
+
+    func testSnapResultChipsExposePurposeAndActionHints() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"ChipAccessibilityText.valueLabel("Category""#))
+        XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the category""#))
+        XCTAssertNotNil(source.range(of: #"ChipAccessibilityText.valueLabel("Condition""#))
+        XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the condition""#))
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
+    }
 }

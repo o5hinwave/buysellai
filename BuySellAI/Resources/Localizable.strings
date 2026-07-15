@@ -33,8 +33,11 @@
 "Cancel" = "Cancel";
 "Captures the current view" = "Captures the current view";
 "Capturing photo" = "Capturing photo";
+"Category" = "Category";
 "Change category" = "Change category";
 "Change condition" = "Change condition";
+"Changes the category" = "Changes the category";
+"Changes the condition" = "Changes the condition";
 "Chairish" = "Chairish";
 "Clear all listing history? This can't be undone." = "Clear all listing history? This can't be undone.";
 "Clear history" = "Clear history";
@@ -46,6 +49,7 @@
 "Collectibles" = "Collectibles";
 "Continue with Apple" = "Continue with Apple";
 "Continue with Email" = "Continue with Email";
+"Condition" = "Condition";
 "Copied — paste it into %@" = "Copied — paste it into %@";
 "Copy and paste." = "Copy and paste.";
 "Copy listing" = "Copy listing";

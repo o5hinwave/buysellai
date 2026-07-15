@@ -46,7 +46,7 @@ struct PrimaryPillButton: View {
                 .onEnded { _ in pressed = false }
         )
         .accessibilityLabel(Text(title.localized))
-        .accessibilityHint(Text(accessibilityHint?.localized ?? ""))
+        .optionalAccessibilityHint(accessibilityHint)
     }
 
     private var shouldReduceMotion: Bool { reduceMotion || appReduceMotion }
@@ -175,5 +175,23 @@ struct PressButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && !(reduceMotion || appReduceMotion) ? 0.96 : 1)
             .opacity(configuration.isPressed ? 0.82 : 1)
             .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: configuration.isPressed)
+    }
+}
+
+private struct OptionalAccessibilityHint: ViewModifier {
+    let hint: String?
+
+    func body(content: Content) -> some View {
+        if let hint, hint.isEmpty == false {
+            content.accessibilityHint(Text(hint.localized))
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func optionalAccessibilityHint(_ hint: String?) -> some View {
+        modifier(OptionalAccessibilityHint(hint: hint))
     }
 }

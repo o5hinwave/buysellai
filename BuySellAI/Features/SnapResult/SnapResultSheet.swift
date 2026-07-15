@@ -114,10 +114,18 @@ struct SnapResultSheet: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
-                    ChipButton(title: item.category.display) {
+                    ChipButton(
+                        title: item.category.display,
+                        accessibilityLabel: ChipAccessibilityText.valueLabel("Category", value: item.category.display),
+                        accessibilityHint: "Changes the category"
+                    ) {
                         store.cycleCategory()
                     }
-                    ChipButton(title: item.condition.display) {
+                    ChipButton(
+                        title: item.condition.display,
+                        accessibilityLabel: ChipAccessibilityText.valueLabel("Condition", value: item.condition.display),
+                        accessibilityHint: "Changes the condition"
+                    ) {
                         store.cycleCondition()
                     }
                 }
