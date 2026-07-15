@@ -21,6 +21,7 @@ extension Color {
         static let destructive = Color("Destructive")
         static let info = Color("Info")
         static let cameraBackdrop = Color("CameraBackdrop")
+        static let shadow = Color(hex: 0x000000)
         static let launchBackground = Color(hex: 0xFFFFFF)
         static let launchForeground = Color(hex: 0x121212)
         static let launchPrimary = Color(hex: 0xFF7A26)
@@ -61,15 +62,15 @@ enum Radius {
 }
 
 enum AppShadow {
-    static func raised(color: Color = .black) -> some ViewModifier {
+    static func raised(color: Color = Color.brand.shadow) -> some ViewModifier {
         ShadowModifier(color: color.opacity(0.04), radius: 6, y: 2)
     }
 
-    static func hover(color: Color = .black) -> some ViewModifier {
+    static func hover(color: Color = Color.brand.shadow) -> some ViewModifier {
         ShadowModifier(color: color.opacity(0.06), radius: 16, y: 6)
     }
 
-    static func elevated(color: Color = .black) -> some ViewModifier {
+    static func elevated(color: Color = Color.brand.shadow) -> some ViewModifier {
         ShadowModifier(color: color.opacity(0.08), radius: 40, y: 16)
     }
 }

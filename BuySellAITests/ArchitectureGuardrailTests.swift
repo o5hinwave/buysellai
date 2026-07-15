@@ -96,6 +96,17 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoMatches([#"[A-Za-z0-9_\)\]]!"#], in: appSwiftFiles())
     }
 
+    func testSwiftUIColorUsageRoutesPureBlackAndWhiteThroughTokens() throws {
+        let patterns = [
+            #"\bColor\.black\b"#,
+            #"\bColor\.white\b"#,
+            #"\bColor\s*=\s*\.black\b"#,
+            #"\bColor\s*=\s*\.white\b"#
+        ]
+
+        try assertNoMatches(patterns, in: appSwiftFiles())
+    }
+
     private func assertNoMatches(
         _ patterns: [String],
         in files: [URL],
