@@ -221,7 +221,7 @@ extension Decimal {
     }
 
     func currency(code: String = "USD", fractionLength: Int = 0) -> String {
-        doubleValue.formatted(
+        formatted(
             .currency(code: code)
                 .precision(.fractionLength(fractionLength))
         )
