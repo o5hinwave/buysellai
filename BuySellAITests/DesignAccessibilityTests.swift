@@ -352,14 +352,39 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: #".accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, count))"#))
     }
 
-    func testListingCopyActionOnlyAppearsAfterListingGenerationSucceeds() throws {
+    func testListingGeneratedTextPanelMatchesPromptRequirements() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let panelRange = try XCTUnwrap(listing.range(of: "private var listingText: some View"))
+        let errorRange = try XCTUnwrap(listing.range(of: "private func error", range: panelRange.upperBound..<listing.endIndex))
+        let panelSource = String(listing[panelRange.lowerBound..<errorRange.lowerBound])
 
+        XCTAssertNotNil(panelSource.range(of: "Text(store.listingText)"))
+        XCTAssertNotNil(panelSource.range(of: ".brandFont(.body)"))
+        XCTAssertNotNil(panelSource.range(of: ".lineSpacing(4)"))
+        XCTAssertNotNil(panelSource.range(of: ".textSelection(.enabled)"))
+        XCTAssertNotNil(panelSource.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"))
+        XCTAssertNotNil(panelSource.range(of: #".accessibilityLabel("Generated listing text".localized)"#))
+    }
+
+    func testListingSuccessActionsAreStickyAndOrderedAfterGenerationSucceeds() throws {
+        let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let bottomRange = try XCTUnwrap(listing.range(of: "private var successBottomActions: some View"))
+        let regenerateRange = try XCTUnwrap(listing.range(of: "private func regenerateListing", range: bottomRange.upperBound..<listing.endIndex))
+        let bottomSource = String(listing[bottomRange.lowerBound..<regenerateRange.lowerBound])
+
+        XCTAssertNotNil(listing.range(of: ".safeAreaInset(edge: .bottom)"))
         XCTAssertNotNil(listing.range(of: "case .success:\n            successBottomActions"))
         XCTAssertNotNil(listing.range(of: "case .idle, .loading, .failed:\n            EmptyView()"))
-        XCTAssertNotNil(listing.range(of: "private var successBottomActions"))
-        XCTAssertNotNil(listing.range(of: #"PrimaryPillButton(title: "Copy listing""#))
-        XCTAssertNotNil(listing.range(of: #"SecondaryPillButton(title: "Wrong item — retake""#))
+        XCTAssertNotNil(bottomSource.range(of: ".background(.regularMaterial)"))
+
+        let copyRange = try XCTUnwrap(bottomSource.range(of: #"PrimaryPillButton(title: "Copy listing""#))
+        let retakeRange = try XCTUnwrap(bottomSource.range(of: #"GhostButton(title: "Wrong item — retake""#))
+        let regenerateButtonRange = try XCTUnwrap(bottomSource.range(of: #"GhostButton(title: "Regenerate""#))
+        let footerRange = try XCTUnwrap(bottomSource.range(of: #"Text("Tip: paste, add photos, hit list. That's it.".localized)"#))
+
+        XCTAssertLessThan(copyRange.lowerBound, retakeRange.lowerBound)
+        XCTAssertLessThan(retakeRange.lowerBound, regenerateButtonRange.lowerBound)
+        XCTAssertLessThan(regenerateButtonRange.lowerBound, footerRange.lowerBound)
     }
 
     private func projectURL(_ path: String) -> URL {
