@@ -4,6 +4,8 @@ import Foundation
 @MainActor
 @Observable
 final class ListingStore {
+    typealias GenerateHandler = (DetectedItem, Marketplace, String?) async throws -> String
+
     enum Phase: Equatable {
         case idle
         case loading
@@ -16,9 +18,24 @@ final class ListingStore {
     var listingText: String
     var phase: Phase
 
-    init(item: DetectedItem, marketplace: Marketplace, existingListingText: String?) {
+    private let generateHandler: GenerateHandler
+    private var generation = 0
+
+    init(
+        item: DetectedItem,
+        marketplace: Marketplace,
+        existingListingText: String?,
+        generateHandler: @escaping GenerateHandler = { item, marketplace, accessToken in
+            try await APIClient.shared.generateListing(
+                item: item,
+                marketplace: marketplace,
+                accessToken: accessToken
+            )
+        }
+    ) {
         self.item = item
         self.marketplace = marketplace
+        self.generateHandler = generateHandler
         if let existingListingText {
             self.listingText = existingListingText
             self.phase = .success
@@ -43,15 +60,16 @@ final class ListingStore {
     }
 
     func generate(accessToken: String?) async {
+        generation += 1
+        let currentGeneration = generation
         phase = .loading
         do {
-            listingText = try await APIClient.shared.generateListing(
-                item: item,
-                marketplace: marketplace,
-                accessToken: accessToken
-            )
+            let generatedText = try await generateHandler(item, marketplace, accessToken)
+            guard currentGeneration == generation else { return }
+            listingText = generatedText
             phase = .success
         } catch {
+            guard currentGeneration == generation else { return }
             phase = .failed(error.localizedDescription)
         }
     }
