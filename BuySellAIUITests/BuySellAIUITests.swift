@@ -317,14 +317,22 @@ final class BuySellAIUITests: XCTestCase {
         waitForExpectations(timeout: 5)
         copy.tap()
 
-        let listing = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Vintage brass table lamp")).firstMatch
+        let listing = recentListingWithPhoto(in: app)
         XCTAssertTrue(listing.waitForExistence(timeout: 5))
 
         app.terminate()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
         app.launch()
 
-        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+        XCTAssertTrue(recentListingWithPhoto(in: app).waitForExistence(timeout: 5))
+    }
+
+    private func recentListingWithPhoto(in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(
+            format: "label CONTAINS[c] %@ AND label CONTAINS[c] %@",
+            "Vintage brass table lamp",
+            "photo attached"
+        )).firstMatch
     }
 
     func testRecentListingReopensListingSheetDirectly() {

@@ -61,3 +61,22 @@ private func relativeDate(_ date: Date) -> String {
     formatter.unitsStyle = .short
     return formatter.localizedString(for: date, relativeTo: Date())
 }
+
+enum HistoryAccessibilityText {
+    static func rowLabel(for entry: HistoryEntry, relativeDate: String) -> String {
+        String.localizedFormat(
+            "%@, %@, %@, %@",
+            entry.itemName,
+            entry.marketplace.displayName,
+            relativeDate,
+            thumbnailStatus(for: entry.imageThumbnail)
+        )
+    }
+
+    static func thumbnailStatus(for data: Data?) -> String {
+        guard let data, UIImage(data: data) != nil else {
+            return "no photo".localized
+        }
+        return "photo attached".localized
+    }
+}

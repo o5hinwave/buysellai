@@ -87,6 +87,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             listingText: "TITLE:\nStale remote lamp"
         )
         let fetchStarted = expectation(description: "remote fetch started")
+        let postReturned = expectation(description: "remote save returned")
         let releaseFetch = DispatchSemaphore(value: 0)
         let store = try makeStore { request in
             switch request.httpMethod {
@@ -107,6 +108,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
                     httpVersion: nil,
                     headerFields: nil
                 ))
+                postReturned.fulfill()
                 return (response, Data())
             default:
                 XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
@@ -128,6 +130,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
 
         releaseFetch.signal()
+        await fulfillment(of: [postReturned], timeout: 1)
         await loadTask.value
 
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
@@ -147,6 +150,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             listingText: "TITLE:\nOlder remote chair"
         )
         let fetchStarted = expectation(description: "session remote fetch started")
+        let postReturned = expectation(description: "remote save returned")
         let releaseFetch = DispatchSemaphore(value: 0)
         let store = try makeStore { request in
             switch request.httpMethod {
@@ -167,6 +171,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
                     httpVersion: nil,
                     headerFields: nil
                 ))
+                postReturned.fulfill()
                 return (response, Data())
             default:
                 XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
@@ -187,6 +192,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
 
         releaseFetch.signal()
+        await fulfillment(of: [postReturned], timeout: 1)
         await signInTask.value
 
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
@@ -488,7 +494,21 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
 }
 
 private final class AppStoreRemoteHistoryMockURLProtocol: URLProtocol {
-    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    private static let handlerLock = NSLock()
+    private static var storedHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))? {
+        get {
+            handlerLock.lock()
+            defer { handlerLock.unlock() }
+            return storedHandler
+        }
+        set {
+            handlerLock.lock()
+            storedHandler = newValue
+            handlerLock.unlock()
+        }
+    }
 
     override class func canInit(with request: URLRequest) -> Bool {
         true
@@ -500,7 +520,11 @@ private final class AppStoreRemoteHistoryMockURLProtocol: URLProtocol {
 
     override func startLoading() {
         do {
-            let handler = try XCTUnwrap(Self.handler)
+            guard let handler = Self.handler else {
+                XCTFail("Missing AppStoreRemoteHistoryMockURLProtocol handler")
+                client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+                return
+            }
             let (response, data) = try handler(request)
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: data)

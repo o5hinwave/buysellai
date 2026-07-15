@@ -119,6 +119,7 @@
 "New" = "New";
 "Next" = "Next";
 "Nextdoor" = "Nextdoor";
+"no photo" = "no photo";
 "Not signed in" = "Not signed in";
 "OfferUp" = "OfferUp";
 "Open Settings" = "Open Settings";
@@ -126,6 +127,7 @@
 "Other" = "Other";
 "Password" = "Password";
 "Photo couldn't be captured." = "Photo couldn't be captured.";
+"photo attached" = "photo attached";
 "Pick where to sell" = "Pick where to sell";
 "Pick where to sell." = "Pick where to sell.";
 "Point, tap, done. We handle the rest." = "Point, tap, done. We handle the rest.";

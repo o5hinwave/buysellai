@@ -157,7 +157,7 @@ struct HomeView: View {
     }
 
     private func historyAccessibilityLabel(_ entry: HistoryEntry) -> String {
-        String.localizedFormat("%@, %@, %@", entry.itemName, entry.marketplace.displayName, relativeDate(entry.createdAt))
+        HistoryAccessibilityText.rowLabel(for: entry, relativeDate: relativeDate(entry.createdAt))
     }
 
     private var deleteConfirmationBinding: Binding<Bool> {

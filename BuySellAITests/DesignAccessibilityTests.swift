@@ -53,6 +53,28 @@ final class DesignAccessibilityTests: XCTestCase {
         )
     }
 
+    func testHistoryAccessibilityLabelIncludesDecodedThumbnailStatus() {
+        let entry = HistoryEntry(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            itemName: "Lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(45),
+            imageThumbnail: ImageTools.sampleJPEG(),
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp"
+        )
+
+        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: entry.imageThumbnail), "photo attached")
+        XCTAssertEqual(
+            HistoryAccessibilityText.rowLabel(for: entry, relativeDate: "2h ago"),
+            "Lamp, eBay, 2h ago, photo attached"
+        )
+        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: Data([0x00, 0x01])), "no photo")
+        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: nil), "no photo")
+    }
+
     func testChipAccessibilityLabelsDescribeControlAndCurrentValue() {
         XCTAssertEqual(
             ChipAccessibilityText.valueLabel("Category", value: "Furniture"),
