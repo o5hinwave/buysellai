@@ -92,6 +92,29 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["You're offline. Reconnect and try again."].exists)
     }
 
+    func testAuthCanBeDismissedAndGuestSnapStillWorks() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
+        app.launch()
+
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Continue with Email"].exists)
+
+        let keepGoing = app.buttons["Keep going without an account"]
+        XCTAssertTrue(keepGoing.exists)
+        keepGoing.tap()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        XCTAssertTrue(app.buttons["Looks right — pick where to sell"].waitForExistence(timeout: 5))
+    }
+
     func testGuestHistoryPersistsAfterCopyAndRelaunch() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
