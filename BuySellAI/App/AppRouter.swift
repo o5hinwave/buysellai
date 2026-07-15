@@ -30,15 +30,19 @@ final class AppStore {
     @ObservationIgnored private var historyReader: HistoryReader?
     @ObservationIgnored private let remoteHistoryClient: RemoteHistoryClient
     @ObservationIgnored private let accountClient: AccountClient
+    @ObservationIgnored private let flowTransitionDelayNanoseconds: UInt64
+    @ObservationIgnored private var flowGeneration = 0
 
     init(
         defaults: UserDefaults = .standard,
         remoteHistoryClient: RemoteHistoryClient = RemoteHistoryClient(),
-        accountClient: AccountClient = AccountClient()
+        accountClient: AccountClient = AccountClient(),
+        flowTransitionDelayNanoseconds: UInt64 = 180_000_000
     ) {
         self.defaults = defaults
         self.remoteHistoryClient = remoteHistoryClient
         self.accountClient = accountClient
+        self.flowTransitionDelayNanoseconds = flowTransitionDelayNanoseconds
         if ProcessInfo.processInfo.arguments.contains("--reset-auth") {
             Self.clearStoredSessionValues()
         }
@@ -100,6 +104,7 @@ final class AppStore {
     }
 
     func startSnapFlow() {
+        advanceFlowGeneration()
         if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
             snapResultContext = SnapResultContext(imageData: ImageTools.sampleJPEG())
         } else {
@@ -108,23 +113,28 @@ final class AppStore {
     }
 
     func handleCapturedPhoto(_ data: Data) {
+        advanceFlowGeneration()
         isShowingCamera = false
         snapResultContext = SnapResultContext(imageData: data)
     }
 
     func presentMarketplacePicker(item: DetectedItem, imageData: Data) {
+        let generation = advanceFlowGeneration()
         snapResultContext = nil
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 180_000_000)
+            try? await Task.sleep(nanoseconds: flowTransitionDelayNanoseconds)
+            guard isCurrentFlowGeneration(generation) else { return }
             marketplacePickerContext = MarketplacePickerContext(item: item, imageData: imageData)
         }
     }
 
     func presentListing(item: DetectedItem, imageData: Data?, marketplace: Marketplace, existingListingText: String? = nil) {
+        let generation = advanceFlowGeneration()
         marketplacePickerContext = nil
         snapResultContext = nil
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 180_000_000)
+            try? await Task.sleep(nanoseconds: flowTransitionDelayNanoseconds)
+            guard isCurrentFlowGeneration(generation) else { return }
             listingContext = ListingContext(
                 item: item,
                 imageData: imageData,
@@ -135,11 +145,13 @@ final class AppStore {
     }
 
     func retakePhoto(keeping marketplace: Marketplace? = nil) {
+        let generation = advanceFlowGeneration()
         listingContext = nil
         marketplacePickerContext = nil
         snapResultContext = nil
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 180_000_000)
+            try? await Task.sleep(nanoseconds: flowTransitionDelayNanoseconds)
+            guard isCurrentFlowGeneration(generation) else { return }
             if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
                 snapResultContext = SnapResultContext(imageData: ImageTools.sampleJPEG(), preferredMarketplace: marketplace)
             } else {
@@ -149,6 +161,7 @@ final class AppStore {
     }
 
     func closeFlow() {
+        advanceFlowGeneration()
         snapResultContext = nil
         marketplacePickerContext = nil
         listingContext = nil
@@ -393,6 +406,16 @@ final class AppStore {
 
     private func clearStoredSession() {
         Self.clearStoredSessionValues()
+    }
+
+    @discardableResult
+    private func advanceFlowGeneration() -> Int {
+        flowGeneration += 1
+        return flowGeneration
+    }
+
+    private func isCurrentFlowGeneration(_ generation: Int) -> Bool {
+        generation == flowGeneration
     }
 
     private static func clearStoredSessionValues() {
