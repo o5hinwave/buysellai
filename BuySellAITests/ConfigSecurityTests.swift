@@ -71,6 +71,20 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertTrue(ignoredPaths.contains("BuySellAI/App/Config.plist"))
     }
 
+    func testLocalSecretFilesAndGeneratedXcodeArtifactsAreGitIgnored() throws {
+        let gitignore = try String(contentsOf: projectURL(".gitignore"), encoding: .utf8)
+        let ignoredPaths = Set(
+            gitignore
+                .split(whereSeparator: \.isNewline)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { $0.isEmpty == false && $0.hasPrefix("#") == false }
+        )
+
+        for expectedPath in [".env", ".env.*", "!.env.example", "*.xcresult/", "*.xcarchive/", "*.ipa", "*.dSYM/"] {
+            XCTAssertTrue(ignoredPaths.contains(expectedPath), "\(expectedPath) should stay ignored for local QA hygiene")
+        }
+    }
+
     func testConfigExampleIsExcludedFromSynchronizedAppTarget() throws {
         let project = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.pbxproj"), encoding: .utf8)
         let exceptionsStart = try XCTUnwrap(project.range(of: "/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */"))
@@ -82,6 +96,30 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(exceptions.range(of: "App/Config.plist.example,"))
         XCTAssertNotNil(exceptions.range(of: #"target = [A-Z0-9]+ /\* BuySellAI \*/;"#, options: .regularExpression))
         XCTAssertNil(project.range(of: "Config.plist.example in Resources"))
+    }
+
+    func testM10SecretScanScriptSearchesHiddenFilesAndSkipsGeneratedBundles() throws {
+        let script = try String(contentsOf: projectURL("Scripts/scan_m10_secrets.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "rg -l -I --hidden"))
+        XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: "--glob '!.git/*'"))
+        XCTAssertNotNil(script.range(of: "--glob '!*.xcresult/**'"))
+        XCTAssertNotNil(script.range(of: "--glob '!*.xcarchive/**'"))
+        XCTAssertNotNil(script.range(of: "--glob '!*.dSYM/**'"))
+        XCTAssertNotNil(script.range(of: "M10 secret scan failed"))
+        XCTAssertNotNil(script.range(of: "M10 secret scan passed"))
+    }
+
+    func testM10DocsUseRepeatableSecretScanScript() throws {
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
+        XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
+        XCTAssertNotNil(m10.range(of: "The scan should print `M10 secret scan passed`."))
     }
 
     func testBundledAppTextFilesDoNotContainAIProviderSecrets() throws {

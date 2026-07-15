@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `258` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `261` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
-- Secret scan: no Gemini/OpenAI-style provider secret patterns are present in app or test sources.
-- Latest local evidence: focused localized price-editing result bundle `/tmp/buysell-snap-price-locale.xcresult`, full-suite result bundle `/tmp/buysell-full-price-locale.xcresult`, no-sign archive `/tmp/buysell-price-locale-archive.xcarchive`, verifier log `/tmp/buysell-price-locale-archive.log`.
+- Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
+- Latest local evidence: focused config security result bundle `/tmp/buysell-config-security.xcresult`, full-suite result bundle `/tmp/buysell-full-secret-scan.xcresult`, no-sign archive `/tmp/buysell-secret-scan-archive.xcarchive`, verifier log `/tmp/buysell-secret-scan-archive.log`, secret-scan log `/tmp/buysell-secret-scan.log`.
 
 ## Commands
 
@@ -33,11 +33,10 @@ bash Scripts/verify_m10_local_archive.sh /tmp/BuySellAI-nosign.xcarchive
 Run the secret-pattern scan:
 
 ```sh
-rg -l -I 'AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}' \
-  BuySellAI BuySellAITests BuySellAIUITests README.md M10_ACCEPTANCE.md
+bash Scripts/scan_m10_secrets.sh
 ```
 
-The scan should return no filenames.
+The scan should print `M10 secret scan passed`.
 
 ## Submit-Ready Gates
 
