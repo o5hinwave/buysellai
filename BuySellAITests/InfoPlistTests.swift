@@ -36,6 +36,29 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertEqual(plist["UILaunchStoryboardName"] as? String, "LaunchScreen")
     }
 
+    func testPhotoLibraryPermissionIsAbsentForCameraOnlyBuild() throws {
+        let plist = try projectInfoPlist()
+        let appSource = try appSwiftFiles()
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        let photoLibraryAPIPatterns = [
+            #"\bimport\s+PhotosUI\b"#,
+            #"\bimport\s+Photos\b"#,
+            #"\bPhotosPicker\b"#,
+            #"\bPHPickerViewController\b"#,
+            #"\bUIImagePickerController\b"#,
+            #"\bUIImageWriteToSavedPhotosAlbum\b"#,
+            #"\bPHPhotoLibrary\b"#
+        ]
+
+        XCTAssertNil(plist["NSPhotoLibraryUsageDescription"])
+        XCTAssertNil(plist["NSPhotoLibraryAddUsageDescription"])
+
+        for pattern in photoLibraryAPIPatterns {
+            XCTAssertNil(appSource.range(of: pattern, options: .regularExpression), "Camera-only app should not use \(pattern)")
+        }
+    }
+
     func testProjectTargetsIOSSeventeenMinimum() throws {
         let project = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.pbxproj"), encoding: .utf8)
         let deploymentTargets = try buildSettingValues(named: "IPHONEOS_DEPLOYMENT_TARGET", in: project)
@@ -117,6 +140,25 @@ final class InfoPlistTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func appSwiftFiles() throws -> [URL] {
+        let root = projectURL("BuySellAI")
+        let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: Array(resourceKeys),
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        return try enumerator.compactMap { item -> URL? in
+            guard let url = item as? URL else { return nil }
+            let values = try url.resourceValues(forKeys: resourceKeys)
+            guard values.isRegularFile == true, url.pathExtension == "swift" else { return nil }
+            return url
+        }
     }
 
     private func buildSettingValues(named setting: String, in project: String) throws -> [String] {
