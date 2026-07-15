@@ -138,18 +138,117 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
+    func testFetchHistoryOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.fetchHistory(accessToken: "access-token")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
+    func testFetchHistoryRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.fetchHistory(accessToken: "access-token")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testFetchHistoryNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 403,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.fetchHistory(accessToken: "access-token")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
+    func testFetchHistoryNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data("[]".utf8))
+        }
+
+        let entries = try await client.fetchHistory(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertTrue(entries.isEmpty)
+    }
+
+    func testUpsertHistoryEmptyBatchSkipsNetworkRequest() async throws {
+        let client = try makeClient { _ in
+            XCTFail("Empty upsert should not make a network request.")
+            throw URLError(.badURL)
+        }
+
+        try await client.upsertHistory([], accessToken: "access-token")
+    }
+
+    func testUpsertHistoryTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            try await client.upsertHistory([Self.sampleEntry()], accessToken: "access-token")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testUpsertHistoryOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            try await client.upsertHistory([Self.sampleEntry()], accessToken: "access-token")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
     func testUpsertHistoryNonSuccessStatusMapsToServerError() async throws {
-        let entry = HistoryEntry(
-            id: UUID(),
-            createdAt: Date(),
-            itemName: "Lamp",
-            category: .home,
-            condition: .good,
-            suggestedPrice: Decimal(20),
-            imageThumbnail: nil,
-            marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
-        )
+        let entry = Self.sampleEntry()
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -166,6 +265,47 @@ final class RemoteHistoryClientTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? APIError, .server(403))
         }
+    }
+
+    func testUpsertHistoryRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.upsertHistory([Self.sampleEntry()], accessToken: "access-token")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testUpsertHistoryNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.upsertHistory([Self.sampleEntry()], accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
     }
 
     func testDeleteHistoryRateLimitMapsToFriendlyError() async throws {
@@ -187,6 +327,137 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
+    func testDeleteHistoryTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testDeleteHistoryOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
+    func testDeleteHistoryNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 403,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
+    func testDeleteHistoryNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testClearHistoryTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            try await client.clearHistory(accessToken: "access-token")
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testClearHistoryOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            try await client.clearHistory(accessToken: "access-token")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
+    func testClearHistoryRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.clearHistory(accessToken: "access-token")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testClearHistoryNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 403,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            try await client.clearHistory(accessToken: "access-token")
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
     func testClearHistoryTransientServerErrorRetriesOnce() async throws {
         var attempts = 0
         let client = try makeClient { request in
@@ -203,6 +474,20 @@ final class RemoteHistoryClientTests: XCTestCase {
         try await client.clearHistory(accessToken: "access-token")
 
         XCTAssertEqual(attempts, 2)
+    }
+
+    private static func sampleEntry() -> HistoryEntry {
+        HistoryEntry(
+            id: UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_784_679_600),
+            itemName: "Lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(20),
+            imageThumbnail: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp"
+        )
     }
 
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> RemoteHistoryClient {

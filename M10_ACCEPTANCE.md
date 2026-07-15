@@ -4,11 +4,11 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `215` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `232` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in app or test sources.
-- Latest local evidence: focused auth result bundle `/tmp/buysell-refresh-session.xcresult`, full-suite result bundle `/tmp/buysell-full-refresh-session.xcresult`, no-sign archive `/tmp/buysell-refresh-session.xcarchive`.
+- Latest local evidence: focused remote history result bundle `/tmp/buysell-remote-history-routes.xcresult`, full-suite result bundle `/tmp/buysell-full-remote-history-routes.xcresult`, no-sign archive `/tmp/buysell-remote-history-routes.xcarchive`.
 
 ## Commands
 
