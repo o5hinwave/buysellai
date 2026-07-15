@@ -184,6 +184,12 @@ final class AppStore {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
         }
 
+        if ProcessInfo.processInfo.arguments.contains("--seed-large-history") {
+            guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+            history = Self.uiTestingHistoryEntries(count: 500)
+            return
+        }
+
         if ProcessInfo.processInfo.arguments.contains("--seed-history") {
             guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             history = [Self.uiTestingHistoryEntry]
@@ -498,6 +504,28 @@ final class AppStore {
             marketplace: .ebay,
             listingText: "TITLE:\nVintage brass table lamp\n\nDESCRIPTION:\nWarm brass table lamp in good condition."
         )
+    }
+
+    private static func uiTestingHistoryEntries(count: Int) -> [HistoryEntry] {
+        let thumbnail = ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75)
+        let marketplaces = Marketplace.allCases
+
+        return (0..<count).map { offset in
+            let displayNumber = count - offset
+            let marketplace = marketplaces.isEmpty ? Marketplace.ebay : marketplaces[offset % marketplaces.count]
+
+            return HistoryEntry(
+                id: UUID(),
+                createdAt: Date(timeIntervalSince1970: 1_700_000_000 + Double(displayNumber)),
+                itemName: "Large history item \(displayNumber)",
+                category: .home,
+                condition: .good,
+                suggestedPrice: Decimal(displayNumber),
+                imageThumbnail: thumbnail,
+                marketplace: marketplace,
+                listingText: "TITLE:\nLarge history item \(displayNumber)"
+            )
+        }
     }
 }
 

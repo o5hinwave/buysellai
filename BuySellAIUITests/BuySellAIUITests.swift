@@ -68,6 +68,26 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 2))
     }
 
+    func testHomeHandlesFiveHundredRecentListingsAndScrolls() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--seed-large-history"]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+
+        let newest = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Large history item 500")).firstMatch
+        XCTAssertTrue(newest.waitForExistence(timeout: 5))
+
+        let deeperRow = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Large history item 475")).firstMatch
+        var attempts = 0
+        while deeperRow.exists == false && attempts < 8 {
+            app.swipeUp()
+            attempts += 1
+        }
+
+        XCTAssertTrue(deeperRow.exists)
+    }
+
     func testTutorialNextWalksThroughAllSlidesAndGetStartedDismisses() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-tutorial"]
