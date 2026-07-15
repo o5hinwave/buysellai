@@ -96,6 +96,30 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testAppleIdentityTokenExchangeMalformedJSONMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"refresh_token":"missing access token"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
     func testEmailSignInTimeoutMapsToFriendlyError() async throws {
         let client = try makeClient { _ in
             throw URLError(.timedOut)
