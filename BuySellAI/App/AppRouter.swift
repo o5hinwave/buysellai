@@ -32,6 +32,7 @@ final class AppStore {
     @ObservationIgnored private let accountClient: AccountClient
     @ObservationIgnored private let flowTransitionDelayNanoseconds: UInt64
     @ObservationIgnored private var flowGeneration = 0
+    @ObservationIgnored private var historyMutationGeneration = 0
 
     init(
         defaults: UserDefaults = .standard,
@@ -100,6 +101,7 @@ final class AppStore {
         self.historyReader = HistoryReader(modelContainer: modelContext.container)
         if ProcessInfo.processInfo.arguments.contains("--reset-history") {
             try? clearLocalHistory()
+            advanceHistoryMutationGeneration()
             history.removeAll()
         }
     }
@@ -176,27 +178,36 @@ final class AppStore {
     }
 
     func loadHistory() async {
+        let refreshGeneration = historyMutationGeneration
+
         if ProcessInfo.processInfo.arguments.contains("--ui-testing-slow-history-load") {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
         }
 
         if ProcessInfo.processInfo.arguments.contains("--seed-history") {
+            guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             history = [Self.uiTestingHistoryEntry]
             return
         }
 
         if let accessToken = session?.accessToken, accessToken.isEmpty == false {
             do {
-                history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+                let remoteHistory = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+                guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+                history = remoteHistory
             } catch {
+                guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
                 showToast(error.localizedDescription, style: .error)
             }
             return
         }
 
         do {
-            history = try await loadLocalHistory()
+            let localHistory = try await loadLocalHistory()
+            guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+            history = localHistory
         } catch {
+            guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             showToast("Couldn't load recent listings.".localized, style: .error)
         }
     }
@@ -217,6 +228,7 @@ final class AppStore {
             listingText: listingText
         )
 
+        advanceHistoryMutationGeneration()
         history.insert(entry, at: 0)
 
         if let accessToken = session?.accessToken, accessToken.isEmpty == false {
@@ -224,6 +236,7 @@ final class AppStore {
                 do {
                     try await remoteHistoryClient.upsertHistory([entry], accessToken: accessToken)
                 } catch {
+                    advanceHistoryMutationGeneration()
                     history.removeAll { $0.id == entry.id }
                     showToast(error.localizedDescription, style: .error)
                 }
@@ -236,6 +249,7 @@ final class AppStore {
                 modelContext.insert(HistoryEntryModel(entry: entry))
                 try modelContext.save()
             } catch {
+                advanceHistoryMutationGeneration()
                 history.removeAll { $0.id == entry.id }
                 showToast("Couldn't save this listing.".localized, style: .error)
             }
@@ -245,12 +259,14 @@ final class AppStore {
     func deleteHistory(_ entry: HistoryEntry) {
         if let accessToken = session?.accessToken, accessToken.isEmpty == false {
             let previous = history
+            advanceHistoryMutationGeneration()
             history.removeAll { $0.id == entry.id }
             Task {
                 do {
                     try await remoteHistoryClient.deleteHistory(id: entry.id, accessToken: accessToken)
                     HistoryDeletionFeedback.perform()
                 } catch {
+                    advanceHistoryMutationGeneration()
                     history = previous
                     showToast(error.localizedDescription, style: .error)
                 }
@@ -259,11 +275,13 @@ final class AppStore {
         }
 
         guard let modelContext else {
+            advanceHistoryMutationGeneration()
             history.removeAll { $0.id == entry.id }
             HistoryDeletionFeedback.perform()
             return
         }
         do {
+            advanceHistoryMutationGeneration()
             let id = entry.id
             let descriptor = FetchDescriptor<HistoryEntryModel>(
                 predicate: #Predicate { $0.id == id }
@@ -281,12 +299,14 @@ final class AppStore {
     func clearHistory() {
         if let accessToken = session?.accessToken, accessToken.isEmpty == false {
             let previous = history
+            advanceHistoryMutationGeneration()
             history.removeAll()
             Task {
                 do {
                     try await remoteHistoryClient.clearHistory(accessToken: accessToken)
                     showToast("History cleared.".localized, style: .success)
                 } catch {
+                    advanceHistoryMutationGeneration()
                     history = previous
                     showToast(error.localizedDescription, style: .error)
                 }
@@ -295,10 +315,12 @@ final class AppStore {
         }
 
         guard let modelContext else {
+            advanceHistoryMutationGeneration()
             history.removeAll()
             return
         }
         do {
+            advanceHistoryMutationGeneration()
             try modelContext.delete(model: HistoryEntryModel.self)
             try modelContext.save()
             history.removeAll()
@@ -326,6 +348,7 @@ final class AppStore {
     func signOut() {
         session = nil
         clearStoredSession()
+        advanceHistoryMutationGeneration()
         Task { await loadHistory() }
         showToast("Signed out.".localized, style: .success)
     }
@@ -340,6 +363,7 @@ final class AppStore {
             try await accountClient.deleteAccount(accessToken: accessToken)
             session = nil
             clearStoredSession()
+            advanceHistoryMutationGeneration()
             history.removeAll()
             try? clearLocalHistory()
             showToast("Account deleted.".localized, style: .success)
@@ -351,6 +375,7 @@ final class AppStore {
     }
 
     func setSession(_ session: AuthSession) async {
+        advanceHistoryMutationGeneration()
         self.session = session
         persist(session)
 
@@ -427,6 +452,16 @@ final class AppStore {
 
     private func isCurrentFlowGeneration(_ generation: Int) -> Bool {
         generation == flowGeneration
+    }
+
+    @discardableResult
+    private func advanceHistoryMutationGeneration() -> Int {
+        historyMutationGeneration += 1
+        return historyMutationGeneration
+    }
+
+    private func isCurrentHistoryMutationGeneration(_ generation: Int) -> Bool {
+        generation == historyMutationGeneration
     }
 
     private static func clearStoredSessionValues() {
