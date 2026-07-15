@@ -34,6 +34,37 @@ final class LocalizationCoverageTests: XCTestCase {
         )
     }
 
+    func testSwiftUIStringLiteralsUseLocalizationWrappers() throws {
+        let checkedCallPattern = #"\b(?:Text|Button|Label|Section|TextField|navigationTitle|confirmationDialog)\(\s*"((?:\\.|[^"\\])*)""#
+        let regex = try NSRegularExpression(pattern: checkedCallPattern)
+        let allowedRawLiterals: Set<String> = ["~$"]
+        var violations: [String] = []
+
+        for file in try appSwiftFiles() {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            let range = NSRange(source.startIndex..<source.endIndex, in: source)
+
+            for match in regex.matches(in: source, range: range) {
+                guard
+                    let literalRange = Range(match.range(at: 1), in: source),
+                    let matchRange = Range(match.range, in: source)
+                else { continue }
+
+                let literal = source[literalRange].unescapedSwiftStringLiteral
+                guard allowedRawLiterals.contains(literal) == false else { continue }
+
+                if source[matchRange.upperBound...].hasPrefix(".localized") == false {
+                    violations.append("\(relativePath(file)): \(literal)")
+                }
+            }
+        }
+
+        XCTAssertTrue(
+            violations.isEmpty,
+            "SwiftUI string literals should use .localized: \(violations.joined(separator: ", "))"
+        )
+    }
+
     private func sourceLocalizationKeys(in source: String) throws -> Set<String> {
         let patterns = [
             #""((?:\\.|[^"\\])*)"\.localized"#,
@@ -95,6 +126,11 @@ final class LocalizationCoverageTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func relativePath(_ file: URL) -> String {
+        let root = projectURL("")
+        return file.path.replacingOccurrences(of: root.path + "/", with: "")
     }
 }
 
