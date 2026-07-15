@@ -71,6 +71,19 @@ final class AccountClientTests: XCTestCase {
         }
     }
 
+    func testDeleteAccountOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            try await client.deleteAccount(accessToken: "access-token")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
     func testDeleteAccountNonSuccessStatusMapsToServerError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
