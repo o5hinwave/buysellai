@@ -104,6 +104,22 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Snap a photo."].waitForExistence(timeout: 2))
     }
 
+    func testHomeHowItWorksReopensTutorial() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial"]
+        app.launch()
+
+        let howItWorks = app.buttons["How it works"]
+        XCTAssertTrue(howItWorks.waitForExistence(timeout: 5))
+        howItWorks.tap()
+
+        XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Next"].exists)
+        app.buttons["Skip"].tap()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
     func testSettingsReopensHowItWorksTutorial() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial"]
