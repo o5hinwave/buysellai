@@ -34,6 +34,33 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.currentPrice, Decimal(12))
     }
 
+    func testAnalyzeIgnoresWebOnlyFollowUpAndTaxFields() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "name": "Ceramic mug",
+                  "category": "Home",
+                  "condition": "good",
+                  "currentPrice": 9,
+                  "followUpQuestions": ["Is it deductible?"],
+                  "isDeductible": true,
+                  "taxCategory": "household"
+                }
+                """.utf8
+            ))
+        }
+
+        let response = try await client.analyze(image: Data([1, 2, 3]))
+
+        XCTAssertEqual(response.name, "Ceramic mug")
+        XCTAssertEqual(response.category, "Home")
+        XCTAssertEqual(response.condition, "good")
+        XCTAssertEqual(response.currentPrice, Decimal(9))
+    }
+
     func testGenerateListingBuildsRequestAndPreservesListingText() async throws {
         let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
         let client = try makeClient { request in
