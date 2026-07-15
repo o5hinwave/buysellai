@@ -36,7 +36,7 @@ struct CameraView: View {
             if let captureErrorToast {
                 ToastView(toast: captureErrorToast)
                     .padding(.top, Spacing.xl)
-                    .transition(AppMotion.toastTransition(reduceMotion: reduceMotion || appReduceMotion))
+                    .transition(AppMotion.toastTransition(reduceMotion: shouldReduceMotion))
                     .task(id: captureErrorToast.id) {
                         try? await Task.sleep(nanoseconds: 2_300_000_000)
                         if self.captureErrorToast?.id == captureErrorToast.id {
@@ -63,9 +63,13 @@ struct CameraView: View {
                 CameraCornerBrackets()
                     .stroke(Color.brand.primaryForeground, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     .frame(width: min(proxy.size.width - 64, 320), height: min((proxy.size.width - 64) * 4 / 3, proxy.size.height * 0.56))
-                    .opacity(reduceMotion || appReduceMotion ? 0.82 : bracketOpacity)
-                    .task {
-                        guard reduceMotion == false, appReduceMotion == false else { return }
+                    .opacity(shouldReduceMotion ? 0.82 : bracketOpacity)
+                    .task(id: shouldReduceMotion) {
+                        if shouldReduceMotion {
+                            bracketOpacity = 0.82
+                            return
+                        }
+                        bracketOpacity = 0.6
                         withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
                             bracketOpacity = 1
                         }
@@ -203,6 +207,10 @@ struct CameraView: View {
                 }
             }
         }
+    }
+
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 }
 

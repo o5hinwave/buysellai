@@ -532,7 +532,7 @@ struct RootView: View {
             }
         }
         .preferredColorScheme(appStore.preferredColorScheme)
-        .environment(\.appReduceMotion, appStore.reduceMotion || osReduceMotion)
+        .environment(\.appReduceMotion, appStore.reduceMotion)
         .fontWeight(legibilityWeight == .bold ? .bold : nil)
         .dynamicTypeLimit()
         .fullScreenCover(isPresented: $store.isShowingCamera) {
@@ -608,7 +608,7 @@ struct RootView: View {
                 await appStore.loadHistory()
             }
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(AppMotion.animation(reduceMotion: appStore.reduceMotion || osReduceMotion)) {
+            withAnimation(AppMotion.animation(reduceMotion: shouldReduceMotion)) {
                 showSplash = false
             }
             if appStore.shouldShowTutorialOnLaunch {
@@ -619,7 +619,7 @@ struct RootView: View {
     }
 
     private var shouldReduceMotion: Bool {
-        appStore.reduceMotion || osReduceMotion
+        AppMotion.shouldReduceMotion(os: osReduceMotion, app: appStore.reduceMotion)
     }
 }
 

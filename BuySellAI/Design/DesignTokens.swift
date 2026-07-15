@@ -89,6 +89,10 @@ enum AppMotion {
     static let sheet = Animation.spring(response: 0.28, dampingFraction: 0.86)
     static let quick = Animation.easeOut(duration: 0.15)
 
+    static func shouldReduceMotion(os: Bool, app: Bool) -> Bool {
+        os || app
+    }
+
     static func animation(reduceMotion: Bool) -> Animation {
         reduceMotion ? quick : spring
     }

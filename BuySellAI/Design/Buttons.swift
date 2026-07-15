@@ -49,7 +49,9 @@ struct PrimaryPillButton: View {
         .optionalAccessibilityHint(accessibilityHint)
     }
 
-    private var shouldReduceMotion: Bool { reduceMotion || appReduceMotion }
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
+    }
 }
 
 struct SecondaryPillButton: View {
@@ -83,14 +85,18 @@ struct SecondaryPillButton: View {
             .background(Color.brand.secondary, in: Capsule())
         }
         .buttonStyle(.plain)
-        .scaleEffect(pressed && !(reduceMotion || appReduceMotion) ? 0.96 : 1)
-        .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: pressed)
+        .scaleEffect(pressed && !shouldReduceMotion ? 0.96 : 1)
+        .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: pressed)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
         .accessibilityLabel(Text(title.localized))
+    }
+
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 }
 
@@ -172,9 +178,13 @@ struct PressButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed && !(reduceMotion || appReduceMotion) ? 0.96 : 1)
+            .scaleEffect(configuration.isPressed && !shouldReduceMotion ? 0.96 : 1)
             .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: configuration.isPressed)
+            .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: configuration.isPressed)
+    }
+
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 }
 

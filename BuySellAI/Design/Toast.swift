@@ -89,6 +89,6 @@ struct SkeletonLine: View {
     }
 
     private var shouldReduceMotion: Bool {
-        reduceMotion || appReduceMotion
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 }

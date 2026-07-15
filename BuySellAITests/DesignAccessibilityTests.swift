@@ -15,6 +15,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: true), .strong)
     }
 
+    func testAppReduceMotionParticipatesInSharedMotionDecisions() {
+        XCTAssertFalse(AppMotion.shouldReduceMotion(os: false, app: false))
+        XCTAssertTrue(AppMotion.shouldReduceMotion(os: true, app: false))
+        XCTAssertTrue(AppMotion.shouldReduceMotion(os: false, app: true))
+        XCTAssertTrue(AppMotion.shouldReduceMotion(os: true, app: true))
+    }
+
     func testBrandTextStylesUseStaticFontFacesAndBoldTextVariants() {
         XCTAssertEqual(BrandTextStyle.display.fontResourceName(), "SpaceGrotesk-Bold")
         XCTAssertEqual(BrandTextStyle.titleXL.fontResourceName(), "SpaceGrotesk-SemiBold")
@@ -100,6 +107,21 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the category""#))
         XCTAssertNotNil(source.range(of: #"ChipAccessibilityText.valueLabel("Condition""#))
         XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the condition""#))
+    }
+
+    func testAnimatedSurfacesUseSharedReduceMotionDecision() throws {
+        let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let toast = try String(contentsOf: projectURL("BuySellAI/Design/Toast.swift"), encoding: .utf8)
+        let camera = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+        let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(root.range(of: #".environment(\.appReduceMotion, appStore.reduceMotion)"#))
+        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 3)
+        XCTAssertNotNil(toast.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
+        XCTAssertNotNil(camera.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
+        XCTAssertNotNil(camera.range(of: ".task(id: shouldReduceMotion)"))
+        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 2)
     }
 
     private func projectURL(_ path: String) -> URL {

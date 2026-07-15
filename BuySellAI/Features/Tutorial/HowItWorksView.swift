@@ -35,7 +35,7 @@ struct HowItWorksView: View {
                     }
                 }
             }
-            .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: index)
+            .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: index)
             .gesture(
                 DragGesture(minimumDistance: 24)
                     .onEnded { value in
@@ -79,10 +79,14 @@ struct HowItWorksView: View {
     }
 
     private var transition: AnyTransition {
-        reduceMotion || appReduceMotion ? .opacity : .asymmetric(
+        shouldReduceMotion ? .opacity : .asymmetric(
             insertion: .move(edge: .trailing).combined(with: .opacity),
             removal: .move(edge: .leading).combined(with: .opacity)
         )
+    }
+
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 
     private func advance() {
@@ -209,10 +213,14 @@ private struct DotPager: View {
                     .frame(width: dot == index ? 24 : 8, height: 8)
             }
         }
-        .animation(AppMotion.animation(reduceMotion: reduceMotion || appReduceMotion), value: index)
+        .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: index)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Tutorial progress".localized)
         .accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, count))
+    }
+
+    private var shouldReduceMotion: Bool {
+        AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 
     private var inactiveColor: Color {
