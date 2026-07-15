@@ -11,7 +11,7 @@ entitlements_path="${repo_root}/BuySellAI/BuySellAI.entitlements"
 app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
-signed_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-entitlements.XXXXXX.plist")"
+signed_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-entitlements.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {

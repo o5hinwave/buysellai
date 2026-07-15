@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `264` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `268` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused signed-archive preflight result bundle `/tmp/buysell-signed-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-signed-preflight.xcresult`, no-sign archive `/tmp/buysell-signed-preflight-nosign.xcarchive`, verifier log `/tmp/buysell-signed-preflight-nosign.log`, signed-preflight blocker log `/tmp/buysell-signed-preflight.log`, secret-scan log `/tmp/buysell-signed-preflight-secret-scan.log`.
+- Latest local evidence: focused real-device preflight result bundle `/tmp/buysell-real-device-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-real-device-preflight.xcresult`, no-sign archive `/tmp/buysell-real-device-preflight-nosign.xcarchive`, verifier log `/tmp/buysell-real-device-preflight-nosign.log`, signed-preflight blocker log `/tmp/buysell-real-device-signed-preflight.log`, real-device blocker log `/tmp/buysell-real-device-preflight.log`, secret-scan log `/tmp/buysell-real-device-secret-scan.log`.
 
 ## Commands
 
@@ -44,6 +44,24 @@ ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_signed_archive.sh
 
 The default signed preflight should pass without `ALLOW_MISSING_TEAM=1` before checking the signed archive gates below.
 
+Run the real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
+
+```sh
+bash Scripts/preflight_m10_real_device.sh
+```
+
+To target a specific connected device:
+
+```sh
+DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh
+```
+
+Until a trusted physical device is connected, record the known blocker:
+
+```sh
+ALLOW_MISSING_DEVICE=1 bash Scripts/preflight_m10_real_device.sh
+```
+
 Run the secret-pattern scan:
 
 ```sh
@@ -59,10 +77,11 @@ The scan should print `M10 secret scan passed`.
 - [ ] Validate the signed archive in Xcode Organizer.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.
+- [ ] Run the real-device preflight on a trusted physical iPhone or iPad.
 
 ## Real-Device Acceptance
 
-Record the device model, iOS version, backend project, tester, and date before checking these items.
+Record the device model, iOS version, backend project, tester, and date before checking these items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device.
 
 - [ ] Cold launch reaches Home in under 1 second with no flicker.
 - [ ] Tapping `Snap to sell` opens a live camera preview within 400 ms.
