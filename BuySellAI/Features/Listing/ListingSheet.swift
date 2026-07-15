@@ -107,6 +107,7 @@ struct ListingSheet: View {
                 .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
+                .accessibilityIdentifier("Listing.ErrorMessage")
             PrimaryPillButton(title: "Regenerate", systemImage: "arrow.clockwise") {
                 Task { await store.generate(accessToken: appStore.session?.accessToken) }
             }

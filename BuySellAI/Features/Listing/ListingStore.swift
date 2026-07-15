@@ -39,7 +39,8 @@ final class ListingStore {
         if let existingListingText {
             self.listingText = existingListingText
             self.phase = .success
-        } else if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+        } else if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
+                  ProcessInfo.processInfo.arguments.contains("--ui-testing-generate-offline") == false {
             self.listingText = """
             TITLE:
             \(item.name) - \(item.condition.display)

@@ -619,6 +619,40 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Clipboard mismatch"].exists)
     }
 
+    func testGenerateListingOfflineShowsToastAndRegenerateButton() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-auth",
+            "--reset-history",
+            "--ui-testing-generate-offline"
+        ]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        tapMarketplace("ebay", in: app)
+
+        let offlineMessage = app.staticTexts["Listing.ErrorMessage"]
+        if offlineMessage.waitForExistence(timeout: 5) == false {
+            XCTFail("Missing listing offline message. Current hierarchy: \(app.debugDescription)")
+            return
+        }
+        XCTAssertEqual(offlineMessage.label, "You're offline. Reconnect and try again.")
+        XCTAssertTrue(app.buttons["Regenerate"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "URLError")).firstMatch.exists)
+
+        let toast = app.descendants(matching: .any)["Toast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 2))
+    }
+
     func testSettingsThemeAndReduceMotionPersistAcrossRelaunch() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences", "--ui-testing-state-probe"]

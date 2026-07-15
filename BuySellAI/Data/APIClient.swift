@@ -49,6 +49,10 @@ actor APIClient {
     }
 
     func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-generate-offline") {
+            throw APIError.offline
+        }
+
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return """
