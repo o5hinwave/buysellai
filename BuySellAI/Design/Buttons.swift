@@ -7,6 +7,7 @@ struct PrimaryPillButton: View {
     var fillsWidth = true
     var accessibilityHint: String?
     var hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle? = .medium
+    var showsGlow = false
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -35,7 +36,7 @@ struct PrimaryPillButton: View {
             .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 56)
             .padding(.horizontal, fillsWidth ? 0 : Spacing.xl)
             .background(Color.brand.primary, in: Capsule())
-            .shadow(color: Color.brand.primary.opacity(0.35), radius: 30, x: 0, y: 12)
+            .shadow(color: showsGlow ? Color.brand.primary.opacity(0.35) : .clear, radius: showsGlow ? 30 : 0, x: 0, y: showsGlow ? 12 : 0)
         }
         .buttonStyle(.plain)
         .scaleEffect(pressed && !shouldReduceMotion ? 0.96 : 1)

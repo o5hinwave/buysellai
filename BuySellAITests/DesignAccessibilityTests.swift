@@ -141,6 +141,20 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: #".frame(minHeight: 44)"#))
     }
 
+    func testPrimaryGlowIsScopedToHomeSnapButton() throws {
+        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+        let appSources = try appSwiftFiles()
+            .filter { $0.lastPathComponent != "HomeView.swift" }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+
+        XCTAssertNotNil(buttons.range(of: "var showsGlow = false"))
+        XCTAssertNotNil(buttons.range(of: "showsGlow ? Color.brand.primary.opacity(0.35) : .clear"))
+        XCTAssertNotNil(home.range(of: #"PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill", showsGlow: true)"#))
+        XCTAssertNil(appSources.range(of: "showsGlow: true"))
+    }
+
     func testPresentedSheetsExposeVoiceOverSortPriorities() throws {
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
@@ -270,5 +284,24 @@ final class DesignAccessibilityTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func appSwiftFiles() throws -> [URL] {
+        let root = projectURL("BuySellAI")
+        let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: Array(resourceKeys),
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        return try enumerator.compactMap { item -> URL? in
+            guard let url = item as? URL else { return nil }
+            let values = try url.resourceValues(forKeys: resourceKeys)
+            guard values.isRegularFile == true, url.pathExtension == "swift" else { return nil }
+            return url
+        }
     }
 }

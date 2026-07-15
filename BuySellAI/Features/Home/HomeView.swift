@@ -37,7 +37,7 @@ struct HomeView: View {
                             }
 
                             VStack(spacing: Spacing.sm) {
-                                PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill") {
+                                PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill", showsGlow: true) {
                                     appStore.startSnapFlow()
                                 }
                                 .accessibilityHint("Opens the camera".localized)
