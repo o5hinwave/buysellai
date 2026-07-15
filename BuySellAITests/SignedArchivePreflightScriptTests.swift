@@ -1,0 +1,52 @@
+import Foundation
+import XCTest
+
+final class SignedArchivePreflightScriptTests: XCTestCase {
+    func testSignedArchivePreflightChecksReleaseSigningAndEntitlements() throws {
+        let scriptURL = projectURL("Scripts/preflight_m10_signed_archive.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertNotNil(script.range(of: "xcodebuild -showBuildSettings"))
+        XCTAssertNotNil(script.range(of: "-scheme BuySellAI"))
+        XCTAssertNotNil(script.range(of: "-configuration Release"))
+        XCTAssertNotNil(script.range(of: #"setting PRODUCT_BUNDLE_IDENTIFIER"#))
+        XCTAssertNotNil(script.range(of: #"setting CODE_SIGN_STYLE"#))
+        XCTAssertNotNil(script.range(of: #"setting CODE_SIGN_ENTITLEMENTS"#))
+        XCTAssertNotNil(script.range(of: #"setting DEVELOPMENT_TEAM"#))
+        XCTAssertNotNil(script.range(of: "DEVELOPMENT_TEAM is unset"))
+        XCTAssertNotNil(script.range(of: "ALLOW_MISSING_TEAM"))
+        XCTAssertNotNil(script.range(of: "BuySellAI/BuySellAI.entitlements"))
+        XCTAssertNotNil(script.range(of: "com.apple.developer.applesignin"))
+    }
+
+    func testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured() throws {
+        let script = try String(contentsOf: projectURL("Scripts/preflight_m10_signed_archive.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "xcodebuild archive"))
+        XCTAssertNotNil(script.range(of: "-destination 'generic/platform=iOS'"))
+        XCTAssertNotNil(script.range(of: "-allowProvisioningUpdates"))
+        XCTAssertNil(script.range(of: "CODE_SIGNING_ALLOWED=NO"))
+        XCTAssertNil(script.range(of: "CODE_SIGNING_REQUIRED=NO"))
+        XCTAssertNotNil(script.range(of: "codesign -d --entitlements :-"))
+        XCTAssertNotNil(script.range(of: "PrivacyInfo.xcprivacy"))
+        XCTAssertNotNil(script.range(of: "M10 signed archive preflight passed"))
+    }
+
+    func testAcceptanceDocsRouteSignedArchiveThroughPreflight() throws {
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNotNil(readme.range(of: "Scripts/preflight_m10_signed_archive.sh"))
+        XCTAssertNotNil(m10.range(of: "Scripts/preflight_m10_signed_archive.sh"))
+        XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_TEAM=1"))
+        XCTAssertNotNil(m10.range(of: "without `ALLOW_MISSING_TEAM=1`"))
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
+    }
+}

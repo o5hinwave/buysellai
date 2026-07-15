@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `261` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `264` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused config security result bundle `/tmp/buysell-config-security.xcresult`, full-suite result bundle `/tmp/buysell-full-secret-scan.xcresult`, no-sign archive `/tmp/buysell-secret-scan-archive.xcarchive`, verifier log `/tmp/buysell-secret-scan-archive.log`, secret-scan log `/tmp/buysell-secret-scan.log`.
+- Latest local evidence: focused signed-archive preflight result bundle `/tmp/buysell-signed-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-signed-preflight.xcresult`, no-sign archive `/tmp/buysell-signed-preflight-nosign.xcarchive`, verifier log `/tmp/buysell-signed-preflight-nosign.log`, signed-preflight blocker log `/tmp/buysell-signed-preflight.log`, secret-scan log `/tmp/buysell-signed-preflight-secret-scan.log`.
 
 ## Commands
 
@@ -29,6 +29,20 @@ Run the no-sign Release archive package check:
 ```sh
 bash Scripts/verify_m10_local_archive.sh /tmp/BuySellAI-nosign.xcarchive
 ```
+
+Run the signed archive preflight after selecting a real Apple development team:
+
+```sh
+bash Scripts/preflight_m10_signed_archive.sh /tmp/BuySellAI-signed.xcarchive
+```
+
+Until the team is configured, record the known blocker:
+
+```sh
+ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_signed_archive.sh
+```
+
+The default signed preflight should pass without `ALLOW_MISSING_TEAM=1` before checking the signed archive gates below.
 
 Run the secret-pattern scan:
 
