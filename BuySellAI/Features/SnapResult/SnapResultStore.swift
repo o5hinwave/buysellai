@@ -90,19 +90,49 @@ final class SnapResultStore {
         item?.condition = item?.condition.next() ?? .good
     }
 
-    func commitEdits() {
+    func commitEdits(priceLocale: Locale = .current) {
         guard var edited = item else { return }
         let trimmedName = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedName.isEmpty == false {
             edited.name = trimmedName
         }
-        let cleanedPrice = priceText
-            .replacingOccurrences(of: "$", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if let number = Decimal(string: cleanedPrice), number > 0 {
+        if let number = Self.priceDecimal(from: priceText, locale: priceLocale), number > 0 {
             edited.priceEstimate = number.rounded(scale: 0)
             priceText = NSDecimalNumber(decimal: edited.priceEstimate).stringValue
         }
         item = edited
+    }
+
+    static func priceDecimal(from text: String, locale: Locale = .current) -> Decimal? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else { return nil }
+
+        let locales = [locale, Locale(identifier: "en_US_POSIX")]
+        for candidate in locales {
+            for style in [NumberFormatter.Style.currency, .decimal] {
+                let formatter = NumberFormatter()
+                formatter.locale = candidate
+                formatter.numberStyle = style
+                formatter.generatesDecimalNumbers = true
+                if let decimal = (formatter.number(from: trimmed) as? NSDecimalNumber)?.decimalValue {
+                    return decimal
+                }
+            }
+        }
+
+        let sanitized = sanitizedPriceText(trimmed, locale: locale)
+        return Decimal(string: sanitized, locale: Locale(identifier: "en_US_POSIX"))
+    }
+
+    private static func sanitizedPriceText(_ text: String, locale: Locale) -> String {
+        let decimalSeparator = locale.decimalSeparator ?? "."
+        let groupingSeparator = locale.groupingSeparator ?? ","
+        let allowedScalars = CharacterSet.decimalDigits.union(CharacterSet(charactersIn: "\(decimalSeparator).,-"))
+        let filtered = String(text.unicodeScalars.filter { allowedScalars.contains($0) })
+
+        return filtered
+            .replacingOccurrences(of: groupingSeparator, with: "")
+            .replacingOccurrences(of: decimalSeparator, with: ".")
+            .replacingOccurrences(of: ",", with: "")
     }
 }

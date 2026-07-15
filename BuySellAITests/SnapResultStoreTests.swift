@@ -21,6 +21,34 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "52")
     }
 
+    func testCommitEditsParsesLocalizedCommaDecimalPrice() {
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        store.nameText = "Lamp"
+        store.priceText = "45,50"
+
+        store.commitEdits(priceLocale: Locale(identifier: "fr_FR"))
+
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(46))
+        XCTAssertEqual(store.priceText, "46")
+    }
+
+    func testPriceParserHandlesCurrencySymbolsAndGrouping() throws {
+        XCTAssertEqual(
+            SnapResultStore.priceDecimal(from: "$1,234.50", locale: Locale(identifier: "en_US")),
+            try XCTUnwrap(Decimal(string: "1234.5", locale: Locale(identifier: "en_US_POSIX")))
+        )
+        XCTAssertEqual(
+            SnapResultStore.priceDecimal(from: "1 234,50 €", locale: Locale(identifier: "fr_FR")),
+            try XCTUnwrap(Decimal(string: "1234.5", locale: Locale(identifier: "en_US_POSIX")))
+        )
+    }
+
     func testStillWorkingHintAppearsOnlyAfterDelayDuringLoading() async {
         let store = SnapResultStore(
             imageData: Data(),
