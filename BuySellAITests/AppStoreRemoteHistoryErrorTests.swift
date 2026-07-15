@@ -388,6 +388,63 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertNil(store.toast)
     }
 
+    func testDeleteAccountSuccessClearsSessionHistoryAndStoredCredentials() async throws {
+        var observedRequest: URLRequest?
+        let store = try makeStore { request in
+            observedRequest = request
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+        try Keychain.save("user-123", for: "authUserID")
+        try Keychain.save("person@example.com", for: "authEmail")
+        try Keychain.save("access-token", for: "supabaseAccessToken")
+        try Keychain.save("refresh-token", for: "supabaseRefreshToken")
+        store.session = signedInSession
+        store.history = [historyEntry]
+
+        let didDelete = await store.deleteAccount()
+
+        let request = try XCTUnwrap(observedRequest)
+        XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/delete-account")
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+        XCTAssertTrue(didDelete)
+        XCTAssertNil(store.session)
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertEqual(store.toast?.text, "Account deleted.")
+        XCTAssertNil(Keychain.load("authUserID"))
+        XCTAssertNil(Keychain.load("authEmail"))
+        XCTAssertNil(Keychain.load("supabaseAccessToken"))
+        XCTAssertNil(Keychain.load("supabaseRefreshToken"))
+    }
+
+    func testDeleteAccountFailureKeepsSessionHistoryAndShowsMappedToast() async throws {
+        let store = try makeStore { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+        let entry = historyEntry
+        store.session = signedInSession
+        store.history = [entry]
+
+        let didDelete = await store.deleteAccount()
+
+        XCTAssertFalse(didDelete)
+        XCTAssertEqual(store.session?.userID, signedInSession.userID)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.toast?.text, APIError.rateLimited.localizedDescription)
+    }
+
     private var signedInSession: AuthSession {
         AuthSession(
             userID: "user-123",
@@ -463,10 +520,11 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         let url = try XCTUnwrap(URL(string: "https://example.supabase.co"))
         let config = AppConfig(supabaseURL: url, anonKey: "anon-test-key")
         let remoteHistoryClient = RemoteHistoryClient(session: session, config: config)
+        let accountClient = AccountClient(session: session, config: config)
         let suiteName = "AppStoreRemoteHistoryErrorTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
-        return AppStore(defaults: defaults, remoteHistoryClient: remoteHistoryClient)
+        return AppStore(defaults: defaults, remoteHistoryClient: remoteHistoryClient, accountClient: accountClient)
     }
 
     private func waitForToast(_ expectedText: String?, in store: AppStore) async {
