@@ -50,7 +50,7 @@ struct MarketplaceRow: View {
                 VStack(spacing: 2) {
                     Text(estimate.payout.currency())
                         .brandFont(.caption)
-                        .foregroundStyle(Color.brand.primary)
+                        .foregroundStyle(Color.brand.primaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
                         .frame(width: 56, height: 56)

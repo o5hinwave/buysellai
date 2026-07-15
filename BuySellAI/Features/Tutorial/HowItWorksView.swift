@@ -242,7 +242,7 @@ private struct AnalyzeIllustration: View {
             VStack(spacing: Spacing.xxs) {
                 Text("$45".localized)
                     .brandFont(.titleXL)
-                    .foregroundStyle(Color.brand.primary)
+                    .foregroundStyle(Color.brand.primaryText)
                 HStack(spacing: Spacing.xxs) {
                     ForEach(0..<3, id: \.self) { index in
                         Capsule()

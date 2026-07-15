@@ -50,7 +50,7 @@ struct HistoryRow: View {
                 .frame(width: 56, height: 56)
                 .overlay {
                     Image(systemName: "photo")
-                        .foregroundStyle(Color.brand.primary)
+                        .foregroundStyle(Color.brand.primaryText)
                 }
         }
     }

@@ -4,7 +4,7 @@ struct ChipButton: View {
     static let minimumTapTarget: CGFloat = 44
 
     let title: String
-    var tint: Color = Color.brand.primary
+    var tint: Color = Color.brand.primaryText
     var accessibilityLabel: String?
     var accessibilityHint: String?
     let action: () -> Void

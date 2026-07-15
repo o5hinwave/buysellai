@@ -12,6 +12,7 @@ extension Color {
         static let border = Color("Border")
         static let borderStrong = Color("BorderStrong")
         static let primary = Color("BrandPrimary")
+        static let primaryText = Color("BrandPrimaryText")
         static let primaryPressed = Color("BrandPrimaryPressed")
         static let primaryMuted = Color("BrandPrimaryMuted")
         static let primaryForeground = Color("BrandPrimaryForeground")

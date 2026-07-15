@@ -111,7 +111,7 @@ struct BrandWordmark: View {
     var showsPeriod = true
     var size: WordmarkSize = .regular
     var foreground = Color.brand.foreground
-    var periodColor = Color.brand.primary
+    var periodColor = Color.brand.primaryText
 
     var body: some View {
         HStack(spacing: 0) {

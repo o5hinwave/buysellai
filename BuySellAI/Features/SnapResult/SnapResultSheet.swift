@@ -110,13 +110,13 @@ struct SnapResultSheet: View {
                     HStack(spacing: Spacing.xs) {
                         Text("~$")
                             .brandFont(.title)
-                            .foregroundStyle(Color.brand.primary)
+                            .foregroundStyle(Color.brand.primaryText)
                         TextField("Price".localized, text: Binding(
                             get: { store.priceText },
                             set: { store.priceText = $0 }
                         ))
                             .brandFont(.title)
-                            .foregroundStyle(Color.brand.primary)
+                            .foregroundStyle(Color.brand.primaryText)
                             .keyboardType(.decimalPad)
                             .focused($focusedField, equals: .price)
                             .onSubmit { store.commitEdits() }
@@ -213,7 +213,7 @@ struct PhotoThumbnail: View {
                 Color.brand.primaryMuted
                     .overlay {
                         Image(systemName: "photo")
-                            .foregroundStyle(Color.brand.primary)
+                            .foregroundStyle(Color.brand.primaryText)
                     }
             }
         }

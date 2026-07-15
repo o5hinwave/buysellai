@@ -30,6 +30,48 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: true), .strong)
     }
 
+    func testSemanticColorAssetsMeetPromptContrastTargets() throws {
+        let textAssets = ["Foreground", "ForegroundSecondary", "MutedForeground"]
+        let backgrounds = ["Background", "Surface"]
+
+        for appearance in ColorAppearance.allCases {
+            for backgroundName in backgrounds {
+                let background = try colorAsset(backgroundName, appearance: appearance)
+
+                for textName in textAssets {
+                    let text = try colorAsset(textName, appearance: appearance)
+                    XCTAssertGreaterThanOrEqual(
+                        contrastRatio(text, background),
+                        4.5,
+                        "\(textName) on \(backgroundName) in \(appearance.description) mode should pass body contrast."
+                    )
+                }
+
+                let accentText = try colorAsset("BrandPrimaryText", appearance: appearance)
+                XCTAssertGreaterThanOrEqual(
+                    contrastRatio(accentText, background),
+                    3.0,
+                    "BrandPrimaryText on \(backgroundName) in \(appearance.description) mode should pass large text and icon contrast."
+                )
+            }
+        }
+    }
+
+    func testReadableOrangeForegroundUsesPrimaryTextToken() throws {
+        let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
+        let chips = try String(contentsOf: projectURL("BuySellAI/Design/Chips.swift"), encoding: .utf8)
+        let typography = try String(contentsOf: projectURL("BuySellAI/Design/Typography.swift"), encoding: .utf8)
+        let appSources = try appSwiftFiles()
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+
+        XCTAssertNotNil(designTokens.range(of: #"static let primaryText = Color("BrandPrimaryText")"#))
+        XCTAssertNotNil(chips.range(of: "var tint: Color = Color.brand.primaryText"))
+        XCTAssertNotNil(typography.range(of: "var periodColor = Color.brand.primaryText"))
+        XCTAssertNotNil(appSources.range(of: ".foregroundStyle(Color.brand.primaryText)"))
+        XCTAssertNil(appSources.range(of: ".foregroundStyle(Color.brand.primary)"))
+    }
+
     func testAppReduceMotionParticipatesInSharedMotionDecisions() {
         XCTAssertFalse(AppMotion.shouldReduceMotion(os: false, app: false))
         XCTAssertTrue(AppMotion.shouldReduceMotion(os: true, app: false))
@@ -451,6 +493,76 @@ final class DesignAccessibilityTests: XCTestCase {
         }
 
         return expression
+    }
+
+    private enum ColorAppearance: String, CaseIterable, CustomStringConvertible {
+        case light
+        case dark
+
+        var description: String { rawValue }
+    }
+
+    private struct RGB {
+        let red: Double
+        let green: Double
+        let blue: Double
+    }
+
+    private func colorAsset(_ name: String, appearance: ColorAppearance) throws -> RGB {
+        let assetURL = projectURL("BuySellAI/Resources/Assets.xcassets/\(name).colorset/Contents.json")
+        let data = try Data(contentsOf: assetURL)
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let colors = try XCTUnwrap(json["colors"] as? [[String: Any]])
+        let entry = try XCTUnwrap(
+            colors.first { colorEntry($0, matches: appearance) },
+            "\(name) should include a \(appearance.description) appearance."
+        )
+        let color = try XCTUnwrap(entry["color"] as? [String: Any])
+        let components = try XCTUnwrap(color["components"] as? [String: Any])
+
+        return RGB(
+            red: try colorComponent("red", in: components),
+            green: try colorComponent("green", in: components),
+            blue: try colorComponent("blue", in: components)
+        )
+    }
+
+    private func colorEntry(_ entry: [String: Any], matches appearance: ColorAppearance) -> Bool {
+        let appearances = entry["appearances"] as? [[String: String]] ?? []
+        let isDark = appearances.contains { current in
+            current["appearance"] == "luminosity" && current["value"] == "dark"
+        }
+
+        switch appearance {
+        case .light:
+            return isDark == false
+        case .dark:
+            return isDark
+        }
+    }
+
+    private func colorComponent(_ name: String, in components: [String: Any]) throws -> Double {
+        let rawValue = try XCTUnwrap(components[name] as? String)
+        return try XCTUnwrap(Double(rawValue))
+    }
+
+    private func contrastRatio(_ foreground: RGB, _ background: RGB) -> Double {
+        let foregroundLuminance = relativeLuminance(foreground)
+        let backgroundLuminance = relativeLuminance(background)
+        let lighter = max(foregroundLuminance, backgroundLuminance)
+        let darker = min(foregroundLuminance, backgroundLuminance)
+
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    private func relativeLuminance(_ color: RGB) -> Double {
+        0.2126 * linearized(color.red) +
+            0.7152 * linearized(color.green) +
+            0.0722 * linearized(color.blue)
+    }
+
+    private func linearized(_ component: Double) -> Double {
+        component <= 0.03928 ? component / 12.92 : pow((component + 0.055) / 1.055, 2.4)
     }
 
     private func delimiterBalance(in line: String) -> Int {
