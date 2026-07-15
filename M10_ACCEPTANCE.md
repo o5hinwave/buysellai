@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `272` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `276` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused App Store export preflight result bundle `/tmp/buysell-app-store-export-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-app-store-export-preflight.xcresult`, no-sign archive `/tmp/buysell-app-store-export-nosign.xcarchive`, verifier log `/tmp/buysell-app-store-export-nosign.log`, signed-preflight blocker log `/tmp/buysell-app-store-export-signed-preflight.log`, App Store export blocker log `/tmp/buysell-app-store-export-preflight.log`, real-device blocker log `/tmp/buysell-app-store-export-real-device-preflight.log`, secret-scan log `/tmp/buysell-app-store-export-secret-scan.log`.
+- Latest local evidence: focused App Store validation preflight result bundle `/tmp/buysell-app-store-validation-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-app-store-validation-preflight.xcresult`, no-sign archive `/tmp/buysell-app-store-validation-nosign.xcarchive`, verifier log `/tmp/buysell-app-store-validation-nosign.log`, signed-preflight blocker log `/tmp/buysell-app-store-validation-signed-preflight.log`, App Store export blocker log `/tmp/buysell-app-store-validation-export-preflight.log`, App Store validation blocker log `/tmp/buysell-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-app-store-validation-real-device-preflight.log`, secret-scan log `/tmp/buysell-app-store-validation-secret-scan.log`.
 
 ## Commands
 
@@ -42,14 +42,24 @@ Run the App Store Connect export preflight after selecting a real Apple developm
 bash Scripts/preflight_m10_app_store_export.sh /tmp/BuySellAI-appstore.xcarchive /tmp/BuySellAI-appstore-export
 ```
 
-Until the team is configured, record the known blocker:
+Run the App Store Connect validation preflight after exporting an IPA and configuring API-key credentials:
+
+```sh
+ASC_API_KEY_ID=<key-id> \
+ASC_API_ISSUER_ID=<issuer-id> \
+ASC_API_PRIVATE_KEYS_DIR=<directory-containing-AuthKey_key-id.p8> \
+bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export
+```
+
+Until the Apple team, exported IPA, and App Store Connect API-key credentials are available, record the known blockers:
 
 ```sh
 ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_signed_archive.sh
 ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_app_store_export.sh
+ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export
 ```
 
-The default signed and App Store export preflights should pass without `ALLOW_MISSING_TEAM=1` before checking the signed archive gates below.
+The default signed and App Store export preflights should pass without `ALLOW_MISSING_TEAM=1`, and the App Store validation preflight should pass without `ALLOW_MISSING_ASC=1`, before checking the signed archive gates below.
 
 Run the real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
 
@@ -83,6 +93,7 @@ The scan should print `M10 secret scan passed`.
 - [ ] Produce a signed Release archive with automatic signing enabled.
 - [ ] Export an App Store Connect IPA with automatic signing enabled.
 - [ ] Validate the signed archive in Xcode Organizer.
+- [ ] Validate the exported IPA with App Store Connect API-key credentials.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.

@@ -39,7 +39,7 @@ final class SigningCapabilityTests: XCTestCase {
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
 
         XCTAssertEqual(teamIDs, [""])
-        XCTAssertNotNil(readme.range(of: "A signed archive and App Store Connect IPA export are blocked until an Apple development team is configured"))
+        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, and App Store Connect validation are blocked until an Apple development team and App Store Connect API-key credentials are configured"))
     }
 
     private func buildConfigurations(forBundleID bundleID: String, in project: String) throws -> [String: String] {

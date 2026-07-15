@@ -1,0 +1,59 @@
+import Foundation
+import XCTest
+
+final class AppStoreValidationPreflightScriptTests: XCTestCase {
+    func testAppStoreValidationPreflightChecksExportedIPAContents() throws {
+        let scriptURL = projectURL("Scripts/preflight_m10_app_store_validate.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/Info.plist"))
+        XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/PrivacyInfo.xcprivacy"))
+        XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/BuySellAI"))
+        XCTAssertNotNil(script.range(of: "CFBundleIdentifier"))
+        XCTAssertNotNil(script.range(of: "NSCameraUsageDescription"))
+        XCTAssertNotNil(script.range(of: "com.rhodes.buysellai"))
+    }
+
+    func testAppStoreValidationPreflightUsesAltoolValidationWithAPIKeyAuth() throws {
+        let script = try String(contentsOf: projectURL("Scripts/preflight_m10_app_store_validate.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "xcrun altool --validate-app"))
+        XCTAssertNotNil(script.range(of: "-t ios"))
+        XCTAssertNotNil(script.range(of: "--apiKey \"$api_key_id\""))
+        XCTAssertNotNil(script.range(of: "--apiIssuer \"$api_issuer_id\""))
+        XCTAssertNotNil(script.range(of: "--output-format json"))
+        XCTAssertNotNil(script.range(of: "ASC_API_KEY_ID"))
+        XCTAssertNotNil(script.range(of: "ASC_API_ISSUER_ID"))
+        XCTAssertNotNil(script.range(of: "ASC_API_PRIVATE_KEYS_DIR"))
+        XCTAssertNotNil(script.range(of: "API_PRIVATE_KEYS_DIR"))
+    }
+
+    func testAppStoreValidationPreflightHasPendingModeForMissingExternalState() throws {
+        let script = try String(contentsOf: projectURL("Scripts/preflight_m10_app_store_validate.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "ALLOW_MISSING_ASC"))
+        XCTAssertNotNil(script.range(of: "missing IPA"))
+        XCTAssertNotNil(script.range(of: "ASC_API_KEY_ID is unset"))
+        XCTAssertNotNil(script.range(of: "ASC_API_ISSUER_ID is unset"))
+        XCTAssertNotNil(script.range(of: "M10 App Store validation preflight pending"))
+        XCTAssertNotNil(script.range(of: "M10 App Store validation preflight passed"))
+    }
+
+    func testAcceptanceDocsRouteAppStoreValidationThroughPreflight() throws {
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNotNil(readme.range(of: "Scripts/preflight_m10_app_store_validate.sh"))
+        XCTAssertNotNil(m10.range(of: "Scripts/preflight_m10_app_store_validate.sh"))
+        XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh"))
+        XCTAssertNotNil(m10.range(of: "App Store Connect validation"))
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
+    }
+}
