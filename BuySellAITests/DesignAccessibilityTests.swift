@@ -220,6 +220,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(authStore.range(of: "showsEmailForm"))
     }
 
+    func testAuthSignInProviderButtonsUseFiftySixPointPills() throws {
+        let authView = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
+        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(buttons.range(of: #".frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 56)"#))
+        XCTAssertNotNil(
+            authView.range(of: #"SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill", minHeight: 56)"#)
+        )
+    }
+
     func testDeleteAccountNavigationLinkHasExplicitVoiceOverLabel() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 

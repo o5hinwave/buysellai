@@ -36,7 +36,7 @@ struct AuthView: View {
                         }
                         .accessibilitySortPriority(3)
 
-                        SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill") {
+                        SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill", minHeight: 56) {
                             path.append(.email)
                         }
                         .accessibilitySortPriority(2)
