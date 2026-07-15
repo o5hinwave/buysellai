@@ -93,6 +93,7 @@ struct SettingsView: View {
                         NavigationLink("Delete account".localized) {
                             DeleteAccountView()
                         }
+                        .accessibilityLabel("Delete account".localized)
                         .accessibilityIdentifier("Settings.DeleteAccount")
                     }
                 }

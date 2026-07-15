@@ -133,6 +133,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(settings.components(separatedBy: ".accessibilitySortPriority").count - 1, 6)
     }
 
+    func testDeleteAccountNavigationLinkHasExplicitVoiceOverLabel() throws {
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(settings.range(of: #"NavigationLink("Delete account".localized)"#))
+        XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Delete account".localized)"#))
+    }
+
     func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
