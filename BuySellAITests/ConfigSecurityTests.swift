@@ -20,11 +20,28 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertEqual(config.anonKey, "public-anon-key")
     }
 
+    func testRuntimeConfigNormalizesTrailingSlashOnProjectRoot() throws {
+        let config = try AppConfig.make(
+            supabaseURLString: "https://project-ref.supabase.co/",
+            anonKey: "public-anon-key"
+        )
+
+        XCTAssertEqual(config.supabaseURL.absoluteString, "https://project-ref.supabase.co")
+        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://project-ref.supabase.co/functions/v1")
+    }
+
     func testRuntimeConfigRejectsInsecureOrNonSupabaseURLs() throws {
         let invalidURLs = [
             "http://project-ref.supabase.co",
+            "https://supabase.co",
+            "https://nested.project-ref.supabase.co",
             "https://example.com",
-            "not a url"
+            "not a url",
+            "https://project-ref.supabase.co/functions/v1",
+            "https://project-ref.supabase.co?redirect=https://example.com",
+            "https://project-ref.supabase.co#fragment",
+            "https://anon@project-ref.supabase.co",
+            "https://project-ref.supabase.co:443"
         ]
 
         for url in invalidURLs {

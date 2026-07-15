@@ -30,12 +30,26 @@ struct AppConfig: Sendable {
             let components = URLComponents(string: trimmedURL),
             components.scheme == "https",
             let host = components.host?.lowercased(),
-            host.hasSuffix(".supabase.co"),
-            let supabaseURL = components.url,
+            Self.isProjectSupabaseHost(host),
+            components.user == nil,
+            components.password == nil,
+            components.port == nil,
+            components.path.isEmpty || components.path == "/",
+            components.query == nil,
+            components.fragment == nil,
+            let supabaseURL = URL(string: "https://\(host)"),
             trimmedAnonKey.isEmpty == false
         else {
             throw APIError.notConfigured
         }
         return AppConfig(supabaseURL: supabaseURL, anonKey: trimmedAnonKey)
+    }
+
+    private static func isProjectSupabaseHost(_ host: String) -> Bool {
+        let parts = host.split(separator: ".")
+        guard parts.count == 3, parts[1] == "supabase", parts[2] == "co" else {
+            return false
+        }
+        return parts[0].range(of: #"^[a-z0-9-]+$"#, options: .regularExpression) != nil
     }
 }
