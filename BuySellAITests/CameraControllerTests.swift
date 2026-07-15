@@ -15,4 +15,18 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertEqual(CameraVideoRotation.angle(for: .faceUp), 90)
         XCTAssertEqual(CameraVideoRotation.angle(for: .faceDown), 90)
     }
+
+    func testCameraConfigurationUnlocksOnlyAfterSuccessfulLock() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertEqual(source.components(separatedBy: "defer { device.unlockForConfiguration() }").count - 1, 2)
+        XCTAssertNil(source.range(of: #"catch\s*\{\s*device\.unlockForConfiguration\(\)\s*\}"#, options: .regularExpression))
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
+    }
 }

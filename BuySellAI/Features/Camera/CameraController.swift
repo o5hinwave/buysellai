@@ -48,11 +48,9 @@ final class CameraController: NSObject, @unchecked Sendable {
             guard let device = self.videoDevice, device.hasTorch else { return }
             do {
                 try device.lockForConfiguration()
+                defer { device.unlockForConfiguration() }
                 device.torchMode = enabled ? .on : .off
-                device.unlockForConfiguration()
-            } catch {
-                device.unlockForConfiguration()
-            }
+            } catch {}
         }
     }
 
@@ -135,16 +133,14 @@ final class CameraController: NSObject, @unchecked Sendable {
 
         do {
             try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
-            device.unlockForConfiguration()
-        } catch {
-            device.unlockForConfiguration()
-        }
+        } catch {}
 
         videoDevice = device
         configured = true
