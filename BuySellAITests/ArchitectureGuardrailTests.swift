@@ -83,6 +83,15 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoSellerReferencesExceptAllowedMarketplaceBlurbs()
     }
 
+    func testTutorialKeepsKeyboardNavigationSupport() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"\.focusable\(\)"#, options: .regularExpression))
+        XCTAssertNotNil(source.range(of: #"\.onKeyPress\(\.space\)"#, options: .regularExpression))
+        XCTAssertNotNil(source.range(of: #"\.onKeyPress\(\.rightArrow\)"#, options: .regularExpression))
+        XCTAssertNotNil(source.range(of: #"\.onKeyPress\(\.leftArrow\)"#, options: .regularExpression))
+    }
+
     func testAppSourcesDoNotForceUnwrap() throws {
         try assertNoMatches([#"[A-Za-z0-9_\)\]]!"#], in: appSwiftFiles())
     }
