@@ -119,7 +119,7 @@ actor APIClient {
             logger.warning("Retrying network connection lost")
             return try await sendMapped(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -127,7 +127,7 @@ actor APIClient {
         do {
             return try await send(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -150,22 +150,6 @@ actor APIClient {
         }
     }
 
-    private func mapTransport(_ error: Error) -> Error {
-        if let error = error as? APIError {
-            return error
-        }
-        if let error = error as? URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                return APIError.offline
-            case .timedOut:
-                return APIError.timeout
-            default:
-                return APIError.unknown
-            }
-        }
-        return APIError.unknown
-    }
 }
 
 struct AnalyzeResponse: Decodable, Sendable {
@@ -201,6 +185,29 @@ enum APIError: LocalizedError, Equatable {
         case .unknown:
             "Something went wrong. Try again.".localized
         }
+    }
+
+    static func mapTransport(_ error: Error) -> APIError {
+        if let error = error as? APIError {
+            return error
+        }
+        if let error = error as? URLError {
+            switch error.code {
+            case .notConnectedToInternet,
+                 .networkConnectionLost,
+                 .dataNotAllowed,
+                 .cannotFindHost,
+                 .cannotConnectToHost,
+                 .dnsLookupFailed,
+                 .internationalRoamingOff:
+                return .offline
+            case .timedOut:
+                return .timeout
+            default:
+                return .unknown
+            }
+        }
+        return .unknown
     }
 }
 

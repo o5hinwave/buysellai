@@ -45,7 +45,7 @@ actor AccountClient {
         } catch let error as URLError where error.code == .networkConnectionLost {
             try await sendVoidMapped(request)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -53,7 +53,7 @@ actor AccountClient {
         do {
             try await sendVoid(request)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -72,20 +72,4 @@ actor AccountClient {
         }
     }
 
-    private func mapTransport(_ error: Error) -> Error {
-        if let error = error as? APIError {
-            return error
-        }
-        if let error = error as? URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                return APIError.offline
-            case .timedOut:
-                return APIError.timeout
-            default:
-                return APIError.unknown
-            }
-        }
-        return APIError.unknown
-    }
 }

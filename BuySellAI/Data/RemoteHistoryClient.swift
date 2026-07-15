@@ -98,7 +98,7 @@ actor RemoteHistoryClient {
         } catch let error as URLError where error.code == .networkConnectionLost {
             return try await sendMapped(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -110,7 +110,7 @@ actor RemoteHistoryClient {
         } catch let error as URLError where error.code == .networkConnectionLost {
             try await sendVoidMapped(request)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -118,7 +118,7 @@ actor RemoteHistoryClient {
         do {
             return try await send(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -126,7 +126,7 @@ actor RemoteHistoryClient {
         do {
             try await sendVoid(request)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -159,22 +159,6 @@ actor RemoteHistoryClient {
         }
     }
 
-    private func mapTransport(_ error: Error) -> Error {
-        if let error = error as? APIError {
-            return error
-        }
-        if let error = error as? URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                return APIError.offline
-            case .timedOut:
-                return APIError.timeout
-            default:
-                return APIError.unknown
-            }
-        }
-        return APIError.unknown
-    }
 }
 
 private struct RemoteHistoryRecord: Codable {

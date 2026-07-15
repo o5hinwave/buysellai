@@ -203,6 +203,19 @@ final class APIClientTests: XCTestCase {
         }
     }
 
+    func testCannotFindHostMapsToOfflineFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.cannotFindHost)
+        }
+
+        do {
+            _ = try await client.analyze(image: Data([1]))
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
     func testNonSuccessStatusMapsToServerError() async throws {
         let client = try makeClient { request in
             let url = try XCTUnwrap(request.url)

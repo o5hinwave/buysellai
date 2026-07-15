@@ -99,7 +99,7 @@ actor SupabaseAuthClient {
         } catch let error as URLError where error.code == .networkConnectionLost {
             return try await sendMapped(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -107,7 +107,7 @@ actor SupabaseAuthClient {
         do {
             return try await send(request, decoding: decoding)
         } catch {
-            throw mapTransport(error)
+            throw APIError.mapTransport(error)
         }
     }
 
@@ -130,22 +130,6 @@ actor SupabaseAuthClient {
         }
     }
 
-    private func mapTransport(_ error: Error) -> Error {
-        if let error = error as? APIError {
-            return error
-        }
-        if let error = error as? URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                return APIError.offline
-            case .timedOut:
-                return APIError.timeout
-            default:
-                return APIError.unknown
-            }
-        }
-        return APIError.unknown
-    }
 }
 
 private struct AppleIDTokenRequest: Encodable {

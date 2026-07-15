@@ -15,4 +15,27 @@ final class APIErrorTests: XCTestCase {
     func testCameraCaptureFailureUsesFriendlyCopy() {
         XCTAssertEqual(CameraError.captureFailed.localizedDescription, "Photo couldn't be captured.")
     }
+
+    func testTransportMappingClassifiesCommonOfflineFailures() {
+        let offlineCodes: [URLError.Code] = [
+            .notConnectedToInternet,
+            .networkConnectionLost,
+            .dataNotAllowed,
+            .cannotFindHost,
+            .cannotConnectToHost,
+            .dnsLookupFailed,
+            .internationalRoamingOff
+        ]
+
+        for code in offlineCodes {
+            XCTAssertEqual(APIError.mapTransport(URLError(code)), .offline, "\(code) should show the offline message")
+        }
+    }
+
+    func testTransportMappingClassifiesTimeoutAndUnknownFailures() {
+        XCTAssertEqual(APIError.mapTransport(URLError(.timedOut)), .timeout)
+        XCTAssertEqual(APIError.mapTransport(URLError(.badURL)), .unknown)
+        XCTAssertEqual(APIError.mapTransport(APIError.rateLimited), .rateLimited)
+        XCTAssertEqual(APIError.mapTransport(NSError(domain: "Test", code: 1)), .unknown)
+    }
 }
