@@ -80,6 +80,8 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertNil(storyboard.range(of: "activityIndicatorView"))
         XCTAssertNotNil(storyboard.range(of: #"text="BuySell""#))
         XCTAssertNotNil(storyboard.range(of: #"text=".""#))
+        XCTAssertNil(storyboard.range(of: #"type="boldSystem""#))
+        XCTAssertEqual(storyboard.components(separatedBy: #"name="SpaceGrotesk-Bold" family="Space Grotesk" pointSize="44""#).count - 1, 2)
         XCTAssertNotNil(storyboard.range(of: #"red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB""#))
         XCTAssertNotNil(storyboard.range(of: #"red="0.07058823529" green="0.07058823529" blue="0.07058823529""#))
         XCTAssertNotNil(storyboard.range(of: #"red="1" green="0.47843137250000001" blue="0.14901960780000001""#))
