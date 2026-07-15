@@ -176,6 +176,10 @@ final class AppStore {
     }
 
     func loadHistory() async {
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-slow-history-load") {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+        }
+
         if ProcessInfo.processInfo.arguments.contains("--seed-history") {
             history = [Self.uiTestingHistoryEntry]
             return
@@ -551,7 +555,9 @@ struct RootView: View {
         }
         .task {
             appStore.configure(modelContext: modelContext)
-            await appStore.loadHistory()
+            Task { @MainActor in
+                await appStore.loadHistory()
+            }
             try? await Task.sleep(nanoseconds: 300_000_000)
             withAnimation(AppMotion.animation(reduceMotion: appStore.reduceMotion || osReduceMotion)) {
                 showSplash = false

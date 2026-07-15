@@ -54,6 +54,20 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
 
+    func testSlowHistoryLoadDoesNotBlockHomeLaunch() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-auth",
+            "--reset-history",
+            "--ui-testing-slow-history-load"
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 2))
+    }
+
     func testTutorialNextWalksThroughAllSlidesAndGetStartedDismisses() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-tutorial"]
