@@ -68,15 +68,15 @@ final class SnapResultStore {
             nameText = detected.name
             priceText = NSDecimalNumber(decimal: detected.priceEstimate).stringValue
             phase = .success
-            Haptics.notify(.success)
+            AnalysisFeedback.performSuccess()
         } catch is CancellationError {
             guard generation == analysisGeneration else { return }
             phase = .failed(APIError.unknown.localizedDescription)
-            Haptics.notify(.error)
+            AnalysisFeedback.performFailure()
         } catch {
             guard generation == analysisGeneration else { return }
             phase = .failed(error.localizedDescription)
-            Haptics.notify(.error)
+            AnalysisFeedback.performFailure()
         }
     }
 
