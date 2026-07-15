@@ -61,6 +61,29 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.currentPrice, Decimal(9))
     }
 
+    func testAnalyzeGuestRequestOmitsAuthorizationHeader() async throws {
+        let client = try makeClient { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/analyze-image")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let imageDataURL = try XCTUnwrap(json["imageDataUrl"] as? String)
+            XCTAssertTrue(imageDataURL.hasPrefix("data:image/jpeg;base64,"))
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Guest mug","category":"Home","condition":"good","currentPrice":10}"#.utf8))
+        }
+
+        let response = try await client.analyze(image: Data([1, 2, 3]))
+
+        XCTAssertEqual(response.name, "Guest mug")
+        XCTAssertEqual(response.currentPrice, Decimal(10))
+    }
+
     func testGenerateListingBuildsRequestAndPreservesListingText() async throws {
         let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
         let client = try makeClient { request in
@@ -88,6 +111,31 @@ final class APIClientTests: XCTestCase {
         let listing = try await client.generateListing(item: item, marketplace: .ebay, accessToken: "access-token")
 
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.\n")
+    }
+
+    func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {
+        let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
+        let client = try makeClient { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["platform"] as? String, "craigslist")
+            let item = try XCTUnwrap(json["item"] as? [String: Any])
+            XCTAssertEqual(item["name"] as? String, "Lamp")
+            XCTAssertEqual((item["currentPrice"] as? NSNumber)?.decimalValue, Decimal(45))
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nGuest Lamp\n\nDESCRIPTION:\nReady to list."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(item: item, marketplace: .craigslist)
+
+        XCTAssertEqual(listing, "TITLE:\nGuest Lamp\n\nDESCRIPTION:\nReady to list.")
     }
 
     func testRateLimitMapsToFriendlyError() async {
