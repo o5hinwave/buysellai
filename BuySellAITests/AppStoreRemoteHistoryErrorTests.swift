@@ -211,6 +211,39 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertTrue(store.history.isEmpty)
     }
 
+    func testSignedInSaveFailureAfterSignOutDoesNotReplaceSignOutToast() async throws {
+        let postStarted = expectation(description: "remote save started")
+        let postReturned = expectation(description: "remote save returned")
+        let releasePost = DispatchSemaphore(value: 0)
+        let store = try makeStore { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            postStarted.fulfill()
+            XCTAssertEqual(.success, releasePost.wait(timeout: .now() + 2))
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            postReturned.fulfill()
+            return (response, Data())
+        }
+        store.session = signedInSession
+
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        await fulfillment(of: [postStarted], timeout: 1)
+
+        store.signOut()
+        XCTAssertNil(store.session)
+        XCTAssertEqual(store.toast?.text, "Signed out.")
+
+        releasePost.signal()
+        await fulfillment(of: [postReturned], timeout: 1)
+        await settleAsyncCompletions()
+
+        XCTAssertEqual(store.toast?.text, "Signed out.")
+    }
+
     func testSignedInDeleteHistoryRestoresRowAndShowsMappedServerToast() async throws {
         let entry = historyEntry
         let store = try makeStore { request in
@@ -231,6 +264,61 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertEqual(store.history.map(\.id), [entry.id])
     }
 
+    func testSignedInDeleteFailureAfterNewerSaveDoesNotRestoreStaleSnapshot() async throws {
+        let entry = historyEntry
+        let deleteStarted = expectation(description: "remote delete started")
+        let deleteReturned = expectation(description: "remote delete returned")
+        let releaseDelete = DispatchSemaphore(value: 0)
+        let store = try makeStore { request in
+            switch request.httpMethod {
+            case "DELETE":
+                deleteStarted.fulfill()
+                XCTAssertEqual(.success, releaseDelete.wait(timeout: .now() + 2))
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 400,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                deleteReturned.fulfill()
+                return (response, Data())
+            case "POST":
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 204,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            }
+        }
+        store.session = signedInSession
+        store.history = [entry]
+
+        store.deleteHistory(entry)
+        await fulfillment(of: [deleteStarted], timeout: 1)
+        XCTAssertTrue(store.history.isEmpty)
+
+        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase")
+        XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
+
+        releaseDelete.signal()
+        await fulfillment(of: [deleteReturned], timeout: 1)
+        await settleAsyncCompletions()
+
+        XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
+        XCTAssertNil(store.toast)
+    }
+
     func testSignedInClearHistoryRestoresRowsAndShowsOfflineToast() async throws {
         let entry = historyEntry
         let store = try makeStore { _ in
@@ -243,6 +331,55 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await waitForToast(APIError.offline.localizedDescription, in: store)
 
         XCTAssertEqual(store.history.map(\.id), [entry.id])
+    }
+
+    func testSignedInClearFailureAfterNewerSaveDoesNotRestoreStaleSnapshot() async throws {
+        let entry = historyEntry
+        let clearStarted = expectation(description: "remote clear started")
+        let clearReturned = expectation(description: "remote clear returned")
+        let releaseClear = DispatchSemaphore(value: 0)
+        let store = try makeStore { request in
+            switch request.httpMethod {
+            case "DELETE":
+                clearStarted.fulfill()
+                XCTAssertEqual(.success, releaseClear.wait(timeout: .now() + 2))
+                clearReturned.fulfill()
+                throw URLError(.notConnectedToInternet)
+            case "POST":
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 204,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            }
+        }
+        store.session = signedInSession
+        store.history = [entry]
+
+        store.clearHistory()
+        await fulfillment(of: [clearStarted], timeout: 1)
+        XCTAssertTrue(store.history.isEmpty)
+
+        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase")
+        XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
+
+        releaseClear.signal()
+        await fulfillment(of: [clearReturned], timeout: 1)
+        await settleAsyncCompletions()
+
+        XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
+        XCTAssertNil(store.toast)
     }
 
     private var signedInSession: AuthSession {
@@ -260,6 +397,15 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             category: .home,
             condition: .good,
             priceEstimate: Decimal(45)
+        )
+    }
+
+    private var vase: DetectedItem {
+        DetectedItem(
+            name: "Vase",
+            category: .home,
+            condition: .likeNew,
+            priceEstimate: Decimal(32)
         )
     }
 
@@ -326,6 +472,10 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         XCTFail("Expected toast \(expectedText ?? "nil"), got \(store.toast?.text ?? "nil")")
+    }
+
+    private func settleAsyncCompletions() async {
+        try? await Task.sleep(nanoseconds: 150_000_000)
     }
 
     private func clearStoredSession() {

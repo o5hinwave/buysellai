@@ -231,11 +231,12 @@ final class AppStore {
         advanceHistoryMutationGeneration()
         history.insert(entry, at: 0)
 
-        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+        if let session, let accessToken = session.accessToken, accessToken.isEmpty == false {
             Task {
                 do {
                     try await remoteHistoryClient.upsertHistory([entry], accessToken: accessToken)
                 } catch {
+                    guard isCurrentSession(session), history.contains(where: { $0.id == entry.id }) else { return }
                     advanceHistoryMutationGeneration()
                     history.removeAll { $0.id == entry.id }
                     showToast(error.localizedDescription, style: .error)
@@ -257,16 +258,17 @@ final class AppStore {
     }
 
     func deleteHistory(_ entry: HistoryEntry) {
-        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+        if let session, let accessToken = session.accessToken, accessToken.isEmpty == false {
             let previous = history
-            advanceHistoryMutationGeneration()
+            let deleteGeneration = advanceHistoryMutationGeneration()
             history.removeAll { $0.id == entry.id }
             Task {
                 do {
                     try await remoteHistoryClient.deleteHistory(id: entry.id, accessToken: accessToken)
+                    guard isCurrentSession(session), isCurrentHistoryMutationGeneration(deleteGeneration) else { return }
                     HistoryDeletionFeedback.perform()
                 } catch {
-                    advanceHistoryMutationGeneration()
+                    guard isCurrentSession(session), isCurrentHistoryMutationGeneration(deleteGeneration) else { return }
                     history = previous
                     showToast(error.localizedDescription, style: .error)
                 }
@@ -297,16 +299,17 @@ final class AppStore {
     }
 
     func clearHistory() {
-        if let accessToken = session?.accessToken, accessToken.isEmpty == false {
+        if let session, let accessToken = session.accessToken, accessToken.isEmpty == false {
             let previous = history
-            advanceHistoryMutationGeneration()
+            let clearGeneration = advanceHistoryMutationGeneration()
             history.removeAll()
             Task {
                 do {
                     try await remoteHistoryClient.clearHistory(accessToken: accessToken)
+                    guard isCurrentSession(session), isCurrentHistoryMutationGeneration(clearGeneration) else { return }
                     showToast("History cleared.".localized, style: .success)
                 } catch {
-                    advanceHistoryMutationGeneration()
+                    guard isCurrentSession(session), isCurrentHistoryMutationGeneration(clearGeneration) else { return }
                     history = previous
                     showToast(error.localizedDescription, style: .error)
                 }
