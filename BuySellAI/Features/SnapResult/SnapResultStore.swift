@@ -4,6 +4,8 @@ import Foundation
 @MainActor
 @Observable
 final class SnapResultStore {
+    typealias AnalyzeHandler = (Data, String?) async throws -> AnalyzeResponse
+
     enum Phase: Equatable {
         case idle
         case loading
@@ -18,8 +20,20 @@ final class SnapResultStore {
     var priceText = ""
     var showStillWorking = false
 
-    init(imageData: Data) {
+    private let analyzeHandler: AnalyzeHandler
+    private let stillWorkingDelayNanoseconds: UInt64
+    private var analysisGeneration = 0
+
+    init(
+        imageData: Data,
+        stillWorkingDelayNanoseconds: UInt64 = 6_000_000_000,
+        analyzeHandler: @escaping AnalyzeHandler = { imageData, accessToken in
+            try await APIClient.shared.analyze(image: imageData, accessToken: accessToken)
+        }
+    ) {
         self.imageData = imageData
+        self.stillWorkingDelayNanoseconds = stillWorkingDelayNanoseconds
+        self.analyzeHandler = analyzeHandler
     }
 
     func analyzeIfNeeded(accessToken: String?) async {
@@ -28,19 +42,21 @@ final class SnapResultStore {
     }
 
     func analyze(accessToken: String?) async {
+        analysisGeneration += 1
+        let generation = analysisGeneration
         phase = .loading
         showStillWorking = false
         item = nil
 
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 6_000_000_000)
-            if phase == .loading {
+            try? await Task.sleep(nanoseconds: stillWorkingDelayNanoseconds)
+            if phase == .loading, generation == analysisGeneration {
                 showStillWorking = true
             }
         }
 
         do {
-            let response = try await APIClient.shared.analyze(image: imageData, accessToken: accessToken)
+            let response = try await analyzeHandler(imageData, accessToken)
             let detected = DetectedItem(
                 name: response.name,
                 category: Category(apiValue: response.category),
@@ -84,4 +100,3 @@ final class SnapResultStore {
         item = edited
     }
 }
-
