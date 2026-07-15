@@ -221,6 +221,19 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testRefreshSessionOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.refreshSession(Self.refreshableSession)
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
     func testRefreshSessionRateLimitMapsToFriendlyError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -273,6 +286,33 @@ final class SupabaseAuthClientTests: XCTestCase {
                 ? Data()
                 : Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"updated@example.com"}}"#.utf8)
             return (response, data)
+        }
+
+        let session = try await client.refreshSession(Self.refreshableSession)
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.email, "updated@example.com")
+        XCTAssertEqual(session.accessToken, "retry-access")
+        XCTAssertEqual(session.refreshToken, "retry-refresh")
+        XCTAssertEqual(session.appleUserID, "apple-user")
+    }
+
+    func testRefreshSessionNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"updated@example.com"}}"#.utf8))
         }
 
         let session = try await client.refreshSession(Self.refreshableSession)
@@ -341,6 +381,19 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testEmailSignInOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
     func testAppleIdentityTokenExchangeTimeoutMapsToFriendlyError() async throws {
         let client = try makeClient { _ in
             throw URLError(.timedOut)
@@ -356,6 +409,24 @@ final class SupabaseAuthClientTests: XCTestCase {
             XCTFail("Expected timeout error")
         } catch {
             XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testAppleIdentityTokenExchangeOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
         }
     }
 
@@ -402,6 +473,30 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testAppleIdentityTokenExchangeNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 401,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(401))
+        }
+    }
+
     func testEmailSignInNonSuccessStatusMapsToServerError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -444,6 +539,30 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.accessToken, "retry-access")
     }
 
+    func testEmailSignInNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"user-456","email":"person@example.com"}}"#.utf8))
+        }
+
+        let session = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "user-456")
+        XCTAssertEqual(session.accessToken, "retry-access")
+    }
+
     func testAppleIdentityTokenExchangeTransientServerErrorRetriesOnce() async throws {
         var attempts = 0
         let client = try makeClient { request in
@@ -458,6 +577,36 @@ final class SupabaseAuthClientTests: XCTestCase {
                 ? Data()
                 : Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"person@example.com"}}"#.utf8)
             return (response, data)
+        }
+
+        let session = try await client.exchangeAppleIdentityToken(
+            identityToken: "apple-jwt",
+            nonce: "raw-nonce",
+            appleUserID: "apple-user",
+            email: nil
+        )
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.email, "person@example.com")
+        XCTAssertEqual(session.accessToken, "retry-access")
+    }
+
+    func testAppleIdentityTokenExchangeNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"person@example.com"}}"#.utf8))
         }
 
         let session = try await client.exchangeAppleIdentityToken(
