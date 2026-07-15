@@ -250,6 +250,28 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Reduce Motion".localized)"#))
     }
 
+    func testEveryDirectSwiftUIButtonHasExplicitAccessibilityLabel() throws {
+        let buttonPattern = #"(?<![A-Za-z0-9_])Button\s*(?:\(|\{)"#
+        var unlabeledButtons: [String] = []
+
+        for sourceFile in try appSwiftFiles() {
+            let source = try String(contentsOf: sourceFile, encoding: .utf8)
+            let lines = source.components(separatedBy: .newlines)
+
+            for (index, line) in lines.enumerated() where line.range(of: buttonPattern, options: .regularExpression) != nil {
+                let expression = buttonExpression(startingAt: index, in: lines)
+                if expression.range(of: ".accessibilityLabel") == nil {
+                    unlabeledButtons.append("\(relativePath(sourceFile)):\(index + 1)")
+                }
+            }
+        }
+
+        XCTAssertTrue(
+            unlabeledButtons.isEmpty,
+            "Direct SwiftUI Buttons need explicit accessibility labels: \(unlabeledButtons.joined(separator: ", "))"
+        )
+    }
+
     func testSettingsKeepsFiveSectionLimitAndGatedDangerZone() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 
@@ -347,6 +369,11 @@ final class DesignAccessibilityTests: XCTestCase {
             .appendingPathComponent(path)
     }
 
+    private func relativePath(_ url: URL) -> String {
+        let root = projectURL("")
+        return url.path.replacingOccurrences(of: root.path + "/", with: "")
+    }
+
     private func appSwiftFiles() throws -> [URL] {
         let root = projectURL("BuySellAI")
         let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey]
@@ -363,6 +390,40 @@ final class DesignAccessibilityTests: XCTestCase {
             let values = try url.resourceValues(forKeys: resourceKeys)
             guard values.isRegularFile == true, url.pathExtension == "swift" else { return nil }
             return url
+        }
+    }
+
+    private func buttonExpression(startingAt startIndex: Int, in lines: [String]) -> String {
+        var expression = lines[startIndex] + "\n"
+        var delimiterBalance = delimiterBalance(in: lines[startIndex])
+        var index = startIndex + 1
+
+        while index < lines.count {
+            let line = lines[index]
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if delimiterBalance > 0 || trimmed.hasPrefix(".") || trimmed.isEmpty {
+                expression += line + "\n"
+                delimiterBalance += self.delimiterBalance(in: line)
+                index += 1
+            } else {
+                break
+            }
+        }
+
+        return expression
+    }
+
+    private func delimiterBalance(in line: String) -> Int {
+        line.reduce(into: 0) { balance, character in
+            switch character {
+            case "(", "{", "[":
+                balance += 1
+            case ")", "}", "]":
+                balance -= 1
+            default:
+                break
+            }
         }
     }
 }
