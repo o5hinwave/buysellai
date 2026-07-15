@@ -173,6 +173,25 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["You're offline. Reconnect and try again."].exists)
     }
 
+    func testCameraDeniedShowsSettingsFallbackAndCanClose() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-camera-denied"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        XCTAssertTrue(app.staticTexts["Camera access needed to snap items."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Open Settings"].exists)
+
+        let close = app.buttons["Close"]
+        XCTAssertTrue(close.exists)
+        close.tap()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
     func testAuthCanBeDismissedAndGuestSnapStillWorks() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]

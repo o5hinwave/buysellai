@@ -46,6 +46,10 @@ struct CameraView: View {
             }
         }
         .task {
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-denied") {
+                state = .denied
+                return
+            }
             state = await controller.start()
         }
         .onDisappear {
