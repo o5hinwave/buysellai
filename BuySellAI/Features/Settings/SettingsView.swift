@@ -101,6 +101,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings".localized)
+            .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Color.brand.background)
             .accessibilitySortPriority(1)

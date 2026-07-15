@@ -254,6 +254,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #"Section("Appearance".localized)"#))
         XCTAssertNotNil(settings.range(of: #"Section("App".localized)"#))
         XCTAssertNotNil(settings.range(of: #"Section("About".localized)"#))
+        XCTAssertNotNil(settings.range(of: #".listStyle(.insetGrouped)"#))
         XCTAssertNotNil(
             settings.range(
                 of: #"if\s+appStore\.session\s*!=\s*nil\s*\{\s*Section\("Danger zone"\.localized\)"#,
