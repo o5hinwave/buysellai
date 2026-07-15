@@ -250,6 +250,20 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Reduce Motion".localized)"#))
     }
 
+    func testSettingsAboutLinksUseInAppSafari() throws {
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(settings.range(of: "import SafariServices"))
+        XCTAssertNotNil(settings.range(of: #"Button("Privacy policy".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"URL(string: "https://buysell.ai/privacy").map(SafariDestination.init)"#))
+        XCTAssertNotNil(settings.range(of: #"Button("Terms".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"URL(string: "https://buysell.ai/terms").map(SafariDestination.init)"#))
+        XCTAssertNotNil(settings.range(of: #".sheet(item: $safariDestination)"#))
+        XCTAssertNotNil(settings.range(of: "private struct SafariView: UIViewControllerRepresentable"))
+        XCTAssertNotNil(settings.range(of: "SFSafariViewController(url: url)"))
+        XCTAssertNil(settings.range(of: "UIApplication.shared.open"))
+    }
+
     func testEveryDirectSwiftUIButtonHasExplicitAccessibilityLabel() throws {
         let buttonPattern = #"(?<![A-Za-z0-9_])Button\s*(?:\(|\{)"#
         var unlabeledButtons: [String] = []
