@@ -15,6 +15,7 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
@@ -69,6 +70,8 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
@@ -87,13 +90,14 @@ final class APIClientTests: XCTestCase {
     }
 
     func testGenerateListingBuildsRequestAndPreservesListingText() async throws {
-        let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
+        let item = Self.sampleItem
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
@@ -117,13 +121,15 @@ final class APIClientTests: XCTestCase {
     }
 
     func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {
-        let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
+        let item = Self.sampleItem
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
@@ -179,7 +185,6 @@ final class APIClientTests: XCTestCase {
     }
 
     func testMalformedGenerateListingJSONMapsToDecodingError() async throws {
-        let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
         let client = try makeClient { request in
             let url = try XCTUnwrap(request.url)
             let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
@@ -187,11 +192,106 @@ final class APIClientTests: XCTestCase {
         }
 
         do {
-            _ = try await client.generateListing(item: item, marketplace: .ebay)
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
             XCTFail("Expected decoding error")
         } catch {
             XCTAssertEqual(error as? APIError, .decoding)
         }
+    }
+
+    func testGenerateListingTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testGenerateListingOfflineMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+            XCTFail("Expected offline error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .offline)
+        }
+    }
+
+    func testGenerateListingRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 429, httpVersion: nil, headerFields: nil))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testGenerateListingNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 403, httpVersion: nil, headerFields: nil))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(403))
+        }
+    }
+
+    func testGenerateListingNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nRetry Lamp\n\nDESCRIPTION:\nReady."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(listing, "TITLE:\nRetry Lamp\n\nDESCRIPTION:\nReady.")
+    }
+
+    func testGenerateListingTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let url = try XCTUnwrap(request.url)
+            if attempts == 1 {
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nServer Retry Lamp\n\nDESCRIPTION:\nReady."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(listing, "TITLE:\nServer Retry Lamp\n\nDESCRIPTION:\nReady.")
     }
 
     func testTimeoutMapsToFriendlyError() async throws {
@@ -274,6 +374,10 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
         XCTAssertEqual(response.name, "Chair")
         XCTAssertEqual(response.currentPrice, Decimal(25))
+    }
+
+    private static var sampleItem: DetectedItem {
+        DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
     }
 
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> APIClient {
