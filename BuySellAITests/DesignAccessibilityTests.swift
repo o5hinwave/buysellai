@@ -150,6 +150,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: #".frame(minHeight: 44)"#))
     }
 
+    func testHomeSettingsGearUsesFortyPointVisualWithMinimumTapTarget() throws {
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(home.range(of: #"IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: "Settings", size: 40)"#))
+        XCTAssertNotNil(home.range(of: #".frame(width: 44, height: 44)"#))
+    }
+
     func testPrimaryGlowIsScopedToHomeSnapButton() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)

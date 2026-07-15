@@ -148,7 +148,7 @@ struct HomeView: View {
             .buttonStyle(PressButtonStyle())
             .accessibilityLabel((appStore.session == nil ? "Sign in" : "Sign out").localized)
 
-            IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: "Settings") {
+            IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: "Settings", size: 40) {
                 appStore.isShowingSettings = true
             }
             .frame(width: 44, height: 44)
