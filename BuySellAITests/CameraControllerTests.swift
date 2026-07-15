@@ -20,6 +20,26 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertEqual(size.height / size.width, CameraViewfinderLayout.aspectRatio, accuracy: 0.001)
     }
 
+    func testTorchToggleRequiresBackCameraTorchAvailability() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "func isTorchAvailable() async -> Bool"))
+        XCTAssertNotNil(source.range(of: "func setTorch(enabled: Bool) async -> Bool"))
+        XCTAssertNotNil(source.range(of: "private static func supportsTorch(_ device: AVCaptureDevice) -> Bool"))
+        XCTAssertNotNil(source.range(of: "device.position == .back && device.hasTorch && device.isTorchAvailable"))
+        XCTAssertNotNil(source.range(of: "continuation.resume(returning: false)"))
+    }
+
+    func testPhotoFlashOnlyTurnsOnWhenSelectedBackCameraSupportsFlash() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "private static func supportsFlash(_ device: AVCaptureDevice) -> Bool"))
+        XCTAssertNotNil(source.range(of: "device.position == .back && device.hasFlash"))
+        XCTAssertNotNil(source.range(of: "let supportsFlash = self.videoDevice.map(Self.supportsFlash) ?? false"))
+        XCTAssertNotNil(source.range(of: "if supportsFlash, self.photoOutput.supportedFlashModes.contains(.on)"))
+        XCTAssertNotNil(source.range(of: "settings.flashMode = flashOn ? .on : .off"))
+    }
+
     func testCaptureVideoRotationAngleMatchesDeviceOrientation() {
         XCTAssertEqual(CameraVideoRotation.angle(for: .portrait), 90)
         XCTAssertEqual(CameraVideoRotation.angle(for: .landscapeLeft), 0)

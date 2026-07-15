@@ -43,15 +43,40 @@ final class CameraController: NSObject, @unchecked Sendable {
         }
     }
 
-    func setTorch(enabled: Bool) {
-        queue.async {
-            guard let device = self.videoDevice, device.hasTorch else { return }
-            do {
-                try device.lockForConfiguration()
-                defer { device.unlockForConfiguration() }
-                device.torchMode = enabled ? .on : .off
-            } catch {}
+    func isTorchAvailable() async -> Bool {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume(returning: self.videoDevice.map(Self.supportsTorch) ?? false)
+            }
         }
+    }
+
+    func setTorch(enabled: Bool) async -> Bool {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                guard let device = self.videoDevice, Self.supportsTorch(device) else {
+                    continuation.resume(returning: false)
+                    return
+                }
+
+                do {
+                    try device.lockForConfiguration()
+                    defer { device.unlockForConfiguration() }
+                    device.torchMode = enabled ? .on : .off
+                    continuation.resume(returning: true)
+                } catch {
+                    continuation.resume(returning: false)
+                }
+            }
+        }
+    }
+
+    private static func supportsTorch(_ device: AVCaptureDevice) -> Bool {
+        device.position == .back && device.hasTorch && device.isTorchAvailable
+    }
+
+    private static func supportsFlash(_ device: AVCaptureDevice) -> Bool {
+        device.position == .back && device.hasFlash
     }
 
     func capturePhoto(flashOn: Bool) async throws -> Data {
@@ -65,7 +90,8 @@ final class CameraController: NSObject, @unchecked Sendable {
                         kCVPixelBufferHeightKey as String: 512
                     ]
                 }
-                if self.photoOutput.supportedFlashModes.contains(.on) {
+                let supportsFlash = self.videoDevice.map(Self.supportsFlash) ?? false
+                if supportsFlash, self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = flashOn ? .on : .off
                 }
 

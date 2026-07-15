@@ -10,6 +10,7 @@ struct CameraView: View {
     @State private var controller = CameraController()
     @State private var state: CameraStartResult?
     @State private var flashOn = false
+    @State private var isFlashAvailable = true
     @State private var isCapturing = false
     @State private var bracketOpacity = 0.6
     @State private var captureErrorToast: ToastMessage?
@@ -51,10 +52,17 @@ struct CameraView: View {
                 return
             }
             if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-ready") {
+                isFlashAvailable = true
                 state = .ready
                 return
             }
-            state = await controller.start()
+            let startResult = await controller.start()
+            state = startResult
+            if case .ready = startResult {
+                isFlashAvailable = await controller.isTorchAvailable()
+            } else {
+                isFlashAvailable = false
+            }
         }
         .onDisappear {
             controller.stop()
@@ -91,14 +99,15 @@ struct CameraView: View {
                         Spacer()
 
                         IconCircleButton(
-                            systemImage: flashOn ? "bolt.fill" : "bolt.slash",
-                            accessibilityLabel: flashOn ? "Turn flash off" : "Turn flash on",
+                            systemImage: isFlashAvailable && flashOn ? "bolt.fill" : "bolt.slash",
+                            accessibilityLabel: flashAccessibilityLabel,
                             size: 40,
                             material: true
                         ) {
-                            flashOn.toggle()
-                            controller.setTorch(enabled: flashOn)
+                            toggleFlash()
                         }
+                        .disabled(isFlashAvailable == false)
+                        .opacity(isFlashAvailable ? 1 : 0.55)
                     }
                     .padding(.horizontal, Spacing.md)
                     .padding(.top, proxy.safeAreaInsets.top + Spacing.md)
@@ -188,6 +197,25 @@ struct CameraView: View {
         .padding(Spacing.xl)
         .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         .padding(Spacing.xl)
+    }
+
+    private var flashAccessibilityLabel: String {
+        guard isFlashAvailable else { return "Flash unavailable" }
+        return flashOn ? "Turn flash off" : "Turn flash on"
+    }
+
+    private func toggleFlash() {
+        guard isFlashAvailable else { return }
+        let requestedState = !flashOn
+        flashOn = requestedState
+        Task {
+            let applied = await controller.setTorch(enabled: requestedState)
+            guard applied == false else { return }
+            await MainActor.run {
+                flashOn = false
+                isFlashAvailable = false
+            }
+        }
     }
 
     private func capture() {
