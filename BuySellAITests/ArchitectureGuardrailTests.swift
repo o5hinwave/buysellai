@@ -76,11 +76,11 @@ final class ArchitectureGuardrailTests: XCTestCase {
     func testAppCopyAvoidsForbiddenToneWords() throws {
         let patterns = [
             #"\b[Jj]ust\b"#,
-            #"\b[Ss]imply\b"#,
-            #"\b[Ss]eller\b"#
+            #"\b[Ss]imply\b"#
         ]
 
         try assertNoMatches(patterns, in: appTextFiles())
+        try assertNoSellerReferencesExceptAllowedMarketplaceBlurbs()
     }
 
     func testAppSourcesDoNotForceUnwrap() throws {
@@ -103,6 +103,28 @@ final class ArchitectureGuardrailTests: XCTestCase {
                     line: line
                 )
             }
+        }
+    }
+
+    private func assertNoSellerReferencesExceptAllowedMarketplaceBlurbs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let allowedPhrases = [
+            "Fashion, no seller fees",
+            "Amazon seller — high reach, high fee"
+        ]
+        for sourceFile in try appTextFiles() {
+            let sourceText = try String(contentsOf: sourceFile, encoding: .utf8)
+            let text = allowedPhrases.reduce(sourceText) { partial, phrase in
+                partial.replacingOccurrences(of: phrase, with: "")
+            }
+            XCTAssertNil(
+                text.range(of: #"\b[Ss]eller\b"#, options: .regularExpression),
+                "\(relativePath(sourceFile)) contains a user-facing seller reference outside the allowed marketplace blurbs",
+                file: file,
+                line: line
+            )
         }
     }
 

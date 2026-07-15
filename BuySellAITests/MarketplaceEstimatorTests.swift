@@ -18,7 +18,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             (.stockx, "StockX", "Sneakers & collectibles"),
             (.goat, "GOAT", "Sneakers, authenticated"),
             (.kidizen, "Kidizen", "Kids clothes"),
-            (.vinted, "Vinted", "Fashion, no selling fees"),
+            (.vinted, "Vinted", "Fashion, no seller fees"),
             (.vestiaire, "Vestiaire", "Luxury pre-owned"),
             (.therealreal, "The RealReal", "Authenticated luxury"),
             (.swappa, "Swappa", "Used tech & phones"),
@@ -27,7 +27,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             (.bonanza, "Bonanza", "General resale, low fees"),
             (.curtsy, "Curtsy", "Women's fashion (mobile)"),
             (.nextdoor, "Nextdoor", "Neighborhood local sales"),
-            (.amazon, "Amazon", "Amazon — high reach, high fee"),
+            (.amazon, "Amazon", "Amazon seller — high reach, high fee"),
             (.shopify, "Shopify", "Your own storefront"),
             (.rubylane, "Ruby Lane", "Antiques & fine art"),
             (.tcgplayer, "TCGplayer", "Trading cards")
