@@ -23,6 +23,16 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNil(source.range(of: #"catch\s*\{\s*device\.unlockForConfiguration\(\)\s*\}"#, options: .regularExpression))
     }
 
+    func testCaptureFreezesPreviewBeforeJPEGDownscaleCompletes() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+        let successRange = try XCTUnwrap(source.range(of: "case .success(let data):"))
+        let searchRange = successRange.lowerBound..<source.endIndex
+        let stopRange = try XCTUnwrap(source.range(of: "self?.stop()", range: searchRange))
+        let downscaleRange = try XCTUnwrap(source.range(of: "ImageTools.jpegDataDownscaled", range: searchRange))
+
+        XCTAssertLessThan(stopRange.lowerBound, downscaleRange.lowerBound)
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

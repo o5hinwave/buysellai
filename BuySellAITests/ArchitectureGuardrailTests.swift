@@ -107,6 +107,38 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoMatches(patterns, in: appSwiftFiles())
     }
 
+    func testLoggerCallsDoNotReferenceSensitivePayloadsOrUserIdentifiers() throws {
+        let sensitiveTerms = [
+            "Authorization",
+            "accessToken",
+            "base64",
+            "email",
+            "httpBody",
+            "idToken",
+            "imageDataUrl",
+            "password",
+            "refreshToken"
+        ]
+
+        for sourceFile in try appSwiftFiles() {
+            let lines = try String(contentsOf: sourceFile, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+            for (index, line) in lines.enumerated() {
+                let text = String(line)
+                guard text.contains("Logger") || text.contains("logger.") || text.contains("os_log") else {
+                    continue
+                }
+
+                for term in sensitiveTerms {
+                    XCTAssertFalse(
+                        text.localizedCaseInsensitiveContains(term),
+                        "\(relativePath(sourceFile)):\(index + 1) logs sensitive term \(term)"
+                    )
+                }
+            }
+        }
+    }
+
     private func assertNoMatches(
         _ patterns: [String],
         in files: [URL],

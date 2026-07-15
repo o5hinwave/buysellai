@@ -80,6 +80,7 @@ final class CameraController: NSObject, @unchecked Sendable {
                     self?.photoDelegate = nil
                     switch result {
                     case .success(let data):
+                        self?.stop()
                         let downscaled = ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)
                         continuation.resume(returning: downscaled)
                     case .failure(let error):
