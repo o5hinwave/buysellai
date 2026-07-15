@@ -8,7 +8,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         super.tearDown()
     }
 
-    func testAppleIdentityTokenExchangeBuildsSupabaseIdTokenRequest() async throws {
+    func testAppleIdentityTokenExchangeBuildsSupabaseIdTokenRequestAndUsesServerUserID() async throws {
         let client = try makeClient { request in
             let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
             XCTAssertEqual(components.scheme, "https")
@@ -39,6 +39,31 @@ final class SupabaseAuthClientTests: XCTestCase {
             nonce: "raw-nonce",
             appleUserID: "apple-user",
             email: nil
+        )
+
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.appleUserID, "apple-user")
+        XCTAssertEqual(session.email, "person@example.com")
+        XCTAssertEqual(session.accessToken, "supabase-access")
+        XCTAssertEqual(session.refreshToken, "refresh-token")
+    }
+
+    func testAppleIdentityTokenExchangeFallsBackToAppleUserIDWhenServerUserIsMissing() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"supabase-access","refresh_token":"refresh-token"}"#.utf8))
+        }
+
+        let session = try await client.exchangeAppleIdentityToken(
+            identityToken: "apple-jwt",
+            nonce: "raw-nonce",
+            appleUserID: "apple-user",
+            email: "person@example.com"
         )
 
         XCTAssertEqual(session.userID, "apple-user")
@@ -260,7 +285,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         )
 
         XCTAssertEqual(attempts, 2)
-        XCTAssertEqual(session.userID, "apple-user")
+        XCTAssertEqual(session.userID, "server-user")
         XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "retry-access")
     }

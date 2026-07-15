@@ -25,7 +25,7 @@ actor SupabaseAuthClient {
         let payload = AppleIDTokenRequest(provider: "apple", idToken: identityToken, nonce: nonce)
         let response = try await tokenRequest(grantType: "id_token", body: payload)
         return AuthSession(
-            userID: appleUserID,
+            userID: response.user?.id ?? appleUserID,
             email: email ?? response.user?.email,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
