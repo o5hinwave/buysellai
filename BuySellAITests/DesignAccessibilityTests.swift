@@ -14,6 +14,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(ChipButton.minimumTapTarget, 44)
     }
 
+    func testGhostButtonsUsePillShape() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let ghostRange = try XCTUnwrap(source.range(of: "struct GhostButton: View"))
+        let iconRange = try XCTUnwrap(source.range(of: "struct IconCircleButton: View"))
+        let ghostSource = String(source[ghostRange.lowerBound..<iconRange.lowerBound])
+
+        XCTAssertNotNil(ghostSource.range(of: ".background(Color.brand.surface, in: Capsule())"))
+        XCTAssertNotNil(ghostSource.range(of: "Capsule()\n                    .stroke"))
+        XCTAssertNil(ghostSource.range(of: "RoundedRectangle"))
+    }
+
     func testAccessibleBorderUsesStrongTokenWhenDifferentiatingWithoutColor() {
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: false), .standard)
         XCTAssertEqual(Color.brand.accessibilityBorderToken(differentiateWithoutColor: true), .strong)

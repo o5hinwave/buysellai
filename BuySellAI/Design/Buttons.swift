@@ -125,9 +125,9 @@ struct GhostButton: View {
             .foregroundStyle(Color.brand.foreground)
             .frame(maxWidth: .infinity, minHeight: 48)
             .padding(.horizontal, Spacing.sm)
-            .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+            .background(Color.brand.surface, in: Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                Capsule()
                     .stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1)
             )
         }
