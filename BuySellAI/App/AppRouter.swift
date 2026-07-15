@@ -113,8 +113,10 @@ final class AppStore {
 
     func startSnapFlow() {
         advanceFlowGeneration()
+        let uiTestingCameraMode = ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-denied") ||
+            ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-ready")
         if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
-           ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-denied") == false {
+           uiTestingCameraMode == false {
             snapResultContext = SnapResultContext(imageData: ImageTools.sampleJPEG())
         } else {
             isShowingCamera = true

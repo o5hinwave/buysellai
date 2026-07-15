@@ -50,6 +50,10 @@ struct CameraView: View {
                 state = .denied
                 return
             }
+            if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-ready") {
+                state = .ready
+                return
+            }
             state = await controller.start()
         }
         .onDisappear {

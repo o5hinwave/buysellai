@@ -109,6 +109,18 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the condition""#))
     }
 
+    func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"accessibilityLabel("Take photo".localized)"#))
+        XCTAssertNotNil(source.range(of: #"accessibilityHint("Captures the current view".localized)"#))
+        XCTAssertNotNil(source.range(of: #"accessibilityLabel: "Close camera""#))
+        XCTAssertNotNil(source.range(of: #"accessibilityLabel: flashOn ? "Turn flash off" : "Turn flash on""#))
+        XCTAssertNil(source.range(of: "PhotosPicker"))
+        XCTAssertNil(source.range(of: "PHPickerViewController"))
+        XCTAssertNil(source.range(of: "UIImagePickerController"))
+    }
+
     func testAnimatedSurfacesUseSharedReduceMotionDecision() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)

@@ -318,6 +318,24 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
 
+    func testCameraReadyOverlayExposesAccessibleControls() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-camera-ready"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        XCTAssertTrue(app.buttons["Take photo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close camera"].exists)
+        XCTAssertTrue(app.buttons["Turn flash on"].exists)
+        XCTAssertTrue(app.staticTexts["Fit the whole item in the frame"].exists)
+
+        app.buttons["Close camera"].tap()
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
     func testAuthCanBeDismissedAndGuestSnapStillWorks() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
