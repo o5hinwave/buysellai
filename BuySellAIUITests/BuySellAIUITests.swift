@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 final class BuySellAIUITests: XCTestCase {
@@ -112,6 +113,30 @@ final class BuySellAIUITests: XCTestCase {
 
         let rotatedFrame = app.windows.element(boundBy: 0).frame
         XCTAssertGreaterThan(rotatedFrame.height, rotatedFrame.width)
+    }
+
+    func testAccessibilityThreeHomeKeepsPrimaryActionReachable() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-auth",
+            "-UIPreferredContentSizeCategoryName",
+            UIContentSizeCategory.accessibilityExtraExtraExtraLarge.rawValue
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Sell anything in three taps."].waitForExistence(timeout: 5))
+
+        let snap = app.buttons["Snap to sell"]
+        var attempts = 0
+        while snap.isHittable == false && attempts < 4 {
+            app.swipeUp()
+            attempts += 1
+        }
+
+        XCTAssertTrue(snap.exists)
+        XCTAssertTrue(snap.isHittable)
     }
 
     func testTutorialNextWalksThroughAllSlidesAndGetStartedDismisses() {

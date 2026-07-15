@@ -109,6 +109,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"accessibilityHint: "Changes the condition""#))
     }
 
+    func testHomeDisplayHeadlineSupportsAccessibilityThreeWithoutSingleLineTruncation() throws {
+        let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(root.range(of: #".dynamicTypeLimit()"#))
+        XCTAssertNotNil(home.range(of: #"Text("Sell anything in three taps.".localized)"#))
+        XCTAssertNotNil(home.range(of: #".lineLimit(3)"#))
+        XCTAssertNotNil(home.range(of: #".minimumScaleFactor(0.78)"#))
+    }
+
     func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
