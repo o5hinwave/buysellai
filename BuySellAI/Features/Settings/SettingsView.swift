@@ -100,6 +100,7 @@ struct SettingsView: View {
             .navigationTitle("Settings".localized)
             .scrollContentBackground(.hidden)
             .background(Color.brand.background)
+            .accessibilitySortPriority(1)
             .confirmationDialog("Clear all listing history? This can't be undone.".localized, isPresented: $showClearConfirmation, titleVisibility: .visible) {
                 Button("Clear history".localized, role: .destructive) {
                     appStore.clearHistory()
@@ -118,6 +119,7 @@ struct SettingsView: View {
                         dismiss()
                     }
                     .accessibilityLabel("Close settings".localized)
+                    .accessibilitySortPriority(2)
                 }
             }
         }
@@ -154,10 +156,12 @@ private struct DeleteAccountView: View {
             Text("Delete account".localized)
                 .brandFont(.titleXL)
                 .foregroundStyle(Color.brand.foreground)
+                .accessibilitySortPriority(4)
 
             Text("Type DELETE to confirm.".localized)
                 .brandFont(.body)
                 .foregroundStyle(Color.brand.mutedForeground)
+                .accessibilitySortPriority(3)
 
             TextField("DELETE".localized, text: $confirmation)
                 .textInputAutocapitalization(.characters)
@@ -167,6 +171,7 @@ private struct DeleteAccountView: View {
                 .accessibilityLabel("Delete confirmation".localized)
                 .accessibilityHint("Type DELETE to confirm.".localized)
                 .accessibilityIdentifier("Settings.DeleteAccountConfirmation")
+                .accessibilitySortPriority(2)
 
             PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account") {
                 guard isDeletingAccount == false else { return }
@@ -181,6 +186,7 @@ private struct DeleteAccountView: View {
             }
             .disabled(confirmation != "DELETE" || isDeletingAccount)
             .accessibilityIdentifier("Settings.ConfirmDeleteAccount")
+            .accessibilitySortPriority(1)
 
             Spacer()
         }
@@ -191,6 +197,7 @@ private struct DeleteAccountView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Close".localized) { dismiss() }
                     .accessibilityLabel("Close delete account".localized)
+                    .accessibilitySortPriority(5)
             }
         }
     }

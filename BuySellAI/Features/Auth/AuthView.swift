@@ -18,6 +18,8 @@ struct AuthView: View {
                             .foregroundStyle(Color.brand.mutedForeground)
                             .multilineTextAlignment(.center)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilitySortPriority(4)
 
                     VStack(spacing: Spacing.sm) {
                         PrimaryPillButton(title: "Continue with Apple", systemImage: "apple.logo") {
@@ -31,10 +33,12 @@ struct AuthView: View {
                                 }
                             }
                         }
+                        .accessibilitySortPriority(3)
 
                         SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill") {
                             store.showsEmailForm.toggle()
                         }
+                        .accessibilitySortPriority(2)
 
                         if store.showsEmailForm {
                             VStack(spacing: Spacing.sm) {
@@ -72,6 +76,7 @@ struct AuthView: View {
                                     }
                                 }
                             }
+                            .accessibilitySortPriority(1.5)
                         }
 
                         Button("Keep going without an account".localized) {
@@ -81,6 +86,7 @@ struct AuthView: View {
                         .foregroundStyle(Color.brand.foreground)
                         .frame(minHeight: 52)
                         .accessibilityLabel("Keep going without an account".localized)
+                        .accessibilitySortPriority(1)
                     }
                 }
                 .padding(Spacing.xl)
