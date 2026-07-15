@@ -71,8 +71,8 @@ struct SkeletonLine: View {
                         Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor).opacity(0.45),
                         Color.brand.secondary
                     ],
-                    startPoint: phase ? .leading : .trailing,
-                    endPoint: phase ? .trailing : .leading
+                    startPoint: shimmerStartPoint,
+                    endPoint: shimmerEndPoint
                 )
             )
             .frame(width: width, height: height)
@@ -90,5 +90,13 @@ struct SkeletonLine: View {
 
     private var shouldReduceMotion: Bool {
         AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
+    }
+
+    private var shimmerStartPoint: UnitPoint {
+        shouldReduceMotion || phase ? .leading : .trailing
+    }
+
+    private var shimmerEndPoint: UnitPoint {
+        shouldReduceMotion || phase ? .trailing : .leading
     }
 }

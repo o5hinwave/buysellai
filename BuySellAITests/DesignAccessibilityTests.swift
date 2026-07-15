@@ -210,6 +210,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 2)
     }
 
+    func testSkeletonShimmerFreezesUnderReduceMotion() throws {
+        let toast = try String(contentsOf: projectURL("BuySellAI/Design/Toast.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(toast.range(of: "struct SkeletonLine"))
+        XCTAssertNotNil(toast.range(of: ".task(id: shouldReduceMotion)"))
+        XCTAssertNotNil(toast.range(of: "if shouldReduceMotion {\n                    phase = false\n                    return"))
+        XCTAssertNotNil(toast.range(of: "startPoint: shimmerStartPoint"))
+        XCTAssertNotNil(toast.range(of: "endPoint: shimmerEndPoint"))
+        XCTAssertGreaterThanOrEqual(toast.components(separatedBy: "shouldReduceMotion || phase").count - 1, 2)
+    }
+
     func testTutorialUsesCustomIllustrationShapesInsteadOfSystemSymbols() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
