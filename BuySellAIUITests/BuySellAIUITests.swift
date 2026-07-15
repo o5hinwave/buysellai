@@ -69,6 +69,22 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 2))
     }
 
+    func testHomeLaunchReachesPrimaryActionWithinSimulatorBudget() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+
+        let startedAt = Date()
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 6))
+        XCTAssertLessThan(
+            Date().timeIntervalSince(startedAt),
+            6,
+            "Home primary action should be reachable within the simulator QA budget; physical launch timing remains a device QA gate."
+        )
+    }
+
     func testHomeHandlesFiveHundredRecentListingsAndScrolls() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--seed-large-history"]
@@ -387,6 +403,27 @@ final class BuySellAIUITests: XCTestCase {
 
         app.buttons["Close camera"].tap()
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
+    func testCameraReadyOverlayAppearsWithinSimulatorBudget() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--ui-testing-camera-ready"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+
+        let startedAt = Date()
+        snap.tap()
+
+        let shutter = app.buttons["Take photo"]
+        XCTAssertTrue(shutter.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Fit the whole item in the frame"].exists)
+        XCTAssertLessThan(
+            Date().timeIntervalSince(startedAt),
+            5,
+            "Camera controls should appear within the simulator QA budget; physical preview timing remains a device QA gate."
+        )
     }
 
     func testAuthCanBeDismissedAndGuestSnapStillWorks() {
