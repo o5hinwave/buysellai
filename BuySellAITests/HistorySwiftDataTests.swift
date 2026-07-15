@@ -9,13 +9,14 @@ final class HistorySwiftDataTests: XCTestCase {
         let container = try ModelContainer(for: HistoryEntryModel.self, configurations: configuration)
         let context = ModelContext(container)
 
+        let suggestedPrice = try XCTUnwrap(Decimal(string: "19.99", locale: Locale(identifier: "en_US_POSIX")))
         let entry = HistoryEntry(
             id: UUID(),
             createdAt: Date(),
             itemName: "Lamp",
             category: .home,
             condition: .good,
-            suggestedPrice: Decimal(45),
+            suggestedPrice: suggestedPrice,
             imageThumbnail: Data([1, 2, 3]),
             marketplace: .ebay,
             listingText: "TITLE:\nLamp"
@@ -28,8 +29,9 @@ final class HistorySwiftDataTests: XCTestCase {
         XCTAssertEqual(fetched.count, 1)
         XCTAssertEqual(fetched[0].entry.itemName, "Lamp")
         XCTAssertEqual(fetched[0].entry.category, .home)
+        XCTAssertEqual(fetched[0].suggestedPriceRawValue, "19.99")
+        XCTAssertEqual(fetched[0].entry.suggestedPrice, suggestedPrice)
         XCTAssertEqual(fetched[0].entry.marketplace, .ebay)
         XCTAssertEqual(fetched[0].entry.listingText, "TITLE:\nLamp")
     }
 }
-

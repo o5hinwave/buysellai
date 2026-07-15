@@ -9,6 +9,7 @@ final class HistoryEntryModel {
     var categoryRawValue: String?
     var conditionRawValue: String?
     var suggestedPrice: Double?
+    var suggestedPriceRawValue: String?
     @Attribute(.externalStorage) var imageThumbnail: Data?
     var marketplaceRawValue: String
     var listingText: String
@@ -20,6 +21,7 @@ final class HistoryEntryModel {
         self.categoryRawValue = entry.category?.rawValue
         self.conditionRawValue = entry.condition?.rawValue
         self.suggestedPrice = entry.suggestedPrice?.doubleValue
+        self.suggestedPriceRawValue = entry.suggestedPrice.map(Self.decimalString)
         self.imageThumbnail = entry.imageThumbnail
         self.marketplaceRawValue = entry.marketplace.rawValue
         self.listingText = entry.listingText
@@ -32,10 +34,19 @@ final class HistoryEntryModel {
             itemName: itemName,
             category: categoryRawValue.flatMap(Category.init(rawValue:)),
             condition: conditionRawValue.flatMap(Condition.init(rawValue:)),
-            suggestedPrice: suggestedPrice.map { Decimal($0) },
+            suggestedPrice: Self.decimal(from: suggestedPriceRawValue) ?? suggestedPrice.map { Decimal($0) },
             imageThumbnail: imageThumbnail,
             marketplace: Marketplace(rawValue: marketplaceRawValue) ?? .ebay,
             listingText: listingText
         )
+    }
+
+    private static func decimalString(_ value: Decimal) -> String {
+        NSDecimalNumber(decimal: value).stringValue
+    }
+
+    private static func decimal(from rawValue: String?) -> Decimal? {
+        guard let rawValue else { return nil }
+        return Decimal(string: rawValue, locale: Locale(identifier: "en_US_POSIX"))
     }
 }
