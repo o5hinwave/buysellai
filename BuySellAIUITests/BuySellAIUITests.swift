@@ -74,6 +74,34 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
 
+    func testSettingsClearHistoryRequiresConfirmationAndRemovesRows() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]
+        app.launch()
+
+        let listing = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Vintage brass table lamp")).firstMatch
+        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+
+        let clearHistory = app.buttons["Settings.ClearHistory"]
+        XCTAssertTrue(clearHistory.waitForExistence(timeout: 5))
+        clearHistory.tap()
+
+        XCTAssertTrue(app.staticTexts["Clear all listing history? This can't be undone."].waitForExistence(timeout: 2))
+
+        let confirmClear = app.buttons["Settings.ConfirmClearHistory"]
+        XCTAssertTrue(confirmClear.waitForExistence(timeout: 2))
+        confirmClear.tap()
+
+        let toast = app.descendants(matching: .any)["Toast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 3))
+        XCTAssertEqual(toast.label, "History cleared.")
+        XCTAssertFalse(listing.exists)
+    }
+
     func testSwipeDeleteShowsConfirmationAndRemovesHistoryEntry() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]

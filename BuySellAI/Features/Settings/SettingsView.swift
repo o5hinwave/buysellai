@@ -61,6 +61,7 @@ struct SettingsView: View {
                         showClearConfirmation = true
                     }
                     .accessibilityLabel("Clear history".localized)
+                    .accessibilityIdentifier("Settings.ClearHistory")
 
                     Button("Rate BuySell".localized) {
                         requestReview()
@@ -103,6 +104,7 @@ struct SettingsView: View {
                     appStore.clearHistory()
                 }
                 .accessibilityLabel("Clear history".localized)
+                .accessibilityIdentifier("Settings.ConfirmClearHistory")
                 Button("Cancel".localized, role: .cancel) {}
                     .accessibilityLabel("Cancel".localized)
             }
