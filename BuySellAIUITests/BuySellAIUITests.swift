@@ -147,6 +147,20 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(listing.waitForExistence(timeout: 5))
     }
 
+    func testRecentListingReopensListingSheetDirectly() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]
+        app.launch()
+
+        let listing = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Vintage brass table lamp")).firstMatch
+        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+        listing.tap()
+
+        XCTAssertTrue(app.buttons["Copy listing"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["MarketplaceRow.ebay"].exists)
+        XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
+    }
+
     func testCopyListingWritesOnlyListingTextToPasteboard() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history", "--ui-testing-verify-clipboard"]
