@@ -455,6 +455,65 @@ final class BuySellAIUITests: XCTestCase {
         )
     }
 
+    func testVoiceOverCriticalPathLabelsStayUnambiguousThroughCopy() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-auth",
+            "--reset-history",
+            "--ui-testing-camera-ready",
+            "--ui-testing-camera-sample-capture",
+            "--ui-testing-verify-clipboard"
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Sign in"].exists)
+        XCTAssertTrue(app.buttons["Settings"].exists)
+
+        app.buttons["Snap to sell"].tap()
+        XCTAssertTrue(app.buttons["Close camera"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Take photo"].exists)
+        XCTAssertTrue(app.buttons["Turn flash on"].exists)
+        XCTAssertTrue(app.staticTexts["Fit the whole item in the frame"].exists)
+
+        app.buttons["Take photo"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["Item photo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["Item name"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["Estimated price"].exists)
+        XCTAssertTrue(app.buttons["Category, Home"].exists)
+        XCTAssertTrue(app.buttons["Condition, Good"].exists)
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        let bestSummary = app.buttons["MarketplaceSummary.best.craigslist"]
+        XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
+        XCTAssertTrue(bestSummary.label.contains("Best, Craigslist, estimated payout"))
+
+        let ebayRow = app.buttons["MarketplaceRow.ebay"]
+        XCTAssertTrue(ebayRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(ebayRow.label.contains("eBay, estimated payout"))
+        tapMarketplace("ebay", in: app)
+
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Close listing"].exists)
+        XCTAssertTrue(app.staticTexts["Generated listing text"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Wrong item — retake"].exists)
+        XCTAssertTrue(app.buttons["Regenerate"].exists)
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: copy)
+        waitForExpectations(timeout: 5)
+        copy.tap()
+
+        XCTAssertTrue(app.staticTexts["Clipboard exact listing text"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["Toast"].waitForExistence(timeout: 3))
+    }
+
     func testAuthCanBeDismissedAndGuestSnapStillWorks() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
