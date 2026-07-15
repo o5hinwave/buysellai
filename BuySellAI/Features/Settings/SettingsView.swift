@@ -55,6 +55,7 @@ struct SettingsView: View {
                         appStore.isShowingTutorial = true
                     }
                     .accessibilityLabel("How it works".localized)
+                    .accessibilityIdentifier("Settings.HowItWorks")
 
                     Button("Clear history".localized, role: .destructive) {
                         showClearConfirmation = true

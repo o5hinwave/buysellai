@@ -54,6 +54,26 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
     }
 
+    func testSettingsReopensHowItWorksTutorial() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial"]
+        app.launch()
+
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+
+        let howItWorks = app.buttons["Settings.HowItWorks"]
+        XCTAssertTrue(howItWorks.waitForExistence(timeout: 5))
+        howItWorks.tap()
+
+        XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Next"].exists)
+        app.buttons["Skip"].tap()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
     func testSwipeDeleteShowsConfirmationAndRemovesHistoryEntry() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]
