@@ -9,6 +9,59 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         super.tearDown()
     }
 
+    func testSignedInLoadHistoryReplacesRowsFromRemote() async throws {
+        let firstID = try XCTUnwrap(UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+        let secondID = try XCTUnwrap(UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+        let remoteEntries = [
+            HistoryEntry(
+                id: firstID,
+                createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T20:00:00Z")),
+                itemName: "Lamp",
+                category: .home,
+                condition: .good,
+                suggestedPrice: Decimal(45),
+                imageThumbnail: Data([1, 2, 3]),
+                marketplace: .ebay,
+                listingText: "TITLE:\nLamp"
+            ),
+            HistoryEntry(
+                id: secondID,
+                createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T19:00:00Z")),
+                itemName: "Chair",
+                category: .furniture,
+                condition: .fair,
+                suggestedPrice: Decimal(30),
+                imageThumbnail: nil,
+                marketplace: .craigslist,
+                listingText: "TITLE:\nChair"
+            )
+        ]
+        var observedRequest: URLRequest?
+        let store = try makeStore { request in
+            observedRequest = request
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Self.remoteRows(for: remoteEntries))
+        }
+        store.session = signedInSession
+        store.history = [historyEntry]
+
+        await store.loadHistory()
+
+        let request = try XCTUnwrap(observedRequest)
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+        XCTAssertTrue(request.url?.absoluteString.contains("select=id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text") == true)
+        XCTAssertTrue(request.url?.absoluteString.contains("order=created_at.desc") == true)
+        XCTAssertEqual(store.history.map(\.id), [firstID, secondID])
+        XCTAssertEqual(store.history[0].imageThumbnail, Data([1, 2, 3]))
+        XCTAssertNil(store.toast)
+    }
+
     func testSignedInLoadHistoryShowsMappedTimeoutToast() async throws {
         let store = try makeStore { _ in
             throw URLError(.timedOut)
@@ -102,6 +155,28 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             marketplace: .ebay,
             listingText: "TITLE:\nLamp"
         )
+    }
+
+    private static func remoteRows(for entries: [HistoryEntry]) -> Data {
+        let formatter = ISO8601DateFormatter()
+        let rows = entries.map { entry in
+            [
+                "id": entry.id.uuidString,
+                "created_at": formatter.string(from: entry.createdAt),
+                "item_name": entry.itemName,
+                "category": jsonValue(entry.category?.rawValue),
+                "condition": jsonValue(entry.condition?.rawValue),
+                "suggested_price": jsonValue(entry.suggestedPrice?.doubleValue),
+                "image_thumbnail_base64": jsonValue(entry.imageThumbnail?.base64EncodedString()),
+                "marketplace": entry.marketplace.rawValue,
+                "listing_text": entry.listingText
+            ]
+        }
+        return (try? JSONSerialization.data(withJSONObject: rows)) ?? Data()
+    }
+
+    private static func jsonValue<T>(_ value: T?) -> Any {
+        value ?? NSNull()
     }
 
     private func makeStore(
