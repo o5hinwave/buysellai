@@ -7,6 +7,7 @@
 "%@, %@, %@" = "%@, %@, %@";
 "%@, estimated payout %d dollars, %d percent %@ average" = "%@, estimated payout %d dollars, %d percent %@ average";
 "%@, estimated payout %d dollars, average payout" = "%@, estimated payout %d dollars, average payout";
+"About" = "About";
 "Account" = "Account";
 "Account deleted." = "Account deleted.";
 "Analyzing your photo…" = "Analyzing your photo…";
@@ -144,6 +145,7 @@
 "Retry" = "Retry";
 "Ruby Lane" = "Ruby Lane";
 "Sell anything in three taps." = "Sell anything in three taps.";
+"Settings" = "Settings";
 "Ship anything, casual buyers" = "Ship anything, casual buyers";
 "Shopify" = "Shopify";
 "Shoes" = "Shoes";
