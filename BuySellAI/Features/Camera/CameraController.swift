@@ -72,7 +72,7 @@ final class CameraController: NSObject, @unchecked Sendable {
                 }
 
                 if let connection = self.photoOutput.connection(with: .video) {
-                    let angle = UIDevice.current.captureVideoRotationAngle
+                    let angle = CameraVideoRotation.angle(for: UIDevice.current.orientation)
                     if connection.isVideoRotationAngleSupported(angle) {
                         connection.videoRotationAngle = angle
                     }
@@ -186,8 +186,8 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
     }
 }
 
-private extension UIDevice {
-    var captureVideoRotationAngle: CGFloat {
+enum CameraVideoRotation {
+    static func angle(for orientation: UIDeviceOrientation) -> CGFloat {
         switch orientation {
         case .landscapeLeft: 0
         case .landscapeRight: 180
