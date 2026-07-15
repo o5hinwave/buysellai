@@ -32,14 +32,14 @@ final class SigningCapabilityTests: XCTestCase {
         XCTAssertEqual(entitlementsReferences, 2)
     }
 
-    func testUnsignedArchiveGateStaysDocumentedWhileDevelopmentTeamIsUnset() throws {
+    func testSignedSubmitGatesStayDocumentedWhileDevelopmentTeamIsUnset() throws {
         let project = try projectFile()
         let appConfigurations = try buildConfigurations(forBundleID: "com.rhodes.buysellai", in: project)
         let teamIDs = Set(appConfigurations.values.compactMap { setting("DEVELOPMENT_TEAM", in: $0) })
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
 
         XCTAssertEqual(teamIDs, [""])
-        XCTAssertNotNil(readme.range(of: "A signed archive is blocked until an Apple development team is configured"))
+        XCTAssertNotNil(readme.range(of: "A signed archive and App Store Connect IPA export are blocked until an Apple development team is configured"))
     }
 
     private func buildConfigurations(forBundleID bundleID: String, in project: String) throws -> [String: String] {

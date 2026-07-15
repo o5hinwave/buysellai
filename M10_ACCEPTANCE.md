@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `268` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `272` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused real-device preflight result bundle `/tmp/buysell-real-device-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-real-device-preflight.xcresult`, no-sign archive `/tmp/buysell-real-device-preflight-nosign.xcarchive`, verifier log `/tmp/buysell-real-device-preflight-nosign.log`, signed-preflight blocker log `/tmp/buysell-real-device-signed-preflight.log`, real-device blocker log `/tmp/buysell-real-device-preflight.log`, secret-scan log `/tmp/buysell-real-device-secret-scan.log`.
+- Latest local evidence: focused App Store export preflight result bundle `/tmp/buysell-app-store-export-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-app-store-export-preflight.xcresult`, no-sign archive `/tmp/buysell-app-store-export-nosign.xcarchive`, verifier log `/tmp/buysell-app-store-export-nosign.log`, signed-preflight blocker log `/tmp/buysell-app-store-export-signed-preflight.log`, App Store export blocker log `/tmp/buysell-app-store-export-preflight.log`, real-device blocker log `/tmp/buysell-app-store-export-real-device-preflight.log`, secret-scan log `/tmp/buysell-app-store-export-secret-scan.log`.
 
 ## Commands
 
@@ -36,13 +36,20 @@ Run the signed archive preflight after selecting a real Apple development team:
 bash Scripts/preflight_m10_signed_archive.sh /tmp/BuySellAI-signed.xcarchive
 ```
 
+Run the App Store Connect export preflight after selecting a real Apple development team:
+
+```sh
+bash Scripts/preflight_m10_app_store_export.sh /tmp/BuySellAI-appstore.xcarchive /tmp/BuySellAI-appstore-export
+```
+
 Until the team is configured, record the known blocker:
 
 ```sh
 ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_signed_archive.sh
+ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_app_store_export.sh
 ```
 
-The default signed preflight should pass without `ALLOW_MISSING_TEAM=1` before checking the signed archive gates below.
+The default signed and App Store export preflights should pass without `ALLOW_MISSING_TEAM=1` before checking the signed archive gates below.
 
 Run the real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
 
@@ -74,6 +81,7 @@ The scan should print `M10 secret scan passed`.
 
 - [ ] Configure a real Apple development team for the app target.
 - [ ] Produce a signed Release archive with automatic signing enabled.
+- [ ] Export an App Store Connect IPA with automatic signing enabled.
 - [ ] Validate the signed archive in Xcode Organizer.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.
