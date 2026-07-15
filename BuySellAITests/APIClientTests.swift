@@ -38,6 +38,10 @@ final class APIClientTests: XCTestCase {
         let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
@@ -46,13 +50,15 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(item["name"] as? String, "Lamp")
             XCTAssertEqual(item["category"] as? String, "Home")
             XCTAssertEqual(item["condition"] as? String, "good")
+            XCTAssertEqual((item["originalPrice"] as? NSNumber)?.decimalValue, Decimal(45))
+            XCTAssertEqual((item["currentPrice"] as? NSNumber)?.decimalValue, Decimal(45))
 
             let url = try XCTUnwrap(request.url)
             let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
             return (response, Data(#"{"listing":"TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.\n"}"#.utf8))
         }
 
-        let listing = try await client.generateListing(item: item, marketplace: .ebay)
+        let listing = try await client.generateListing(item: item, marketplace: .ebay, accessToken: "access-token")
 
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.\n")
     }
@@ -87,6 +93,22 @@ final class APIClientTests: XCTestCase {
 
         do {
             _ = try await client.analyze(image: Data([1]))
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
+    func testMalformedGenerateListingJSONMapsToDecodingError() async throws {
+        let item = DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"title":"Lamp"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.generateListing(item: item, marketplace: .ebay)
             XCTFail("Expected decoding error")
         } catch {
             XCTAssertEqual(error as? APIError, .decoding)
