@@ -105,33 +105,33 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
 
     var brandTint: Color {
         switch self {
-        case .ebay: Color(hex: 0x0064D2)
-        case .mercari: Color(hex: 0xE60023)
-        case .poshmark: Color(hex: 0xE51A72)
-        case .facebook: Color(hex: 0x1877F2)
-        case .offerup: Color(hex: 0x16A34A)
-        case .craigslist: Color(hex: 0x6B21A8)
-        case .depop: Color(hex: 0xE11D48)
-        case .whatnot: Color(hex: 0xFF5722)
-        case .etsy: Color(hex: 0xF1641E)
-        case .stockx: Color(hex: 0x006340)
-        case .grailed: Color(hex: 0x121212)
-        case .reverb: Color(hex: 0xF5A623)
-        case .vinted: Color(hex: 0x09B1BA)
-        case .nextdoor: Color(hex: 0x00B246)
-        case .amazon: Color(hex: 0xFF9900)
-        case .goat: Color(hex: 0x111111)
-        case .kidizen: Color(hex: 0x13A8A8)
-        case .vestiaire: Color(hex: 0x6B4F3F)
-        case .therealreal: Color(hex: 0x111827)
-        case .swappa: Color(hex: 0x2E7D32)
-        case .tradesy: Color(hex: 0xB83280)
-        case .chairish: Color(hex: 0xC75D2C)
-        case .bonanza: Color(hex: 0x2B6CB0)
-        case .curtsy: Color(hex: 0xF97316)
-        case .shopify: Color(hex: 0x95BF47)
-        case .rubylane: Color(hex: 0x8B0000)
-        case .tcgplayer: Color(hex: 0x0F766E)
+        case .ebay: Color.brand.platformEbay
+        case .mercari: Color.brand.platformMercari
+        case .poshmark: Color.brand.platformPoshmark
+        case .facebook: Color.brand.platformFacebook
+        case .offerup: Color.brand.platformOfferUp
+        case .craigslist: Color.brand.platformCraigslist
+        case .depop: Color.brand.platformDepop
+        case .whatnot: Color.brand.platformWhatnot
+        case .etsy: Color.brand.platformEtsy
+        case .stockx: Color.brand.platformStockX
+        case .grailed: Color.brand.platformGrailed
+        case .reverb: Color.brand.platformReverb
+        case .vinted: Color.brand.platformVinted
+        case .nextdoor: Color.brand.platformNextdoor
+        case .amazon: Color.brand.platformAmazon
+        case .goat: Color.brand.platformGOAT
+        case .kidizen: Color.brand.platformKidizen
+        case .vestiaire: Color.brand.platformVestiaire
+        case .therealreal: Color.brand.platformTheRealReal
+        case .swappa: Color.brand.platformSwappa
+        case .tradesy: Color.brand.platformTradesy
+        case .chairish: Color.brand.platformChairish
+        case .bonanza: Color.brand.platformBonanza
+        case .curtsy: Color.brand.platformCurtsy
+        case .shopify: Color.brand.platformShopify
+        case .rubylane: Color.brand.platformRubyLane
+        case .tcgplayer: Color.brand.platformTCGplayer
         }
     }
 

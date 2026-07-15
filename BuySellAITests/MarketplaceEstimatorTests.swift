@@ -59,6 +59,49 @@ final class MarketplaceEstimatorTests: XCTestCase {
         }
     }
 
+    func testMarketplaceBrandTintsRouteThroughDesignTokens() throws {
+        let marketplace = try String(contentsOf: projectURL("BuySellAI/Data/Marketplace.swift"), encoding: .utf8)
+        let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
+
+        XCTAssertNil(marketplace.range(of: "Color(hex:"))
+        XCTAssertEqual(marketplace.components(separatedBy: "Color.brand.platform").count - 1, Marketplace.allCases.count)
+
+        for token in [
+            "platformEbay", "platformMercari", "platformPoshmark", "platformFacebook",
+            "platformOfferUp", "platformCraigslist", "platformDepop", "platformWhatnot",
+            "platformEtsy", "platformStockX", "platformGrailed", "platformReverb",
+            "platformVinted", "platformNextdoor", "platformAmazon", "platformGOAT",
+            "platformKidizen", "platformVestiaire", "platformTheRealReal", "platformSwappa",
+            "platformTradesy", "platformChairish", "platformBonanza", "platformCurtsy",
+            "platformShopify", "platformRubyLane", "platformTCGplayer"
+        ] {
+            XCTAssertNotNil(designTokens.range(of: "static let \(token) = Color(hex:"))
+        }
+
+        for (token, hex) in [
+            ("platformEbay", "0x0064D2"),
+            ("platformMercari", "0xE60023"),
+            ("platformPoshmark", "0xE51A72"),
+            ("platformFacebook", "0x1877F2"),
+            ("platformOfferUp", "0x16A34A"),
+            ("platformCraigslist", "0x6B21A8"),
+            ("platformDepop", "0xE11D48"),
+            ("platformWhatnot", "0xFF5722"),
+            ("platformEtsy", "0xF1641E"),
+            ("platformStockX", "0x006340"),
+            ("platformGrailed", "0x000000"),
+            ("platformReverb", "0xF5A623"),
+            ("platformVinted", "0x09B1BA"),
+            ("platformNextdoor", "0x00B246"),
+            ("platformAmazon", "0xFF9900")
+        ] {
+            XCTAssertNotNil(
+                designTokens.range(of: "static let \(token) = Color(hex: \(hex))"),
+                "\(token) should match the brand tint in the rebuild spec."
+            )
+        }
+    }
+
     func testEstimatorReturnsEveryMarketplaceWithBestAndLowestBadges() {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(100))
 
