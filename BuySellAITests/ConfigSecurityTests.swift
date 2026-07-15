@@ -20,6 +20,19 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertTrue(ignoredPaths.contains("BuySellAI/App/Config.plist"))
     }
 
+    func testConfigExampleIsExcludedFromSynchronizedAppTarget() throws {
+        let project = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.pbxproj"), encoding: .utf8)
+        let exceptionsStart = try XCTUnwrap(project.range(of: "/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */"))
+        let exceptionsEnd = try XCTUnwrap(project.range(of: "/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */"))
+        let exceptions = String(project[exceptionsStart.upperBound..<exceptionsEnd.lowerBound])
+
+        XCTAssertNotNil(exceptions.range(of: #"Exceptions for "BuySellAI" folder in "BuySellAI" target"#))
+        XCTAssertNotNil(exceptions.range(of: "membershipExceptions = ("))
+        XCTAssertNotNil(exceptions.range(of: "App/Config.plist.example,"))
+        XCTAssertNotNil(exceptions.range(of: #"target = [A-Z0-9]+ /\* BuySellAI \*/;"#, options: .regularExpression))
+        XCTAssertNil(project.range(of: "Config.plist.example in Resources"))
+    }
+
     func testBundledAppTextFilesDoNotContainAIProviderSecrets() throws {
         let appURL = projectURL("BuySellAI")
         let textExtensions: Set<String> = ["json", "plist", "storyboard", "strings", "swift"]
