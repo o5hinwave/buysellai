@@ -112,6 +112,14 @@ struct SettingsView: View {
             .sheet(item: $safariDestination) { destination in
                 SafariView(url: destination.url)
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close".localized) {
+                        dismiss()
+                    }
+                    .accessibilityLabel("Close settings".localized)
+                }
+            }
         }
     }
 

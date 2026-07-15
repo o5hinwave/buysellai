@@ -489,6 +489,52 @@ final class BuySellAIUITests: XCTestCase {
         app.terminate()
     }
 
+    func testDarkModeSellFlowReachesCopyListing() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-preferences",
+            "--reset-auth",
+            "--reset-history",
+            "--ui-testing-state-probe"
+        ]
+        app.launch()
+        defer {
+            app.terminate()
+            app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences"]
+            app.launch()
+            app.terminate()
+        }
+
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+
+        let darkTheme = app.buttons["Dark"]
+        XCTAssertTrue(darkTheme.waitForExistence(timeout: 5))
+        darkTheme.tap()
+        assertSettingsState("Settings state: dark, reduce motion off", in: app)
+
+        let closeSettings = app.buttons["Close settings"]
+        XCTAssertTrue(closeSettings.waitForExistence(timeout: 2))
+        closeSettings.tap()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        tapMarketplace("ebay", in: app)
+
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Wrong item — retake"].exists)
+    }
+
     private func tapMarketplace(
         _ rawValue: String,
         in app: XCUIApplication,
