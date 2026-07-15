@@ -32,6 +32,14 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
     var id: Marketplace { self }
 
     var displayName: String {
+        displayNameKey.localized
+    }
+
+    var blurb: String {
+        blurbKey.localized
+    }
+
+    private var displayNameKey: String {
         switch self {
         case .ebay: "eBay"
         case .craigslist: "Craigslist"
@@ -63,7 +71,7 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         }
     }
 
-    var blurb: String {
+    private var blurbKey: String {
         switch self {
         case .ebay: "Broadest audience, small fees"
         case .craigslist: "Local, no fees, cash"

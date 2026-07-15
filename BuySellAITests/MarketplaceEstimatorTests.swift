@@ -42,6 +42,23 @@ final class MarketplaceEstimatorTests: XCTestCase {
         }
     }
 
+    func testMarketplaceCatalogCopyHasLocalizationEntries() throws {
+        let localizedStrings = try loadLocalizedStrings()
+
+        for marketplace in Marketplace.allCases {
+            XCTAssertEqual(
+                localizedStrings[marketplace.displayName],
+                marketplace.displayName,
+                "\(marketplace.displayName) display name should have a Localizable.strings entry."
+            )
+            XCTAssertEqual(
+                localizedStrings[marketplace.blurb],
+                marketplace.blurb,
+                "\(marketplace.displayName) blurb should have a Localizable.strings entry."
+            )
+        }
+    }
+
     func testEstimatorReturnsEveryMarketplaceWithBestAndLowestBadges() {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(100))
 
@@ -67,5 +84,18 @@ final class MarketplaceEstimatorTests: XCTestCase {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(3))
 
         XCTAssertTrue(estimates.allSatisfy { $0.payout.doubleValue >= 1 })
+    }
+
+    private func loadLocalizedStrings() throws -> [String: String] {
+        let data = try Data(contentsOf: projectURL("BuySellAI/Resources/Localizable.strings"))
+        let propertyList = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        return try XCTUnwrap(propertyList as? [String: String])
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
     }
 }
