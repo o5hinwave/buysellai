@@ -183,6 +183,22 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Reduce Motion".localized)"#))
     }
 
+    func testSettingsKeepsFiveSectionLimitAndGatedDangerZone() throws {
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+
+        XCTAssertEqual(settings.components(separatedBy: #"Section(""#).count - 1, 5)
+        XCTAssertNotNil(settings.range(of: #"Section("Account".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"Section("Appearance".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"Section("App".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"Section("About".localized)"#))
+        XCTAssertNotNil(
+            settings.range(
+                of: #"if\s+appStore\.session\s*!=\s*nil\s*\{\s*Section\("Danger zone"\.localized\)"#,
+                options: .regularExpression
+            )
+        )
+    }
+
     func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
@@ -228,6 +244,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: "private struct SnapIllustration"))
         XCTAssertNotNil(tutorial.range(of: "private struct AnalyzeIllustration"))
         XCTAssertNotNil(tutorial.range(of: "private struct CopyIllustration"))
+    }
+
+    func testTutorialSlidesAndDotPagerExposeStepValues() throws {
+        let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(tutorial.range(of: #"TutorialSlidePage(slide: slides[slideIndex], step: slideIndex + 1, total: slides.count)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityValue(String.localizedFormat("Step %d of %d", step, total))"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel("Tutorial progress".localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityValue(String.localizedFormat("Step %d of %d", index + 1, count))"#))
     }
 
     func testListingCopyActionOnlyAppearsAfterListingGenerationSucceeds() throws {
