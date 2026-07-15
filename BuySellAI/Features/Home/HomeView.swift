@@ -142,7 +142,7 @@ struct HomeView: View {
                     .foregroundStyle(Color.brand.foreground)
                     .lineLimit(1)
                     .padding(.horizontal, Spacing.md)
-                    .frame(minHeight: 40)
+                    .frame(minHeight: 44)
                     .background(Color.brand.secondary, in: Capsule())
             }
             .buttonStyle(PressButtonStyle())

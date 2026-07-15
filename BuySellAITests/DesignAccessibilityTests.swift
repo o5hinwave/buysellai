@@ -123,6 +123,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: #".minimumScaleFactor(0.78)"#))
     }
 
+    func testHomeHeaderSignInButtonKeepsMinimumTapTarget() throws {
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(home.range(of: #"Text((appStore.session == nil ? "Sign in" : "Sign out").localized)"#))
+        XCTAssertNotNil(home.range(of: #".frame(minHeight: 44)"#))
+    }
+
     func testPresentedSheetsExposeVoiceOverSortPriorities() throws {
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
