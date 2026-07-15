@@ -189,6 +189,102 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testRefreshSessionMalformedJSONMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"refresh_token":"missing access token"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.refreshSession(Self.refreshableSession)
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
+    func testRefreshSessionTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.refreshSession(Self.refreshableSession)
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
+    func testRefreshSessionRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.refreshSession(Self.refreshableSession)
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testRefreshSessionNonSuccessStatusMapsToServerError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 401,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.refreshSession(Self.refreshableSession)
+            XCTFail("Expected server error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(401))
+        }
+    }
+
+    func testRefreshSessionTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let data = attempts == 1
+                ? Data()
+                : Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"updated@example.com"}}"#.utf8)
+            return (response, data)
+        }
+
+        let session = try await client.refreshSession(Self.refreshableSession)
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.email, "updated@example.com")
+        XCTAssertEqual(session.accessToken, "retry-access")
+        XCTAssertEqual(session.refreshToken, "retry-refresh")
+        XCTAssertEqual(session.appleUserID, "apple-user")
+    }
+
     func testEmailSignInMalformedJSONMapsToDecodingError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -375,6 +471,16 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.userID, "server-user")
         XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "retry-access")
+    }
+
+    private static var refreshableSession: AuthSession {
+        AuthSession(
+            userID: "server-user",
+            email: "person@example.com",
+            accessToken: "old-access",
+            refreshToken: "old-refresh",
+            appleUserID: "apple-user"
+        )
     }
 
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> SupabaseAuthClient {

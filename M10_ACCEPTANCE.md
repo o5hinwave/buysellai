@@ -4,10 +4,11 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `210` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `215` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in app or test sources.
+- Latest local evidence: focused auth result bundle `/tmp/buysell-refresh-session.xcresult`, full-suite result bundle `/tmp/buysell-full-refresh-session.xcresult`, no-sign archive `/tmp/buysell-refresh-session.xcarchive`.
 
 ## Commands
 
@@ -37,11 +38,11 @@ xcodebuild archive \
 Run the secret-pattern scan:
 
 ```sh
-rg 'AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}' \
+rg -l -I 'AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}' \
   BuySellAI BuySellAITests BuySellAIUITests README.md M10_ACCEPTANCE.md
 ```
 
-The scan should return no matches.
+The scan should return no filenames.
 
 ## Submit-Ready Gates
 
