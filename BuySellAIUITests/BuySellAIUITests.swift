@@ -83,6 +83,27 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Copy and paste."].exists)
     }
 
+    func testTutorialSwipeGesturesNavigateBetweenSlides() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset-tutorial"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
+
+        let leftSwipeStart = app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
+        let leftSwipeEnd = app.coordinate(withNormalizedOffset: CGVector(dx: 0.18, dy: 0.5))
+        leftSwipeStart.press(forDuration: 0.05, thenDragTo: leftSwipeEnd)
+        XCTAssertTrue(app.staticTexts["Snap a photo."].waitForExistence(timeout: 2))
+
+        leftSwipeStart.press(forDuration: 0.05, thenDragTo: leftSwipeEnd)
+        XCTAssertTrue(app.staticTexts["We figure out what it is."].waitForExistence(timeout: 2))
+
+        let rightSwipeStart = app.coordinate(withNormalizedOffset: CGVector(dx: 0.18, dy: 0.5))
+        let rightSwipeEnd = app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
+        rightSwipeStart.press(forDuration: 0.05, thenDragTo: rightSwipeEnd)
+        XCTAssertTrue(app.staticTexts["Snap a photo."].waitForExistence(timeout: 2))
+    }
+
     func testSettingsReopensHowItWorksTutorial() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial"]
