@@ -109,6 +109,24 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
+    func testAppleIdentityTokenExchangeTimeoutMapsToFriendlyError() async throws {
+        let client = try makeClient { _ in
+            throw URLError(.timedOut)
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected timeout error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .timeout)
+        }
+    }
+
     func testEmailSignInRateLimitMapsToFriendlyError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -122,6 +140,30 @@ final class SupabaseAuthClientTests: XCTestCase {
 
         do {
             _ = try await client.signInWithEmail(email: "person@example.com", password: "secret")
+            XCTFail("Expected rate limit error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .rateLimited)
+        }
+    }
+
+    func testAppleIdentityTokenExchangeRateLimitMapsToFriendlyError() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
             XCTFail("Expected rate limit error")
         } catch {
             XCTAssertEqual(error as? APIError, .rateLimited)
@@ -167,6 +209,35 @@ final class SupabaseAuthClientTests: XCTestCase {
 
         XCTAssertEqual(attempts, 2)
         XCTAssertEqual(session.userID, "user-456")
+        XCTAssertEqual(session.accessToken, "retry-access")
+    }
+
+    func testAppleIdentityTokenExchangeTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let data = attempts == 1
+                ? Data()
+                : Data(#"{"access_token":"retry-access","refresh_token":"retry-refresh","user":{"id":"server-user","email":"person@example.com"}}"#.utf8)
+            return (response, data)
+        }
+
+        let session = try await client.exchangeAppleIdentityToken(
+            identityToken: "apple-jwt",
+            nonce: "raw-nonce",
+            appleUserID: "apple-user",
+            email: nil
+        )
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(session.userID, "apple-user")
+        XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "retry-access")
     }
 

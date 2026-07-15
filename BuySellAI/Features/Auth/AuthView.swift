@@ -27,7 +27,7 @@ struct AuthView: View {
                                     await appStore.setSession(session)
                                     dismiss()
                                 } catch {
-                                    appStore.showToast("Couldn't sign in with Apple.".localized, style: .error)
+                                    appStore.showToast(error.localizedDescription, style: .error)
                                 }
                             }
                         }
