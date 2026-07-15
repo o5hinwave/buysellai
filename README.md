@@ -84,6 +84,8 @@ xcodebuild archive \
 
 The no-sign archive validates the Release iPhoneOS build and package contents. A fully signed App Store archive still requires selecting a real Apple development team in Xcode.
 
+Track final signed-archive and real-device acceptance in `M10_ACCEPTANCE.md`.
+
 ## Assumptions
 
 - Supabase project values were not present in the blank repository. The API client is implemented against the requested `analyze-image` and `generate-listing` contracts, and the app shows friendly configuration errors until `Config.plist` is supplied.
