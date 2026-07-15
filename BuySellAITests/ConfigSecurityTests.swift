@@ -1,11 +1,45 @@
 import Foundation
 import XCTest
+@testable import BuySellAI
 
 final class ConfigSecurityTests: XCTestCase {
     func testConfigExampleOnlyContainsPublicSupabaseFields() throws {
         let plist = try plistDictionary(at: projectURL("BuySellAI/App/Config.plist.example"))
 
         XCTAssertEqual(Set(plist.keys), ["SUPABASE_URL", "SUPABASE_ANON_KEY"])
+    }
+
+    func testRuntimeConfigAcceptsHTTPSProjectSupabaseURLAndTrimsValues() throws {
+        let config = try AppConfig.make(
+            supabaseURLString: "  https://project-ref.supabase.co  ",
+            anonKey: "  public-anon-key  "
+        )
+
+        XCTAssertEqual(config.supabaseURL.absoluteString, "https://project-ref.supabase.co")
+        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://project-ref.supabase.co/functions/v1")
+        XCTAssertEqual(config.anonKey, "public-anon-key")
+    }
+
+    func testRuntimeConfigRejectsInsecureOrNonSupabaseURLs() throws {
+        let invalidURLs = [
+            "http://project-ref.supabase.co",
+            "https://example.com",
+            "not a url"
+        ]
+
+        for url in invalidURLs {
+            XCTAssertThrowsError(try AppConfig.make(supabaseURLString: url, anonKey: "public-anon-key")) { error in
+                XCTAssertEqual(error as? APIError, .notConfigured)
+            }
+        }
+    }
+
+    func testRuntimeConfigRejectsBlankAnonKey() throws {
+        XCTAssertThrowsError(
+            try AppConfig.make(supabaseURLString: "https://project-ref.supabase.co", anonKey: "   ")
+        ) { error in
+            XCTAssertEqual(error as? APIError, .notConfigured)
+        }
     }
 
     func testRuntimeConfigPlistIsGitIgnored() throws {

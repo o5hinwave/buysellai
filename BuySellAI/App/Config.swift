@@ -16,12 +16,26 @@ struct AppConfig: Sendable {
         guard
             let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
             let supabaseURLString = dictionary["SUPABASE_URL"] as? String,
-            let supabaseURL = URL(string: supabaseURLString),
-            let anonKey = dictionary["SUPABASE_ANON_KEY"] as? String,
-            anonKey.isEmpty == false
+            let anonKey = dictionary["SUPABASE_ANON_KEY"] as? String
         else {
             throw APIError.notConfigured
         }
-        return AppConfig(supabaseURL: supabaseURL, anonKey: anonKey)
+        return try AppConfig.make(supabaseURLString: supabaseURLString, anonKey: anonKey)
+    }
+
+    static func make(supabaseURLString: String, anonKey: String) throws -> AppConfig {
+        let trimmedURL = supabaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAnonKey = anonKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard
+            let components = URLComponents(string: trimmedURL),
+            components.scheme == "https",
+            let host = components.host?.lowercased(),
+            host.hasSuffix(".supabase.co"),
+            let supabaseURL = components.url,
+            trimmedAnonKey.isEmpty == false
+        else {
+            throw APIError.notConfigured
+        }
+        return AppConfig(supabaseURL: supabaseURL, anonKey: trimmedAnonKey)
     }
 }
