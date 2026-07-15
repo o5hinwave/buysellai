@@ -69,6 +69,20 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertEqual(estimates.last?.id, .therealreal)
     }
 
+    func testMarketplaceEstimateCodableRoundTripPreservesPayoutAndBadge() throws {
+        let estimate = MarketplaceEstimate(
+            id: .ebay,
+            payout: Decimal(86),
+            deltaPct: -4.25,
+            badge: .none
+        )
+
+        let data = try JSONEncoder().encode(estimate)
+        let decoded = try JSONDecoder().decode(MarketplaceEstimate.self, from: data)
+
+        XCTAssertEqual(decoded, estimate)
+    }
+
     func testFeeMathForKnownMarketplaces() {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(100))
         let byMarketplace = Dictionary(uniqueKeysWithValues: estimates.map { ($0.id, $0.payout) })

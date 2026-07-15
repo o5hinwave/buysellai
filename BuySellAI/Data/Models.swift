@@ -122,14 +122,14 @@ enum Condition: String, Codable, CaseIterable, Sendable, Hashable {
     }
 }
 
-struct MarketplaceEstimate: Identifiable, Hashable, Sendable {
+struct MarketplaceEstimate: Codable, Identifiable, Hashable, Sendable {
     let id: Marketplace
     let payout: Decimal
     let deltaPct: Double
     var badge: EstimateBadge
 }
 
-enum EstimateBadge: String, Sendable {
+enum EstimateBadge: String, Codable, Sendable {
     case best
     case lowest
     case none
