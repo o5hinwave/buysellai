@@ -102,6 +102,90 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.refreshToken, "email-refresh")
     }
 
+    func testRefreshSessionBuildsRefreshTokenGrantAndPreservesIdentity() async throws {
+        let client = try makeClient { request in
+            let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
+            XCTAssertEqual(components.path, "/auth/v1/token")
+            XCTAssertEqual(components.queryItems?.first(where: { $0.name == "grant_type" })?.value, "refresh_token")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["refresh_token"] as? String, "old-refresh")
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"new-access","refresh_token":"new-refresh","user":{"id":"server-user","email":"updated@example.com"}}"#.utf8))
+        }
+        let existing = AuthSession(
+            userID: "server-user",
+            email: "person@example.com",
+            accessToken: "old-access",
+            refreshToken: "old-refresh",
+            appleUserID: "apple-user"
+        )
+
+        let session = try await client.refreshSession(existing)
+
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.appleUserID, "apple-user")
+        XCTAssertEqual(session.email, "updated@example.com")
+        XCTAssertEqual(session.accessToken, "new-access")
+        XCTAssertEqual(session.refreshToken, "new-refresh")
+    }
+
+    func testRefreshSessionKeepsExistingRefreshTokenWhenResponseOmitsReplacement() async throws {
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"new-access","user":{"id":"server-user"}}"#.utf8))
+        }
+        let existing = AuthSession(
+            userID: "server-user",
+            email: "person@example.com",
+            accessToken: "old-access",
+            refreshToken: "old-refresh",
+            appleUserID: "apple-user"
+        )
+
+        let session = try await client.refreshSession(existing)
+
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.appleUserID, "apple-user")
+        XCTAssertEqual(session.email, "person@example.com")
+        XCTAssertEqual(session.accessToken, "new-access")
+        XCTAssertEqual(session.refreshToken, "old-refresh")
+    }
+
+    func testRefreshSessionWithoutRefreshTokenMapsToNotConfigured() async throws {
+        let client = try makeClient { _ in
+            XCTFail("Refresh session without a refresh token should not make a network request.")
+            throw URLError(.badURL)
+        }
+        let existing = AuthSession(
+            userID: "server-user",
+            email: "person@example.com",
+            accessToken: "old-access"
+        )
+
+        do {
+            _ = try await client.refreshSession(existing)
+            XCTFail("Expected missing refresh token to map to notConfigured")
+        } catch {
+            XCTAssertEqual(error as? APIError, .notConfigured)
+        }
+    }
+
     func testEmailSignInMalformedJSONMapsToDecodingError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
