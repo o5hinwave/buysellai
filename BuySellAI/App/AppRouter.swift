@@ -69,6 +69,12 @@ final class AppStore {
                 appleUserID: Keychain.load(Keys.appleUserID)
             )
         }
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing-signed-in") {
+            self.session = AuthSession(
+                userID: "ui-test-user",
+                email: "person@example.com"
+            )
+        }
     }
 
     var preferredColorScheme: ColorScheme? {

@@ -93,6 +93,7 @@ struct SettingsView: View {
                         NavigationLink("Delete account".localized) {
                             DeleteAccountView()
                         }
+                        .accessibilityIdentifier("Settings.DeleteAccount")
                     }
                 }
             }
@@ -157,6 +158,7 @@ private struct DeleteAccountView: View {
                 .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                 .accessibilityLabel("Delete confirmation".localized)
                 .accessibilityHint("Type DELETE to confirm.".localized)
+                .accessibilityIdentifier("Settings.DeleteAccountConfirmation")
 
             PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account") {
                 guard isDeletingAccount == false else { return }
@@ -170,6 +172,7 @@ private struct DeleteAccountView: View {
                 }
             }
             .disabled(confirmation != "DELETE" || isDeletingAccount)
+            .accessibilityIdentifier("Settings.ConfirmDeleteAccount")
 
             Spacer()
         }

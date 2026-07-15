@@ -102,6 +102,39 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(listing.exists)
     }
 
+    func testDeleteAccountRequiresTypedConfirmation() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--ui-testing-signed-in"]
+        app.launch()
+
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+
+        let deleteAccount = app.buttons["Settings.DeleteAccount"]
+        var attempts = 0
+        while deleteAccount.exists == false && attempts < 4 {
+            app.swipeUp()
+            attempts += 1
+        }
+        XCTAssertTrue(deleteAccount.waitForExistence(timeout: 2))
+        deleteAccount.tap()
+
+        let confirmDelete = app.buttons["Settings.ConfirmDeleteAccount"]
+        XCTAssertTrue(confirmDelete.waitForExistence(timeout: 5))
+        XCTAssertFalse(confirmDelete.isEnabled)
+
+        let confirmation = app.textFields["Settings.DeleteAccountConfirmation"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.tap()
+        confirmation.typeText("DELETE")
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: confirmDelete)
+        waitForExpectations(timeout: 2)
+        XCTAssertTrue(confirmDelete.isEnabled)
+    }
+
     func testSwipeDeleteShowsConfirmationAndRemovesHistoryEntry() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--seed-history"]
