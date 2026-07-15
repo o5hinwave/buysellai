@@ -115,6 +115,7 @@ private struct ShadowModifier: ViewModifier {
 enum AppMotion {
     static let spring = Animation.spring(response: 0.35, dampingFraction: 0.82)
     static let sheet = Animation.spring(response: 0.28, dampingFraction: 0.86)
+    static let screen = Animation.easeOut(duration: 0.2)
     static let quick = Animation.easeOut(duration: 0.15)
 
     static func shouldReduceMotion(os: Bool, app: Bool) -> Bool {
@@ -123,6 +124,10 @@ enum AppMotion {
 
     static func animation(reduceMotion: Bool) -> Animation {
         reduceMotion ? quick : spring
+    }
+
+    static func screenAnimation(reduceMotion: Bool) -> Animation {
+        reduceMotion ? quick : screen
     }
 
     static func screenTransition(reduceMotion: Bool) -> AnyTransition {

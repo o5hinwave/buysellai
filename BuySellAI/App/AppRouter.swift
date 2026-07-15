@@ -654,7 +654,7 @@ struct RootView: View {
                 await appStore.loadHistory()
             }
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(AppMotion.animation(reduceMotion: shouldReduceMotion)) {
+            withAnimation(AppMotion.screenAnimation(reduceMotion: shouldReduceMotion)) {
                 showSplash = false
             }
             if appStore.shouldShowTutorialOnLaunch {
