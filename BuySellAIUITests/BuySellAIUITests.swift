@@ -88,6 +88,32 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(deeperRow.exists)
     }
 
+    func testIPhonePortraitLockKeepsHomeUsableAfterLandscapeRotation() {
+        XCUIDevice.shared.orientation = .portrait
+
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial"]
+        app.launch()
+
+        defer {
+            XCUIDevice.shared.orientation = .portrait
+        }
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+
+        let portraitFrame = app.windows.element(boundBy: 0).frame
+        XCTAssertGreaterThan(portraitFrame.height, portraitFrame.width)
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        XCTAssertTrue(snap.isHittable)
+
+        let rotatedFrame = app.windows.element(boundBy: 0).frame
+        XCTAssertGreaterThan(rotatedFrame.height, rotatedFrame.width)
+    }
+
     func testTutorialNextWalksThroughAllSlidesAndGetStartedDismisses() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-tutorial"]
