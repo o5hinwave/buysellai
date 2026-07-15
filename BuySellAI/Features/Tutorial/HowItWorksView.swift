@@ -167,17 +167,9 @@ private struct TutorialIllustration: View {
                 BrandWordmark(size: .large)
                     .padding(Spacing.xl)
             case 1:
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 72, weight: .bold))
-                    .foregroundStyle(Color.brand.primary)
+                SnapIllustration()
             case 2:
-                VStack(spacing: Spacing.sm) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 44, weight: .bold))
-                    Text("$45".localized)
-                        .brandFont(.titleXL)
-                }
-                .foregroundStyle(Color.brand.primary)
+                AnalyzeIllustration()
             case 3:
                 VStack(spacing: Spacing.xs) {
                     ForEach([Marketplace.craigslist, .facebook, .ebay], id: \.self) { marketplace in
@@ -190,10 +182,112 @@ private struct TutorialIllustration: View {
                     }
                 }
             default:
-                Image(systemName: "doc.on.clipboard.fill")
-                    .font(.system(size: 72, weight: .bold))
-                    .foregroundStyle(Color.brand.primary)
+                CopyIllustration()
             }
+        }
+    }
+}
+
+private struct SnapIllustration: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(Color.brand.surface)
+                .frame(width: 124, height: 92)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color.brand.primary, lineWidth: 5)
+                )
+
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(Color.brand.primary)
+                .frame(width: 42, height: 14)
+                .offset(x: -30, y: -54)
+
+            Circle()
+                .fill(Color.brand.primaryMuted)
+                .frame(width: 48, height: 48)
+                .overlay(Circle().stroke(Color.brand.primary, lineWidth: 5))
+
+            Circle()
+                .fill(Color.brand.primary)
+                .frame(width: 12, height: 12)
+                .offset(x: 42, y: -26)
+        }
+    }
+}
+
+private struct AnalyzeIllustration: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.brand.primary.opacity(0.22), lineWidth: 14)
+                .frame(width: 126, height: 126)
+
+            ForEach(0..<4, id: \.self) { index in
+                Circle()
+                    .fill(Color.brand.primary)
+                    .frame(width: index.isMultiple(of: 2) ? 14 : 10, height: index.isMultiple(of: 2) ? 14 : 10)
+                    .offset(x: index < 2 ? -62 : 62, y: index.isMultiple(of: 2) ? -42 : 42)
+            }
+
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(Color.brand.surface)
+                .frame(width: 118, height: 82)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color.brand.primary, lineWidth: 4)
+                )
+
+            VStack(spacing: Spacing.xxs) {
+                Text("$45".localized)
+                    .brandFont(.titleXL)
+                    .foregroundStyle(Color.brand.primary)
+                HStack(spacing: Spacing.xxs) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Capsule()
+                            .fill(Color.brand.primary.opacity(index == 1 ? 1 : 0.35))
+                            .frame(width: 16, height: 5)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct CopyIllustration: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .fill(Color.brand.surface)
+                .frame(width: 104, height: 134)
+                .offset(x: -14, y: 10)
+                .opacity(0.74)
+
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .fill(Color.brand.surface)
+                .frame(width: 112, height: 142)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                        .stroke(Color.brand.primary, lineWidth: 4)
+                )
+
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Capsule()
+                    .fill(Color.brand.primary)
+                    .frame(width: 62, height: 9)
+                ForEach(0..<4, id: \.self) { index in
+                    Capsule()
+                        .fill(Color.brand.primary.opacity(index == 3 ? 0.32 : 0.5))
+                        .frame(width: index == 3 ? 46 : 78, height: 6)
+                }
+            }
+            .offset(y: -12)
+
+            RoundedRectangle(cornerRadius: Radius.pill, style: .continuous)
+                .fill(Color.brand.primary)
+                .frame(width: 82, height: 28)
+                .offset(y: 52)
         }
     }
 }

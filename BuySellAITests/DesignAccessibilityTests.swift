@@ -187,6 +187,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 2)
     }
 
+    func testTutorialUsesCustomIllustrationShapesInsteadOfSystemSymbols() throws {
+        let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
+
+        XCTAssertNil(tutorial.range(of: #"Image(systemName:"#))
+        XCTAssertNotNil(tutorial.range(of: "private struct SnapIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct AnalyzeIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct CopyIllustration"))
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
