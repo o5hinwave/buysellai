@@ -261,6 +261,28 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
     }
 
+    func testMarketplaceBestSummaryOpensListingSheetDirectly() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        let bestSummary = app.buttons["MarketplaceSummary.best.craigslist"]
+        XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
+        bestSummary.tap()
+
+        XCTAssertTrue(app.buttons["Copy listing"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Craigslist"].exists)
+        XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
+    }
+
     func testListingRetakeKeepsMarketplaceAndSkipsPicker() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
