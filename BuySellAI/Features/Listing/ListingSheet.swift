@@ -109,27 +109,40 @@ struct ListingSheet: View {
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("Listing.ErrorMessage")
             PrimaryPillButton(title: "Regenerate", systemImage: "arrow.clockwise") {
-                Task { await store.generate(accessToken: appStore.session?.accessToken) }
+                regenerateListing()
+            }
+            SecondaryPillButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
+                retakePhoto()
             }
         }
         .frame(maxWidth: .infinity, minHeight: 260)
         .accessibilitySortPriority(3)
     }
 
+    @ViewBuilder
     private var bottomActions: some View {
+        switch store.phase {
+        case .success:
+            successBottomActions
+        case .idle, .loading, .failed:
+            EmptyView()
+        }
+    }
+
+    private var successBottomActions: some View {
         VStack(spacing: Spacing.sm) {
             PrimaryPillButton(title: "Copy listing", systemImage: "doc.on.doc.fill", hapticStyle: nil) {
                 copyListing()
             }
-            .disabled(store.phase != .success || store.listingText.isEmpty)
+            .disabled(store.listingText.isEmpty)
             .accessibilitySortPriority(3)
 
             HStack(spacing: Spacing.sm) {
                 GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
-                    appStore.retakePhoto(keeping: context.marketplace)
+                    retakePhoto()
                 }
                 GhostButton(title: "Regenerate", systemImage: "arrow.clockwise") {
-                    Task { await store.generate(accessToken: appStore.session?.accessToken) }
+                    regenerateListing()
                 }
             }
             .accessibilitySortPriority(2)
@@ -143,6 +156,14 @@ struct ListingSheet: View {
         }
         .padding(Spacing.lg)
         .background(.regularMaterial)
+    }
+
+    private func regenerateListing() {
+        Task { await store.generate(accessToken: appStore.session?.accessToken) }
+    }
+
+    private func retakePhoto() {
+        appStore.retakePhoto(keeping: context.marketplace)
     }
 
     private func copyListing() {

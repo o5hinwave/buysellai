@@ -196,6 +196,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: "private struct CopyIllustration"))
     }
 
+    func testListingCopyActionOnlyAppearsAfterListingGenerationSucceeds() throws {
+        let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(listing.range(of: "case .success:\n            successBottomActions"))
+        XCTAssertNotNil(listing.range(of: "case .idle, .loading, .failed:\n            EmptyView()"))
+        XCTAssertNotNil(listing.range(of: "private var successBottomActions"))
+        XCTAssertNotNil(listing.range(of: #"PrimaryPillButton(title: "Copy listing""#))
+        XCTAssertNotNil(listing.range(of: #"SecondaryPillButton(title: "Wrong item — retake""#))
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

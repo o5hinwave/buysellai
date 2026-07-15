@@ -647,6 +647,7 @@ final class BuySellAIUITests: XCTestCase {
         }
         XCTAssertEqual(offlineMessage.label, "You're offline. Reconnect and try again.")
         XCTAssertTrue(app.buttons["Regenerate"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.buttons["Copy listing"].exists)
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "URLError")).firstMatch.exists)
 
         let toast = app.descendants(matching: .any)["Toast"]
