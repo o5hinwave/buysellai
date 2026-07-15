@@ -375,7 +375,7 @@ final class AppStore {
     }
 
     func setSession(_ session: AuthSession) async {
-        advanceHistoryMutationGeneration()
+        let sessionGeneration = advanceHistoryMutationGeneration()
         self.session = session
         persist(session)
 
@@ -386,14 +386,19 @@ final class AppStore {
 
         do {
             let localHistory = try await loadLocalHistory()
+            guard isCurrentSession(session) else { return }
             if localHistory.isEmpty == false {
                 try await remoteHistoryClient.upsertHistory(localHistory, accessToken: accessToken)
+                guard isCurrentSession(session) else { return }
                 try clearLocalHistory()
             }
-            history = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+            let remoteHistory = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
+            guard isCurrentSession(session), isCurrentHistoryMutationGeneration(sessionGeneration) else { return }
+            history = remoteHistory
             let text = (localHistory.isEmpty ? "Signed in." : "Signed in. Listings synced.").localized
             showToast(text, style: .success)
         } catch {
+            guard isCurrentSession(session), isCurrentHistoryMutationGeneration(sessionGeneration) else { return }
             showToast(error.localizedDescription, style: .error)
         }
     }
@@ -462,6 +467,12 @@ final class AppStore {
 
     private func isCurrentHistoryMutationGeneration(_ generation: Int) -> Bool {
         generation == historyMutationGeneration
+    }
+
+    private func isCurrentSession(_ session: AuthSession) -> Bool {
+        self.session?.userID == session.userID &&
+            self.session?.accessToken == session.accessToken &&
+            self.session?.refreshToken == session.refreshToken
     }
 
     private static func clearStoredSessionValues() {

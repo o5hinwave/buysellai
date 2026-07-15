@@ -5,6 +5,16 @@ import XCTest
 
 @MainActor
 final class AppStoreLocalHistoryTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        clearStoredSession()
+    }
+
+    override func tearDown() {
+        clearStoredSession()
+        super.tearDown()
+    }
+
     func testGuestSaveListingStoresImmediateThumbnailAndPersistsLocally() async throws {
         let context = try makeModelContext()
         let suiteName = "AppStoreLocalHistoryTests-\(UUID().uuidString)"
@@ -64,5 +74,13 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         let decoded = try XCTUnwrap(UIImage(data: thumbnail)?.cgImage, file: file, line: line)
         XCTAssertEqual(max(decoded.width, decoded.height), 200, file: file, line: line)
         XCTAssertEqual(min(decoded.width, decoded.height), 150, file: file, line: line)
+    }
+
+    private func clearStoredSession() {
+        Keychain.delete("appleUserID")
+        Keychain.delete("authUserID")
+        Keychain.delete("authEmail")
+        Keychain.delete("supabaseAccessToken")
+        Keychain.delete("supabaseRefreshToken")
     }
 }

@@ -6,6 +6,7 @@ import XCTest
 final class AppStoreRemoteHistoryErrorTests: XCTestCase {
     override func tearDown() {
         AppStoreRemoteHistoryMockURLProtocol.handler = nil
+        clearStoredSession()
         super.tearDown()
     }
 
@@ -128,6 +129,65 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
 
         releaseFetch.signal()
         await loadTask.value
+
+        XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
+        XCTAssertFalse(store.history.contains { $0.id == staleRemoteEntry.id })
+    }
+
+    func testLateSetSessionFetchDoesNotOverwriteNewlySavedListing() async throws {
+        let staleRemoteEntry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T17:00:00Z")),
+            itemName: "Older remote chair",
+            category: .furniture,
+            condition: .fair,
+            suggestedPrice: Decimal(20),
+            imageThumbnail: nil,
+            marketplace: .craigslist,
+            listingText: "TITLE:\nOlder remote chair"
+        )
+        let fetchStarted = expectation(description: "session remote fetch started")
+        let releaseFetch = DispatchSemaphore(value: 0)
+        let store = try makeStore { request in
+            switch request.httpMethod {
+            case "GET":
+                fetchStarted.fulfill()
+                XCTAssertEqual(.success, releaseFetch.wait(timeout: .now() + 2))
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Self.remoteRows(for: [staleRemoteEntry]))
+            case "POST":
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 204,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data())
+            }
+        }
+
+        let signInTask = Task { await store.setSession(signedInSession) }
+        await fulfillment(of: [fetchStarted], timeout: 1)
+
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
+
+        releaseFetch.signal()
+        await signInTask.value
 
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
         XCTAssertFalse(store.history.contains { $0.id == staleRemoteEntry.id })
@@ -266,6 +326,14 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         XCTFail("Expected toast \(expectedText ?? "nil"), got \(store.toast?.text ?? "nil")")
+    }
+
+    private func clearStoredSession() {
+        Keychain.delete("appleUserID")
+        Keychain.delete("authUserID")
+        Keychain.delete("authEmail")
+        Keychain.delete("supabaseAccessToken")
+        Keychain.delete("supabaseRefreshToken")
     }
 }
 

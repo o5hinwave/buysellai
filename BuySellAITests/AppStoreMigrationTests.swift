@@ -7,6 +7,7 @@ import XCTest
 final class AppStoreMigrationTests: XCTestCase {
     override func tearDown() {
         AppStoreMigrationMockURLProtocol.handler = nil
+        clearStoredSession()
         super.tearDown()
     }
 
@@ -90,6 +91,70 @@ final class AppStoreMigrationTests: XCTestCase {
         XCTAssertEqual(store.history.map(\.id), [firstID, secondID])
     }
 
+    func testSetSessionSignOutDuringMigrationDoesNotClearGuestHistory() async throws {
+        let entry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:00:00Z")),
+            itemName: "Guest lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(45),
+            imageThumbnail: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nGuest lamp"
+        )
+        let context = try makeModelContext()
+        context.insert(HistoryEntryModel(entry: entry))
+        try context.save()
+
+        let migrationStarted = expectation(description: "migration upload started")
+        let releaseMigration = DispatchSemaphore(value: 0)
+        let remoteHistoryClient = try makeRemoteHistoryClient { request in
+            let url = try XCTUnwrap(request.url)
+            switch request.httpMethod {
+            case "POST":
+                migrationStarted.fulfill()
+                XCTAssertEqual(.success, releaseMigration.wait(timeout: .now() + 2))
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 204, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            case "GET":
+                XCTFail("Stale sign-in migration should not fetch remote history after sign out.")
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+                return (response, Self.remoteRows(for: []))
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+        }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "AppStoreMigrationTests-\(UUID().uuidString)"))
+        let store = AppStore(defaults: defaults, remoteHistoryClient: remoteHistoryClient)
+        store.configure(modelContext: context)
+
+        let session = AuthSession(
+            userID: "user-123",
+            email: "person@example.com",
+            accessToken: "access-token",
+            refreshToken: "refresh-token"
+        )
+
+        let signInTask = Task { await store.setSession(session) }
+        await fulfillment(of: [migrationStarted], timeout: 1)
+
+        store.signOut()
+        await store.loadHistory()
+        XCTAssertNil(store.session)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+
+        releaseMigration.signal()
+        await signInTask.value
+
+        XCTAssertNil(store.session)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(try context.fetch(FetchDescriptor<HistoryEntryModel>()).map(\.id), [entry.id])
+        XCTAssertEqual(store.toast?.text, "Signed out.")
+    }
+
     private func makeModelContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: HistoryEntryModel.self, configurations: configuration)
@@ -157,6 +222,14 @@ final class AppStoreMigrationTests: XCTestCase {
             data.append(buffer, count: count)
         }
         return data
+    }
+
+    private func clearStoredSession() {
+        Keychain.delete("appleUserID")
+        Keychain.delete("authUserID")
+        Keychain.delete("authEmail")
+        Keychain.delete("supabaseAccessToken")
+        Keychain.delete("supabaseRefreshToken")
     }
 }
 
