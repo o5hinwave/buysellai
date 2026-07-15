@@ -116,9 +116,7 @@ final class CameraController: NSObject, @unchecked Sendable {
         session.beginConfiguration()
         session.sessionPreset = .photo
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-            ?? AVCaptureDevice.default(for: .video)
-        else {
+        guard let device = Self.preferredBackCamera() else {
             session.commitConfiguration()
             throw CameraError.noCamera
         }
@@ -146,6 +144,29 @@ final class CameraController: NSObject, @unchecked Sendable {
         videoDevice = device
         configured = true
         session.commitConfiguration()
+    }
+
+    private static func preferredBackCamera() -> AVCaptureDevice? {
+        let deviceTypes: [AVCaptureDevice.DeviceType] = [
+            .builtInWideAngleCamera,
+            .builtInDualWideCamera,
+            .builtInDualCamera,
+            .builtInTripleCamera,
+            .builtInUltraWideCamera,
+            .builtInTelephotoCamera
+        ]
+
+        for deviceType in deviceTypes {
+            if let device = AVCaptureDevice.default(deviceType, for: .video, position: .back) {
+                return device
+            }
+        }
+
+        return AVCaptureDevice.DiscoverySession(
+            deviceTypes: deviceTypes,
+            mediaType: .video,
+            position: .back
+        ).devices.first
     }
 }
 

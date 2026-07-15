@@ -33,6 +33,18 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertLessThan(stopRange.lowerBound, downscaleRange.lowerBound)
     }
 
+    func testCameraSelectionUsesBackCameraOnlyFallbackChain() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "private static func preferredBackCamera()"))
+        XCTAssertNotNil(source.range(of: "AVCaptureDevice.default(deviceType, for: .video, position: .back)"))
+        XCTAssertNotNil(source.range(of: "AVCaptureDevice.DiscoverySession("))
+        XCTAssertNotNil(source.range(of: "position: .back"))
+        XCTAssertNil(source.range(of: "AVCaptureDevice.default(for: .video)"))
+        XCTAssertNil(source.range(of: "position: .front"))
+        XCTAssertNil(source.range(of: "position: .unspecified"))
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
