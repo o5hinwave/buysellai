@@ -59,10 +59,68 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         try assertThumbnailIsCappedAtListingSize(reloadedEntry.imageThumbnail)
     }
 
+    func testGuestHistoryReloadsNewestFirstForMultipleRows() async throws {
+        let context = try makeModelContext()
+        let suiteName = "AppStoreLocalHistoryOrderingTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+
+        let oldEntry = historyEntry(
+            id: UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            itemName: "Desk lamp",
+            marketplace: .ebay
+        )
+        let newestEntry = historyEntry(
+            id: UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_200),
+            itemName: "Oak chair",
+            marketplace: .craigslist
+        )
+        let middleEntry = historyEntry(
+            id: UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_100),
+            itemName: "Coffee mug",
+            marketplace: .facebook
+        )
+
+        [oldEntry, newestEntry, middleEntry].forEach { entry in
+            context.insert(HistoryEntryModel(entry: entry))
+        }
+        try context.save()
+
+        let store = AppStore(defaults: defaults)
+        store.configure(modelContext: context)
+        await store.loadHistory()
+
+        XCTAssertEqual(store.history.map(\.id), [newestEntry.id, middleEntry.id, oldEntry.id])
+        XCTAssertEqual(store.history.map(\.itemName), ["Oak chair", "Coffee mug", "Desk lamp"])
+        XCTAssertEqual(store.history.map(\.marketplace), [.craigslist, .facebook, .ebay])
+    }
+
     private func makeModelContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: HistoryEntryModel.self, configurations: configuration)
         return ModelContext(container)
+    }
+
+    private func historyEntry(
+        id: UUID,
+        createdAt: Date,
+        itemName: String,
+        marketplace: Marketplace
+    ) -> HistoryEntry {
+        HistoryEntry(
+            id: id,
+            createdAt: createdAt,
+            itemName: itemName,
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(25),
+            imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
+            marketplace: marketplace,
+            listingText: "TITLE:\n\(itemName)"
+        )
     }
 
     private func assertThumbnailIsCappedAtListingSize(
