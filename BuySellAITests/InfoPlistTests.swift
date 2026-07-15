@@ -24,6 +24,26 @@ final class InfoPlistTests: XCTestCase {
         )
     }
 
+    func testAppDeclaresRequiredRuntimeMetadata() throws {
+        let plist = try projectInfoPlist()
+
+        XCTAssertEqual(
+            plist["NSCameraUsageDescription"] as? String,
+            "BuySell uses your camera to snap photos of items you want to sell."
+        )
+        XCTAssertEqual(plist["ITSAppUsesNonExemptEncryption"] as? Bool, false)
+        XCTAssertEqual(plist["UIRequiresFullScreen"] as? Bool, false)
+        XCTAssertEqual(plist["UILaunchStoryboardName"] as? String, "LaunchScreen")
+    }
+
+    func testProjectTargetsIOSSeventeenMinimum() throws {
+        let project = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.pbxproj"), encoding: .utf8)
+        let deploymentTargets = try buildSettingValues(named: "IPHONEOS_DEPLOYMENT_TARGET", in: project)
+
+        XCTAssertFalse(deploymentTargets.isEmpty)
+        XCTAssertEqual(Set(deploymentTargets), ["17.0"])
+    }
+
     func testRegistersStaticBrandFontVariants() throws {
         let plist = try projectInfoPlist()
         let appFonts = try XCTUnwrap(plist["UIAppFonts"] as? [String])
@@ -95,5 +115,14 @@ final class InfoPlistTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func buildSettingValues(named setting: String, in project: String) throws -> [String] {
+        let regex = try NSRegularExpression(pattern: #"\b\#(setting) = ([^;]+);"#)
+        let range = NSRange(project.startIndex..<project.endIndex, in: project)
+        return regex.matches(in: project, range: range).compactMap { match in
+            guard let valueRange = Range(match.range(at: 1), in: project) else { return nil }
+            return project[valueRange].trimmingCharacters(in: .whitespacesAndNewlines)
+        }
     }
 }
