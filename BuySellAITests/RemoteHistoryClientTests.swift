@@ -212,6 +212,25 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertTrue(entries.isEmpty)
     }
 
+    func testFetchHistoryTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, attempts == 1 ? Data() : Data("[]".utf8))
+        }
+
+        let entries = try await client.fetchHistory(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+        XCTAssertTrue(entries.isEmpty)
+    }
+
     func testUpsertHistoryEmptyBatchSkipsNetworkRequest() async throws {
         let client = try makeClient { _ in
             XCTFail("Empty upsert should not make a network request.")
@@ -297,6 +316,24 @@ final class RemoteHistoryClientTests: XCTestCase {
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
                 statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.upsertHistory([Self.sampleEntry()], accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testUpsertHistoryTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 204,
                 httpVersion: nil,
                 headerFields: nil
             ))
@@ -394,6 +431,24 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
     }
 
+    func testDeleteHistoryTransientServerErrorRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: attempts == 1 ? 503 : 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.deleteHistory(id: UUID(), accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
     func testClearHistoryTimeoutMapsToFriendlyError() async throws {
         let client = try makeClient { _ in
             throw URLError(.timedOut)
@@ -456,6 +511,28 @@ final class RemoteHistoryClientTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? APIError, .server(403))
         }
+    }
+
+    func testClearHistoryNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.clearHistory(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
     }
 
     func testClearHistoryTransientServerErrorRetriesOnce() async throws {

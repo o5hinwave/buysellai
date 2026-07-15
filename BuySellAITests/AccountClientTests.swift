@@ -122,6 +122,28 @@ final class AccountClientTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
     }
 
+    func testDeleteAccountNetworkConnectionLostRetriesOnce() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            if attempts == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        try await client.deleteAccount(accessToken: "access-token")
+
+        XCTAssertEqual(attempts, 2)
+    }
+
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> AccountClient {
         AccountMockURLProtocol.handler = handler
         let configuration = URLSessionConfiguration.ephemeral
