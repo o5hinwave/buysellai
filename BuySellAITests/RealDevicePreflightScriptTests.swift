@@ -28,6 +28,8 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"setting CODE_SIGN_ENTITLEMENTS"#))
         XCTAssertNotNil(script.range(of: #"setting DEVELOPMENT_TEAM"#))
         XCTAssertNotNil(script.range(of: "DEVELOPMENT_TEAM is unset"))
+        XCTAssertNotNil(script.range(of: "TARGET_BUILD_DIR"))
+        XCTAssertNotNil(script.range(of: "WRAPPER_NAME"))
     }
 
     func testRealDevicePreflightBuildsReleaseForPhysicalDevice() throws {
@@ -39,6 +41,11 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 real-device preflight passed"))
         XCTAssertNotNil(script.range(of: "device name:"))
         XCTAssertNotNil(script.range(of: "device id:"))
+        XCTAssertNotNil(script.range(of: "app:"))
+        XCTAssertNotNil(script.range(of: "release build:"))
+        XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
+        XCTAssertNotNil(script.range(of: "CFBundleVersion"))
+        XCTAssertNotNil(script.range(of: "built app Info.plist"))
         XCTAssertNil(script.range(of: "platform=iOS Simulator"))
         XCTAssertNil(script.range(of: "CODE_SIGNING_ALLOWED=NO"))
     }
@@ -52,7 +59,7 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_DEVICE=1"))
         XCTAssertNotNil(m10.range(of: "trusted iPhone or iPad with Developer Mode enabled"))
         XCTAssertNotNil(readme.range(of: "ignores non-iOS `devicectl` entries"))
-        XCTAssertNotNil(readme.range(of: "Passing logs include `device:`, `device name:`, and `device id:` markers"))
+        XCTAssertNotNil(readme.range(of: "Passing logs include `device:`, `device name:`, `device id:`, `app:`, and `release build:` markers"))
         XCTAssertNotNil(m10.range(of: "A supplied `DEVICE_ID` must match a connected iPhone or iPad"))
     }
 

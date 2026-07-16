@@ -36,6 +36,10 @@ plist_optional() {
     "${plist_buddy}" -c "Print :$1" "$device_json" 2>/dev/null || true
 }
 
+plist_value() {
+    "${plist_buddy}" -c "Print :$1" "$2"
+}
+
 is_ios_device() {
     local summary="$1"
 
@@ -117,6 +121,12 @@ build_settings="$(
 [[ "$(setting CODE_SIGN_ENTITLEMENTS)" == "BuySellAI/BuySellAI.entitlements" ]] || fail "Release build must use BuySellAI.entitlements"
 [[ -n "$(setting DEVELOPMENT_TEAM)" ]] || fail "DEVELOPMENT_TEAM is unset. Select an Apple development team before real-device preflight."
 
+target_build_dir="$(setting TARGET_BUILD_DIR)"
+wrapper_name="$(setting WRAPPER_NAME)"
+[[ -n "$target_build_dir" && -n "$wrapper_name" ]] || fail "Release build settings did not include TARGET_BUILD_DIR and WRAPPER_NAME"
+built_app_path="${target_build_dir}/${wrapper_name}"
+built_info_plist="${built_app_path}/Info.plist"
+
 xcodebuild build \
     -project "$project_path" \
     -scheme BuySellAI \
@@ -124,7 +134,18 @@ xcodebuild build \
     -destination "id=${device_identifier}" \
     -allowProvisioningUpdates
 
+[[ -d "$built_app_path" ]] || fail "missing built app at $built_app_path"
+[[ -f "$built_info_plist" ]] || fail "missing built app Info.plist at $built_info_plist"
+plutil -lint "$built_info_plist" >/dev/null
+
+release_version="$(plist_value CFBundleShortVersionString "$built_info_plist")"
+release_build="$(plist_value CFBundleVersion "$built_info_plist")"
+[[ -n "$release_version" ]] || fail "built app Info.plist is missing CFBundleShortVersionString"
+[[ -n "$release_build" ]] || fail "built app Info.plist is missing CFBundleVersion"
+
 printf 'M10 real-device preflight passed\n'
 printf 'device: %s (%s)\n' "${device_name:-Connected device}" "$device_identifier"
 printf 'device name: %s\n' "${device_name:-Connected device}"
 printf 'device id: %s\n' "$device_identifier"
+printf 'app: %s\n' "$built_app_path"
+printf 'release build: %s (%s)\n' "$release_version" "$release_build"
