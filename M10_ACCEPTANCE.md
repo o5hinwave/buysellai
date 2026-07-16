@@ -4,13 +4,13 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `288` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `292` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
 - Simulator performance evidence: launch, camera-ready, capture-to-result thumbnail, slow history load, and 500-row history scroll UI tests pass in the full suite.
-- Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, performance evidence log `/tmp/buysell-submit-readiness-performance.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
+- Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, performance evidence log `/tmp/buysell-submit-readiness-performance.log`, Instruments evidence blocker log `/tmp/buysell-submit-readiness-instruments.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
 
 ## Commands
 
@@ -110,6 +110,20 @@ bash Scripts/verify_m10_performance_evidence.sh \
 
 The performance evidence verifier checks the full-suite result, named simulator performance UI tests, and the archived app-size budget. It does not replace the final physical-device timing checks in the real-device acceptance table.
 
+Run the M10 Instruments evidence verifier after profiling a signed Release build on a trusted physical device with Time Profiler and Allocations:
+
+```sh
+bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
+```
+
+Until the signed physical-device Instruments pass is complete, record the known blocker:
+
+```sh
+ALLOW_PENDING_INSTRUMENTS=1 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
+```
+
+The Instruments evidence verifier checks the final hardware timing, scroll, memory, and trace-retention evidence in `M10_INSTRUMENTS.md`.
+
 Run the combined M10 submit-readiness gate after producing every evidence artifact above:
 
 ```sh
@@ -134,6 +148,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.
 - [ ] Record a passing 15-item real-device acceptance evidence table.
 - [ ] Run the M10 performance evidence verifier.
+- [ ] Run the M10 Instruments evidence verifier.
 - [ ] Run the combined M10 submit-readiness gate without `ALLOW_PENDING_M10=1`.
 
 ## Real-Device Acceptance

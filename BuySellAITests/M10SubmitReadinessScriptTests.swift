@@ -9,8 +9,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
         XCTAssertNotNil(script.range(of: "M10_FULL_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_FOCUSED_XCRESULT"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-288"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-33"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-292"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-37"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "M10 local archive check passed"))
         XCTAssertNotNil(script.range(of: "M10 signed archive preflight passed"))
@@ -18,6 +18,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 App Store validation preflight passed"))
         XCTAssertNotNil(script.range(of: "M10 real-device preflight passed"))
         XCTAssertNotNil(script.range(of: "M10 secret scan passed"))
+        XCTAssertNotNil(script.range(of: "M10 Instruments evidence passed"))
         XCTAssertNotNil(script.range(of: "verify_m10_real_device_acceptance.sh"))
     }
 
@@ -52,6 +53,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_M10=1"))
         XCTAssertNotNil(m10.range(of: "Run the combined M10 submit-readiness gate without `ALLOW_PENDING_M10=1`"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
+        XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-instruments.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-combined.log"))
     }
 

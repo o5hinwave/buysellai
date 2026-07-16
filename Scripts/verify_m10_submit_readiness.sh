@@ -5,7 +5,6 @@ acceptance_file="${1:-M10_ACCEPTANCE.md}"
 allow_pending="${ALLOW_PENDING_M10:-0}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "${script_dir}/.." && pwd)"
 
 full_result="${M10_FULL_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}"
 focused_result="${M10_FOCUSED_XCRESULT:-/tmp/buysell-submit-readiness-focused.xcresult}"
@@ -17,8 +16,9 @@ validation_log="${M10_APP_STORE_VALIDATION_LOG:-/tmp/buysell-submit-readiness-ap
 real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-device-preflight.log}"
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
-min_tests="${M10_MIN_TESTS:-288}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-33}"
+instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
+min_tests="${M10_MIN_TESTS:-292}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-37}"
 
 pending_items=()
 
@@ -158,6 +158,7 @@ require_file_contains "$validation_log" "M10 App Store validation preflight pass
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
 require_file_contains "$performance_log" "M10 performance evidence passed" "performance evidence log"
+require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final

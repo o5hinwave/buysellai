@@ -8,7 +8,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
         XCTAssertNotNil(script.range(of: "M10_PERFORMANCE_XCRESULT"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-288"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-292"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results tests"))
         XCTAssertNotNil(script.range(of: "testHomeLaunchReachesPrimaryActionWithinSimulatorBudget"))
@@ -45,6 +45,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_performance_evidence.sh"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-performance.log"))
         XCTAssertNotNil(m10.range(of: "Run the M10 performance evidence verifier"))
+        XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))
     }
 
     private func projectURL(_ path: String) -> URL {
