@@ -78,6 +78,8 @@ Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy po
 ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
+The App Store support/privacy site source is in `AppStoreSite/`. Sites version 1 is saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests return `401`, so App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached.
+
 Run the M10 backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
 
 ```sh
@@ -178,7 +180,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 - [ ] Export an App Store Connect IPA with automatic signing enabled.
 - [ ] Validate the signed archive in Xcode Organizer.
 - [ ] Validate the exported IPA with App Store Connect API-key credentials.
-- [ ] Complete App Store Connect metadata, screenshots, privacy/support URLs, app privacy answers, age rating, DSA status, and review notes.
+- [ ] Complete App Store Connect metadata, screenshots, public privacy/support URLs, app privacy answers, age rating, DSA status, and legal owner fields.
 - [ ] Run the M10 backend smoke preflight against the production Supabase project.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.

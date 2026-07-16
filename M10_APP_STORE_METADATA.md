@@ -10,7 +10,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | --- | --- |
 | App name | BuySell AI |
 | Bundle ID | com.rhodes.buysellai |
-| SKU | TBD |
+| SKU | buysell-ai-ios |
 | Primary language | English (U.S.) |
 | Primary category | Shopping |
 | Secondary category | Lifestyle |
@@ -33,7 +33,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Marketing URL | N/A |
 | Privacy Policy URL | TBD |
 | Screenshots | TBD |
-| App Review notes | TBD |
+| App Review notes | Reviewer path: launch BuySell AI, continue as a guest if prompted, grant camera access, capture a household item, choose a marketplace, review the generated listing, and copy the result. Sign in with Apple is optional for account history. Supabase Edge Functions provide item analysis and listing generation; no demo credentials are required for the guest flow. |
 
 ## App Privacy Answers
 
@@ -48,6 +48,19 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | User privacy choices URL | N/A |
 | Account deletion | Yes, Settings -> Danger zone -> Delete account calls the delete-account Edge Function. |
 | Export compliance | ITSAppUsesNonExemptEncryption=false; app uses only standard HTTPS/TLS. |
+
+## Support And Privacy Site Evidence
+
+| Field | Value |
+| --- | --- |
+| Sites project ID | appgprj_6a590c444ddc819199896a5205d985d8 |
+| Saved version | appgprj_6a590c444ddc819199896a5205d985d8~appgver_c5fbf72345a481918d56a7881b0addaf |
+| Version number | 1 |
+| Source commit | 752e7310c38df585eab036205f8500c630de4f1f |
+| Source path | AppStoreSite |
+| Local verification | `npm test`; `npm run lint` |
+| Deployment status | Private Sites deployment appgdep_6a590cf4dd60819186a89f4264dabf14 succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support` and `/privacy` requests return HTTP 401. |
+| Public App Store URL status | Pending: App Store support/privacy URLs must be public before these metadata fields can pass. |
 
 ## Commands
 
