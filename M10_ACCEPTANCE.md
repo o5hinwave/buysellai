@@ -9,7 +9,7 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Simulator performance evidence: launch, camera-ready, capture-to-result thumbnail, slow history load, and 500-row history scroll UI tests pass in the full suite.
+- Simulator performance evidence: launch, camera-ready, capture-to-result thumbnail, slow history load, and 500-row history scroll UI tests pass in the full suite; `Scripts/verify_m10_performance_evidence.sh` passed with 5 performance tests and a `3188KB / 20480KB` app-size result.
 - Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, performance evidence log `/tmp/buysell-submit-readiness-performance.log`, Instruments evidence blocker log `/tmp/buysell-submit-readiness-instruments.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
 
 ## Commands
@@ -147,7 +147,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 - [ ] Confirm App Store privacy manifest validation passes.
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.
 - [ ] Record a passing 15-item real-device acceptance evidence table.
-- [ ] Run the M10 performance evidence verifier.
+- [x] Run the M10 performance evidence verifier.
 - [ ] Run the M10 Instruments evidence verifier.
 - [ ] Run the combined M10 submit-readiness gate without `ALLOW_PENDING_M10=1`.
 
