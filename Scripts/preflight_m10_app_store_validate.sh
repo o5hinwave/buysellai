@@ -35,6 +35,58 @@ plist_value() {
     "${plist_buddy}" -c "Print :$1" "$2"
 }
 
+plist_raw_value() {
+    plutil -extract "$1" raw -o - "$2"
+}
+
+require_privacy_manifest_values() {
+    local manifest="$1"
+    local data_count
+    local accessed_count
+    local tracking_domains_count
+    local data_type
+    local linked
+    local tracking
+    local purpose_count
+    local purpose
+    local expected_data_types
+
+    [[ "$(plist_raw_value NSPrivacyTracking "$manifest")" == "false" ]] || fail "privacy manifest must declare NSPrivacyTracking=false"
+
+    tracking_domains_count="$(plist_raw_value NSPrivacyTrackingDomains "$manifest")"
+    [[ "$tracking_domains_count" == "0" ]] || fail "privacy manifest must not declare tracking domains"
+
+    data_count="$(plist_raw_value NSPrivacyCollectedDataTypes "$manifest")"
+    [[ "$data_count" == "4" ]] || fail "privacy manifest must declare exactly 4 collected data types"
+
+    expected_data_types=(
+        "NSPrivacyCollectedDataTypeEmailAddress"
+        "NSPrivacyCollectedDataTypeUserID"
+        "NSPrivacyCollectedDataTypePhotosorVideos"
+        "NSPrivacyCollectedDataTypeOtherUserContent"
+    )
+
+    for index in "${!expected_data_types[@]}"; do
+        data_type="$(plist_value "NSPrivacyCollectedDataTypes:${index}:NSPrivacyCollectedDataType" "$manifest")"
+        linked="$(plist_raw_value "NSPrivacyCollectedDataTypes.${index}.NSPrivacyCollectedDataTypeLinked" "$manifest")"
+        tracking="$(plist_raw_value "NSPrivacyCollectedDataTypes.${index}.NSPrivacyCollectedDataTypeTracking" "$manifest")"
+        purpose_count="$(plist_raw_value "NSPrivacyCollectedDataTypes.${index}.NSPrivacyCollectedDataTypePurposes" "$manifest")"
+        purpose="$(plist_value "NSPrivacyCollectedDataTypes:${index}:NSPrivacyCollectedDataTypePurposes:0" "$manifest")"
+
+        [[ "$data_type" == "${expected_data_types[$index]}" ]] || fail "privacy manifest collected data type $index is '$data_type'"
+        [[ "$linked" == "true" ]] || fail "privacy manifest collected data type $index must be linked to the user"
+        [[ "$tracking" == "false" ]] || fail "privacy manifest collected data type $index must not be used for tracking"
+        [[ "$purpose_count" == "1" ]] || fail "privacy manifest collected data type $index must declare exactly one purpose"
+        [[ "$purpose" == "NSPrivacyCollectedDataTypePurposeAppFunctionality" ]] || fail "privacy manifest collected data type $index must be for app functionality"
+    done
+
+    accessed_count="$(plist_raw_value NSPrivacyAccessedAPITypes "$manifest")"
+    [[ "$accessed_count" == "1" ]] || fail "privacy manifest must declare exactly one accessed API type"
+    [[ "$(plist_value NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPIType "$manifest")" == "NSPrivacyAccessedAPICategoryUserDefaults" ]] || fail "privacy manifest accessed API must be UserDefaults"
+    [[ "$(plist_raw_value NSPrivacyAccessedAPITypes.0.NSPrivacyAccessedAPITypeReasons "$manifest")" == "1" ]] || fail "privacy manifest UserDefaults reason must have exactly one value"
+    [[ "$(plist_value NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPITypeReasons:0 "$manifest")" == "CA92.1" ]] || fail "privacy manifest UserDefaults reason must be CA92.1"
+}
+
 ipa_path=""
 if [[ -f "$artifact_path" ]]; then
     [[ "$artifact_path" == *.ipa ]] || fail "expected an .ipa file or an export directory"
@@ -57,6 +109,7 @@ unzip -p "$ipa_path" 'Payload/BuySellAI.app/PrivacyInfo.xcprivacy' > "$ipa_priva
 
 plutil -lint "$ipa_info_plist" >/dev/null
 plutil -lint "$ipa_privacy_manifest" >/dev/null
+require_privacy_manifest_values "$ipa_privacy_manifest"
 
 [[ "$(plist_value CFBundleIdentifier "$ipa_info_plist")" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
 [[ "$(plist_value NSCameraUsageDescription "$ipa_info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"

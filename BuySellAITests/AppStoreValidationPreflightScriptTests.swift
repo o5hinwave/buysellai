@@ -15,6 +15,22 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "com.rhodes.buysellai"))
     }
 
+    func testAppStoreValidationPreflightChecksPrivacyManifestContents() throws {
+        let script = try String(contentsOf: projectURL("Scripts/preflight_m10_app_store_validate.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "require_privacy_manifest_values"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyTracking"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyTrackingDomains"))
+        XCTAssertNotNil(script.range(of: "privacy manifest must declare exactly 4 collected data types"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeEmailAddress"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeUserID"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypePhotosorVideos"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeOtherUserContent"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypePurposeAppFunctionality"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyAccessedAPICategoryUserDefaults"))
+        XCTAssertNotNil(script.range(of: "CA92.1"))
+    }
+
     func testAppStoreValidationPreflightUsesAltoolValidationWithAPIKeyAuth() throws {
         let script = try String(contentsOf: projectURL("Scripts/preflight_m10_app_store_validate.sh"), encoding: .utf8)
 
