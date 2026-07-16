@@ -8,7 +8,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
         XCTAssertNotNil(script.range(of: "M10_PERFORMANCE_XCRESULT"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-294"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-296"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results tests"))
         XCTAssertNotNil(script.range(of: "testHomeLaunchReachesPrimaryActionWithinSimulatorBudget"))

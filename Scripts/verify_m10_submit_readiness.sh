@@ -17,8 +17,20 @@ real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-devic
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-294}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-50}"
+min_tests="${M10_MIN_TESTS:-296}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-52}"
+required_focused_tests=(
+    "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
+    "SignedArchivePreflightScriptTests/testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured()"
+    "AppStoreExportPreflightScriptTests/testAppStoreExportPreflightChecksExportedIPAContents()"
+    "AppStoreValidationPreflightScriptTests/testAppStoreValidationPreflightChecksPrivacyManifestContents()"
+    "RealDevicePreflightScriptTests/testRealDeviceAcceptanceVerifierParsesTimingEvidenceInMillisecondsOrSeconds()"
+    "M10PerformanceEvidenceScriptTests/testPerformanceEvidenceScriptRequiresFullSuiteAndNamedBudgetTests()"
+    "M10InstrumentsEvidenceScriptTests/testInstrumentsEvidenceScriptEnforcesPromptBudgets()"
+    "M10SubmitReadinessScriptTests/testSubmitReadinessScriptAggregatesAllM10EvidenceGates()"
+    "ConfigSecurityTests/testRuntimeConfigRejectsProviderSecretShapedAnonKeys()"
+    "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning()"
+)
 
 pending_items=()
 
@@ -98,6 +110,28 @@ require_xcresult_passed() {
     fi
 }
 
+require_xcresult_contains_tests() {
+    local result_path="$1"
+    local label="$2"
+    local tests_json
+    local test_id
+
+    if [[ ! -d "$result_path" ]]; then
+        return
+    fi
+
+    if ! tests_json="$(xcrun xcresulttool get test-results tests --path "$result_path" --format json 2>/dev/null)"; then
+        pending "$label result bundle tests could not be read by xcresulttool"
+        return
+    fi
+
+    for test_id in "${required_focused_tests[@]}"; do
+        if ! grep -Fq "\"nodeIdentifier\" : \"${test_id}\"" <<< "$tests_json"; then
+            pending "$label is missing required test $test_id"
+        fi
+    done
+}
+
 require_acceptance_evidence() {
     local output
 
@@ -150,6 +184,7 @@ require_result_log_final() {
 
 require_xcresult_passed "$full_result" "$min_tests" "full simulator suite"
 require_xcresult_passed "$focused_result" "$min_focused_tests" "focused M10 preflight suite"
+require_xcresult_contains_tests "$focused_result" "focused M10 preflight suite"
 require_directory "$no_sign_archive" "no-sign Release archive"
 require_file_contains "$no_sign_log" "M10 local archive check passed" "no-sign archive verifier log"
 require_file_contains "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
