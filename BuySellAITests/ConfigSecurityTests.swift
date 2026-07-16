@@ -176,6 +176,8 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(readme.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(readme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
+        XCTAssertNotNil(readme.range(of: "supabase secrets set --env-file .env"))
+        XCTAssertNotNil(readme.range(of: "Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands"))
         XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(m10.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(m10.range(of: "The scan should print both `M10 secret scan self-test passed` and `M10 secret scan passed`."))

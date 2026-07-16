@@ -21,6 +21,18 @@ Then fill in:
 
 Keep AI provider secrets, including Gemini keys, out of the iOS bundle. Add them to the Supabase Edge Function environment instead, using the variable name expected by the deployed functions (commonly `GEMINI_API_KEY`), then let the app call the existing `analyze-image` and `generate-listing` functions through Supabase. Rotate any provider key that was pasted into chat, logs, or git before using it for production. The bundled config parser accepts only `SUPABASE_URL` and `SUPABASE_ANON_KEY` and rejects provider-secret-shaped values.
 
+Safe Gemini setup for the existing Edge Functions:
+
+```sh
+read -rsp "Gemini API key: " GEMINI_API_KEY; printf '\n'
+printf 'GEMINI_API_KEY=%s\n' "$GEMINI_API_KEY" > .env
+supabase secrets set --env-file .env
+rm .env
+unset GEMINI_API_KEY
+```
+
+`.env` is git-ignored. Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands that would remain in history.
+
 Signed-in history sync expects a PostgREST `history` table protected by RLS:
 
 ```sql
