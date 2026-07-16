@@ -54,6 +54,46 @@ is_placeholder() {
     return 1
 }
 
+duration_ms_from_text() {
+    local value="$1"
+    local normalized
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$value")"
+    if [[ "$normalized" =~ ([0-9]+([.][0-9]+)?)[[:space:]]*(ms|millisecond|milliseconds) ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    if [[ "$normalized" =~ ([0-9]+([.][0-9]+)?)[[:space:]]*(s|sec|secs|second|seconds) ]]; then
+        awk -v value="${BASH_REMATCH[1]}" 'BEGIN { printf "%.3f\n", value * 1000 }'
+        return 0
+    fi
+
+    return 1
+}
+
+require_evidence_duration_at_most() {
+    local id="$1"
+    local limit_ms="$2"
+    local label="$3"
+    local evidence
+    local measured_ms
+
+    evidence="$(acceptance_column "$id" 5)"
+    if is_placeholder "$evidence"; then
+        return
+    fi
+
+    if ! measured_ms="$(duration_ms_from_text "$evidence")"; then
+        pending_items+=("$id evidence must include a measured $label duration in ms or seconds")
+        return
+    fi
+
+    if ! awk -v actual="$measured_ms" -v limit="$limit_ms" 'BEGIN { exit(actual <= limit ? 0 : 1) }'; then
+        pending_items+=("$id measured $label duration is ${measured_ms} ms, expected <= ${limit_ms} ms")
+    fi
+}
+
 [[ -f "$acceptance_file" ]] || fail "missing acceptance file at $acceptance_file"
 
 row_count="$(
@@ -144,6 +184,10 @@ for index in "${!required_ids[@]}"; do
         pending_items+=("$id evidence is not recorded")
     fi
 done
+
+require_evidence_duration_at_most "A01" "1000" "cold-launch"
+require_evidence_duration_at_most "A02" "400" "camera-ready"
+require_evidence_duration_at_most "A03" "300" "capture-to-result"
 
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then

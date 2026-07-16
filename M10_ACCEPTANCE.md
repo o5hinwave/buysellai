@@ -153,7 +153,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 
 ## Real-Device Acceptance
 
-Record the metadata before checking the items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device, then update every Result to `Pass` and replace every `TBD` evidence note.
+Record the metadata before checking the items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device, then update every Result to `Pass` and replace every `TBD` evidence note. For A01-A03, include the measured duration in `ms` or seconds in the Evidence cell so the verifier can enforce the launch, camera-ready, and capture-to-result budgets.
 
 | Field | Value |
 | --- | --- |

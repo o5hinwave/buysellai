@@ -57,6 +57,11 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "expected exactly 15 real-device acceptance rows"))
         XCTAssertNotNil(script.range(of: "M10 real-device acceptance pending"))
         XCTAssertNotNil(script.range(of: "M10 real-device acceptance evidence passed"))
+        XCTAssertNotNil(script.range(of: "duration_ms_from_text"))
+        XCTAssertNotNil(script.range(of: "require_evidence_duration_at_most"))
+        XCTAssertNotNil(script.range(of: "A01\" \"1000\" \"cold-launch"))
+        XCTAssertNotNil(script.range(of: "A02\" \"400\" \"camera-ready"))
+        XCTAssertNotNil(script.range(of: "A03\" \"300\" \"capture-to-result"))
         XCTAssertNotNil(script.range(of: "Device model"))
         XCTAssertNotNil(script.range(of: "iOS version"))
         XCTAssertNotNil(script.range(of: "Backend project"))
@@ -96,6 +101,18 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "| Device model | TBD |"))
         XCTAssertNotNil(m10.range(of: "| Signed archive | TBD |"))
         XCTAssertNotNil(m10.range(of: "| App Store validation | TBD |"))
+    }
+
+    func testRealDeviceAcceptanceVerifierParsesTimingEvidenceInMillisecondsOrSeconds() throws {
+        let script = try String(contentsOf: projectURL("Scripts/verify_m10_real_device_acceptance.sh"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "ms|millisecond|milliseconds"))
+        XCTAssertNotNil(script.range(of: "s|sec|secs|second|seconds"))
+        XCTAssertNotNil(script.range(of: #"value \* 1000"#, options: .regularExpression))
+        XCTAssertNotNil(script.range(of: "evidence must include a measured $label duration in ms or seconds"))
+        XCTAssertNotNil(script.range(of: "expected <= ${limit_ms} ms"))
+        XCTAssertNotNil(m10.range(of: "For A01-A03, include the measured duration in `ms` or seconds"))
     }
 
     private func projectURL(_ path: String) -> URL {
