@@ -4,12 +4,12 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `280` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `284` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
-- Latest local evidence: focused real-device acceptance preflight result bundle `/tmp/buysell-real-device-acceptance-preflight.xcresult`, full-suite result bundle `/tmp/buysell-full-real-device-acceptance-preflight.xcresult`, no-sign archive `/tmp/buysell-real-device-acceptance-nosign.xcarchive`, verifier log `/tmp/buysell-real-device-acceptance-nosign.log`, signed-preflight blocker log `/tmp/buysell-real-device-acceptance-signed-preflight.log`, App Store export blocker log `/tmp/buysell-real-device-acceptance-export-preflight.log`, App Store validation blocker log `/tmp/buysell-real-device-acceptance-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-real-device-acceptance-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-real-device-acceptance-evidence.log`, secret-scan log `/tmp/buysell-real-device-acceptance-secret-scan.log`.
+- Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
 
 ## Commands
 
@@ -99,6 +99,18 @@ bash Scripts/scan_m10_secrets.sh
 
 The scan should print `M10 secret scan passed`.
 
+Run the combined M10 submit-readiness gate after producing every evidence artifact above:
+
+```sh
+bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
+```
+
+Until the signed archive, App Store, real-device, and manual evidence gates are complete, record the known blockers:
+
+```sh
+ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
+```
+
 ## Submit-Ready Gates
 
 - [ ] Configure a real Apple development team for the app target.
@@ -110,6 +122,7 @@ The scan should print `M10 secret scan passed`.
 - [ ] Confirm App Store privacy manifest validation passes.
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.
 - [ ] Record a passing 15-item real-device acceptance evidence table.
+- [ ] Run the combined M10 submit-readiness gate without `ALLOW_PENDING_M10=1`.
 
 ## Real-Device Acceptance
 
