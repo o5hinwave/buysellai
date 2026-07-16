@@ -79,7 +79,7 @@ Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy po
 ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
-The App Store support/privacy site source is in `AppStoreSite/`. Sites version 3 is saved from commit `2cbaf9521ecb2848d4ef9c321670dc8968055f34` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated support, privacy, and terms requests return `401`, and the metadata verifier checks that filled-in Support URL and Privacy Policy URL values are publicly reachable without authentication. App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
+The App Store support/privacy site source is in `AppStoreSite/`. Sites version 3 is saved from commit `2cbaf9521ecb2848d4ef9c321670dc8968055f34` and deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; site access was changed to public on 2026-07-16, and unauthenticated support, privacy, and terms requests return `200`. The metadata verifier checks that filled-in Support URL and Privacy Policy URL values are public HTTPS pages reachable without authentication. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
 
 Run the M10 backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
 
