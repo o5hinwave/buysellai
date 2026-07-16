@@ -260,6 +260,7 @@ require_submit_checkboxes() {
 require_result_log_final() {
     local rows=0
     local pass_rows=0
+    local metadata_matched_rows=0
     local incomplete_rows=0
     local normalized_notes
     local missing_note_evidence
@@ -274,6 +275,17 @@ require_result_log_final() {
     local field_name
     local field_value
     local field_index
+    local metadata_date
+    local metadata_tester
+    local metadata_device
+    local metadata_ios
+    local metadata_backend
+
+    metadata_date="$(markdown_metadata_value "$acceptance_file" "Date" || true)"
+    metadata_tester="$(markdown_metadata_value "$acceptance_file" "Tester" || true)"
+    metadata_device="$(markdown_metadata_value "$acceptance_file" "Device model" || true)"
+    metadata_ios="$(markdown_metadata_value "$acceptance_file" "iOS version" || true)"
+    metadata_backend="$(markdown_metadata_value "$acceptance_file" "Backend project" || true)"
 
     while IFS='|' read -r _ date tester device ios backend result notes _; do
         date="$(trim "$date")"
@@ -313,6 +325,19 @@ require_result_log_final() {
             normalized_notes="$(tr '[:upper:]' '[:lower:]' <<< "$notes")"
             missing_note_evidence=()
 
+            if ! is_placeholder_value "$metadata_date" \
+                && ! is_placeholder_value "$metadata_tester" \
+                && ! is_placeholder_value "$metadata_device" \
+                && ! is_placeholder_value "$metadata_ios" \
+                && ! is_placeholder_value "$metadata_backend" \
+                && [[ "$date" == "$metadata_date" ]] \
+                && [[ "$tester" == "$metadata_tester" ]] \
+                && [[ "$device" == *"$metadata_device"* ]] \
+                && [[ "$ios" == "$metadata_ios" ]] \
+                && [[ "$backend" == "$metadata_backend" ]]; then
+                metadata_matched_rows=$((metadata_matched_rows + 1))
+            fi
+
             if [[ "$normalized_notes" != *"signed"* || "$normalized_notes" != *"archive"* ]]; then
                 missing_note_evidence+=("signed archive")
             fi
@@ -351,6 +376,16 @@ require_result_log_final() {
 
     if [[ "$pass_rows" == "0" ]]; then
         pending "M10_ACCEPTANCE.md Result Log has no completed Pass row"
+    fi
+
+    if [[ "$pass_rows" != "0" ]] \
+        && ! is_placeholder_value "$metadata_date" \
+        && ! is_placeholder_value "$metadata_tester" \
+        && ! is_placeholder_value "$metadata_device" \
+        && ! is_placeholder_value "$metadata_ios" \
+        && ! is_placeholder_value "$metadata_backend" \
+        && [[ "$metadata_matched_rows" == "0" ]]; then
+        pending "M10_ACCEPTANCE.md Result Log needs a Pass row matching recorded Date, Tester, Device model, iOS version, and Backend project metadata"
     fi
 
     if [[ "$incomplete_rows" != "0" ]]; then
