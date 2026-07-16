@@ -4,32 +4,90 @@ set -euo pipefail
 root="${1:-.}"
 pattern='AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}'
 
-cd "$root"
+repeat_char() {
+    local character="$1"
+    local count="$2"
+    printf '%*s' "$count" '' | tr ' ' "$character"
+}
 
-set +e
-matches="$(
-    rg -l -I --hidden \
-        --glob '!.git/*' \
-        --glob '!DerivedData/**' \
-        --glob '!*.xcresult/**' \
-        --glob '!*.xcarchive/**' \
-        --glob '!*.dSYM/**' \
-        "$pattern" \
-        .
-)"
-status=$?
-set -e
+scan_root() (
+    local scan_root="$1"
+    local matches
+    local status
 
-case "$status" in
-    0)
-        printf 'M10 secret scan failed. Remove provider secrets from these files:\n' >&2
-        printf '%s\n' "$matches" >&2
-        exit 1
-        ;;
-    1)
-        printf 'M10 secret scan passed\n'
-        ;;
-    *)
-        exit "$status"
-        ;;
-esac
+    cd "$scan_root"
+
+    set +e
+    matches="$(
+        rg -l -I --hidden \
+            --glob '!.git/*' \
+            --glob '!DerivedData/**' \
+            --glob '!*.xcresult/**' \
+            --glob '!*.xcarchive/**' \
+            --glob '!*.dSYM/**' \
+            "$pattern" \
+            .
+    )"
+    status=$?
+    set -e
+
+    case "$status" in
+        0)
+            printf 'M10 secret scan failed. Remove provider secrets from these files:\n' >&2
+            printf '%s\n' "$matches" >&2
+            return 1
+            ;;
+        1)
+            printf 'M10 secret scan passed\n'
+            ;;
+        *)
+            return "$status"
+            ;;
+    esac
+)
+
+self_test() {
+    local temp_root
+    local output
+    local fake_aq_token
+    local fake_google_token
+    local fake_openai_token
+
+    temp_root="$(mktemp -d "${TMPDIR:-/tmp}/buysell-secret-scan.XXXXXX")"
+
+    fake_aq_token="AQ.$(repeat_char A 24)"
+    fake_google_token="AIza$(repeat_char B 24)"
+    fake_openai_token="sk-$(repeat_char C 24)"
+
+    mkdir -p "$temp_root/src" "$temp_root/Generated.xcresult" "$temp_root/Generated.xcarchive" "$temp_root/Generated.dSYM"
+    printf 'GEMINI_API_KEY=%s\n' "$fake_aq_token" > "$temp_root/src/.env"
+    printf '%s\n' "$fake_google_token" > "$temp_root/Generated.xcresult/ignored.txt"
+    printf '%s\n' "$fake_openai_token" > "$temp_root/Generated.xcarchive/ignored.txt"
+    printf '%s\n' "$fake_aq_token" > "$temp_root/Generated.dSYM/ignored.txt"
+
+    if output="$(scan_root "$temp_root" 2>&1)"; then
+        printf 'error: M10 secret scan self-test did not catch a provider secret fixture\n' >&2
+        rm -rf "$temp_root"
+        return 1
+    fi
+
+    if [[ "$output" != *"./src/.env"* ]]; then
+        printf 'error: M10 secret scan self-test did not report the provider secret fixture path\n' >&2
+        rm -rf "$temp_root"
+        return 1
+    fi
+
+    rm "$temp_root/src/.env"
+    if ! output="$(scan_root "$temp_root" 2>&1)"; then
+        printf 'error: M10 secret scan self-test did not ignore generated bundle fixtures\n' >&2
+        printf '%s\n' "$output" >&2
+        rm -rf "$temp_root"
+        return 1
+    fi
+
+    rm -rf "$temp_root"
+    printf 'M10 secret scan self-test passed\n'
+}
+
+self_test
+scan_root "$root"

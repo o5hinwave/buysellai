@@ -492,6 +492,7 @@ require_same_marker_value "$signed_log" "bundle id:" "signed archive preflight l
 require_same_marker_value "$signed_log" "sign in with apple:" "signed archive preflight log" "$real_device_log" "sign in with apple:" "real-device preflight log" "real-device Sign in with Apple entitlement"
 require_same_marker_value "$signed_log" "release build:" "signed archive preflight log" "$real_device_log" "release build:" "real-device preflight log" "real-device release build"
 require_metadata_references_marker_value "$acceptance_file" "Device model" "$real_device_log" "device name:" "real-device preflight log" "acceptance device metadata"
+require_file_contains "$secret_log" "M10 secret scan self-test passed" "secret scan log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
 require_file_contains "$performance_log" "M10 performance evidence passed" "performance evidence log"
 require_file_contains "$performance_log" "full suite: $full_result" "performance evidence log"

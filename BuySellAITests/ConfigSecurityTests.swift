@@ -157,6 +157,10 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: "scan_root()"))
+        XCTAssertNotNil(script.range(of: "self_test()"))
+        XCTAssertNotNil(script.range(of: "mktemp -d"))
+        XCTAssertNotNil(script.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(script.range(of: "--glob '!.git/*'"))
         XCTAssertNotNil(script.range(of: "--glob '!*.xcresult/**'"))
         XCTAssertNotNil(script.range(of: "--glob '!*.xcarchive/**'"))
@@ -170,9 +174,11 @@ final class ConfigSecurityTests: XCTestCase {
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
         XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
+        XCTAssertNotNil(readme.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(readme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
         XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
-        XCTAssertNotNil(m10.range(of: "The scan should print `M10 secret scan passed`."))
+        XCTAssertNotNil(m10.range(of: "M10 secret scan self-test passed"))
+        XCTAssertNotNil(m10.range(of: "The scan should print both `M10 secret scan self-test passed` and `M10 secret scan passed`."))
     }
 
     func testBundledAppTextFilesDoNotContainAIProviderSecrets() throws {

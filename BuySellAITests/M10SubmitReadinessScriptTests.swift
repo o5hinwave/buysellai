@@ -30,6 +30,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 App Store export preflight passed"))
         XCTAssertNotNil(script.range(of: "M10 App Store validation preflight passed"))
         XCTAssertNotNil(script.range(of: "M10 real-device preflight passed"))
+        XCTAssertNotNil(script.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(script.range(of: "M10 secret scan passed"))
         XCTAssertNotNil(script.range(of: "M10 Instruments evidence passed"))
         XCTAssertNotNil(script.range(of: "verify_m10_real_device_acceptance.sh"))
