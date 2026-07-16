@@ -14,6 +14,16 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "MAX_APP_SIZE_KB:-20480"))
         XCTAssertNotNil(script.range(of: "PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "plutil -lint \"$privacy_manifest\""))
+        XCTAssertNotNil(script.range(of: "require_privacy_manifest_values \"$privacy_manifest\""))
+        XCTAssertNotNil(script.range(of: "privacy manifest must declare NSPrivacyTracking=false"))
+        XCTAssertNotNil(script.range(of: "privacy manifest must declare exactly 4 collected data types"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeEmailAddress"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeUserID"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypePhotosorVideos"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypeOtherUserContent"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyCollectedDataTypePurposeAppFunctionality"))
+        XCTAssertNotNil(script.range(of: "NSPrivacyAccessedAPICategoryUserDefaults"))
+        XCTAssertNotNil(script.range(of: "CA92.1"))
         XCTAssertNotNil(script.range(of: "CFBundleIdentifier"))
         XCTAssertNotNil(script.range(of: "bundle id:"))
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
@@ -32,6 +42,7 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_local_archive.sh"))
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_local_archive.sh"))
         XCTAssertNotNil(m10.range(of: "Binary-size check: archived app bundle stays under `20 MB`."))
+        XCTAssertNotNil(m10.range(of: "Privacy manifest content check"))
     }
 
     private func projectURL(_ path: String) -> URL {
