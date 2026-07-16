@@ -44,8 +44,8 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Dimensions | 1206 x 2622 PNG |
 | Files | `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png` |
 | Capture test | `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured` |
-| Result bundle | `/tmp/buysell-m10-screenshots.xcresult` |
-| Result | Passed 1 UI test with 0 failures on 2026-07-16 |
+| Result bundle | `/tmp/buysell-submit-readiness-full.xcresult` |
+| Result | Passed as part of the full simulator suite with 307 tests, 0 failures on 2026-07-16; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
 
 ## App Privacy Answers
 

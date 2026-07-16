@@ -51,6 +51,7 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
     func testMetadataTemplateAndDocsRouteThroughVerifier() throws {
         let metadataURL = projectURL("M10_APP_STORE_METADATA.md")
         let metadata = try String(contentsOf: metadataURL, encoding: .utf8)
+        let screenshotReadme = try String(contentsOf: projectURL("AppStoreAssets/Screenshots/README.md"), encoding: .utf8)
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
@@ -59,6 +60,9 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(metadata.range(of: "App privacy data types"))
         XCTAssertNotNil(metadata.range(of: "Email Address, User ID, Photos or Videos, Other User Content"))
         XCTAssertNotNil(metadata.range(of: "ALLOW_PENDING_METADATA=1"))
+        XCTAssertNotNil(metadata.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
+        XCTAssertNotNil(screenshotReadme.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
+        XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
         XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md"))
         XCTAssertNotNil(readme.range(of: "/tmp/buysell-submit-readiness-app-store-metadata.log"))
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md"))

@@ -14,8 +14,9 @@ These PNGs are simulator-captured evidence for the App Store Connect screenshot 
 - Device: iPhone 16 Pro simulator
 - iOS: 18.6
 - PNG dimensions: 1206 x 2622
-- Result bundle: `/tmp/buysell-m10-screenshots.xcresult`
+- Result bundle: `/tmp/buysell-submit-readiness-full.xcresult`
 - Capture test: `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured`
+- Standalone capture bundle: `/tmp/buysell-m10-screenshots.xcresult`
 
 Regenerate from a booted iPhone 16 Pro simulator by deleting the existing PNGs under `iPhone-16-Pro/`, then running:
 
