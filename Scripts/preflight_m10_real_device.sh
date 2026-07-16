@@ -8,10 +8,11 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 project_path="${repo_root}/BuySellAI.xcodeproj"
 device_json="$(mktemp "${TMPDIR:-/tmp}/buysell-devices.XXXXXX")"
+built_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-real-device-entitlements.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$device_json"
+    rm -f "$device_json" "$built_entitlements"
 }
 trap cleanup EXIT
 
@@ -38,6 +39,10 @@ plist_optional() {
 
 plist_value() {
     "${plist_buddy}" -c "Print :$1" "$2"
+}
+
+plist_array_value() {
+    "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
 is_ios_device() {
@@ -144,9 +149,14 @@ release_build="$(plist_value CFBundleVersion "$built_info_plist")"
 [[ -n "$release_version" ]] || fail "built app Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "built app Info.plist is missing CFBundleVersion"
 
+codesign -d --entitlements :- "$built_app_path" > "$built_entitlements" 2>/dev/null || fail "could not read real-device build entitlements"
+built_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$built_entitlements" || true)"
+[[ "$built_sign_in_with_apple" == "Default" ]] || fail "real-device build is missing Sign in with Apple entitlement"
+
 printf 'M10 real-device preflight passed\n'
 printf 'device: %s (%s)\n' "${device_name:-Connected device}" "$device_identifier"
 printf 'device name: %s\n' "${device_name:-Connected device}"
 printf 'device id: %s\n' "$device_identifier"
 printf 'app: %s\n' "$built_app_path"
+printf 'sign in with apple: %s\n' "$built_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

@@ -117,7 +117,7 @@ To target a specific connected device:
 DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh
 ```
 
-The preflight ignores non-iOS `devicectl` entries. A supplied `DEVICE_ID` must match a connected iPhone or iPad. Passing logs include `device:`, `device name:`, `device id:`, `app:`, and `release build:` markers so final acceptance and Instruments metadata can point back to the same trusted device and Release build.
+The preflight ignores non-iOS `devicectl` entries. A supplied `DEVICE_ID` must match a connected iPhone or iPad. Passing logs include `device:`, `device name:`, `device id:`, `app:`, `sign in with apple:`, and `release build:` markers so final acceptance and Instruments metadata can point back to the same trusted device and Release build.
 
 Until a trusted physical device is connected, record the known hardware blocker:
 
@@ -173,7 +173,7 @@ Combined M10 submit-readiness evidence gate:
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
-The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, confirms the signed archive and App Store export logs retain the same `sign in with apple:` entitlement marker, confirms the signed archive, App Store export, App Store validation, and real-device preflight logs record the same `release build:` value, and confirms the manual acceptance and Instruments metadata reference the real-device preflight `device name:` value and signed-preflight `archive:` path while acceptance also references the validated `ipa:` path. The manual acceptance and Instruments evidence must also record matching iOS version and release build metadata for the same physical-device pass, and that release build must match the signed-preflight `release build:` marker. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
+The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, confirms the signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `sign in with apple:` entitlement marker, confirms the same logs record the same `release build:` value, and confirms the manual acceptance and Instruments metadata reference the real-device preflight `device name:` value and signed-preflight `archive:` path while acceptance also references the validated `ipa:` path. The manual acceptance and Instruments evidence must also record matching iOS version and release build metadata for the same physical-device pass, and that release build must match the signed-preflight `release build:` marker. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
 
 Until every signed archive, App Store, real-device, and manual evidence item is complete, record the known readiness blocker:
 

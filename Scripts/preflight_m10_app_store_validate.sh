@@ -9,10 +9,13 @@ private_keys_dir="${ASC_API_PRIVATE_KEYS_DIR:-${API_PRIVATE_KEYS_DIR:-}}"
 
 ipa_info_plist="$(mktemp "${TMPDIR:-/tmp}/buysell-ipa-info.XXXXXX")"
 ipa_privacy_manifest="$(mktemp "${TMPDIR:-/tmp}/buysell-ipa-privacy.XXXXXX")"
+ipa_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-ipa-entitlements.XXXXXX")"
+ipa_extract_dir="$(mktemp -d "${TMPDIR:-/tmp}/buysell-validation-ipa.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$ipa_info_plist" "$ipa_privacy_manifest"
+    rm -f "$ipa_info_plist" "$ipa_privacy_manifest" "$ipa_entitlements"
+    rm -rf "$ipa_extract_dir"
 }
 trap cleanup EXIT
 
@@ -33,6 +36,10 @@ pending_or_fail() {
 
 plist_value() {
     "${plist_buddy}" -c "Print :$1" "$2"
+}
+
+plist_array_value() {
+    "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
 plist_raw_value() {
@@ -103,6 +110,9 @@ fi
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/Info.plist' >/dev/null || fail "IPA is missing Info.plist"
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/PrivacyInfo.xcprivacy' >/dev/null || fail "IPA is missing PrivacyInfo.xcprivacy"
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/BuySellAI' >/dev/null || fail "IPA is missing app executable"
+unzip -q "$ipa_path" 'Payload/BuySellAI.app/*' -d "$ipa_extract_dir" || fail "could not inspect IPA app bundle"
+ipa_app_path="${ipa_extract_dir}/Payload/BuySellAI.app"
+[[ -d "$ipa_app_path" ]] || fail "IPA is missing app bundle"
 
 unzip -p "$ipa_path" 'Payload/BuySellAI.app/Info.plist' > "$ipa_info_plist"
 unzip -p "$ipa_path" 'Payload/BuySellAI.app/PrivacyInfo.xcprivacy' > "$ipa_privacy_manifest"
@@ -117,6 +127,10 @@ release_version="$(plist_value CFBundleShortVersionString "$ipa_info_plist")"
 release_build="$(plist_value CFBundleVersion "$ipa_info_plist")"
 [[ -n "$release_version" ]] || fail "IPA Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "IPA Info.plist is missing CFBundleVersion"
+
+codesign -d --entitlements :- "$ipa_app_path" > "$ipa_entitlements" 2>/dev/null || fail "could not read IPA entitlements"
+ipa_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$ipa_entitlements" || true)"
+[[ "$ipa_sign_in_with_apple" == "Default" ]] || fail "IPA is missing Sign in with Apple entitlement"
 
 [[ -n "$api_key_id" ]] || pending_or_fail "ASC_API_KEY_ID is unset"
 [[ -n "$api_issuer_id" ]] || pending_or_fail "ASC_API_ISSUER_ID is unset"
@@ -135,4 +149,5 @@ xcrun altool --validate-app \
 
 printf 'M10 App Store validation preflight passed\n'
 printf 'ipa: %s\n' "$ipa_path"
+printf 'sign in with apple: %s\n' "$ipa_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"
