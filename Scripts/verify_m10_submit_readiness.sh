@@ -5,6 +5,8 @@ acceptance_file="${1:-M10_ACCEPTANCE.md}"
 allow_pending="${ALLOW_PENDING_M10:-0}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "${script_dir}/.." && pwd)"
+head_epoch="$(git -C "$repo_root" log -1 --format=%ct 2>/dev/null || printf '0')"
 
 full_result="${M10_FULL_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}"
 focused_result="${M10_FOCUSED_XCRESULT:-/tmp/buysell-submit-readiness-focused.xcresult}"
@@ -60,6 +62,43 @@ require_file_contains() {
     if ! grep -Fq "$expected" "$file"; then
         pending "$label does not contain '$expected'"
     fi
+}
+
+artifact_mtime() {
+    local path="$1"
+
+    stat -f %m "$path" 2>/dev/null || stat -c %Y "$path" 2>/dev/null
+}
+
+require_fresh_artifact() {
+    local path="$1"
+    local label="$2"
+    local mtime
+
+    if [[ ! -e "$path" ]] || [[ "$head_epoch" == "0" ]]; then
+        return 0
+    fi
+
+    if ! mtime="$(artifact_mtime "$path")"; then
+        pending "$label freshness could not be checked at $path"
+        return
+    fi
+
+    if [[ "$mtime" -lt "$head_epoch" ]]; then
+        pending "$label is older than the current HEAD commit"
+    fi
+}
+
+require_fresh_pass_log() {
+    local file="$1"
+    local pass_marker="$2"
+    local label="$3"
+
+    if [[ ! -f "$file" ]] || ! grep -Fq "$pass_marker" "$file"; then
+        return 0
+    fi
+
+    require_fresh_artifact "$file" "$label"
 }
 
 marker_value() {
@@ -450,6 +489,12 @@ require_directory "$no_sign_archive" "no-sign Release archive"
 require_directory "$signed_archive" "signed Release archive"
 require_directory "$app_store_archive" "App Store Connect archive"
 require_directory "$app_store_export" "App Store export directory"
+require_fresh_artifact "$full_result" "full simulator suite result bundle"
+require_fresh_artifact "$focused_result" "focused M10 preflight result bundle"
+require_fresh_artifact "$no_sign_archive" "no-sign Release archive"
+require_fresh_artifact "$signed_archive" "signed Release archive"
+require_fresh_artifact "$app_store_archive" "App Store Connect archive"
+require_fresh_artifact "$app_store_export" "App Store export directory"
 require_file_contains "$no_sign_log" "M10 local archive check passed" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "archive: $no_sign_archive" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "bundle id: com.rhodes.buysellai" "no-sign archive verifier log"
@@ -510,6 +555,14 @@ require_same_marker_value "$no_sign_log" "bundle id:" "no-sign archive verifier 
 require_same_marker_value "$no_sign_log" "release build:" "no-sign archive verifier log" "$performance_log" "release build:" "performance evidence log" "performance release build"
 require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_file_contains "$instruments_log" "file: $instruments_evidence" "Instruments evidence log"
+require_fresh_pass_log "$no_sign_log" "M10 local archive check passed" "no-sign archive verifier log"
+require_fresh_pass_log "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
+require_fresh_pass_log "$export_log" "M10 App Store export preflight passed" "App Store export preflight log"
+require_fresh_pass_log "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
+require_fresh_pass_log "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
+require_fresh_pass_log "$secret_log" "M10 secret scan passed" "secret scan log"
+require_fresh_pass_log "$performance_log" "M10 performance evidence passed" "performance evidence log"
+require_fresh_pass_log "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_metadata_references_marker_value "$instruments_evidence" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "Instruments signed archive metadata"
 require_metadata_references_marker_value "$instruments_evidence" "Device model" "$real_device_log" "device name:" "real-device preflight log" "Instruments device metadata"
 require_metadata_matches_marker_value "$instruments_evidence" "Release build" "$signed_log" "release build:" "signed archive preflight log" "Instruments release build metadata"
