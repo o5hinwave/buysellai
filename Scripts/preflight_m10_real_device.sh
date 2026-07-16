@@ -146,6 +146,8 @@ plutil -lint "$built_info_plist" >/dev/null
 
 release_version="$(plist_value CFBundleShortVersionString "$built_info_plist")"
 release_build="$(plist_value CFBundleVersion "$built_info_plist")"
+built_bundle_id="$(plist_value CFBundleIdentifier "$built_info_plist")"
+[[ "$built_bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected real-device build bundle identifier"
 [[ -n "$release_version" ]] || fail "built app Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "built app Info.plist is missing CFBundleVersion"
 
@@ -158,5 +160,6 @@ printf 'device: %s (%s)\n' "${device_name:-Connected device}" "$device_identifie
 printf 'device name: %s\n' "${device_name:-Connected device}"
 printf 'device id: %s\n' "$device_identifier"
 printf 'app: %s\n' "$built_app_path"
+printf 'bundle id: %s\n' "$built_bundle_id"
 printf 'sign in with apple: %s\n' "$built_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

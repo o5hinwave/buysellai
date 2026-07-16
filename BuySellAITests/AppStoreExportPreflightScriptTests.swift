@@ -47,6 +47,8 @@ final class AppStoreExportPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/BuySellAI"))
         XCTAssertNotNil(script.range(of: "unzip -q \"$ipa_path\""))
+        XCTAssertNotNil(script.range(of: "exported_bundle_id"))
+        XCTAssertNotNil(script.range(of: "bundle id:"))
         XCTAssertNotNil(script.range(of: "codesign -d --entitlements :- \"$exported_app_path\""))
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))

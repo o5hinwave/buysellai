@@ -121,7 +121,8 @@ plutil -lint "$ipa_info_plist" >/dev/null
 plutil -lint "$ipa_privacy_manifest" >/dev/null
 require_privacy_manifest_values "$ipa_privacy_manifest"
 
-[[ "$(plist_value CFBundleIdentifier "$ipa_info_plist")" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
+ipa_bundle_id="$(plist_value CFBundleIdentifier "$ipa_info_plist")"
+[[ "$ipa_bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
 [[ "$(plist_value NSCameraUsageDescription "$ipa_info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
 release_version="$(plist_value CFBundleShortVersionString "$ipa_info_plist")"
 release_build="$(plist_value CFBundleVersion "$ipa_info_plist")"
@@ -149,5 +150,6 @@ xcrun altool --validate-app \
 
 printf 'M10 App Store validation preflight passed\n'
 printf 'ipa: %s\n' "$ipa_path"
+printf 'bundle id: %s\n' "$ipa_bundle_id"
 printf 'sign in with apple: %s\n' "$ipa_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

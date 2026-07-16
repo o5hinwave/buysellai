@@ -44,6 +44,8 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "device name:"))
         XCTAssertNotNil(script.range(of: "device id:"))
         XCTAssertNotNil(script.range(of: "app:"))
+        XCTAssertNotNil(script.range(of: "built_bundle_id"))
+        XCTAssertNotNil(script.range(of: "bundle id:"))
         XCTAssertNotNil(script.range(of: "codesign -d --entitlements :- \"$built_app_path\""))
         XCTAssertNotNil(script.range(of: "com.apple.developer.applesignin"))
         XCTAssertNotNil(script.range(of: "sign in with apple:"))
@@ -64,7 +66,7 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_DEVICE=1"))
         XCTAssertNotNil(m10.range(of: "trusted iPhone or iPad with Developer Mode enabled"))
         XCTAssertNotNil(readme.range(of: "ignores non-iOS `devicectl` entries"))
-        XCTAssertNotNil(readme.range(of: "Passing logs include `device:`, `device name:`, `device id:`, `app:`, `sign in with apple:`, and `release build:` markers"))
+        XCTAssertNotNil(readme.range(of: "Passing logs include `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:` markers"))
         XCTAssertNotNil(m10.range(of: "A supplied `DEVICE_ID` must match a connected iPhone or iPad"))
     }
 

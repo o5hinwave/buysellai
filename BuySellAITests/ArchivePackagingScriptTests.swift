@@ -15,6 +15,7 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "plutil -lint \"$privacy_manifest\""))
         XCTAssertNotNil(script.range(of: "CFBundleIdentifier"))
+        XCTAssertNotNil(script.range(of: "bundle id:"))
         XCTAssertNotNil(script.range(of: "NSCameraUsageDescription"))
         XCTAssertNotNil(script.range(of: "ITSAppUsesNonExemptEncryption"))
         XCTAssertNotNil(script.range(of: "NSPhotoLibraryUsageDescription"))

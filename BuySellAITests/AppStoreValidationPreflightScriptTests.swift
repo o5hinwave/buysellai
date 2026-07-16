@@ -15,6 +15,8 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "com.apple.developer.applesignin"))
         XCTAssertNotNil(script.range(of: "sign in with apple:"))
         XCTAssertNotNil(script.range(of: "CFBundleIdentifier"))
+        XCTAssertNotNil(script.range(of: "ipa_bundle_id"))
+        XCTAssertNotNil(script.range(of: "bundle id:"))
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "NSCameraUsageDescription"))

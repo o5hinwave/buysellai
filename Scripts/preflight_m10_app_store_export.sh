@@ -116,6 +116,8 @@ plutil -lint "$privacy_manifest" >/dev/null
 
 release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
 release_build="$(plist_value CFBundleVersion "$info_plist")"
+bundle_id="$(plist_value CFBundleIdentifier "$info_plist")"
+[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected archived bundle identifier"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 
@@ -137,7 +139,11 @@ unzip -l "$ipa_path" 'Payload/BuySellAI.app/PrivacyInfo.xcprivacy' >/dev/null ||
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/BuySellAI' >/dev/null || fail "exported IPA is missing app executable"
 unzip -q "$ipa_path" 'Payload/BuySellAI.app/*' -d "$ipa_extract_dir" || fail "could not inspect exported IPA app bundle"
 exported_app_path="${ipa_extract_dir}/Payload/BuySellAI.app"
+exported_info_plist="${exported_app_path}/Info.plist"
 [[ -d "$exported_app_path" ]] || fail "exported IPA is missing app bundle"
+[[ -f "$exported_info_plist" ]] || fail "exported IPA is missing extracted Info.plist"
+exported_bundle_id="$(plist_value CFBundleIdentifier "$exported_info_plist")"
+[[ "$exported_bundle_id" == "$bundle_id" ]] || fail "exported IPA bundle identifier does not match signed archive"
 codesign -d --entitlements :- "$exported_app_path" > "$exported_entitlements" 2>/dev/null || fail "could not read exported IPA entitlements"
 exported_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$exported_entitlements" || true)"
 [[ "$exported_sign_in_with_apple" == "$signed_sign_in_with_apple" ]] || fail "exported IPA Sign in with Apple entitlement does not match signed archive"
@@ -146,5 +152,6 @@ printf 'M10 App Store export preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
 printf 'export: %s\n' "$export_path"
 printf 'ipa: %s\n' "$ipa_path"
+printf 'bundle id: %s\n' "$exported_bundle_id"
 printf 'sign in with apple: %s\n' "$exported_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

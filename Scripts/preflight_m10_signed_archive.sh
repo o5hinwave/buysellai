@@ -88,6 +88,8 @@ plutil -lint "$privacy_manifest" >/dev/null
 
 release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
 release_build="$(plist_value CFBundleVersion "$info_plist")"
+bundle_id="$(plist_value CFBundleIdentifier "$info_plist")"
+[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected archived bundle identifier"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 
@@ -97,5 +99,6 @@ signed_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0
 
 printf 'M10 signed archive preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
+printf 'bundle id: %s\n' "$bundle_id"
 printf 'sign in with apple: %s\n' "$signed_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"
