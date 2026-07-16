@@ -138,6 +138,29 @@ require_metadata_references_marker_value() {
     fi
 }
 
+require_same_metadata_value() {
+    local source_file="$1"
+    local source_field="$2"
+    local source_label="$3"
+    local target_file="$4"
+    local target_field="$5"
+    local target_label="$6"
+    local evidence_label="$7"
+    local source_value
+    local target_value
+
+    source_value="$(markdown_metadata_value "$source_file" "$source_field" || true)"
+    target_value="$(markdown_metadata_value "$target_file" "$target_field" || true)"
+
+    [[ -n "$source_value" && -n "$target_value" ]] || return 0
+    is_placeholder_value "$source_value" && return 0
+    is_placeholder_value "$target_value" && return 0
+
+    if [[ "$source_value" != "$target_value" ]]; then
+        pending "$evidence_label mismatch: $source_label metadata '$source_field' is '$source_value', $target_label metadata '$target_field' is '$target_value'"
+    fi
+}
+
 require_directory() {
     local directory="$1"
     local label="$2"
@@ -431,6 +454,8 @@ require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Inst
 require_file_contains "$instruments_log" "file: $instruments_evidence" "Instruments evidence log"
 require_metadata_references_marker_value "$instruments_evidence" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "Instruments signed archive metadata"
 require_metadata_references_marker_value "$instruments_evidence" "Device model" "$real_device_log" "device name:" "real-device preflight log" "Instruments device metadata"
+require_same_metadata_value "$acceptance_file" "iOS version" "acceptance" "$instruments_evidence" "iOS version" "Instruments" "M10 physical-device iOS version"
+require_same_metadata_value "$acceptance_file" "Release build" "acceptance" "$instruments_evidence" "Release build" "Instruments" "M10 physical-device release build"
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final
