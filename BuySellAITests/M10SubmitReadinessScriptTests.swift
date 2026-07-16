@@ -9,7 +9,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
         XCTAssertNotNil(script.range(of: "M10_FULL_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_FOCUSED_XCRESULT"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-304"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-316"))
         XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-60"))
         XCTAssertNotNil(script.range(of: "M10_SIGNED_ARCHIVE"))
         XCTAssertNotNil(script.range(of: "M10_APP_STORE_ARCHIVE"))
