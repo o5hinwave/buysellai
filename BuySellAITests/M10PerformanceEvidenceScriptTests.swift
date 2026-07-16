@@ -24,6 +24,11 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_PERFORMANCE_ARCHIVE_LOG"))
         XCTAssertNotNil(script.range(of: "M10_MAX_APP_SIZE_KB:-20480"))
         XCTAssertNotNil(script.range(of: "M10 local archive check passed"))
+        XCTAssertNotNil(script.range(of: "marker_value"))
+        XCTAssertNotNil(script.range(of: #"bundle_id="$(marker_value "bundle id:" "$archive_log")""#))
+        XCTAssertNotNil(script.range(of: #"[[ "$bundle_id" == "com.rhodes.buysellai" ]]"#))
+        XCTAssertNotNil(script.range(of: #"printf 'bundle id: %s\n' "$bundle_id""#))
+        XCTAssertNotNil(script.range(of: "release build:"))
         XCTAssertNotNil(script.range(of: "app size:"))
         XCTAssertNotNil(script.range(of: "above ${max_app_size_kb}KB"))
     }
@@ -45,6 +50,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_performance_evidence.sh"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-performance.log"))
         XCTAssertNotNil(m10.range(of: "Run the M10 performance evidence verifier"))
+        XCTAssertNotNil(m10.range(of: "no-sign archive `bundle id:` and `release build:` markers"))
         XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))
     }
 

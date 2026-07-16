@@ -49,6 +49,10 @@ app_size_kb="$(du -sk "$app_path" | awk '{print $1}')"
 
 bundle_id="$(plist_value CFBundleIdentifier "$info_plist")"
 [[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected bundle identifier"
+release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
+release_build="$(plist_value CFBundleVersion "$info_plist")"
+[[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
+[[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 [[ "$(plist_value NSCameraUsageDescription "$info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
 [[ "$(plist_value ITSAppUsesNonExemptEncryption "$info_plist")" == "false" ]] || fail "non-exempt encryption must be false"
 
@@ -63,4 +67,5 @@ fi
 printf 'M10 local archive check passed\n'
 printf 'archive: %s\n' "$archive_path"
 printf 'bundle id: %s\n' "$bundle_id"
+printf 'release build: %s (%s)\n' "$release_version" "$release_build"
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"

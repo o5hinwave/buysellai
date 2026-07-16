@@ -51,6 +51,20 @@ require_passed_test() {
     fi
 }
 
+marker_value() {
+    local marker="$1"
+    local file="$2"
+
+    awk -v marker="$marker" '
+        index($0, marker) == 1 {
+            value = substr($0, length(marker) + 1)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+            print value
+            exit
+        }
+    ' "$file"
+}
+
 [[ -d "$result_path" ]] || fail "missing full-suite result bundle at $result_path"
 [[ -f "$archive_log" ]] || fail "missing no-sign archive verifier log at $archive_log"
 
@@ -69,6 +83,11 @@ done
 
 grep -Fq "M10 local archive check passed" "$archive_log" || fail "archive log does not prove the local archive verifier passed"
 
+bundle_id="$(marker_value "bundle id:" "$archive_log")"
+release_build="$(marker_value "release build:" "$archive_log")"
+[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "archive log does not include BuySell bundle id"
+[[ -n "$release_build" ]] || fail "archive log does not include release build"
+
 app_size_kb="$(
     awk '
         /^app size:/ {
@@ -86,5 +105,7 @@ app_size_kb="$(
 printf 'M10 performance evidence passed\n'
 printf 'full suite: %s\n' "$result_path"
 printf 'archive log: %s\n' "$archive_log"
+printf 'bundle id: %s\n' "$bundle_id"
+printf 'release build: %s\n' "$release_build"
 printf 'performance tests: %s\n' "${#required_tests[@]}"
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"
