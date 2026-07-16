@@ -10,7 +10,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_FULL_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_FOCUSED_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-294"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-37"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-50"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "M10 local archive check passed"))
         XCTAssertNotNil(script.range(of: "M10 signed archive preflight passed"))
