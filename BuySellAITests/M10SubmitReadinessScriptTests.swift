@@ -11,6 +11,10 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_FOCUSED_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-296"))
         XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-52"))
+        XCTAssertNotNil(script.range(of: "M10_SIGNED_ARCHIVE"))
+        XCTAssertNotNil(script.range(of: "M10_APP_STORE_ARCHIVE"))
+        XCTAssertNotNil(script.range(of: "M10_APP_STORE_EXPORT"))
+        XCTAssertNotNil(script.range(of: "M10_INSTRUMENTS_EVIDENCE"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "require_xcresult_contains_tests"))
         XCTAssertNotNil(script.range(of: "AppStoreValidationPreflightScriptTests/testAppStoreValidationPreflightChecksPrivacyManifestContents"))
@@ -24,6 +28,25 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 secret scan passed"))
         XCTAssertNotNil(script.range(of: "M10 Instruments evidence passed"))
         XCTAssertNotNil(script.range(of: "verify_m10_real_device_acceptance.sh"))
+    }
+
+    func testSubmitReadinessScriptRequiresConcreteLogArtifactMarkers() throws {
+        let script = try String(contentsOf: projectURL("Scripts/verify_m10_submit_readiness.sh"), encoding: .utf8)
+
+        XCTAssertNotNil(script.range(of: "require_directory \"$signed_archive\""))
+        XCTAssertNotNil(script.range(of: "require_directory \"$app_store_archive\""))
+        XCTAssertNotNil(script.range(of: "require_directory \"$app_store_export\""))
+        XCTAssertNotNil(script.range(of: "archive: $no_sign_archive"))
+        XCTAssertNotNil(script.range(of: "archive: $signed_archive"))
+        XCTAssertNotNil(script.range(of: "archive: $app_store_archive"))
+        XCTAssertNotNil(script.range(of: "export: $app_store_export"))
+        XCTAssertNotNil(script.range(of: "ipa:"))
+        XCTAssertNotNil(script.range(of: "device:"))
+        XCTAssertNotNil(script.range(of: "full suite: $full_result"))
+        XCTAssertNotNil(script.range(of: "archive log: $no_sign_log"))
+        XCTAssertNotNil(script.range(of: "performance tests:"))
+        XCTAssertNotNil(script.range(of: "app size:"))
+        XCTAssertNotNil(script.range(of: "file: $instruments_evidence"))
     }
 
     func testSubmitReadinessScriptRequiresFinalAcceptanceDocsToBeComplete() throws {
@@ -65,6 +88,12 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-instruments.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-combined.log"))
         XCTAssertNotNil(readme.range(of: "The final `Result Log` must include a complete `Pass` row"))
+        XCTAssertNotNil(readme.range(of: "The combined gate expects retained artifact markers"))
+        XCTAssertNotNil(readme.range(of: "M10_SIGNED_ARCHIVE"))
+        XCTAssertNotNil(readme.range(of: "M10_APP_STORE_EXPORT"))
+        XCTAssertNotNil(m10.range(of: "pass logs retain their concrete artifact markers"))
+        XCTAssertNotNil(m10.range(of: "real-device `device:`"))
+        XCTAssertNotNil(m10.range(of: "Instruments `file:`"))
         XCTAssertNotNil(m10.range(of: "Every field must be concrete"))
         XCTAssertNotNil(m10.range(of: "`Result` must be `Pass`"))
     }

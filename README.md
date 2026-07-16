@@ -171,6 +171,8 @@ Combined M10 submit-readiness evidence gate:
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
+The combined gate expects retained artifact markers in the preflight logs. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
+
 Until every signed archive, App Store, real-device, and manual evidence item is complete, record the known readiness blocker:
 
 ```sh
