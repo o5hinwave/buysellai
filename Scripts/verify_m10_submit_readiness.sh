@@ -62,6 +62,42 @@ require_file_contains() {
     fi
 }
 
+marker_value() {
+    local file="$1"
+    local marker="$2"
+
+    [[ -f "$file" ]] || return 1
+    awk -v marker="$marker" '
+        index($0, marker) == 1 {
+            value = substr($0, length(marker) + 1)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+            print value
+            exit
+        }
+    ' "$file"
+}
+
+require_same_marker_value() {
+    local source_file="$1"
+    local source_marker="$2"
+    local source_label="$3"
+    local target_file="$4"
+    local target_marker="$5"
+    local target_label="$6"
+    local evidence_label="$7"
+    local source_value
+    local target_value
+
+    source_value="$(marker_value "$source_file" "$source_marker" || true)"
+    target_value="$(marker_value "$target_file" "$target_marker" || true)"
+
+    [[ -n "$source_value" && -n "$target_value" ]] || return 0
+
+    if [[ "$source_value" != "$target_value" ]]; then
+        pending "$evidence_label mismatch: $source_label has '$source_value', $target_label has '$target_value'"
+    fi
+}
+
 require_directory() {
     local directory="$1"
     local label="$2"
@@ -185,6 +221,8 @@ require_result_log_final() {
     local rows=0
     local pass_rows=0
     local incomplete_rows=0
+    local normalized_notes
+    local missing_note_evidence
     local row
     local date
     local tester
@@ -232,6 +270,29 @@ require_result_log_final() {
 
         if [[ "$result" == "Pass" ]]; then
             pass_rows=$((pass_rows + 1))
+            normalized_notes="$(tr '[:upper:]' '[:lower:]' <<< "$notes")"
+            missing_note_evidence=()
+
+            if [[ "$normalized_notes" != *"signed"* || "$normalized_notes" != *"archive"* ]]; then
+                missing_note_evidence+=("signed archive")
+            fi
+
+            if [[ "$normalized_notes" != *"app store"* || "$normalized_notes" != *"validation"* ]]; then
+                missing_note_evidence+=("App Store validation")
+            fi
+
+            if [[ "$normalized_notes" != *"real-device"* && "$normalized_notes" != *"real device"* ]]; then
+                missing_note_evidence+=("real-device acceptance")
+            fi
+
+            if [[ "$normalized_notes" != *"instruments"* ]]; then
+                missing_note_evidence+=("Instruments evidence")
+            fi
+
+            if (( ${#missing_note_evidence[@]} > 0 )); then
+                pending "M10_ACCEPTANCE.md $row Notes must mention final evidence: ${missing_note_evidence[*]}"
+                incomplete_rows=$((incomplete_rows + 1))
+            fi
         else
             pending "M10_ACCEPTANCE.md $row result is '$result', expected Pass"
             incomplete_rows=$((incomplete_rows + 1))
@@ -277,6 +338,7 @@ require_file_contains "$export_log" "export: $app_store_export" "App Store expor
 require_file_contains "$export_log" "ipa:" "App Store export preflight log"
 require_file_contains "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
 require_file_contains "$validation_log" "ipa:" "App Store validation preflight log"
+require_same_marker_value "$export_log" "ipa:" "App Store export preflight log" "$validation_log" "ipa:" "App Store validation preflight log" "validated IPA"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$real_device_log" "device:" "real-device preflight log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"

@@ -17,6 +17,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_INSTRUMENTS_EVIDENCE"))
         XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results summary"))
         XCTAssertNotNil(script.range(of: "require_xcresult_contains_tests"))
+        XCTAssertNotNil(script.range(of: "require_same_marker_value"))
         XCTAssertNotNil(script.range(of: "AppStoreValidationPreflightScriptTests/testAppStoreValidationPreflightChecksPrivacyManifestContents"))
         XCTAssertNotNil(script.range(of: "RealDevicePreflightScriptTests/testRealDeviceAcceptanceVerifierParsesTimingEvidenceInMillisecondsOrSeconds"))
         XCTAssertNotNil(script.range(of: "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning"))
@@ -41,6 +42,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "archive: $app_store_archive"))
         XCTAssertNotNil(script.range(of: "export: $app_store_export"))
         XCTAssertNotNil(script.range(of: "ipa:"))
+        XCTAssertNotNil(script.range(of: "validated IPA"))
+        XCTAssertNotNil(script.range(of: "mismatch"))
         XCTAssertNotNil(script.range(of: "device:"))
         XCTAssertNotNil(script.range(of: "full suite: $full_result"))
         XCTAssertNotNil(script.range(of: "archive log: $no_sign_log"))
@@ -62,6 +65,11 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Result Log needs at least one completed Pass row"))
         XCTAssertNotNil(script.range(of: "Result Log has no completed Pass row"))
         XCTAssertNotNil(script.range(of: "Result Log still has pending rows"))
+        XCTAssertNotNil(script.range(of: "Notes must mention final evidence"))
+        XCTAssertNotNil(script.range(of: "signed archive"))
+        XCTAssertNotNil(script.range(of: "App Store validation"))
+        XCTAssertNotNil(script.range(of: "real-device acceptance"))
+        XCTAssertNotNil(script.range(of: "Instruments evidence"))
         XCTAssertNotNil(script.range(of: "expected Pass"))
     }
 
@@ -89,13 +97,17 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-combined.log"))
         XCTAssertNotNil(readme.range(of: "The final `Result Log` must include a complete `Pass` row"))
         XCTAssertNotNil(readme.range(of: "The combined gate expects retained artifact markers"))
+        XCTAssertNotNil(readme.range(of: "same `ipa:` path produced by the export preflight"))
         XCTAssertNotNil(readme.range(of: "M10_SIGNED_ARCHIVE"))
         XCTAssertNotNil(readme.range(of: "M10_APP_STORE_EXPORT"))
         XCTAssertNotNil(m10.range(of: "pass logs retain their concrete artifact markers"))
+        XCTAssertNotNil(m10.range(of: "same `ipa:` path produced by the export preflight"))
         XCTAssertNotNil(m10.range(of: "real-device `device:`"))
         XCTAssertNotNil(m10.range(of: "Instruments `file:`"))
         XCTAssertNotNil(m10.range(of: "Every field must be concrete"))
         XCTAssertNotNil(m10.range(of: "`Result` must be `Pass`"))
+        XCTAssertNotNil(readme.range(of: "The Notes field must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence"))
+        XCTAssertNotNil(m10.range(of: "`Notes` must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence"))
     }
 
     private func projectURL(_ path: String) -> URL {

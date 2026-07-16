@@ -132,7 +132,7 @@ Run the combined M10 submit-readiness gate after producing every evidence artifa
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
-The combined gate checks that pass logs retain their concrete artifact markers: no-sign `archive:` and `app size:`, signed `archive:`, App Store export `archive:`, `export:`, and `ipa:`, App Store validation `ipa:`, real-device `device:`, performance `full suite:`, `archive log:`, `performance tests:`, and `app size:`, and Instruments `file:`. If your retained artifacts use non-default paths, set `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE` before running this gate.
+The combined gate checks that pass logs retain their concrete artifact markers: no-sign `archive:` and `app size:`, signed `archive:`, App Store export `archive:`, `export:`, and `ipa:`, App Store validation `ipa:`, real-device `device:`, performance `full suite:`, `archive log:`, `performance tests:`, and `app size:`, and Instruments `file:`. It also confirms the App Store validation log references the same `ipa:` path produced by the export preflight. If your retained artifacts use non-default paths, set `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE` before running this gate.
 
 Until the signed archive, App Store, real-device, and manual evidence gates are complete, record the known blockers:
 
@@ -194,7 +194,7 @@ Every Evidence cell must cite the observed proof, not only say "passed". The ver
 
 Use one row per real-device pass.
 
-Before the combined submit-readiness gate can pass, replace the placeholder row with at least one complete row from the final signed physical-device QA pass. Every field must be concrete, `Result` must be `Pass`, and `Notes` must summarize the signed archive, App Store validation, real-device acceptance, and Instruments evidence used for that pass.
+Before the combined submit-readiness gate can pass, replace the placeholder row with at least one complete row from the final signed physical-device QA pass. Every field must be concrete, `Result` must be `Pass`, and `Notes` must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence used for that pass.
 
 | Date | Tester | Device | iOS | Backend | Result | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
