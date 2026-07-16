@@ -16,8 +16,9 @@ export_log="${M10_APP_STORE_EXPORT_LOG:-/tmp/buysell-submit-readiness-export-pre
 validation_log="${M10_APP_STORE_VALIDATION_LOG:-/tmp/buysell-submit-readiness-app-store-validation-preflight.log}"
 real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-device-preflight.log}"
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
-min_tests="${M10_MIN_TESTS:-284}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-29}"
+performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
+min_tests="${M10_MIN_TESTS:-288}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-33}"
 
 pending_items=()
 
@@ -156,6 +157,7 @@ require_file_contains "$export_log" "M10 App Store export preflight passed" "App
 require_file_contains "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
+require_file_contains "$performance_log" "M10 performance evidence passed" "performance evidence log"
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final
