@@ -383,6 +383,9 @@ require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$s
 require_metadata_references_marker_value "$acceptance_file" "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$real_device_log" "device:" "real-device preflight log"
+require_file_contains "$real_device_log" "device name:" "real-device preflight log"
+require_file_contains "$real_device_log" "device id:" "real-device preflight log"
+require_metadata_references_marker_value "$acceptance_file" "Device model" "$real_device_log" "device name:" "real-device preflight log" "acceptance device metadata"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
 require_file_contains "$performance_log" "M10 performance evidence passed" "performance evidence log"
 require_file_contains "$performance_log" "full suite: $full_result" "performance evidence log"
@@ -392,6 +395,7 @@ require_file_contains "$performance_log" "app size:" "performance evidence log"
 require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_file_contains "$instruments_log" "file: $instruments_evidence" "Instruments evidence log"
 require_metadata_references_marker_value "$instruments_evidence" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "Instruments signed archive metadata"
+require_metadata_references_marker_value "$instruments_evidence" "Device model" "$real_device_log" "device name:" "real-device preflight log" "Instruments device metadata"
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final

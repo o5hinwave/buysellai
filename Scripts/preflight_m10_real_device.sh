@@ -126,3 +126,5 @@ xcodebuild build \
 
 printf 'M10 real-device preflight passed\n'
 printf 'device: %s (%s)\n' "${device_name:-Connected device}" "$device_identifier"
+printf 'device name: %s\n' "${device_name:-Connected device}"
+printf 'device id: %s\n' "$device_identifier"

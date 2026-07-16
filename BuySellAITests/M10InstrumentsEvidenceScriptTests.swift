@@ -58,6 +58,7 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(evidence.range(of: "Metadata is validated too"))
         XCTAssertNotNil(evidence.range(of: "`Date` must use `YYYY-MM-DD`"))
         XCTAssertNotNil(evidence.range(of: "`Device model` must mention iPhone or iPad"))
+        XCTAssertNotNil(evidence.range(of: "`Device model` must also include the real-device preflight `device name:` value"))
         XCTAssertNotNil(evidence.range(of: "`iOS version` and `Release build` must include numeric values"))
         XCTAssertNotNil(evidence.range(of: "`Signed archive` must mention an archive"))
         XCTAssertNotNil(evidence.range(of: "`Signed archive` must also include the signed-preflight `archive:` path"))
@@ -84,13 +85,15 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 Instruments evidence passed"))
         XCTAssertNotNil(script.range(of: "Instruments evidence log"))
         XCTAssertNotNil(script.range(of: #"Instruments signed archive metadata"#))
+        XCTAssertNotNil(script.range(of: #"Instruments device metadata"#))
         XCTAssertNotNil(script.range(of: #"$instruments_evidence" "Signed archive" "$signed_log" "archive:"#))
+        XCTAssertNotNil(script.range(of: #"$instruments_evidence" "Device model" "$real_device_log" "device name:"#))
         XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(readme.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(readme.range(of: "generic \"passed\" notes are intentionally rejected"))
         XCTAssertNotNil(readme.range(of: "Instruments metadata is validated too"))
         XCTAssertNotNil(readme.range(of: "YYYY-MM-DD"))
-        XCTAssertNotNil(readme.range(of: "iPhone or iPad device model"))
+        XCTAssertNotNil(readme.range(of: "iPhone or iPad device model that includes the real-device preflight `device name:` value"))
         XCTAssertNotNil(readme.range(of: "numeric iOS and release-build values"))
         XCTAssertNotNil(readme.range(of: "signed-archive wording with the signed-preflight `archive:` path"))
         XCTAssertNotNil(readme.range(of: "trace metadata must point to retained files or directories"))
@@ -99,6 +102,7 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))
         XCTAssertNotNil(m10.range(of: "the Instruments `Signed archive` metadata references the same signed-preflight `archive:` path"))
+        XCTAssertNotNil(m10.range(of: "Instruments `Device model` metadata reference the real-device preflight `device name:` value"))
     }
 
     private func projectURL(_ path: String) -> URL {

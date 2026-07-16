@@ -37,6 +37,8 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"-destination "id=${device_identifier}""#))
         XCTAssertNotNil(script.range(of: "-allowProvisioningUpdates"))
         XCTAssertNotNil(script.range(of: "M10 real-device preflight passed"))
+        XCTAssertNotNil(script.range(of: "device name:"))
+        XCTAssertNotNil(script.range(of: "device id:"))
         XCTAssertNil(script.range(of: "platform=iOS Simulator"))
         XCTAssertNil(script.range(of: "CODE_SIGNING_ALLOWED=NO"))
     }
@@ -50,6 +52,7 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_DEVICE=1"))
         XCTAssertNotNil(m10.range(of: "trusted iPhone or iPad with Developer Mode enabled"))
         XCTAssertNotNil(readme.range(of: "ignores non-iOS `devicectl` entries"))
+        XCTAssertNotNil(readme.range(of: "Passing logs include `device:`, `device name:`, and `device id:` markers"))
         XCTAssertNotNil(m10.range(of: "A supplied `DEVICE_ID` must match a connected iPhone or iPad"))
     }
 
@@ -102,7 +105,9 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Record a passing 15-item real-device acceptance evidence table"))
         XCTAssertNotNil(readme.range(of: "Metadata is validated too"))
         XCTAssertNotNil(readme.range(of: "YYYY-MM-DD"))
+        XCTAssertNotNil(readme.range(of: "device model that includes the real-device preflight `device name:` value"))
         XCTAssertNotNil(m10.range(of: "`Device model` must mention iPhone or iPad"))
+        XCTAssertNotNil(m10.range(of: "`Device model` must mention iPhone or iPad and include the real-device preflight `device name:` value"))
         XCTAssertNotNil(m10.range(of: "`iOS version` and `Release build` must include numeric values"))
         XCTAssertNotNil(m10.range(of: "`Signed archive` must mention an archive"))
         XCTAssertNotNil(m10.range(of: "`App Store validation` must mention validation, validated, altool, App Store, or IPA proof"))
