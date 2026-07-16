@@ -60,8 +60,11 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "duration_ms_from_text"))
         XCTAssertNotNil(script.range(of: "require_evidence_duration_at_most"))
         XCTAssertNotNil(script.range(of: "require_evidence_terms"))
-        XCTAssertNotNil(script.range(of: "clipboard listing text with no preamble proof"))
-        XCTAssertNotNil(script.range(of: "Sign in with Apple migration and duplicate proof"))
+        XCTAssertNotNil(script.range(of: "marketplace list, payouts, Best, and Lowest proof"))
+        XCTAssertNotNil(script.range(of: "clipboard listing text with no leading whitespace or preamble proof"))
+        XCTAssertNotNil(script.range(of: "VoiceOver full flow proof"))
+        XCTAssertNotNil(script.range(of: "Airplane mode offline toast and retry proof"))
+        XCTAssertNotNil(script.range(of: "Sign in with Apple one-time migration and duplicate proof"))
         XCTAssertNotNil(script.range(of: "A01\" \"1000\" \"cold-launch"))
         XCTAssertNotNil(script.range(of: "A02\" \"400\" \"camera-ready"))
         XCTAssertNotNil(script.range(of: "A03\" \"300\" \"capture-to-result"))
@@ -85,8 +88,11 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_ACCEPTANCE=1"))
         XCTAssertNotNil(m10.range(of: "Record a passing 15-item real-device acceptance evidence table"))
         XCTAssertNotNil(m10.range(of: "The verifier checks for these proof terms"))
-        XCTAssertNotNil(m10.range(of: "A06 `clipboard`, `listing text`, `no preamble`"))
-        XCTAssertNotNil(m10.range(of: "A15 `sign in with apple`, `migration`, `duplicate`"))
+        XCTAssertNotNil(m10.range(of: "A05 `platform`, `payout`, `best`, `lowest`"))
+        XCTAssertNotNil(m10.range(of: "A06 `clipboard`, `listing text`, `no leading whitespace`, `no preamble`"))
+        XCTAssertNotNil(m10.range(of: "A13 `voiceover`, `home`, `camera`, `result`, `picker`, `listing`, `copy`"))
+        XCTAssertNotNil(m10.range(of: "A14 `airplane`, `offline`, `you're offline. reconnect and try again.`, `retry`"))
+        XCTAssertNotNil(m10.range(of: "A15 `sign in with apple`, `migration`, `once`, `duplicate`"))
     }
 
     func testRealDeviceAcceptanceDocsContainExactlyFifteenPromptRows() throws {
