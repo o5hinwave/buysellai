@@ -18,6 +18,8 @@ final class SignedArchivePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_TEAM"))
         XCTAssertNotNil(script.range(of: "BuySellAI/BuySellAI.entitlements"))
         XCTAssertNotNil(script.range(of: "com.apple.developer.applesignin"))
+        XCTAssertNotNil(script.range(of: "signed_sign_in_with_apple"))
+        XCTAssertNotNil(script.range(of: "sign in with apple:"))
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "release build:"))

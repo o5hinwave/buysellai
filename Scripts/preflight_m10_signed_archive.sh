@@ -91,9 +91,11 @@ release_build="$(plist_value CFBundleVersion "$info_plist")"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 
-codesign -d --entitlements :- "$app_path" > "$signed_entitlements" 2>/dev/null
-[[ "$(plist_array_value com.apple.developer.applesignin 0 "$signed_entitlements")" == "Default" ]] || fail "signed archive is missing Sign in with Apple entitlement"
+codesign -d --entitlements :- "$app_path" > "$signed_entitlements" 2>/dev/null || fail "could not read signed archive entitlements"
+signed_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$signed_entitlements" || true)"
+[[ "$signed_sign_in_with_apple" == "Default" ]] || fail "signed archive is missing Sign in with Apple entitlement"
 
 printf 'M10 signed archive preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
+printf 'sign in with apple: %s\n' "$signed_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

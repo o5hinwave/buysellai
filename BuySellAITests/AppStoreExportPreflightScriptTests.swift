@@ -17,6 +17,9 @@ final class AppStoreExportPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "DEVELOPMENT_TEAM is unset"))
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_TEAM"))
         XCTAssertNotNil(script.range(of: "com.apple.developer.applesignin"))
+        XCTAssertNotNil(script.range(of: "signed_sign_in_with_apple"))
+        XCTAssertNotNil(script.range(of: "exported_sign_in_with_apple"))
+        XCTAssertNotNil(script.range(of: "sign in with apple:"))
     }
 
     func testAppStoreExportPreflightUsesAppStoreConnectExportOptions() throws {
@@ -43,6 +46,8 @@ final class AppStoreExportPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/Info.plist"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/BuySellAI"))
+        XCTAssertNotNil(script.range(of: "unzip -q \"$ipa_path\""))
+        XCTAssertNotNil(script.range(of: "codesign -d --entitlements :- \"$exported_app_path\""))
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "release build:"))

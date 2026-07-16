@@ -13,11 +13,14 @@ app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
 signed_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-appstore-entitlements.XXXXXX")"
+exported_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-appstore-export-entitlements.XXXXXX")"
+ipa_extract_dir="$(mktemp -d "${TMPDIR:-/tmp}/buysell-appstore-ipa.XXXXXX")"
 export_options="$(mktemp "${TMPDIR:-/tmp}/buysell-appstore-export-options.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$signed_entitlements" "$export_options"
+    rm -f "$signed_entitlements" "$exported_entitlements" "$export_options"
+    rm -rf "$ipa_extract_dir"
 }
 trap cleanup EXIT
 
@@ -116,8 +119,9 @@ release_build="$(plist_value CFBundleVersion "$info_plist")"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 
-codesign -d --entitlements :- "$app_path" > "$signed_entitlements" 2>/dev/null
-[[ "$(plist_array_value com.apple.developer.applesignin 0 "$signed_entitlements")" == "Default" ]] || fail "signed archive is missing Sign in with Apple entitlement"
+codesign -d --entitlements :- "$app_path" > "$signed_entitlements" 2>/dev/null || fail "could not read signed archive entitlements"
+signed_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$signed_entitlements" || true)"
+[[ "$signed_sign_in_with_apple" == "Default" ]] || fail "signed archive is missing Sign in with Apple entitlement"
 
 xcodebuild -exportArchive \
     -archivePath "$archive_path" \
@@ -131,9 +135,16 @@ ipa_path="$(find "$export_path" -maxdepth 1 -type f -name '*.ipa' -print -quit)"
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/Info.plist' >/dev/null || fail "exported IPA is missing Info.plist"
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/PrivacyInfo.xcprivacy' >/dev/null || fail "exported IPA is missing PrivacyInfo.xcprivacy"
 unzip -l "$ipa_path" 'Payload/BuySellAI.app/BuySellAI' >/dev/null || fail "exported IPA is missing app executable"
+unzip -q "$ipa_path" 'Payload/BuySellAI.app/*' -d "$ipa_extract_dir" || fail "could not inspect exported IPA app bundle"
+exported_app_path="${ipa_extract_dir}/Payload/BuySellAI.app"
+[[ -d "$exported_app_path" ]] || fail "exported IPA is missing app bundle"
+codesign -d --entitlements :- "$exported_app_path" > "$exported_entitlements" 2>/dev/null || fail "could not read exported IPA entitlements"
+exported_sign_in_with_apple="$(plist_array_value com.apple.developer.applesignin 0 "$exported_entitlements" || true)"
+[[ "$exported_sign_in_with_apple" == "$signed_sign_in_with_apple" ]] || fail "exported IPA Sign in with Apple entitlement does not match signed archive"
 
 printf 'M10 App Store export preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
 printf 'export: %s\n' "$export_path"
 printf 'ipa: %s\n' "$ipa_path"
+printf 'sign in with apple: %s\n' "$exported_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"
