@@ -3,6 +3,7 @@ set -euo pipefail
 
 evidence_file="${1:-M10_INSTRUMENTS.md}"
 allow_pending="${ALLOW_PENDING_INSTRUMENTS:-0}"
+evidence_dir=""
 
 fail() {
     printf 'error: %s\n' "$*" >&2
@@ -115,6 +116,7 @@ require_scroll_evidence() {
 require_trace_metadata() {
     local field="$1"
     local value
+    local trace_path
 
     value="$(metadata_value "$field")"
     if is_placeholder "$value"; then
@@ -122,8 +124,13 @@ require_trace_metadata() {
         return
     fi
 
-    if [[ "$value" == /* && ! -e "$value" ]]; then
-        pending_items+=("metadata '$field' path does not exist: $value")
+    trace_path="$value"
+    if [[ "$trace_path" != /* ]]; then
+        trace_path="${evidence_dir}/${trace_path}"
+    fi
+
+    if [[ ! -e "$trace_path" ]]; then
+        pending_items+=("metadata '$field' retained trace path does not exist: $value")
     fi
 }
 
@@ -179,6 +186,7 @@ require_evidence_any_term() {
 }
 
 [[ -f "$evidence_file" ]] || fail "missing Instruments evidence file at $evidence_file"
+evidence_dir="$(cd "$(dirname "$evidence_file")" && pwd)"
 
 row_count="$(
     awk -F'|' '
