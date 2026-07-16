@@ -203,11 +203,11 @@ private struct RemoteHistoryRecord: Codable {
             id: id,
             createdAt: createdAt,
             itemName: itemName,
-            category: category.flatMap(Category.init(rawValue:)),
-            condition: condition.flatMap(Condition.init(rawValue:)),
+            category: category.map(Category.init(apiValue:)),
+            condition: condition.map(Condition.init(apiValue:)),
             suggestedPrice: suggestedPrice,
             imageThumbnail: imageThumbnailBase64.flatMap { Data(base64Encoded: $0) },
-            marketplace: Marketplace(rawValue: marketplace) ?? .ebay,
+            marketplace: Marketplace(apiValue: marketplace),
             listingText: listingText
         )
     }

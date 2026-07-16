@@ -115,6 +115,40 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(Set(entries.map(\.id)).count, entries.count)
     }
 
+    func testFetchHistoryAcceptsDisplayFormattedCategoryConditionAndMarketplace() async throws {
+        let entryID = try XCTUnwrap(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let data = Data("""
+            [{
+              "id": "\(entryID.uuidString)",
+              "created_at": "2026-07-14T19:00:00Z",
+              "item_name": "Coat",
+              "category": "Clothing",
+              "condition": "Like New",
+              "suggested_price": 55,
+              "image_thumbnail_base64": null,
+              "marketplace": "Facebook Marketplace",
+              "listing_text": "TITLE:\\nCoat"
+            }]
+            """.utf8)
+            return (response, data)
+        }
+
+        let entries = try await client.fetchHistory(accessToken: "access-token")
+
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].id, entryID)
+        XCTAssertEqual(entries[0].category, .clothing)
+        XCTAssertEqual(entries[0].condition, .likeNew)
+        XCTAssertEqual(entries[0].marketplace, .facebook)
+    }
+
     func testUpsertHistoryBuildsBatchPostgRESTRequest() async throws {
         let entryID = try XCTUnwrap(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
         let createdAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T19:30:00Z"))

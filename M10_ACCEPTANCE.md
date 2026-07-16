@@ -4,7 +4,7 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `317` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `318` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3192KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - App icon check: source App Store icon is a 1024x1024 non-alpha PNG and the archive contains iPhone/iPad icon PNGs.

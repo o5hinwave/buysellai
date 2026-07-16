@@ -31,6 +31,14 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
 
     var id: Marketplace { self }
 
+    init(apiValue: String) {
+        let normalized = Self.normalizedIdentifier(apiValue)
+        self = Marketplace.allCases.first {
+            Self.normalizedIdentifier($0.rawValue) == normalized ||
+            Self.normalizedIdentifier($0.displayName) == normalized
+        } ?? .ebay
+    }
+
     var displayName: String {
         displayNameKey.localized
     }
@@ -173,5 +181,13 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         if self == .tcgplayer { return "TCG" }
         if self == .therealreal { return "TRR" }
         return String(displayName.prefix(1)).uppercased()
+    }
+
+    private static func normalizedIdentifier(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: "marketplace", with: "")
+            .filter { $0.isLetter || $0.isNumber }
     }
 }
