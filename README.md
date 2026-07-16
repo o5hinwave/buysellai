@@ -159,7 +159,7 @@ M10 Instruments evidence verifier after profiling a signed Release build on trus
 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
 ```
 
-Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
+Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model, numeric iOS and release-build values, and signed-archive wording. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
 
 Until signed physical-device Instruments profiling is complete, record the known profiler blocker:
 

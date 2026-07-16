@@ -64,6 +64,86 @@ numeric_value() {
     ' <<< "$1"
 }
 
+require_metadata_number() {
+    local field="$1"
+    local label="$2"
+    local value
+
+    value="$(metadata_value "$field")"
+    if is_placeholder "$value"; then
+        return
+    fi
+
+    if [[ -z "$(numeric_value "$value")" ]]; then
+        pending_items+=("metadata '$field' must include a numeric $label")
+    fi
+}
+
+require_metadata_date() {
+    local field="$1"
+    local value
+
+    value="$(metadata_value "$field")"
+    if is_placeholder "$value"; then
+        return
+    fi
+
+    if [[ ! "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        pending_items+=("metadata '$field' must use YYYY-MM-DD")
+    fi
+}
+
+require_metadata_terms() {
+    local field="$1"
+    local label="$2"
+    shift 2
+
+    local value
+    local normalized
+    local term
+    local missing_terms=()
+
+    value="$(metadata_value "$field")"
+    if is_placeholder "$value"; then
+        return
+    fi
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$value")"
+    for term in "$@"; do
+        if [[ "$normalized" != *"$term"* ]]; then
+            missing_terms+=("$term")
+        fi
+    done
+
+    if (( ${#missing_terms[@]} > 0 )); then
+        pending_items+=("metadata '$field' must mention $label: ${missing_terms[*]}")
+    fi
+}
+
+require_metadata_any_term() {
+    local field="$1"
+    local label="$2"
+    shift 2
+
+    local value
+    local normalized
+    local term
+
+    value="$(metadata_value "$field")"
+    if is_placeholder "$value"; then
+        return
+    fi
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$value")"
+    for term in "$@"; do
+        if [[ "$normalized" == *"$term"* ]]; then
+            return
+        fi
+    done
+
+    pending_items+=("metadata '$field' must mention $label: one of $*")
+}
+
 require_max_metric() {
     local field="$1"
     local limit="$2"
@@ -236,6 +316,11 @@ for field in "${required_metadata[@]}"; do
     fi
 done
 
+require_metadata_any_term "Device model" "a physical iPhone or iPad model" "iphone" "ipad"
+require_metadata_number "iOS version" "iOS version"
+require_metadata_number "Release build" "release build"
+require_metadata_terms "Signed archive" "signed archive artifact" "archive"
+require_metadata_date "Date"
 require_trace_metadata "Time Profiler trace"
 require_trace_metadata "Allocations trace"
 require_max_metric "Home launch duration" "900" " ms"
