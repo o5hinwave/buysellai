@@ -128,6 +128,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Result Log still has pending rows"))
         XCTAssertNotNil(script.range(of: "Notes must mention final evidence"))
         XCTAssertNotNil(script.range(of: "signed archive"))
+        XCTAssertNotNil(script.range(of: "Xcode Organizer signed archive validation"))
+        XCTAssertNotNil(script.range(of: #"archive validation"#))
         XCTAssertNotNil(script.range(of: "App Store validation"))
         XCTAssertNotNil(script.range(of: "real-device acceptance"))
         XCTAssertNotNil(script.range(of: "Instruments evidence"))
@@ -187,8 +189,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Every field must be concrete"))
         XCTAssertNotNil(m10.range(of: "`Result` must be `Pass`"))
         XCTAssertNotNil(m10.range(of: "the row must match the recorded Date, Tester, Device model, iOS version, and Backend project metadata"))
-        XCTAssertNotNil(readme.range(of: "The Notes field must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence"))
-        XCTAssertNotNil(m10.range(of: "`Notes` must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence"))
+        XCTAssertNotNil(readme.range(of: "The Notes field must mention the signed archive, Xcode Organizer signed archive validation, App Store validation, real-device acceptance, and Instruments evidence"))
+        XCTAssertNotNil(m10.range(of: "`Notes` must mention the signed archive, Xcode Organizer signed archive validation, App Store validation, real-device acceptance, and Instruments evidence"))
     }
 
     private func projectURL(_ path: String) -> URL {

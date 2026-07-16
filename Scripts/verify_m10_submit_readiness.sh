@@ -386,6 +386,10 @@ require_result_log_final() {
                 missing_note_evidence+=("signed archive")
             fi
 
+            if [[ "$normalized_notes" != *"organizer"* && "$normalized_notes" != *"archive validation"* ]]; then
+                missing_note_evidence+=("Xcode Organizer signed archive validation")
+            fi
+
             if [[ "$normalized_notes" != *"app store"* || "$normalized_notes" != *"validation"* ]]; then
                 missing_note_evidence+=("App Store validation")
             fi

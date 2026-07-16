@@ -195,7 +195,7 @@ Every Evidence cell must cite the observed proof, not only say "passed". The ver
 
 Use one row per real-device pass.
 
-Before the combined submit-readiness gate can pass, replace the placeholder row with at least one complete row from the final signed physical-device QA pass. Every field must be concrete, `Result` must be `Pass`, the row must match the recorded Date, Tester, Device model, iOS version, and Backend project metadata, and `Notes` must mention the signed archive, App Store validation, real-device acceptance, and Instruments evidence used for that pass.
+Before the combined submit-readiness gate can pass, replace the placeholder row with at least one complete row from the final signed physical-device QA pass. Every field must be concrete, `Result` must be `Pass`, the row must match the recorded Date, Tester, Device model, iOS version, and Backend project metadata, and `Notes` must mention the signed archive, Xcode Organizer signed archive validation, App Store validation, real-device acceptance, and Instruments evidence used for that pass.
 
 | Date | Tester | Device | iOS | Backend | Result | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
