@@ -79,12 +79,14 @@ bash Scripts/verify_m10_local_archive.sh /tmp/BuySellAI-nosign.xcarchive
 Signed archive preflight:
 
 ```sh
+M10_DEVELOPMENT_TEAM=<team-id> \
 bash Scripts/preflight_m10_signed_archive.sh /tmp/BuySellAI-signed.xcarchive
 ```
 
 App Store Connect export preflight:
 
 ```sh
+M10_DEVELOPMENT_TEAM=<team-id> \
 bash Scripts/preflight_m10_app_store_export.sh /tmp/BuySellAI-appstore.xcarchive /tmp/BuySellAI-appstore-export
 ```
 
@@ -97,6 +99,8 @@ ASC_API_PRIVATE_KEYS_DIR=<directory-containing-AuthKey_key-id.p8> \
 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export
 ```
 
+`M10_DEVELOPMENT_TEAM` lets local release preflights use a personal Apple Team ID without committing it to the Xcode project. You can also select the team in Xcode instead.
+
 Until the Apple team, exported IPA, and App Store Connect API-key credentials are available, record the known blockers:
 
 ```sh
@@ -108,13 +112,13 @@ ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySel
 Real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
 
 ```sh
-bash Scripts/preflight_m10_real_device.sh
+M10_DEVELOPMENT_TEAM=<team-id> bash Scripts/preflight_m10_real_device.sh
 ```
 
 To target a specific connected device:
 
 ```sh
-DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh
+M10_DEVELOPMENT_TEAM=<team-id> DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh
 ```
 
 The preflight ignores non-iOS `devicectl` entries. A supplied `DEVICE_ID` must match a connected iPhone or iPad. Passing logs include `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:` markers so final acceptance and Instruments metadata can point back to the same trusted device and Release build.

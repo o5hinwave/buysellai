@@ -4,6 +4,7 @@ set -euo pipefail
 archive_path="${1:-/tmp/BuySellAI-appstore.xcarchive}"
 export_path="${2:-/tmp/BuySellAI-appstore-export}"
 allow_missing_team="${ALLOW_MISSING_TEAM:-0}"
+m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
@@ -49,11 +50,17 @@ plist_value() {
     "${plist_buddy}" -c "Print :$1" "$2"
 }
 
+team_build_setting=""
+if [[ -n "$m10_development_team" ]]; then
+    team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
+fi
+
 build_settings="$(
     xcodebuild -showBuildSettings \
         -project "$project_path" \
         -scheme BuySellAI \
         -configuration Release \
+        ${team_build_setting:+"$team_build_setting"} \
         2>/dev/null
 )"
 
@@ -67,10 +74,10 @@ development_team="$(setting DEVELOPMENT_TEAM)"
 if [[ -z "$development_team" ]]; then
     if [[ "$allow_missing_team" == "1" ]]; then
         printf 'M10 App Store export preflight pending: DEVELOPMENT_TEAM is unset\n'
-        printf 'Set an Apple development team, then rerun without ALLOW_MISSING_TEAM=1 to export the App Store Connect IPA.\n'
+        printf 'Set M10_DEVELOPMENT_TEAM or select an Apple development team in Xcode, then rerun without ALLOW_MISSING_TEAM=1 to export the App Store Connect IPA.\n'
         exit 0
     fi
-    fail "DEVELOPMENT_TEAM is unset. Select an Apple development team before exporting the App Store Connect IPA."
+    fail "DEVELOPMENT_TEAM is unset. Set M10_DEVELOPMENT_TEAM or select an Apple development team before exporting the App Store Connect IPA."
 fi
 
 cat > "$export_options" <<PLIST
@@ -104,7 +111,8 @@ xcodebuild archive \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -archivePath "$archive_path" \
-    -allowProvisioningUpdates
+    -allowProvisioningUpdates \
+    ${team_build_setting:+"$team_build_setting"}
 
 [[ -d "$app_path" ]] || fail "missing archived app at $app_path"
 [[ -x "${app_path}/BuySellAI" ]] || fail "missing archived executable"

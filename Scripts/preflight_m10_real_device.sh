@@ -3,6 +3,7 @@ set -euo pipefail
 
 allow_missing_device="${ALLOW_MISSING_DEVICE:-0}"
 device_identifier="${DEVICE_ID:-}"
+m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
@@ -44,6 +45,11 @@ plist_value() {
 plist_array_value() {
     "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
+
+team_build_setting=""
+if [[ -n "$m10_development_team" ]]; then
+    team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
+fi
 
 is_ios_device() {
     local summary="$1"
@@ -119,13 +125,14 @@ build_settings="$(
         -scheme BuySellAI \
         -configuration Release \
         -destination "id=${device_identifier}" \
+        ${team_build_setting:+"$team_build_setting"} \
         2>/dev/null
 )"
 
 [[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.rhodes.buysellai" ]] || fail "unexpected Release bundle identifier"
 [[ "$(setting CODE_SIGN_STYLE)" == "Automatic" ]] || fail "Release signing style must be Automatic"
 [[ "$(setting CODE_SIGN_ENTITLEMENTS)" == "BuySellAI/BuySellAI.entitlements" ]] || fail "Release build must use BuySellAI.entitlements"
-[[ -n "$(setting DEVELOPMENT_TEAM)" ]] || fail "DEVELOPMENT_TEAM is unset. Select an Apple development team before real-device preflight."
+[[ -n "$(setting DEVELOPMENT_TEAM)" ]] || fail "DEVELOPMENT_TEAM is unset. Set M10_DEVELOPMENT_TEAM or select an Apple development team before real-device preflight."
 
 target_build_dir="$(setting TARGET_BUILD_DIR)"
 wrapper_name="$(setting WRAPPER_NAME)"
@@ -138,7 +145,8 @@ xcodebuild build \
     -scheme BuySellAI \
     -configuration Release \
     -destination "id=${device_identifier}" \
-    -allowProvisioningUpdates
+    -allowProvisioningUpdates \
+    ${team_build_setting:+"$team_build_setting"}
 
 [[ -d "$built_app_path" ]] || fail "missing built app at $built_app_path"
 [[ -f "$built_info_plist" ]] || fail "missing built app Info.plist at $built_info_plist"
