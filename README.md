@@ -159,7 +159,7 @@ M10 Instruments evidence verifier after profiling a signed Release build on trus
 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
 ```
 
-Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model, numeric iOS and release-build values, and signed-archive wording. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
+Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model, numeric iOS and release-build values, and signed-archive wording with the signed-preflight `archive:` path before final submit-readiness. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
 
 Until signed physical-device Instruments profiling is complete, record the known profiler blocker:
 
@@ -173,7 +173,7 @@ Combined M10 submit-readiness evidence gate:
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
-The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, and confirms the manual acceptance metadata references the signed-preflight `archive:` path and validated `ipa:` path. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
+The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, and confirms the manual acceptance and Instruments metadata reference the signed-preflight `archive:` path while acceptance also references the validated `ipa:` path. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
 
 Until every signed archive, App Store, real-device, and manual evidence item is complete, record the known readiness blocker:
 

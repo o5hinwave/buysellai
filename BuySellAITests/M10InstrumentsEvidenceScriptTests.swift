@@ -60,6 +60,7 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(evidence.range(of: "`Device model` must mention iPhone or iPad"))
         XCTAssertNotNil(evidence.range(of: "`iOS version` and `Release build` must include numeric values"))
         XCTAssertNotNil(evidence.range(of: "`Signed archive` must mention an archive"))
+        XCTAssertNotNil(evidence.range(of: "`Signed archive` must also include the signed-preflight `archive:` path"))
         XCTAssertNotNil(evidence.range(of: "metadata values must point to retained trace files or directories"))
         XCTAssertNotNil(evidence.range(of: "Relative paths are resolved from this evidence file's directory"))
         XCTAssertNotNil(evidence.range(of: "Time Profiler"))
@@ -82,6 +83,8 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "/tmp/buysell-submit-readiness-instruments.log"))
         XCTAssertNotNil(script.range(of: "M10 Instruments evidence passed"))
         XCTAssertNotNil(script.range(of: "Instruments evidence log"))
+        XCTAssertNotNil(script.range(of: #"Instruments signed archive metadata"#))
+        XCTAssertNotNil(script.range(of: #"$instruments_evidence" "Signed archive" "$signed_log" "archive:"#))
         XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(readme.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(readme.range(of: "generic \"passed\" notes are intentionally rejected"))
@@ -89,11 +92,13 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "YYYY-MM-DD"))
         XCTAssertNotNil(readme.range(of: "iPhone or iPad device model"))
         XCTAssertNotNil(readme.range(of: "numeric iOS and release-build values"))
+        XCTAssertNotNil(readme.range(of: "signed-archive wording with the signed-preflight `archive:` path"))
         XCTAssertNotNil(readme.range(of: "trace metadata must point to retained files or directories"))
         XCTAssertNotNil(readme.range(of: "relative paths resolved from the evidence file"))
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))
+        XCTAssertNotNil(m10.range(of: "the Instruments `Signed archive` metadata references the same signed-preflight `archive:` path"))
     }
 
     private func projectURL(_ path: String) -> URL {

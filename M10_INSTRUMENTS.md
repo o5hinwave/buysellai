@@ -4,7 +4,7 @@ This file records the final Instruments pass required by the M10 performance tar
 
 Every Evidence cell must cite the observed profiling proof, not only say "passed". The verifier checks for these proof terms: P01 `home`, `launch`, `ms`; P02 `camera`, `preview`, `ms`; P03 `scroll` plus either `fps` or `no dropped`; P04 `memory`, `mb`; P05 `time profiler`, `allocations`, `trace`.
 
-Metadata is validated too: `Date` must use `YYYY-MM-DD`, `Device model` must mention iPhone or iPad, `iOS version` and `Release build` must include numeric values, and `Signed archive` must mention an archive. The `Time Profiler trace` and `Allocations trace` metadata values must point to retained trace files or directories. Relative paths are resolved from this evidence file's directory.
+Metadata is validated too: `Date` must use `YYYY-MM-DD`, `Device model` must mention iPhone or iPad, `iOS version` and `Release build` must include numeric values, and `Signed archive` must mention an archive. Before final submit-readiness can pass, `Signed archive` must also include the signed-preflight `archive:` path. The `Time Profiler trace` and `Allocations trace` metadata values must point to retained trace files or directories. Relative paths are resolved from this evidence file's directory.
 
 ## Metadata
 
