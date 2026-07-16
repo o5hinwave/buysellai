@@ -235,6 +235,11 @@ final class AppStore {
     }
 
     func saveListing(item: DetectedItem, imageData: Data?, marketplace: Marketplace, listingText: String) {
+        let cleanListingText = listingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanListingText.isEmpty == false else {
+            showToast(APIError.decoding.localizedDescription, style: .error)
+            return
+        }
         let thumbnail = imageData.map {
             ImageTools.jpegDataDownscaled(from: $0, maxLongEdge: 200, compression: 0.75)
         }
@@ -247,7 +252,7 @@ final class AppStore {
             suggestedPrice: item.priceEstimate,
             imageThumbnail: thumbnail,
             marketplace: marketplace,
-            listingText: listingText
+            listingText: cleanListingText
         )
 
         advanceHistoryMutationGeneration()

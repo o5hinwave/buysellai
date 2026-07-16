@@ -134,7 +134,7 @@ struct ListingSheet: View {
             PrimaryPillButton(title: "Copy listing", systemImage: "doc.on.doc.fill", hapticStyle: nil) {
                 copyListing()
             }
-            .disabled(store.listingText.isEmpty)
+            .disabled(copyableListingText.isEmpty)
             .accessibilitySortPriority(3)
 
             HStack(spacing: Spacing.sm) {
@@ -167,7 +167,11 @@ struct ListingSheet: View {
     }
 
     private func copyListing() {
-        let cleanText = store.listingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanText = copyableListingText
+        guard cleanText.isEmpty == false else {
+            appStore.showToast(APIError.decoding.localizedDescription, style: .error)
+            return
+        }
         UIPasteboard.general.string = cleanText
         if ProcessInfo.processInfo.arguments.contains("--ui-testing-verify-clipboard") {
             appStore.uiTestClipboardStatus = clipboardStatus(expected: cleanText)
@@ -184,6 +188,10 @@ struct ListingSheet: View {
             try? await Task.sleep(nanoseconds: 260_000_000)
             appStore.showToast(String.localizedFormat("Copied — paste it into %@", context.marketplace.displayName), style: .success)
         }
+    }
+
+    private var copyableListingText: String {
+        store.listingText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func clipboardStatus(expected cleanText: String) -> String {

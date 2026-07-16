@@ -37,8 +37,13 @@ final class ListingStore {
         self.marketplace = marketplace
         self.generateHandler = generateHandler
         if let existingListingText {
-            self.listingText = existingListingText
-            self.phase = .success
+            if existingListingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                self.listingText = ""
+                self.phase = .failed(APIError.decoding.localizedDescription)
+            } else {
+                self.listingText = existingListingText
+                self.phase = .success
+            }
         } else if ProcessInfo.processInfo.arguments.contains("--ui-testing"),
                   ProcessInfo.processInfo.arguments.contains("--ui-testing-generate-offline") == false {
             self.listingText = """

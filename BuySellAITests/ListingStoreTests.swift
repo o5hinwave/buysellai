@@ -108,7 +108,7 @@ final class ListingStoreTests: XCTestCase {
         XCTAssertEqual(store.phase, .failed(APIError.offline.localizedDescription))
     }
 
-    func testBlankGeneratedListingUsesFriendlyRetryCopy() async {
+    func testBlankGeneratedOrExistingListingUsesFriendlyRetryCopy() async {
         let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
@@ -120,6 +120,15 @@ final class ListingStoreTests: XCTestCase {
 
         XCTAssertEqual(store.phase, .failed(APIError.decoding.localizedDescription))
         XCTAssertEqual(store.listingText, "")
+
+        let reopenedStore = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: "  \n\t  "
+        )
+
+        XCTAssertEqual(reopenedStore.phase, .failed(APIError.decoding.localizedDescription))
+        XCTAssertEqual(reopenedStore.listingText, "")
     }
 
     func testGenerateUnknownErrorDoesNotExposeRawDescription() async {
