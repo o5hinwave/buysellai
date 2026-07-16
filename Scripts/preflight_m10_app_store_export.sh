@@ -42,6 +42,10 @@ plist_array_value() {
     "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
+plist_value() {
+    "${plist_buddy}" -c "Print :$1" "$2"
+}
+
 build_settings="$(
     xcodebuild -showBuildSettings \
         -project "$project_path" \
@@ -107,6 +111,11 @@ xcodebuild archive \
 plutil -lint "$info_plist" >/dev/null
 plutil -lint "$privacy_manifest" >/dev/null
 
+release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
+release_build="$(plist_value CFBundleVersion "$info_plist")"
+[[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
+[[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
+
 codesign -d --entitlements :- "$app_path" > "$signed_entitlements" 2>/dev/null
 [[ "$(plist_array_value com.apple.developer.applesignin 0 "$signed_entitlements")" == "Default" ]] || fail "signed archive is missing Sign in with Apple entitlement"
 
@@ -127,3 +136,4 @@ printf 'M10 App Store export preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
 printf 'export: %s\n' "$export_path"
 printf 'ipa: %s\n' "$ipa_path"
+printf 'release build: %s (%s)\n' "$release_version" "$release_build"

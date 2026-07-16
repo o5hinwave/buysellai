@@ -138,6 +138,27 @@ require_metadata_references_marker_value() {
     fi
 }
 
+require_metadata_matches_marker_value() {
+    local metadata_file="$1"
+    local metadata_field="$2"
+    local log_file="$3"
+    local marker="$4"
+    local log_label="$5"
+    local evidence_label="$6"
+    local metadata
+    local marker_text
+
+    metadata="$(markdown_metadata_value "$metadata_file" "$metadata_field" || true)"
+    marker_text="$(marker_value "$log_file" "$marker" || true)"
+
+    [[ -n "$metadata" && -n "$marker_text" ]] || return 0
+    is_placeholder_value "$metadata" && return 0
+
+    if [[ "$metadata" != "$marker_text" ]]; then
+        pending "$evidence_label mismatch: $metadata_file metadata '$metadata_field' is '$metadata', $log_label has '$marker_text'"
+    fi
+}
+
 require_same_metadata_value() {
     local source_file="$1"
     local source_field="$2"
@@ -430,15 +451,21 @@ require_file_contains "$no_sign_log" "archive: $no_sign_archive" "no-sign archiv
 require_file_contains "$no_sign_log" "app size:" "no-sign archive verifier log"
 require_file_contains "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_file_contains "$signed_log" "archive: $signed_archive" "signed archive preflight log"
+require_file_contains "$signed_log" "release build:" "signed archive preflight log"
 require_file_contains "$export_log" "M10 App Store export preflight passed" "App Store export preflight log"
 require_file_contains "$export_log" "archive: $app_store_archive" "App Store export preflight log"
 require_file_contains "$export_log" "export: $app_store_export" "App Store export preflight log"
 require_file_contains "$export_log" "ipa:" "App Store export preflight log"
+require_file_contains "$export_log" "release build:" "App Store export preflight log"
 require_file_contains "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
 require_file_contains "$validation_log" "ipa:" "App Store validation preflight log"
+require_file_contains "$validation_log" "release build:" "App Store validation preflight log"
 require_same_marker_value "$export_log" "ipa:" "App Store export preflight log" "$validation_log" "ipa:" "App Store validation preflight log" "validated IPA"
+require_same_marker_value "$signed_log" "release build:" "signed archive preflight log" "$export_log" "release build:" "App Store export preflight log" "exported release build"
+require_same_marker_value "$export_log" "release build:" "App Store export preflight log" "$validation_log" "release build:" "App Store validation preflight log" "validated release build"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
 require_metadata_references_marker_value "$acceptance_file" "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
+require_metadata_matches_marker_value "$acceptance_file" "Release build" "$signed_log" "release build:" "signed archive preflight log" "acceptance release build metadata"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$real_device_log" "device:" "real-device preflight log"
 require_file_contains "$real_device_log" "device name:" "real-device preflight log"
@@ -454,6 +481,7 @@ require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Inst
 require_file_contains "$instruments_log" "file: $instruments_evidence" "Instruments evidence log"
 require_metadata_references_marker_value "$instruments_evidence" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "Instruments signed archive metadata"
 require_metadata_references_marker_value "$instruments_evidence" "Device model" "$real_device_log" "device name:" "real-device preflight log" "Instruments device metadata"
+require_metadata_matches_marker_value "$instruments_evidence" "Release build" "$signed_log" "release build:" "signed archive preflight log" "Instruments release build metadata"
 require_same_metadata_value "$acceptance_file" "iOS version" "acceptance" "$instruments_evidence" "iOS version" "Instruments" "M10 physical-device iOS version"
 require_same_metadata_value "$acceptance_file" "Release build" "acceptance" "$instruments_evidence" "Release build" "Instruments" "M10 physical-device release build"
 require_acceptance_evidence

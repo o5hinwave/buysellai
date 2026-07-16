@@ -11,8 +11,11 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/BuySellAI"))
         XCTAssertNotNil(script.range(of: "CFBundleIdentifier"))
+        XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
+        XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "NSCameraUsageDescription"))
         XCTAssertNotNil(script.range(of: "com.rhodes.buysellai"))
+        XCTAssertNotNil(script.range(of: "release build:"))
     }
 
     func testAppStoreValidationPreflightChecksPrivacyManifestContents() throws {

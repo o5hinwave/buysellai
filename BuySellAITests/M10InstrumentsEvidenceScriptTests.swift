@@ -96,12 +96,14 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "iPhone or iPad device model that includes the real-device preflight `device name:` value"))
         XCTAssertNotNil(readme.range(of: "numeric iOS and release-build values"))
         XCTAssertNotNil(readme.range(of: "signed-archive wording with the signed-preflight `archive:` path"))
+        XCTAssertNotNil(readme.range(of: "release-build metadata matching the signed-preflight `release build:` marker"))
         XCTAssertNotNil(readme.range(of: "trace metadata must point to retained files or directories"))
         XCTAssertNotNil(readme.range(of: "relative paths resolved from the evidence file"))
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))
         XCTAssertNotNil(m10.range(of: "the Instruments `Signed archive` metadata references the same signed-preflight `archive:` path"))
+        XCTAssertNotNil(m10.range(of: "acceptance and Instruments `Release build` metadata match the signed-preflight `release build:` value"))
         XCTAssertNotNil(m10.range(of: "Instruments `Device model` metadata reference the real-device preflight `device name:` value"))
     }
 

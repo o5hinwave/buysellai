@@ -43,6 +43,9 @@ final class AppStoreExportPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/Info.plist"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/PrivacyInfo.xcprivacy"))
         XCTAssertNotNil(script.range(of: "Payload/BuySellAI.app/BuySellAI"))
+        XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
+        XCTAssertNotNil(script.range(of: "CFBundleVersion"))
+        XCTAssertNotNil(script.range(of: "release build:"))
         XCTAssertNotNil(script.range(of: "M10 App Store export preflight passed"))
     }
 

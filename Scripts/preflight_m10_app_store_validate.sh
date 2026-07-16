@@ -113,6 +113,10 @@ require_privacy_manifest_values "$ipa_privacy_manifest"
 
 [[ "$(plist_value CFBundleIdentifier "$ipa_info_plist")" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
 [[ "$(plist_value NSCameraUsageDescription "$ipa_info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
+release_version="$(plist_value CFBundleShortVersionString "$ipa_info_plist")"
+release_build="$(plist_value CFBundleVersion "$ipa_info_plist")"
+[[ -n "$release_version" ]] || fail "IPA Info.plist is missing CFBundleShortVersionString"
+[[ -n "$release_build" ]] || fail "IPA Info.plist is missing CFBundleVersion"
 
 [[ -n "$api_key_id" ]] || pending_or_fail "ASC_API_KEY_ID is unset"
 [[ -n "$api_issuer_id" ]] || pending_or_fail "ASC_API_ISSUER_ID is unset"
@@ -131,3 +135,4 @@ xcrun altool --validate-app \
 
 printf 'M10 App Store validation preflight passed\n'
 printf 'ipa: %s\n' "$ipa_path"
+printf 'release build: %s (%s)\n' "$release_version" "$release_build"

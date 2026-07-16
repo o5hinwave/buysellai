@@ -131,7 +131,7 @@ Real-device acceptance evidence check after the manual device pass:
 bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
 ```
 
-Each real-device acceptance Evidence cell must include the observed proof terms documented in `M10_ACCEPTANCE.md`; generic "passed" notes are intentionally rejected. Metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, signed-archive wording, and App Store validation proof.
+Each real-device acceptance Evidence cell must include the observed proof terms documented in `M10_ACCEPTANCE.md`; generic "passed" notes are intentionally rejected. Metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, release-build metadata matching the signed-preflight `release build:` marker before final submit-readiness, signed-archive wording, and App Store validation proof.
 
 Until the manual device pass is complete, record the known acceptance blocker:
 
@@ -159,7 +159,7 @@ M10 Instruments evidence verifier after profiling a signed Release build on trus
 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
 ```
 
-Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, and signed-archive wording with the signed-preflight `archive:` path before final submit-readiness. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
+Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, signed-archive wording with the signed-preflight `archive:` path, and release-build metadata matching the signed-preflight `release build:` marker before final submit-readiness. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
 
 Until signed physical-device Instruments profiling is complete, record the known profiler blocker:
 
@@ -173,7 +173,7 @@ Combined M10 submit-readiness evidence gate:
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
-The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, and confirms the manual acceptance and Instruments metadata reference the real-device preflight `device name:` value and signed-preflight `archive:` path while acceptance also references the validated `ipa:` path. The manual acceptance and Instruments evidence must also record matching iOS version and release build metadata for the same physical-device pass. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
+The combined gate expects retained artifact markers in the preflight logs, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, confirms the signed archive, App Store export, and App Store validation logs record the same `release build:` value, and confirms the manual acceptance and Instruments metadata reference the real-device preflight `device name:` value and signed-preflight `archive:` path while acceptance also references the validated `ipa:` path. The manual acceptance and Instruments evidence must also record matching iOS version and release build metadata for the same physical-device pass, and that release build must match the signed-preflight `release build:` marker. If you use non-default artifact paths, set the matching environment variables before running it: `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE`.
 
 Until every signed archive, App Store, real-device, and manual evidence item is complete, record the known readiness blocker:
 
