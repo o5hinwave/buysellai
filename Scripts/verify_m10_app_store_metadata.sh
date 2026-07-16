@@ -6,6 +6,7 @@ allow_pending="${ALLOW_PENDING_METADATA:-0}"
 screenshot_dir="${M10_APP_STORE_SCREENSHOT_DIR:-AppStoreAssets/Screenshots/iPhone-16-Pro}"
 expected_screenshot_width="${M10_APP_STORE_SCREENSHOT_WIDTH:-1206}"
 expected_screenshot_height="${M10_APP_STORE_SCREENSHOT_HEIGHT:-2622}"
+screenshot_capture_test="BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured()"
 required_screenshots=(
     "01-home.png"
     "02-result.png"
@@ -39,6 +40,15 @@ is_placeholder() {
             ;;
     esac
     return 1
+}
+
+strip_inline_code() {
+    local value
+
+    value="$(trim "$1")"
+    value="${value#\`}"
+    value="${value%\`}"
+    printf '%s' "$value"
 }
 
 metadata_value() {
@@ -247,6 +257,41 @@ require_screenshot_assets() {
     done
 }
 
+require_screenshot_capture_result() {
+    local result_bundle
+    local tests_json
+
+    result_bundle="$(strip_inline_code "$(metadata_value "Result bundle")")"
+    if is_placeholder "$result_bundle"; then
+        pending "metadata 'Result bundle' is not recorded"
+        return
+    fi
+
+    if [[ ! -d "$result_bundle" ]]; then
+        pending "screenshot result bundle is missing at $result_bundle"
+        return
+    fi
+
+    if ! tests_json="$(xcrun xcresulttool get test-results tests --path "$result_bundle" --format json 2>/dev/null)"; then
+        pending "screenshot result bundle could not be read by xcresulttool"
+        return
+    fi
+
+    if ! awk -v test_id="\"nodeIdentifier\" : \"${screenshot_capture_test}\"" '
+        index($0, test_id) > 0 { found = 1; window = 0 }
+        found && /"result" : "Passed"/ { passed = 1; exit }
+        found {
+            window++
+            if (window > 8) {
+                exit
+            }
+        }
+        END { exit !(found && passed) }
+    ' <<< "$tests_json"; then
+        pending "screenshot capture test did not pass in $result_bundle"
+    fi
+}
+
 [[ -f "$metadata_file" ]] || fail "missing App Store metadata file at $metadata_file"
 
 required_fields=(
@@ -307,6 +352,7 @@ require_length_at_most "App name" 30
 require_length_at_most "Subtitle" 30
 require_length_at_most "Keywords" 100
 require_screenshot_assets
+require_screenshot_capture_result
 
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
@@ -332,4 +378,6 @@ printf 'screenshots: %s\n' "$(metadata_value "Screenshots")"
 printf 'screenshot directory: %s\n' "$screenshot_dir"
 printf 'screenshot files: %s\n' "${#required_screenshots[@]}"
 printf 'screenshot dimensions: %sx%s\n' "$expected_screenshot_width" "$expected_screenshot_height"
+printf 'screenshot result bundle: %s\n' "$(strip_inline_code "$(metadata_value "Result bundle")")"
+printf 'screenshot capture test: %s\n' "$screenshot_capture_test"
 printf 'app privacy: %s; tracking: %s\n' "$(metadata_value "App privacy data types")" "$(metadata_value "Data used for tracking")"

@@ -137,6 +137,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "screenshot directory:"))
         XCTAssertNotNil(script.range(of: "screenshot files: 4"))
         XCTAssertNotNil(script.range(of: "screenshot dimensions: 1206x2622"))
+        XCTAssertNotNil(script.range(of: "screenshot result bundle:"))
+        XCTAssertNotNil(script.range(of: "screenshot capture test: BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured()"))
     }
 
     func testSubmitReadinessScriptRequiresFinalAcceptanceDocsToBeComplete() throws {
@@ -213,7 +215,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "logs retain the same `bundle id:` marker"))
         XCTAssertNotNil(m10.range(of: "logs retain the same `sign in with apple:` entitlement marker"))
         XCTAssertNotNil(m10.range(of: "performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values"))
-        XCTAssertNotNil(m10.range(of: "App Store metadata `app name:`, `bundle id:`, `privacy policy:`, `support:`, `screenshots:`, `screenshot directory:`, `screenshot files:`, `screenshot dimensions:`, and `app privacy:`"))
+        XCTAssertNotNil(m10.range(of: "App Store metadata `app name:`, `bundle id:`, `privacy policy:`, `support:`, `screenshots:`, `screenshot directory:`, `screenshot files:`, `screenshot dimensions:`, `screenshot result bundle:`, `screenshot capture test:`, and `app privacy:`"))
         XCTAssertNotNil(m10.range(of: "screenshot dimensions:"))
         XCTAssertNotNil(m10.range(of: "backend `config:`, `project:`, `functions:`, `analyze item:`, and `listing bytes:`"))
         XCTAssertNotNil(m10.range(of: "real-device `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:`"))

@@ -1,6 +1,6 @@
 # App Store Screenshot Evidence
 
-These PNGs are simulator-captured evidence for the App Store Connect screenshot set.
+These PNGs are simulator-captured evidence for the App Store Connect screenshot set. The metadata verifier requires both the retained PNGs and a retained xcresult proving the screenshot capture UI test passed.
 
 ## iPhone 16 Pro
 

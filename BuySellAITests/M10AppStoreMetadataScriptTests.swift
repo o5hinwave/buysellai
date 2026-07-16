@@ -27,10 +27,15 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "03-marketplaces.png"))
         XCTAssertNotNil(script.range(of: "04-listing.png"))
         XCTAssertNotNil(script.range(of: "require_screenshot_assets"))
+        XCTAssertNotNil(script.range(of: "require_screenshot_capture_result"))
+        XCTAssertNotNil(script.range(of: "Result bundle"))
+        XCTAssertNotNil(script.range(of: "BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured()"))
+        XCTAssertNotNil(script.range(of: "xcrun xcresulttool get test-results tests"))
         XCTAssertNotNil(script.range(of: "sips -g pixelWidth"))
         XCTAssertNotNil(script.range(of: "sips -g pixelHeight"))
         XCTAssertNotNil(script.range(of: "expected ${expected_screenshot_width}x${expected_screenshot_height}"))
         XCTAssertNotNil(script.range(of: "metadata 'Screenshots' must reference screenshot file"))
+        XCTAssertNotNil(script.range(of: "screenshot capture test did not pass"))
         XCTAssertNotNil(script.range(of: "App Review notes"))
         XCTAssertNotNil(script.range(of: "Export compliance"))
         XCTAssertNotNil(script.range(of: "metadata '$field' is not recorded"))
@@ -44,6 +49,8 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "screenshot directory: %s"))
         XCTAssertNotNil(script.range(of: "screenshot files: %s"))
         XCTAssertNotNil(script.range(of: "screenshot dimensions: %sx%s"))
+        XCTAssertNotNil(script.range(of: "screenshot result bundle: %s"))
+        XCTAssertNotNil(script.range(of: "screenshot capture test: %s"))
         XCTAssertNotNil(script.range(of: "M10 App Store metadata evidence passed"))
     }
 
@@ -101,6 +108,8 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "App Store metadata evidence log"))
         XCTAssertNotNil(script.range(of: "screenshot files: 4"))
         XCTAssertNotNil(script.range(of: "screenshot dimensions: 1206x2622"))
+        XCTAssertNotNil(script.range(of: "screenshot result bundle:"))
+        XCTAssertNotNil(script.range(of: "screenshot capture test: BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured()"))
         XCTAssertNotNil(script.range(of: "M10AppStoreMetadataScriptTests/testMetadataVerifierRequiresConcreteAppStoreConnectSubmissionFields"))
         XCTAssertNotNil(script.range(of: "App Store metadata evidence is incomplete"))
     }
