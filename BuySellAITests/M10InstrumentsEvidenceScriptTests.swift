@@ -15,6 +15,8 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Home launch duration"))
         XCTAssertNotNil(script.range(of: "Camera ready duration"))
         XCTAssertNotNil(script.range(of: "Home steady memory"))
+        XCTAssertNotNil(script.range(of: "require_evidence_terms"))
+        XCTAssertNotNil(script.range(of: "require_evidence_any_term"))
     }
 
     func testInstrumentsEvidenceScriptEnforcesPromptBudgets() throws {
@@ -27,11 +29,22 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "no dropped"))
         XCTAssertNotNil(script.range(of: "P01"))
         XCTAssertNotNil(script.range(of: "P05"))
+        XCTAssertNotNil(script.range(of: "Home launch timing proof"))
+        XCTAssertNotNil(script.range(of: "camera preview timing proof"))
+        XCTAssertNotNil(script.range(of: "scroll frame-rate proof"))
+        XCTAssertNotNil(script.range(of: "memory allocation proof"))
+        XCTAssertNotNil(script.range(of: "retained profiling trace proof"))
     }
 
     func testInstrumentsEvidenceDocStartsPendingWithRequiredRows() throws {
         let evidence = try String(contentsOf: projectURL("M10_INSTRUMENTS.md"), encoding: .utf8)
 
+        XCTAssertNotNil(evidence.range(of: "Every Evidence cell must cite the observed profiling proof"))
+        XCTAssertNotNil(evidence.range(of: "P01 `home`, `launch`, `ms`"))
+        XCTAssertNotNil(evidence.range(of: "P02 `camera`, `preview`, `ms`"))
+        XCTAssertNotNil(evidence.range(of: "P03 `scroll` plus either `fps` or `no dropped`"))
+        XCTAssertNotNil(evidence.range(of: "P04 `memory`, `mb`"))
+        XCTAssertNotNil(evidence.range(of: "P05 `time profiler`, `allocations`, `trace`"))
         XCTAssertNotNil(evidence.range(of: "Time Profiler"))
         XCTAssertNotNil(evidence.range(of: "Allocations"))
         XCTAssertNotNil(evidence.range(of: "under 900 ms"))
@@ -54,6 +67,7 @@ final class M10InstrumentsEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Instruments evidence log"))
         XCTAssertNotNil(readme.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(readme.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
+        XCTAssertNotNil(readme.range(of: "generic \"passed\" notes are intentionally rejected"))
         XCTAssertNotNil(m10.range(of: "Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md"))
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_INSTRUMENTS=1"))
         XCTAssertNotNil(m10.range(of: "Run the M10 Instruments evidence verifier"))

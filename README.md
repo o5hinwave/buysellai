@@ -157,6 +157,8 @@ M10 Instruments evidence verifier after profiling a signed Release build on trus
 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
 ```
 
+Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected.
+
 Until signed physical-device Instruments profiling is complete, record the known profiler blocker:
 
 ```sh

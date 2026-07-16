@@ -127,6 +127,57 @@ require_trace_metadata() {
     fi
 }
 
+require_evidence_terms() {
+    local id="$1"
+    local label="$2"
+    shift 2
+
+    local evidence
+    local normalized
+    local term
+    local missing_terms=()
+
+    evidence="$(table_column "$id" 5)"
+    if is_placeholder "$evidence"; then
+        return
+    fi
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$evidence")"
+    for term in "$@"; do
+        if [[ "$normalized" != *"$term"* ]]; then
+            missing_terms+=("$term")
+        fi
+    done
+
+    if (( ${#missing_terms[@]} > 0 )); then
+        pending_items+=("$id evidence must mention $label: ${missing_terms[*]}")
+    fi
+}
+
+require_evidence_any_term() {
+    local id="$1"
+    local label="$2"
+    shift 2
+
+    local evidence
+    local normalized
+    local term
+
+    evidence="$(table_column "$id" 5)"
+    if is_placeholder "$evidence"; then
+        return
+    fi
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$evidence")"
+    for term in "$@"; do
+        if [[ "$normalized" == *"$term"* ]]; then
+            return
+        fi
+    done
+
+    pending_items+=("$id evidence must mention $label: one of $*")
+}
+
 [[ -f "$evidence_file" ]] || fail "missing Instruments evidence file at $evidence_file"
 
 row_count="$(
@@ -202,6 +253,13 @@ for index in "${!required_ids[@]}"; do
         pending_items+=("$id evidence is not recorded")
     fi
 done
+
+require_evidence_terms "P01" "Home launch timing proof" "home" "launch" "ms"
+require_evidence_terms "P02" "camera preview timing proof" "camera" "preview" "ms"
+require_evidence_terms "P03" "scroll frame-rate proof" "scroll"
+require_evidence_any_term "P03" "scroll frame-rate proof" "fps" "no dropped"
+require_evidence_terms "P04" "memory allocation proof" "memory" "mb"
+require_evidence_terms "P05" "retained profiling trace proof" "time profiler" "allocations" "trace"
 
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then

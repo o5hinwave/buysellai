@@ -2,6 +2,8 @@
 
 This file records the final Instruments pass required by the M10 performance target. The simulator performance verifier is repeatable local evidence, but this file must be filled from a signed Release build running on a trusted physical device before shipping.
 
+Every Evidence cell must cite the observed profiling proof, not only say "passed". The verifier checks for these proof terms: P01 `home`, `launch`, `ms`; P02 `camera`, `preview`, `ms`; P03 `scroll` plus either `fps` or `no dropped`; P04 `memory`, `mb`; P05 `time profiler`, `allocations`, `trace`.
+
 ## Metadata
 
 | Field | Value |
