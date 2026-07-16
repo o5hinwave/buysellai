@@ -14,9 +14,9 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Primary language | English (U.S.) |
 | Primary category | Shopping |
 | Secondary category | Lifestyle |
-| Age rating | TBD |
+| Age rating | 4+ (No objectionable content; camera/listing utility.) |
 | Made for Kids | No |
-| DSA trader status | TBD |
+| DSA trader status | Not a trader (assumption: individual App Store account owner is not acting as a business for this app; confirm in App Store Connect before submission.) |
 | License agreement | Apple Standard EULA |
 
 ## Version Metadata
@@ -24,7 +24,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Field | Value |
 | --- | --- |
 | Version number | 1.0 |
-| Copyright | TBD |
+| Copyright | 2026 Rhodes |
 | Subtitle | Snap. Pick. Sell. |
 | Promotional text | Turn stuff into cash in three taps. |
 | Description | Snap a photo of anything you want to sell. BuySell AI identifies the item, estimates a fair price, ranks common marketplaces, and writes a copy-ready listing you can paste into the marketplace you choose. Sign-in is optional, and guest history stays on device. |
@@ -71,8 +71,8 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Source commit | 2cbaf9521ecb2848d4ef9c321670dc8968055f34 |
 | Source path | AppStoreSite |
 | Local verification | `npm test`; `npm run lint` |
-| Deployment status | Private Sites deployment appgdep_6a592201306c81919134801e11be8f2c succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support`, `/privacy`, and `/terms` requests return HTTP 401. |
-| Public App Store URL status | Pending: `https://buysell-ai-support.o5hinwavve.chatgpt.site/support` and `https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy` are the intended App Store URLs, but the current Sites access policy is private and unauthenticated requests return HTTP 401. |
+| Deployment status | Sites deployment appgdep_6a592201306c81919134801e11be8f2c succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site; site access changed to public on 2026-07-16. |
+| Public App Store URL status | Verified 2026-07-16: unauthenticated `curl -L` requests return HTTP 200 for `/support`, `/privacy`, and `/terms`. |
 
 ## Commands
 
