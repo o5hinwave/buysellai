@@ -16,6 +16,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "testCameraSampleCapturePresentsResultThumbnailWithinSimulatorBudget"))
         XCTAssertNotNil(script.range(of: "testSlowHistoryLoadDoesNotBlockHomeLaunch"))
         XCTAssertNotNil(script.range(of: "testHomeHandlesFiveHundredRecentListingsAndScrolls"))
+        XCTAssertNotNil(script.range(of: "performance test: %s"))
     }
 
     func testPerformanceEvidenceScriptRequiresArchiveSizeBudget() throws {
@@ -40,6 +41,8 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "/tmp/buysell-submit-readiness-performance.log"))
         XCTAssertNotNil(script.range(of: "M10 performance evidence passed"))
         XCTAssertNotNil(script.range(of: "performance evidence log"))
+        XCTAssertNotNil(script.range(of: "required_performance_tests"))
+        XCTAssertNotNil(script.range(of: "performance test: $test_id"))
     }
 
     func testDocsRouteThroughPerformanceEvidenceGate() throws {

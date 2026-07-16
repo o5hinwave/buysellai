@@ -42,6 +42,13 @@ required_focused_tests=(
     "ConfigSecurityTests/testRuntimeConfigRejectsProviderSecretShapedAnonKeys()"
     "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning()"
 )
+required_performance_tests=(
+    "BuySellAIUITests/testHomeLaunchReachesPrimaryActionWithinSimulatorBudget()"
+    "BuySellAIUITests/testCameraReadyOverlayAppearsWithinSimulatorBudget()"
+    "BuySellAIUITests/testCameraSampleCapturePresentsResultThumbnailWithinSimulatorBudget()"
+    "BuySellAIUITests/testSlowHistoryLoadDoesNotBlockHomeLaunch()"
+    "BuySellAIUITests/testHomeHandlesFiveHundredRecentListingsAndScrolls()"
+)
 
 pending_items=()
 
@@ -583,6 +590,9 @@ require_file_contains "$performance_log" "archive log: $no_sign_log" "performanc
 require_file_contains "$performance_log" "bundle id: com.rhodes.buysellai" "performance evidence log"
 require_file_contains "$performance_log" "release build:" "performance evidence log"
 require_file_contains "$performance_log" "performance tests:" "performance evidence log"
+for test_id in "${required_performance_tests[@]}"; do
+    require_file_contains "$performance_log" "performance test: $test_id" "performance evidence log"
+done
 require_file_contains "$performance_log" "app size:" "performance evidence log"
 require_same_marker_value "$no_sign_log" "bundle id:" "no-sign archive verifier log" "$performance_log" "bundle id:" "performance evidence log" "performance bundle id"
 require_same_marker_value "$no_sign_log" "release build:" "no-sign archive verifier log" "$performance_log" "release build:" "performance evidence log" "performance release build"

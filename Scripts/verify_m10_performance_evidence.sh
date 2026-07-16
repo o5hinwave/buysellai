@@ -108,4 +108,7 @@ printf 'archive log: %s\n' "$archive_log"
 printf 'bundle id: %s\n' "$bundle_id"
 printf 'release build: %s\n' "$release_build"
 printf 'performance tests: %s\n' "${#required_tests[@]}"
+for test_id in "${required_tests[@]}"; do
+    printf 'performance test: %s\n' "$test_id"
+done
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"
