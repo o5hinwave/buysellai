@@ -3,6 +3,15 @@ set -euo pipefail
 
 metadata_file="${1:-${M10_APP_STORE_METADATA:-M10_APP_STORE_METADATA.md}}"
 allow_pending="${ALLOW_PENDING_METADATA:-0}"
+screenshot_dir="${M10_APP_STORE_SCREENSHOT_DIR:-AppStoreAssets/Screenshots/iPhone-16-Pro}"
+expected_screenshot_width="${M10_APP_STORE_SCREENSHOT_WIDTH:-1206}"
+expected_screenshot_height="${M10_APP_STORE_SCREENSHOT_HEIGHT:-2622}"
+required_screenshots=(
+    "01-home.png"
+    "02-result.png"
+    "03-marketplaces.png"
+    "04-listing.png"
+)
 pending_items=()
 
 fail() {
@@ -197,6 +206,47 @@ require_not_generic_pass() {
     esac
 }
 
+require_screenshot_assets() {
+    local screenshots_value
+    local file
+    local path
+    local format
+    local width
+    local height
+
+    if ! command -v sips >/dev/null 2>&1; then
+        pending "screenshot evidence requires sips to verify PNG dimensions"
+        return
+    fi
+
+    screenshots_value="$(metadata_value "Screenshots")"
+
+    for file in "${required_screenshots[@]}"; do
+        path="${screenshot_dir%/}/$file"
+
+        if [[ ! -f "$path" ]]; then
+            pending "screenshot asset is missing at $path"
+            continue
+        fi
+
+        format="$(sips -g format "$path" 2>/dev/null | awk -F': ' '/format:/ { print $2; exit }')"
+        width="$(sips -g pixelWidth "$path" 2>/dev/null | awk -F': ' '/pixelWidth:/ { print $2; exit }')"
+        height="$(sips -g pixelHeight "$path" 2>/dev/null | awk -F': ' '/pixelHeight:/ { print $2; exit }')"
+
+        if [[ "$format" != "png" ]]; then
+            pending "screenshot asset $path is '$format', expected png"
+        fi
+
+        if [[ "$width" != "$expected_screenshot_width" || "$height" != "$expected_screenshot_height" ]]; then
+            pending "screenshot asset $path is ${width:-0}x${height:-0}, expected ${expected_screenshot_width}x${expected_screenshot_height}"
+        fi
+
+        if ! is_placeholder "$screenshots_value" && [[ "$screenshots_value" != *"$file"* ]]; then
+            pending "metadata 'Screenshots' must reference screenshot file $file"
+        fi
+    done
+}
+
 [[ -f "$metadata_file" ]] || fail "missing App Store metadata file at $metadata_file"
 
 required_fields=(
@@ -256,6 +306,7 @@ require_public_https_url "Privacy Policy URL"
 require_length_at_most "App name" 30
 require_length_at_most "Subtitle" 30
 require_length_at_most "Keywords" 100
+require_screenshot_assets
 
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
@@ -278,4 +329,7 @@ printf 'version: %s\n' "$(metadata_value "Version number")"
 printf 'privacy policy: %s\n' "$(metadata_value "Privacy Policy URL")"
 printf 'support: %s\n' "$(metadata_value "Support URL")"
 printf 'screenshots: %s\n' "$(metadata_value "Screenshots")"
+printf 'screenshot directory: %s\n' "$screenshot_dir"
+printf 'screenshot files: %s\n' "${#required_screenshots[@]}"
+printf 'screenshot dimensions: %sx%s\n' "$expected_screenshot_width" "$expected_screenshot_height"
 printf 'app privacy: %s; tracking: %s\n' "$(metadata_value "App privacy data types")" "$(metadata_value "Data used for tracking")"

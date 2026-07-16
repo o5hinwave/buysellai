@@ -131,6 +131,9 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "App Store metadata evidence log"))
         XCTAssertNotNil(script.range(of: "app privacy:"))
         XCTAssertNotNil(script.range(of: "screenshots:"))
+        XCTAssertNotNil(script.range(of: "screenshot directory:"))
+        XCTAssertNotNil(script.range(of: "screenshot files: 4"))
+        XCTAssertNotNil(script.range(of: "screenshot dimensions: 1206x2622"))
     }
 
     func testSubmitReadinessScriptRequiresFinalAcceptanceDocsToBeComplete() throws {
@@ -192,6 +195,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "logs retain the same `sign in with apple:` entitlement marker"))
         XCTAssertNotNil(readme.range(of: "performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values"))
         XCTAssertNotNil(readme.range(of: "backend preflight log proves the live `analyze-image` and `generate-listing` Edge Functions"))
+        XCTAssertNotNil(readme.range(of: "screenshot dimensions:"))
         XCTAssertNotNil(readme.range(of: "manual acceptance and Instruments metadata reference the real-device preflight `device name:` value"))
         XCTAssertNotNil(readme.range(of: "signed archive validation proof from Xcode Organizer"))
         XCTAssertNotNil(readme.range(of: "matching iOS version and release build metadata"))
@@ -206,7 +210,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "logs retain the same `bundle id:` marker"))
         XCTAssertNotNil(m10.range(of: "logs retain the same `sign in with apple:` entitlement marker"))
         XCTAssertNotNil(m10.range(of: "performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values"))
-        XCTAssertNotNil(m10.range(of: "App Store metadata `app name:`, `bundle id:`, `privacy policy:`, `support:`, `screenshots:`, and `app privacy:`"))
+        XCTAssertNotNil(m10.range(of: "App Store metadata `app name:`, `bundle id:`, `privacy policy:`, `support:`, `screenshots:`, `screenshot directory:`, `screenshot files:`, `screenshot dimensions:`, and `app privacy:`"))
+        XCTAssertNotNil(m10.range(of: "screenshot dimensions:"))
         XCTAssertNotNil(m10.range(of: "backend `config:`, `project:`, `functions:`, `analyze item:`, and `listing bytes:`"))
         XCTAssertNotNil(m10.range(of: "real-device `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:`"))
         XCTAssertNotNil(m10.range(of: "acceptance `Signed archive` metadata references the signed-preflight `archive:` path"))

@@ -18,6 +18,12 @@ These PNGs are simulator-captured evidence for the App Store Connect screenshot 
 - Capture test: `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured`
 - Standalone capture bundle: `/tmp/buysell-m10-screenshots.xcresult`
 
+Verify the retained files and App Store metadata evidence with:
+
+```sh
+bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
+```
+
 Regenerate from a booted iPhone 16 Pro simulator by deleting the existing PNGs under `iPhone-16-Pro/`, then running:
 
 ```sh
