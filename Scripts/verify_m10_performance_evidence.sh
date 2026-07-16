@@ -3,7 +3,7 @@ set -euo pipefail
 
 result_path="${1:-${M10_PERFORMANCE_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}}"
 archive_log="${2:-${M10_PERFORMANCE_ARCHIVE_LOG:-/tmp/buysell-submit-readiness-nosign.log}}"
-min_tests="${M10_MIN_TESTS:-292}"
+min_tests="${M10_MIN_TESTS:-294}"
 max_app_size_kb="${M10_MAX_APP_SIZE_KB:-20480}"
 
 required_tests=(

@@ -13,8 +13,15 @@ struct AppConfig: Sendable {
             throw APIError.notConfigured
         }
         let data = try Data(contentsOf: url)
+        guard let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
+            throw APIError.notConfigured
+        }
+        return try AppConfig.make(dictionary: dictionary)
+    }
+
+    static func make(dictionary: [String: Any]) throws -> AppConfig {
         guard
-            let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
+            Set(dictionary.keys) == allowedConfigKeys,
             let supabaseURLString = dictionary["SUPABASE_URL"] as? String,
             let anonKey = dictionary["SUPABASE_ANON_KEY"] as? String
         else {
@@ -38,11 +45,21 @@ struct AppConfig: Sendable {
             components.query == nil,
             components.fragment == nil,
             let supabaseURL = URL(string: "https://\(host)"),
-            trimmedAnonKey.isEmpty == false
+            trimmedAnonKey.isEmpty == false,
+            Self.containsProviderSecretShape(trimmedAnonKey) == false
         else {
             throw APIError.notConfigured
         }
         return AppConfig(supabaseURL: supabaseURL, anonKey: trimmedAnonKey)
+    }
+
+    private static let allowedConfigKeys: Set<String> = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
+
+    private static func containsProviderSecretShape(_ value: String) -> Bool {
+        value.range(
+            of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}"#,
+            options: .regularExpression
+        ) != nil
     }
 
     private static func isProjectSupabaseHost(_ host: String) -> Bool {

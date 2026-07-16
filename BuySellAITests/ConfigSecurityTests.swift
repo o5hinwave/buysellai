@@ -20,6 +20,58 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertEqual(config.anonKey, "public-anon-key")
     }
 
+    func testRuntimeConfigAcceptsOnlyPublicSupabaseFields() throws {
+        let validConfig = try AppConfig.make(dictionary: [
+            "SUPABASE_URL": "https://project-ref.supabase.co",
+            "SUPABASE_ANON_KEY": "public-anon-key"
+        ])
+
+        XCTAssertEqual(validConfig.supabaseURL.absoluteString, "https://project-ref.supabase.co")
+
+        let configsWithExtraSecretSlots: [[String: Any]] = [
+            [
+                "SUPABASE_URL": "https://project-ref.supabase.co",
+                "SUPABASE_ANON_KEY": "public-anon-key",
+                "GEMINI_API_KEY": "server-side-only"
+            ],
+            [
+                "SUPABASE_URL": "https://project-ref.supabase.co",
+                "SUPABASE_ANON_KEY": "public-anon-key",
+                "OPENAI_API_KEY": "server-side-only"
+            ],
+            [
+                "SUPABASE_URL": "https://project-ref.supabase.co",
+                "SUPABASE_ANON_KEY": "public-anon-key",
+                "ANTHROPIC_API_KEY": "server-side-only"
+            ]
+        ]
+
+        for config in configsWithExtraSecretSlots {
+            XCTAssertThrowsError(try AppConfig.make(dictionary: config)) { error in
+                XCTAssertEqual(error as? APIError, .notConfigured)
+            }
+        }
+    }
+
+    func testRuntimeConfigRejectsProviderSecretShapedAnonKeys() throws {
+        let providerSecretLikeValues = [
+            "AQ." + String(repeating: "A", count: 30),
+            "AIza" + String(repeating: "A", count: 30),
+            "sk-" + String(repeating: "A", count: 30)
+        ]
+
+        for secretLikeValue in providerSecretLikeValues {
+            XCTAssertThrowsError(
+                try AppConfig.make(
+                    supabaseURLString: "https://project-ref.supabase.co",
+                    anonKey: secretLikeValue
+                )
+            ) { error in
+                XCTAssertEqual(error as? APIError, .notConfigured)
+            }
+        }
+    }
+
     func testRuntimeConfigNormalizesTrailingSlashOnProjectRoot() throws {
         let config = try AppConfig.make(
             supabaseURLString: "https://project-ref.supabase.co/",

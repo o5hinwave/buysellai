@@ -4,8 +4,8 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `292` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
-- No-sign Release iPhoneOS archive: compiles and packages a `3.1M` app bundle.
+- Simulator suite: `294` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- No-sign Release iPhoneOS archive: compiles and packages a `3188KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present, camera permission metadata is present, photo-library permission metadata is absent.
 - Secret scan: no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
