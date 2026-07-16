@@ -80,6 +80,26 @@ json_value() {
     '
 }
 
+trim() {
+    local value="$1"
+
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+is_placeholder_value() {
+    local value
+
+    value="$(trim "$1")"
+    case "$value" in
+        ""|"TBD"|"Pending"|"-"|"N/A")
+            return 0
+            ;;
+    esac
+    return 1
+}
+
 require_xcresult_passed() {
     local result_path="$1"
     local minimum_count="$2"
@@ -158,24 +178,77 @@ require_submit_checkboxes() {
 }
 
 require_result_log_final() {
-    local pending_rows
+    local rows=0
+    local pass_rows=0
+    local incomplete_rows=0
+    local row
+    local date
+    local tester
+    local device
+    local ios
+    local backend
+    local result
+    local notes
+    local field_name
+    local field_value
+    local field_index
 
-    pending_rows="$(
-        awk -F'|' '
+    while IFS='|' read -r _ date tester device ios backend result notes _; do
+        date="$(trim "$date")"
+        tester="$(trim "$tester")"
+        device="$(trim "$device")"
+        ios="$(trim "$ios")"
+        backend="$(trim "$backend")"
+        result="$(trim "$result")"
+        notes="$(trim "$notes")"
+
+        [[ "$date" == "Date" || "$date" == "---" || -z "$date" ]] && continue
+
+        rows=$((rows + 1))
+        row="Result Log row $rows"
+
+        field_index=0
+        for field_value in "$date" "$tester" "$device" "$ios" "$backend" "$result" "$notes"; do
+            case "$field_index" in
+                0) field_name="Date" ;;
+                1) field_name="Tester" ;;
+                2) field_name="Device" ;;
+                3) field_name="iOS" ;;
+                4) field_name="Backend" ;;
+                5) field_name="Result" ;;
+                6) field_name="Notes" ;;
+            esac
+
+            if is_placeholder_value "$field_value"; then
+                pending "M10_ACCEPTANCE.md $row has placeholder $field_name"
+                incomplete_rows=$((incomplete_rows + 1))
+            fi
+            field_index=$((field_index + 1))
+        done
+
+        if [[ "$result" == "Pass" ]]; then
+            pass_rows=$((pass_rows + 1))
+        else
+            pending "M10_ACCEPTANCE.md $row result is '$result', expected Pass"
+            incomplete_rows=$((incomplete_rows + 1))
+        fi
+    done < <(
+        awk '
             /^## Result Log/ { in_section = 1; next }
             /^## / && in_section { in_section = 0 }
-            in_section {
-                result = $7
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", result)
-                if (result == "Pending" || result == "TBD") {
-                    count++
-                }
-            }
-            END { print count + 0 }
+            in_section && /^\|/ { print }
         ' "$acceptance_file"
-    )"
+    )
 
-    if [[ "$pending_rows" != "0" ]]; then
+    if [[ "$rows" == "0" ]]; then
+        pending "M10_ACCEPTANCE.md Result Log needs at least one completed Pass row"
+    fi
+
+    if [[ "$pass_rows" == "0" ]]; then
+        pending "M10_ACCEPTANCE.md Result Log has no completed Pass row"
+    fi
+
+    if [[ "$incomplete_rows" != "0" ]]; then
         pending "M10_ACCEPTANCE.md Result Log still has pending rows"
     fi
 }

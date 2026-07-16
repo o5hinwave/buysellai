@@ -33,8 +33,13 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Submit-Ready Gates"))
         XCTAssertNotNil(script.range(of: "unchecked Submit-Ready Gates"))
         XCTAssertNotNil(script.range(of: "require_result_log_final"))
+        XCTAssertNotNil(script.range(of: "is_placeholder_value"))
+        XCTAssertNotNil(script.range(of: "Result Log row"))
         XCTAssertNotNil(script.range(of: "Result Log"))
+        XCTAssertNotNil(script.range(of: "Result Log needs at least one completed Pass row"))
+        XCTAssertNotNil(script.range(of: "Result Log has no completed Pass row"))
         XCTAssertNotNil(script.range(of: "Result Log still has pending rows"))
+        XCTAssertNotNil(script.range(of: "expected Pass"))
     }
 
     func testSubmitReadinessScriptHasPendingModeForExternalBlockers() throws {
@@ -59,6 +64,9 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-instruments.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-combined.log"))
+        XCTAssertNotNil(readme.range(of: "The final `Result Log` must include a complete `Pass` row"))
+        XCTAssertNotNil(m10.range(of: "Every field must be concrete"))
+        XCTAssertNotNil(m10.range(of: "`Result` must be `Pass`"))
     }
 
     private func projectURL(_ path: String) -> URL {

@@ -179,7 +179,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 
 The no-sign archive verifier validates the Release iPhoneOS build, privacy/package metadata, camera-only permissions, and the `<20 MB` app bundle target. A fully signed App Store archive, App Store Connect IPA export, and App Store Connect validation still require selecting a real Apple development team in Xcode and providing App Store Connect API-key credentials.
 
-Track final signed-archive and real-device acceptance in `M10_ACCEPTANCE.md`.
+Track final signed-archive and real-device acceptance in `M10_ACCEPTANCE.md`. The final `Result Log` must include a complete `Pass` row with concrete Date, Tester, Device, iOS, Backend, Result, and Notes fields before the combined submit-readiness gate can pass.
 
 ## Assumptions
 
