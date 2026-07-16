@@ -350,7 +350,7 @@ require_evidence_terms "A05" "marketplace list, payouts, Best, Lowest, and all 2
 require_evidence_terms "A06" "clipboard listing text with no leading whitespace or preamble proof" "clipboard" "listing text" "no leading whitespace" "no preamble"
 require_evidence_terms "A07" "Home recent listing thumbnail proof" "home" "thumbnail"
 require_evidence_terms "A08" "swipe-to-delete and haptic proof" "swipe" "haptic"
-require_evidence_terms "A09" "guest and signed-in relaunch persistence proof" "relaunch" "guest" "signed" "server"
+require_evidence_terms "A09" "guest SwiftData and signed-in server relaunch persistence proof" "relaunch" "guest" "swiftdata" "signed" "server"
 require_evidence_terms "A10" "Reduce Motion proof" "reduce motion"
 require_evidence_terms "A11" "dark mode contrast proof" "dark" "contrast"
 require_evidence_terms "A12" "landscape portrait stability proof" "landscape" "portrait"
