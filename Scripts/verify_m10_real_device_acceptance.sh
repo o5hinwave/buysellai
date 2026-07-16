@@ -273,6 +273,37 @@ required_fragments=(
     "Sign in with Apple migrates guest history once"
 )
 
+required_marketplace_terms=(
+    "27"
+    "ebay"
+    "craigslist"
+    "facebook"
+    "poshmark"
+    "mercari"
+    "offerup"
+    "depop"
+    "whatnot"
+    "grailed"
+    "reverb"
+    "etsy"
+    "stockx"
+    "goat"
+    "kidizen"
+    "vinted"
+    "vestiaire"
+    "the realreal"
+    "swappa"
+    "tradesy"
+    "chairish"
+    "bonanza"
+    "curtsy"
+    "nextdoor"
+    "amazon"
+    "shopify"
+    "ruby lane"
+    "tcgplayer"
+)
+
 pending_items=()
 
 for field in "${required_metadata[@]}"; do
@@ -315,7 +346,7 @@ require_evidence_terms "A01" "Home and no flicker proof" "home" "no flicker"
 require_evidence_terms "A02" "camera preview proof" "camera" "preview"
 require_evidence_terms "A03" "result sheet and thumbnail proof" "result sheet" "thumbnail"
 require_evidence_terms "A04" "analyze item and price proof" "item" "price"
-require_evidence_terms "A05" "marketplace list, payouts, Best, and Lowest proof" "platform" "payout" "best" "lowest"
+require_evidence_terms "A05" "marketplace list, payouts, Best, Lowest, and all 27 prompt platforms" "platform" "payout" "best" "lowest" "${required_marketplace_terms[@]}"
 require_evidence_terms "A06" "clipboard listing text with no leading whitespace or preamble proof" "clipboard" "listing text" "no leading whitespace" "no preamble"
 require_evidence_terms "A07" "Home recent listing thumbnail proof" "home" "thumbnail"
 require_evidence_terms "A08" "swipe-to-delete and haptic proof" "swipe" "haptic"
