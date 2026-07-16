@@ -77,6 +77,25 @@ marker_value() {
     ' "$file"
 }
 
+markdown_metadata_value() {
+    local file="$1"
+    local field="$2"
+
+    [[ -f "$file" ]] || return 1
+    awk -F'|' -v field="$field" '
+        {
+            key = $2
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", key)
+            if (key == field) {
+                value = $3
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                print value
+                exit
+            }
+        }
+    ' "$file"
+}
+
 require_same_marker_value() {
     local source_file="$1"
     local source_marker="$2"
@@ -95,6 +114,26 @@ require_same_marker_value() {
 
     if [[ "$source_value" != "$target_value" ]]; then
         pending "$evidence_label mismatch: $source_label has '$source_value', $target_label has '$target_value'"
+    fi
+}
+
+require_metadata_references_marker_value() {
+    local metadata_field="$1"
+    local log_file="$2"
+    local marker="$3"
+    local log_label="$4"
+    local evidence_label="$5"
+    local metadata
+    local marker_path
+
+    metadata="$(markdown_metadata_value "$acceptance_file" "$metadata_field" || true)"
+    marker_path="$(marker_value "$log_file" "$marker" || true)"
+
+    [[ -n "$metadata" && -n "$marker_path" ]] || return 0
+    is_placeholder_value "$metadata" && return 0
+
+    if [[ "$metadata" != *"$marker_path"* ]]; then
+        pending "$evidence_label mismatch: M10_ACCEPTANCE.md metadata '$metadata_field' must reference '$marker_path' from $log_label"
     fi
 }
 
@@ -339,6 +378,8 @@ require_file_contains "$export_log" "ipa:" "App Store export preflight log"
 require_file_contains "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
 require_file_contains "$validation_log" "ipa:" "App Store validation preflight log"
 require_same_marker_value "$export_log" "ipa:" "App Store export preflight log" "$validation_log" "ipa:" "App Store validation preflight log" "validated IPA"
+require_metadata_references_marker_value "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
+require_metadata_references_marker_value "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_file_contains "$real_device_log" "device:" "real-device preflight log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
