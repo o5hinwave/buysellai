@@ -45,6 +45,31 @@ final class AuthStore {
     }
 }
 
+enum AuthErrorPresentation {
+    static func message(for error: Error) -> String? {
+        if let code = authorizationErrorCode(for: error) {
+            return code == .canceled ? nil : "Sign in couldn't finish. Try again.".localized
+        }
+        if let apiError = error as? APIError {
+            return apiError.localizedDescription
+        }
+        if error is CancellationError {
+            return nil
+        }
+        return APIError.mapTransport(error).localizedDescription
+    }
+
+    private static func authorizationErrorCode(for error: Error) -> ASAuthorizationError.Code? {
+        if let authorizationError = error as? ASAuthorizationError {
+            return authorizationError.code
+        }
+
+        let nsError = error as NSError
+        guard nsError.domain == ASAuthorizationError.errorDomain else { return nil }
+        return ASAuthorizationError.Code(rawValue: nsError.code)
+    }
+}
+
 struct AppleSignInResult: Sendable {
     let userID: String
     let email: String?

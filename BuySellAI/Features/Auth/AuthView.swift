@@ -30,7 +30,9 @@ struct AuthView: View {
                                     await appStore.setSession(session)
                                     dismiss()
                                 } catch {
-                                    appStore.showToast(error.localizedDescription, style: .error)
+                                    if let message = AuthErrorPresentation.message(for: error) {
+                                        appStore.showToast(message, style: .error)
+                                    }
                                 }
                             }
                         }
@@ -136,7 +138,9 @@ private struct EmailSignInView: View {
                 let session = try await store.signInWithEmail()
                 await onSignIn(session)
             } catch {
-                onError(error.localizedDescription)
+                if let message = AuthErrorPresentation.message(for: error) {
+                    onError(message)
+                }
             }
         }
     }

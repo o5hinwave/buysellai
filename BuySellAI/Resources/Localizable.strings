@@ -152,6 +152,7 @@
 "Shoes" = "Shoes";
 "Sign in" = "Sign in";
 "Sign in to sync your listings across devices." = "Sign in to sync your listings across devices.";
+"Sign in couldn't finish. Try again." = "Sign in couldn't finish. Try again.";
 "Sign out" = "Sign out";
 "Signed in." = "Signed in.";
 "Signed in. Listings synced." = "Signed in. Listings synced.";
