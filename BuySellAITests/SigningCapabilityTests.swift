@@ -39,7 +39,7 @@ final class SigningCapabilityTests: XCTestCase {
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
 
         XCTAssertEqual(teamIDs, [""])
-        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, and Instruments pass are blocked until an Apple development team, App Store Connect API-key credentials, and trusted physical hardware are available"))
+        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, backend smoke preflight, and Instruments pass are blocked until an Apple development team, App Store Connect API-key credentials, real Supabase config, and trusted physical hardware are available"))
         XCTAssertNotNil(readme.range(of: "real-device acceptance pass remains blocked until the acceptance evidence table is recorded"))
     }
 

@@ -4,13 +4,13 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `297` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `300` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3188KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present. Privacy manifest content check passes for no tracking, app-functionality data use, and UserDefaults required-reason metadata. Camera permission metadata is present, and photo-library permission metadata is absent.
 - Secret scan: the scanner self-test passes and no Gemini/OpenAI-style provider secret patterns are present in repo text files outside generated bundles.
 - Simulator performance evidence: launch, camera-ready, capture-to-result thumbnail, slow history load, and 500-row history scroll UI tests pass in the full suite; `Scripts/verify_m10_performance_evidence.sh` passed with 5 performance tests and a `3188KB / 20480KB` app-size result.
-- Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, performance evidence log `/tmp/buysell-submit-readiness-performance.log`, Instruments evidence blocker log `/tmp/buysell-submit-readiness-instruments.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
+- Latest local evidence: focused submit-readiness preflight result bundle `/tmp/buysell-submit-readiness-focused.xcresult`, full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`, no-sign archive `/tmp/buysell-submit-readiness-nosign.xcarchive`, verifier log `/tmp/buysell-submit-readiness-nosign.log`, signed-preflight blocker log `/tmp/buysell-submit-readiness-signed-preflight.log`, App Store export blocker log `/tmp/buysell-submit-readiness-export-preflight.log`, App Store validation blocker log `/tmp/buysell-submit-readiness-app-store-validation-preflight.log`, backend blocker log `/tmp/buysell-submit-readiness-backend.log`, real-device blocker log `/tmp/buysell-submit-readiness-real-device-preflight.log`, real-device acceptance evidence blocker log `/tmp/buysell-submit-readiness-acceptance-evidence.log`, secret-scan log `/tmp/buysell-submit-readiness-secret-scan.log`, performance evidence log `/tmp/buysell-submit-readiness-performance.log`, Instruments evidence blocker log `/tmp/buysell-submit-readiness-instruments.log`, combined readiness blocker log `/tmp/buysell-submit-readiness-combined.log`.
 
 ## Commands
 
@@ -65,6 +65,21 @@ ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySel
 ```
 
 The default signed and App Store export preflights should pass without `ALLOW_MISSING_TEAM=1`, and the App Store validation preflight should pass without `ALLOW_MISSING_ASC=1`, before checking the signed archive gates below.
+
+Run the M10 backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
+
+```sh
+M10_ANALYZE_IMAGE_JPEG=/path/to/common-item.jpg \
+bash Scripts/preflight_m10_backend.sh BuySellAI/App/Config.plist
+```
+
+The backend preflight reads only the public Supabase URL and anon key from `Config.plist`; it does not print the anon key or any AI provider secret. Passing logs include `config:`, `project:`, `functions: analyze-image generate-listing`, `analyze item:`, and `listing bytes:` markers.
+
+Until the real Supabase config and sample image are available, record the known blocker:
+
+```sh
+ALLOW_MISSING_BACKEND=1 bash Scripts/preflight_m10_backend.sh
+```
 
 Run the real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
 
@@ -136,9 +151,9 @@ Run the combined M10 submit-readiness gate after producing every evidence artifa
 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
 ```
 
-The combined gate checks that pass logs retain their concrete artifact markers: no-sign `archive:`, `bundle id:`, `release build:`, and `app size:`, signed `archive:`, `bundle id:`, `sign in with apple:`, and `release build:`, App Store export `archive:`, `export:`, `ipa:`, `bundle id:`, `sign in with apple:`, and `release build:`, App Store validation `ipa:`, `bundle id:`, `sign in with apple:`, and `release build:`, real-device `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:`, secret scan `M10 secret scan self-test passed` and `M10 secret scan passed`, performance `full suite:`, `archive log:`, `bundle id:`, `release build:`, `performance tests:`, and `app size:`, and Instruments `file:`. It also confirms the local simulator result bundles, no-sign archive, no-sign verifier log, secret-scan log, and performance evidence log are fresh for the current HEAD commit; passing signed/App Store/real-device/Instruments artifacts must be fresh too. It confirms the App Store validation log references the same `ipa:` path produced by the export preflight, the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `bundle id:` marker, the signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `sign in with apple:` entitlement marker, the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs record the same `release build:` value, the performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values, the acceptance `Signed archive` metadata references the signed-preflight `archive:` path, the acceptance `Signed archive validation` metadata mentions Xcode Organizer validation proof and references the signed-preflight `archive:` path, the acceptance `App Store validation` metadata references the validated `ipa:` path, the acceptance and Instruments `Release build` metadata match the signed-preflight `release build:` value, the acceptance and Instruments `Device model` metadata reference the real-device preflight `device name:` value, the Instruments `Signed archive` metadata references the same signed-preflight `archive:` path, and the acceptance and Instruments `iOS version` and `Release build` metadata match for the same physical-device pass. If your retained artifacts use non-default paths, set `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, and `M10_INSTRUMENTS_EVIDENCE` before running this gate.
+The combined gate checks that pass logs retain their concrete artifact markers: no-sign `archive:`, `bundle id:`, `release build:`, and `app size:`, signed `archive:`, `bundle id:`, `sign in with apple:`, and `release build:`, App Store export `archive:`, `export:`, `ipa:`, `bundle id:`, `sign in with apple:`, and `release build:`, App Store validation `ipa:`, `bundle id:`, `sign in with apple:`, and `release build:`, backend `config:`, `project:`, `functions:`, `analyze item:`, and `listing bytes:`, real-device `device:`, `device name:`, `device id:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:`, secret scan `M10 secret scan self-test passed` and `M10 secret scan passed`, performance `full suite:`, `archive log:`, `bundle id:`, `release build:`, `performance tests:`, and `app size:`, and Instruments `file:`. It also confirms the local simulator result bundles, no-sign archive, no-sign verifier log, secret-scan log, and performance evidence log are fresh for the current HEAD commit; passing signed/App Store/backend/real-device/Instruments artifacts must be fresh too. It confirms the App Store validation log references the same `ipa:` path produced by the export preflight, the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `bundle id:` marker, the signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `sign in with apple:` entitlement marker, the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs record the same `release build:` value, the performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values, the acceptance `Signed archive` metadata references the signed-preflight `archive:` path, the acceptance `Signed archive validation` metadata mentions Xcode Organizer validation proof and references the signed-preflight `archive:` path, the acceptance `App Store validation` metadata references the validated `ipa:` path, the acceptance and Instruments `Release build` metadata match the signed-preflight `release build:` value, the acceptance and Instruments `Device model` metadata reference the real-device preflight `device name:` value, the Instruments `Signed archive` metadata references the same signed-preflight `archive:` path, and the acceptance and Instruments `iOS version` and `Release build` metadata match for the same physical-device pass. If your retained artifacts use non-default paths, set `M10_NOSIGN_ARCHIVE`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, `M10_BACKEND_LOG`, and `M10_INSTRUMENTS_EVIDENCE` before running this gate.
 
-Until the signed archive, App Store, real-device, and manual evidence gates are complete, record the known blockers:
+Until the signed archive, App Store, backend, real-device, and manual evidence gates are complete, record the known blockers:
 
 ```sh
 ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
@@ -151,6 +166,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 - [ ] Export an App Store Connect IPA with automatic signing enabled.
 - [ ] Validate the signed archive in Xcode Organizer.
 - [ ] Validate the exported IPA with App Store Connect API-key credentials.
+- [ ] Run the M10 backend smoke preflight against the production Supabase project.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [ ] Confirm App Store privacy manifest validation passes.
 - [ ] Run the real-device preflight on a trusted physical iPhone or iPad.

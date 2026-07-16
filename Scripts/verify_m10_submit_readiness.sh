@@ -19,12 +19,13 @@ no_sign_log="${M10_NOSIGN_LOG:-/tmp/buysell-submit-readiness-nosign.log}"
 signed_log="${M10_SIGNED_ARCHIVE_LOG:-/tmp/buysell-submit-readiness-signed-preflight.log}"
 export_log="${M10_APP_STORE_EXPORT_LOG:-/tmp/buysell-submit-readiness-export-preflight.log}"
 validation_log="${M10_APP_STORE_VALIDATION_LOG:-/tmp/buysell-submit-readiness-app-store-validation-preflight.log}"
+backend_log="${M10_BACKEND_LOG:-/tmp/buysell-submit-readiness-backend.log}"
 real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-device-preflight.log}"
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-297}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-53}"
+min_tests="${M10_MIN_TESTS:-300}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-56}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
     "SignedArchivePreflightScriptTests/testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured()"
@@ -33,6 +34,7 @@ required_focused_tests=(
     "RealDevicePreflightScriptTests/testRealDeviceAcceptanceVerifierParsesTimingEvidenceInMillisecondsOrSeconds()"
     "M10PerformanceEvidenceScriptTests/testPerformanceEvidenceScriptRequiresFullSuiteAndNamedBudgetTests()"
     "M10InstrumentsEvidenceScriptTests/testInstrumentsEvidenceScriptEnforcesPromptBudgets()"
+    "M10BackendPreflightScriptTests/testBackendPreflightScriptValidatesConfigAndCallsRequiredSupabaseRoutes()"
     "M10SubmitReadinessScriptTests/testSubmitReadinessScriptAggregatesAllM10EvidenceGates()"
     "ConfigSecurityTests/testRuntimeConfigRejectsProviderSecretShapedAnonKeys()"
     "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning()"
@@ -526,6 +528,12 @@ require_same_marker_value "$export_log" "sign in with apple:" "App Store export 
 require_same_marker_value "$no_sign_log" "release build:" "no-sign archive verifier log" "$signed_log" "release build:" "signed archive preflight log" "signed release build"
 require_same_marker_value "$signed_log" "release build:" "signed archive preflight log" "$export_log" "release build:" "App Store export preflight log" "exported release build"
 require_same_marker_value "$export_log" "release build:" "App Store export preflight log" "$validation_log" "release build:" "App Store validation preflight log" "validated release build"
+require_file_contains "$backend_log" "M10 backend preflight passed" "backend preflight log"
+require_file_contains "$backend_log" "config:" "backend preflight log"
+require_file_contains "$backend_log" "project:" "backend preflight log"
+require_file_contains "$backend_log" "functions: analyze-image generate-listing" "backend preflight log"
+require_file_contains "$backend_log" "analyze item:" "backend preflight log"
+require_file_contains "$backend_log" "listing bytes:" "backend preflight log"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive validation" "$signed_log" "archive:" "signed archive preflight log" "signed archive validation metadata"
 require_metadata_references_marker_value "$acceptance_file" "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
@@ -559,6 +567,7 @@ require_fresh_pass_log "$no_sign_log" "M10 local archive check passed" "no-sign 
 require_fresh_pass_log "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_fresh_pass_log "$export_log" "M10 App Store export preflight passed" "App Store export preflight log"
 require_fresh_pass_log "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
+require_fresh_pass_log "$backend_log" "M10 backend preflight passed" "backend preflight log"
 require_fresh_pass_log "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_fresh_pass_log "$secret_log" "M10 secret scan passed" "secret scan log"
 require_fresh_pass_log "$performance_log" "M10 performance evidence passed" "performance evidence log"
@@ -576,7 +585,7 @@ if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
         printf 'M10 submit readiness pending:\n'
         printf ' - %s\n' "${pending_items[@]}"
-        printf 'Complete every signed archive, App Store, real-device, and evidence item, then rerun without ALLOW_PENDING_M10=1.\n'
+        printf 'Complete every signed archive, App Store, backend, real-device, and evidence item, then rerun without ALLOW_PENDING_M10=1.\n'
         exit 0
     fi
 
