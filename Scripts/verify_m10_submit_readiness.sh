@@ -23,8 +23,8 @@ real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-devic
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-296}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-52}"
+min_tests="${M10_MIN_TESTS:-297}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-53}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
     "SignedArchivePreflightScriptTests/testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured()"
