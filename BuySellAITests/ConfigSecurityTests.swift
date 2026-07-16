@@ -170,6 +170,7 @@ final class ConfigSecurityTests: XCTestCase {
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
         XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
+        XCTAssertNotNil(readme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
         XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(m10.range(of: "The scan should print `M10 secret scan passed`."))
     }
