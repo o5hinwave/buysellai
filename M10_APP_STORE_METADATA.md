@@ -29,9 +29,9 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Promotional text | Turn stuff into cash in three taps. |
 | Description | Snap a photo of anything you want to sell. BuySell AI identifies the item, estimates a fair price, ranks common marketplaces, and writes a copy-ready listing you can paste into the marketplace you choose. Sign-in is optional, and guest history stays on device. |
 | Keywords | resale,garage sale,marketplace,camera,listings,declutter |
-| Support URL | TBD |
+| Support URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/support |
 | Marketing URL | N/A |
-| Privacy Policy URL | TBD |
+| Privacy Policy URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy |
 | Screenshots | iPhone screenshot evidence captured on iPhone 16 Pro simulator, iOS 18.6: `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png`. |
 | App Review notes | Reviewer path: launch BuySell AI, continue as a guest if prompted, grant camera access, capture a household item, choose a marketplace, review the generated listing, and copy the result. Sign in with Apple is optional for account history. Supabase Edge Functions provide item analysis and listing generation; no demo credentials are required for the guest flow. |
 
@@ -51,7 +51,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 
 | Field | Value |
 | --- | --- |
-| Privacy Policy URL | TBD |
+| Privacy Policy URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy |
 | App privacy data types | Email Address, User ID, Photos or Videos, Other User Content |
 | Data linked to user | Yes |
 | Data used for tracking | No |
@@ -72,7 +72,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Source path | AppStoreSite |
 | Local verification | `npm test`; `npm run lint` |
 | Deployment status | Private Sites deployment appgdep_6a592201306c81919134801e11be8f2c succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support`, `/privacy`, and `/terms` requests return HTTP 401. |
-| Public App Store URL status | Pending: App Store support/privacy URLs must be public and unauthenticated before these metadata fields can pass. |
+| Public App Store URL status | Pending: `https://buysell-ai-support.o5hinwavve.chatgpt.site/support` and `https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy` are the intended App Store URLs, but the current Sites access policy is private and unauthenticated requests return HTTP 401. |
 
 ## Commands
 
