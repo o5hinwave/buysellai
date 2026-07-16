@@ -219,7 +219,7 @@ final class AppStore {
                 history = remoteHistory
             } catch {
                 guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
-                showToast(error.localizedDescription, style: .error)
+                showToast(APIError.userMessage(for: error), style: .error)
             }
             return
         }
@@ -261,7 +261,7 @@ final class AppStore {
                     guard isCurrentSession(session), history.contains(where: { $0.id == entry.id }) else { return }
                     advanceHistoryMutationGeneration()
                     history.removeAll { $0.id == entry.id }
-                    showToast(error.localizedDescription, style: .error)
+                    showToast(APIError.userMessage(for: error), style: .error)
                 }
             }
             return
@@ -292,7 +292,7 @@ final class AppStore {
                 } catch {
                     guard isCurrentSession(session), isCurrentHistoryMutationGeneration(deleteGeneration) else { return }
                     history = previous
-                    showToast(error.localizedDescription, style: .error)
+                    showToast(APIError.userMessage(for: error), style: .error)
                 }
             }
             return
@@ -333,7 +333,7 @@ final class AppStore {
                 } catch {
                     guard isCurrentSession(session), isCurrentHistoryMutationGeneration(clearGeneration) else { return }
                     history = previous
-                    showToast(error.localizedDescription, style: .error)
+                    showToast(APIError.userMessage(for: error), style: .error)
                 }
             }
             return
@@ -394,7 +394,7 @@ final class AppStore {
             showToast("Account deleted.".localized, style: .success)
             return true
         } catch {
-            showToast(error.localizedDescription, style: .error)
+            showToast(APIError.userMessage(for: error), style: .error)
             return false
         }
     }
@@ -424,7 +424,7 @@ final class AppStore {
             showToast(text, style: .success)
         } catch {
             guard isCurrentSession(session), isCurrentHistoryMutationGeneration(sessionGeneration) else { return }
-            showToast(error.localizedDescription, style: .error)
+            showToast(APIError.userMessage(for: error), style: .error)
         }
     }
 

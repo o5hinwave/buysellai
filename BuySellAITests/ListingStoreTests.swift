@@ -95,6 +95,42 @@ final class ListingStoreTests: XCTestCase {
         XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
     }
 
+    func testGenerateTransportErrorUsesFriendlyOfflineCopy() async {
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _ in throw URLError(.notConnectedToInternet) }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .failed(APIError.offline.localizedDescription))
+    }
+
+    func testGenerateUnknownErrorDoesNotExposeRawDescription() async {
+        struct RawBackendError: LocalizedError {
+            var errorDescription: String? {
+                "NSURLErrorDomain Code=-1009 raw listing detail"
+            }
+        }
+
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _ in throw RawBackendError() }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
+        if case .failed(let message) = store.phase {
+            XCTAssertFalse(message.contains("NSURLErrorDomain"))
+            XCTAssertFalse(message.contains("raw listing detail"))
+        }
+    }
+
     private func waitUntil(
         _ condition: () -> Bool,
         file: StaticString = #filePath,

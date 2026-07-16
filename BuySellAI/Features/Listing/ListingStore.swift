@@ -74,7 +74,7 @@ final class ListingStore {
             phase = .failed(APIError.unknown.localizedDescription)
         } catch {
             guard currentGeneration == generation else { return }
-            phase = .failed(error.localizedDescription)
+            phase = .failed(APIError.userMessage(for: error))
         }
     }
 }

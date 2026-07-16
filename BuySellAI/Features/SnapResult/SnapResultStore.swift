@@ -75,7 +75,7 @@ final class SnapResultStore {
             AnalysisFeedback.performFailure()
         } catch {
             guard generation == analysisGeneration else { return }
-            phase = .failed(error.localizedDescription)
+            phase = .failed(APIError.userMessage(for: error))
             AnalysisFeedback.performFailure()
         }
     }

@@ -45,7 +45,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Files | `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png` |
 | Capture test | `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured` |
 | Result bundle | `/tmp/buysell-submit-readiness-full.xcresult` |
-| Result | Passed as part of the retained full simulator suite `/tmp/buysell-submit-readiness-full.xcresult` with 312 tests and 0 failures on 2026-07-16; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
+| Result | Passed as part of the retained full simulator suite `/tmp/buysell-submit-readiness-full.xcresult` with 316 tests and 0 failures on 2026-07-16; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
 
 ## App Privacy Answers
 

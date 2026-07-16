@@ -210,6 +210,10 @@ enum APIError: LocalizedError, Equatable {
         }
         return .unknown
     }
+
+    static func userMessage(for error: Error) -> String {
+        mapTransport(error).localizedDescription
+    }
 }
 
 private struct AnalyzeRequest: Encodable {

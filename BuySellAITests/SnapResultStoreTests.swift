@@ -148,6 +148,38 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
     }
 
+    func testAnalyzeTransportErrorUsesFriendlyOfflineCopy() async {
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in throw URLError(.notConnectedToInternet) }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .failed(APIError.offline.localizedDescription))
+    }
+
+    func testAnalyzeUnknownErrorDoesNotExposeRawDescription() async {
+        struct RawBackendError: LocalizedError {
+            var errorDescription: String? {
+                "NSURLErrorDomain Code=-1009 raw backend detail"
+            }
+        }
+
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in throw RawBackendError() }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
+        if case .failed(let message) = store.phase {
+            XCTAssertFalse(message.contains("NSURLErrorDomain"))
+            XCTAssertFalse(message.contains("raw backend detail"))
+        }
+    }
+
     private func waitUntil(
         _ condition: () -> Bool,
         file: StaticString = #filePath,
