@@ -199,6 +199,21 @@ final class APIClientTests: XCTestCase {
         }
     }
 
+    func testBlankGenerateListingResponseMapsToDecodingError() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"  \n\t  "}"#.utf8))
+        }
+
+        do {
+            _ = try await client.generateListing(item: Self.sampleItem, marketplace: .ebay)
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
     func testGenerateListingTimeoutMapsToFriendlyError() async throws {
         let client = try makeClient { _ in
             throw URLError(.timedOut)

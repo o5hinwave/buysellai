@@ -67,6 +67,9 @@ final class ListingStore {
         do {
             let generatedText = try await generateHandler(item, marketplace, accessToken)
             guard currentGeneration == generation else { return }
+            guard generatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+                throw APIError.decoding
+            }
             listingText = generatedText
             phase = .success
         } catch is CancellationError {

@@ -80,6 +80,9 @@ actor APIClient {
             body: payload
         )
         let response = try await perform(request, decoding: GenerateListingResponse.self)
+        guard response.listing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+            throw APIError.decoding
+        }
         return response.listing
     }
 
