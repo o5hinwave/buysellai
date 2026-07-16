@@ -14,18 +14,20 @@ no_sign_archive="${M10_NOSIGN_ARCHIVE:-/tmp/buysell-submit-readiness-nosign.xcar
 signed_archive="${M10_SIGNED_ARCHIVE:-/tmp/BuySellAI-signed.xcarchive}"
 app_store_archive="${M10_APP_STORE_ARCHIVE:-/tmp/BuySellAI-appstore.xcarchive}"
 app_store_export="${M10_APP_STORE_EXPORT:-/tmp/BuySellAI-appstore-export}"
+app_store_metadata="${M10_APP_STORE_METADATA:-M10_APP_STORE_METADATA.md}"
 instruments_evidence="${M10_INSTRUMENTS_EVIDENCE:-M10_INSTRUMENTS.md}"
 no_sign_log="${M10_NOSIGN_LOG:-/tmp/buysell-submit-readiness-nosign.log}"
 signed_log="${M10_SIGNED_ARCHIVE_LOG:-/tmp/buysell-submit-readiness-signed-preflight.log}"
 export_log="${M10_APP_STORE_EXPORT_LOG:-/tmp/buysell-submit-readiness-export-preflight.log}"
 validation_log="${M10_APP_STORE_VALIDATION_LOG:-/tmp/buysell-submit-readiness-app-store-validation-preflight.log}"
+metadata_log="${M10_APP_STORE_METADATA_LOG:-/tmp/buysell-submit-readiness-app-store-metadata.log}"
 backend_log="${M10_BACKEND_LOG:-/tmp/buysell-submit-readiness-backend.log}"
 real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-device-preflight.log}"
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-300}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-56}"
+min_tests="${M10_MIN_TESTS:-304}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-60}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
     "SignedArchivePreflightScriptTests/testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured()"
@@ -35,6 +37,7 @@ required_focused_tests=(
     "M10PerformanceEvidenceScriptTests/testPerformanceEvidenceScriptRequiresFullSuiteAndNamedBudgetTests()"
     "M10InstrumentsEvidenceScriptTests/testInstrumentsEvidenceScriptEnforcesPromptBudgets()"
     "M10BackendPreflightScriptTests/testBackendPreflightScriptValidatesConfigAndCallsRequiredSupabaseRoutes()"
+    "M10AppStoreMetadataScriptTests/testMetadataVerifierRequiresConcreteAppStoreConnectSubmissionFields()"
     "M10SubmitReadinessScriptTests/testSubmitReadinessScriptAggregatesAllM10EvidenceGates()"
     "ConfigSecurityTests/testRuntimeConfigRejectsProviderSecretShapedAnonKeys()"
     "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning()"
@@ -325,6 +328,14 @@ require_acceptance_evidence() {
     fi
 }
 
+require_app_store_metadata_evidence() {
+    local output
+
+    if ! output="$(bash "${script_dir}/verify_m10_app_store_metadata.sh" "$app_store_metadata" 2>&1)"; then
+        pending "App Store metadata evidence is incomplete: $(head -n 1 <<< "$output")"
+    fi
+}
+
 require_submit_checkboxes() {
     local unchecked
 
@@ -483,6 +494,7 @@ require_result_log_final() {
 }
 
 [[ -f "$acceptance_file" ]] || fail "missing acceptance file at $acceptance_file"
+[[ -f "$app_store_metadata" ]] || pending "App Store metadata evidence file is missing at $app_store_metadata"
 
 require_xcresult_passed "$full_result" "$min_tests" "full simulator suite"
 require_xcresult_passed "$focused_result" "$min_focused_tests" "focused M10 preflight suite"
@@ -519,6 +531,15 @@ require_file_contains "$validation_log" "ipa:" "App Store validation preflight l
 require_file_contains "$validation_log" "bundle id: com.rhodes.buysellai" "App Store validation preflight log"
 require_file_contains "$validation_log" "sign in with apple: Default" "App Store validation preflight log"
 require_file_contains "$validation_log" "release build:" "App Store validation preflight log"
+require_file_contains "$metadata_log" "M10 App Store metadata evidence passed" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "file: $app_store_metadata" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "app name: BuySell AI" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "bundle id: com.rhodes.buysellai" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "version:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "privacy policy:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "support:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshots:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "app privacy:" "App Store metadata evidence log"
 require_same_marker_value "$export_log" "ipa:" "App Store export preflight log" "$validation_log" "ipa:" "App Store validation preflight log" "validated IPA"
 require_same_marker_value "$no_sign_log" "bundle id:" "no-sign archive verifier log" "$signed_log" "bundle id:" "signed archive preflight log" "signed bundle id"
 require_same_marker_value "$signed_log" "bundle id:" "signed archive preflight log" "$export_log" "bundle id:" "App Store export preflight log" "exported bundle id"
@@ -567,6 +588,7 @@ require_fresh_pass_log "$no_sign_log" "M10 local archive check passed" "no-sign 
 require_fresh_pass_log "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_fresh_pass_log "$export_log" "M10 App Store export preflight passed" "App Store export preflight log"
 require_fresh_pass_log "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
+require_fresh_pass_log "$metadata_log" "M10 App Store metadata evidence passed" "App Store metadata evidence log"
 require_fresh_pass_log "$backend_log" "M10 backend preflight passed" "backend preflight log"
 require_fresh_pass_log "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_fresh_pass_log "$secret_log" "M10 secret scan passed" "secret scan log"
@@ -577,6 +599,7 @@ require_metadata_references_marker_value "$instruments_evidence" "Device model" 
 require_metadata_matches_marker_value "$instruments_evidence" "Release build" "$signed_log" "release build:" "signed archive preflight log" "Instruments release build metadata"
 require_same_metadata_value "$acceptance_file" "iOS version" "acceptance" "$instruments_evidence" "iOS version" "Instruments" "M10 physical-device iOS version"
 require_same_metadata_value "$acceptance_file" "Release build" "acceptance" "$instruments_evidence" "Release build" "Instruments" "M10 physical-device release build"
+require_app_store_metadata_evidence
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final
@@ -599,3 +622,4 @@ printf 'acceptance: %s\n' "$acceptance_file"
 printf 'full suite: %s\n' "$full_result"
 printf 'focused suite: %s\n' "$focused_result"
 printf 'archive: %s\n' "$no_sign_archive"
+printf 'metadata: %s\n' "$app_store_metadata"
