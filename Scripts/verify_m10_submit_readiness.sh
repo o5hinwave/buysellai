@@ -513,6 +513,7 @@ require_file_contains "$no_sign_log" "M10 local archive check passed" "no-sign a
 require_file_contains "$no_sign_log" "archive: $no_sign_archive" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "bundle id: com.rhodes.buysellai" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "release build:" "no-sign archive verifier log"
+require_file_contains "$no_sign_log" "app icon:" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "app size:" "no-sign archive verifier log"
 require_file_contains "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_file_contains "$signed_log" "archive: $signed_archive" "signed archive preflight log"

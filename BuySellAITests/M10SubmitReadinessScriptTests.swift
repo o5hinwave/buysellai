@@ -59,6 +59,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"[[ ! -e "$path" ]]"#))
         XCTAssertNotNil(script.range(of: #"[[ ! -f "$file" ]]"#))
         XCTAssertNotNil(script.range(of: "archive: $no_sign_archive"))
+        XCTAssertNotNil(script.range(of: "app icon:"))
         XCTAssertNotNil(script.range(of: "archive: $signed_archive"))
         XCTAssertNotNil(script.range(of: "archive: $app_store_archive"))
         XCTAssertNotNil(script.range(of: "export: $app_store_export"))
