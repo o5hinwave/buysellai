@@ -4,7 +4,7 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `305` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `307` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3188KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - Package checks: `PrivacyInfo.xcprivacy` is present. Privacy manifest content check passes for no tracking, app-functionality data use, and UserDefaults required-reason metadata. Camera permission metadata is present, and photo-library permission metadata is absent.
@@ -79,7 +79,7 @@ Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy po
 ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
-The App Store support/privacy site source is in `AppStoreSite/`. Sites version 1 is saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests return `401`, and the metadata verifier checks that filled-in Support URL and Privacy Policy URL values are publicly reachable without authentication. App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
+The App Store support/privacy site source is in `AppStoreSite/`. Sites version 3 is saved from commit `2cbaf9521ecb2848d4ef9c321670dc8968055f34` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated support, privacy, and terms requests return `401`, and the metadata verifier checks that filled-in Support URL and Privacy Policy URL values are publicly reachable without authentication. App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
 
 Run the M10 backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
 

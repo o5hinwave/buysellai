@@ -66,12 +66,12 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Field | Value |
 | --- | --- |
 | Sites project ID | appgprj_6a590c444ddc819199896a5205d985d8 |
-| Saved version | appgprj_6a590c444ddc819199896a5205d985d8~appgver_c5fbf72345a481918d56a7881b0addaf |
-| Version number | 1 |
-| Source commit | 752e7310c38df585eab036205f8500c630de4f1f |
+| Saved version | appgprj_6a590c444ddc819199896a5205d985d8~appgver_eba3c742747c8191ae3e04479bd74453 |
+| Version number | 3 |
+| Source commit | 2cbaf9521ecb2848d4ef9c321670dc8968055f34 |
 | Source path | AppStoreSite |
 | Local verification | `npm test`; `npm run lint` |
-| Deployment status | Private Sites deployment appgdep_6a590cf4dd60819186a89f4264dabf14 succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support` and `/privacy` requests return HTTP 401. |
+| Deployment status | Private Sites deployment appgdep_6a592201306c81919134801e11be8f2c succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support`, `/privacy`, and `/terms` requests return HTTP 401. |
 | Public App Store URL status | Pending: App Store support/privacy URLs must be public and unauthenticated before these metadata fields can pass. |
 
 ## Commands

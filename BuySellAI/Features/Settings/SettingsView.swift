@@ -80,12 +80,12 @@ struct SettingsView: View {
                     }
 
                     Button("Privacy policy".localized) {
-                        safariDestination = URL(string: "https://buysell.ai/privacy").map(SafariDestination.init)
+                        safariDestination = AppStoreLinks.url(for: .privacyPolicy).map(SafariDestination.init)
                     }
                     .accessibilityLabel("Privacy policy".localized)
 
                     Button("Terms".localized) {
-                        safariDestination = URL(string: "https://buysell.ai/terms").map(SafariDestination.init)
+                        safariDestination = AppStoreLinks.url(for: .terms).map(SafariDestination.init)
                     }
                     .accessibilityLabel("Terms".localized)
                 }

@@ -297,9 +297,9 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(settings.range(of: "import SafariServices"))
         XCTAssertNotNil(settings.range(of: #"Button("Privacy policy".localized)"#))
-        XCTAssertNotNil(settings.range(of: #"URL(string: "https://buysell.ai/privacy").map(SafariDestination.init)"#))
+        XCTAssertNotNil(settings.range(of: #"AppStoreLinks.url(for: .privacyPolicy).map(SafariDestination.init)"#))
         XCTAssertNotNil(settings.range(of: #"Button("Terms".localized)"#))
-        XCTAssertNotNil(settings.range(of: #"URL(string: "https://buysell.ai/terms").map(SafariDestination.init)"#))
+        XCTAssertNotNil(settings.range(of: #"AppStoreLinks.url(for: .terms).map(SafariDestination.init)"#))
         XCTAssertNotNil(settings.range(of: #".sheet(item: $safariDestination)"#))
         XCTAssertNotNil(settings.range(of: "private struct SafariView: UIViewControllerRepresentable"))
         XCTAssertNotNil(settings.range(of: "SFSafariViewController(url: url)"))
