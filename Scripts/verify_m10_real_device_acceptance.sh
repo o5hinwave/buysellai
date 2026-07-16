@@ -234,6 +234,7 @@ required_metadata=(
     "Date"
     "Release build"
     "Signed archive"
+    "Signed archive validation"
     "App Store validation"
 )
 
@@ -318,6 +319,9 @@ require_metadata_number "iOS version" "iOS version"
 require_metadata_date "Date"
 require_metadata_number "Release build" "release build"
 require_metadata_terms "Signed archive" "signed archive artifact" "archive"
+require_metadata_terms "Signed archive validation" "signed archive validation artifact" "archive"
+require_metadata_terms "Signed archive validation" "Xcode Organizer validation proof" "xcode" "organizer"
+require_metadata_any_term "Signed archive validation" "archive validation proof" "validation" "validated"
 require_metadata_any_term "App Store validation" "App Store validation proof" "validation" "validated" "altool" "app store" "ipa"
 
 for index in "${!required_ids[@]}"; do

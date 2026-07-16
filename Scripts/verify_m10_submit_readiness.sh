@@ -478,6 +478,7 @@ require_same_marker_value "$no_sign_log" "release build:" "no-sign archive verif
 require_same_marker_value "$signed_log" "release build:" "signed archive preflight log" "$export_log" "release build:" "App Store export preflight log" "exported release build"
 require_same_marker_value "$export_log" "release build:" "App Store export preflight log" "$validation_log" "release build:" "App Store validation preflight log" "validated release build"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
+require_metadata_references_marker_value "$acceptance_file" "Signed archive validation" "$signed_log" "archive:" "signed archive preflight log" "signed archive validation metadata"
 require_metadata_references_marker_value "$acceptance_file" "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
 require_metadata_matches_marker_value "$acceptance_file" "Release build" "$signed_log" "release build:" "signed archive preflight log" "acceptance release build metadata"
 require_file_contains "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
