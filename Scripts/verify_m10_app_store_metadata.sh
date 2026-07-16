@@ -135,6 +135,37 @@ require_https_url() {
     fi
 }
 
+require_public_https_url() {
+    local field="$1"
+    local value
+    local status
+    local timeout_seconds
+
+    value="$(metadata_value "$field")"
+    is_placeholder "$value" && return
+
+    [[ "$value" =~ ^https://[^[:space:]]+\.[^[:space:]]+ ]] || return
+
+    if ! command -v curl >/dev/null 2>&1; then
+        pending "metadata '$field' requires curl to verify public URL reachability"
+        return
+    fi
+
+    timeout_seconds="${M10_METADATA_URL_TIMEOUT:-10}"
+    if ! status="$(
+        curl -L -sS -o /dev/null -w "%{http_code}" \
+            --max-time "$timeout_seconds" \
+            "$value" 2>/dev/null
+    )"; then
+        pending "metadata '$field' must be publicly reachable without authentication"
+        return
+    fi
+
+    if [[ ! "$status" =~ ^[0-9][0-9][0-9]$ ]] || (( status < 200 || status >= 400 )); then
+        pending "metadata '$field' must be publicly reachable without authentication (HTTP $status)"
+    fi
+}
+
 require_length_at_most() {
     local field="$1"
     local max_bytes="$2"
@@ -220,6 +251,8 @@ require_terms "Screenshots" "screenshot evidence" "screenshot" "iphone"
 require_terms "App Review notes" "review instructions" "camera" "sign in with apple" "guest" "supabase"
 require_https_url "Support URL"
 require_https_url "Privacy Policy URL"
+require_public_https_url "Support URL"
+require_public_https_url "Privacy Policy URL"
 require_length_at_most "App name" 30
 require_length_at_most "Subtitle" 30
 require_length_at_most "Keywords" 100

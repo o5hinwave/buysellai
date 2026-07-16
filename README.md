@@ -117,13 +117,13 @@ App Store Connect metadata evidence after product-page metadata, screenshots, pr
 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
-The metadata verifier checks concrete App Store Connect fields, HTTPS privacy/support URLs, screenshot evidence, review notes, the 100-byte keyword limit, and privacy answers matching `PrivacyInfo.xcprivacy`. Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy policy:`, `support:`, `screenshots:`, and `app privacy:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-app-store-metadata.log` for the combined gate. Until those fields are complete, record the known blocker:
+The metadata verifier checks concrete App Store Connect fields, unauthenticated public HTTPS privacy/support URLs, screenshot evidence, review notes, the 100-byte keyword limit, and privacy answers matching `PrivacyInfo.xcprivacy`. Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy policy:`, `support:`, `screenshots:`, and `app privacy:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-app-store-metadata.log` for the combined gate. Until those fields are complete, record the known blocker:
 
 ```sh
 ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
-The App Store support/privacy site source lives in `AppStoreSite/`. Sites version 1 was saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and deployed privately at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests currently return `401`, so the App Store Support URL and Privacy Policy URL fields must stay pending until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/` from a passing iPhone 16 Pro simulator capture. Current metadata blockers are age rating, DSA trader status, copyright, and public support/privacy URLs.
+The App Store support/privacy site source lives in `AppStoreSite/`. Sites version 1 was saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and deployed privately at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests currently return `401`, and the metadata verifier now checks that filled-in Support URL and Privacy Policy URL values are publicly reachable without authentication. The App Store Support URL and Privacy Policy URL fields must stay pending until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/` from a passing iPhone 16 Pro simulator capture. Current metadata blockers are age rating, DSA trader status, copyright, and public support/privacy URLs.
 
 Backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
 

@@ -67,7 +67,7 @@ ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySel
 
 The default signed and App Store export preflights should pass without `ALLOW_MISSING_TEAM=1`, and the App Store validation preflight should pass without `ALLOW_MISSING_ASC=1`, before checking the signed archive gates below.
 
-Run the App Store Connect metadata evidence verifier after product-page metadata, screenshots, privacy/support URLs, app privacy answers, age rating, DSA status, and review notes are recorded:
+Run the App Store Connect metadata evidence verifier after product-page metadata, screenshots, public unauthenticated privacy/support URLs, app privacy answers, age rating, DSA status, and review notes are recorded:
 
 ```sh
 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
@@ -79,7 +79,7 @@ Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy po
 ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
 ```
 
-The App Store support/privacy site source is in `AppStoreSite/`. Sites version 1 is saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests return `401`, so App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
+The App Store support/privacy site source is in `AppStoreSite/`. Sites version 1 is saved from commit `752e7310c38df585eab036205f8500c630de4f1f` and privately deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; unauthenticated requests return `401`, and the metadata verifier checks that filled-in Support URL and Privacy Policy URL values are publicly reachable without authentication. App Store support/privacy URL evidence remains blocked until the site is made public or a public custom domain is attached. App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro/`.
 
 Run the M10 backend smoke preflight after `Config.plist`, the deployed Edge Functions, and a retained JPEG sample are available:
 

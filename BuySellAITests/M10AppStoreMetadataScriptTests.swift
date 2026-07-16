@@ -22,6 +22,11 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Export compliance"))
         XCTAssertNotNil(script.range(of: "metadata '$field' is not recorded"))
         XCTAssertNotNil(script.range(of: "metadata '$field' must be a full https URL"))
+        XCTAssertNotNil(script.range(of: "require_public_https_url \"Support URL\""))
+        XCTAssertNotNil(script.range(of: "require_public_https_url \"Privacy Policy URL\""))
+        XCTAssertNotNil(script.range(of: #"curl -L -sS -o /dev/null -w "%{http_code}""#))
+        XCTAssertNotNil(script.range(of: "publicly reachable without authentication"))
+        XCTAssertNotNil(script.range(of: "HTTP $status"))
         XCTAssertNotNil(script.range(of: "expected <= ${max_bytes}"))
         XCTAssertNotNil(script.range(of: "M10 App Store metadata evidence passed"))
     }

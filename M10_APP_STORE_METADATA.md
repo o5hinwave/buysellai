@@ -2,7 +2,7 @@
 
 This file records the App Store Connect metadata that must be ready before final submission. It is separate from the signed binary checks: the archive can validate while the product page, app privacy answers, screenshots, support URL, and review notes are still incomplete.
 
-Every required field below must be concrete before `Scripts/verify_m10_app_store_metadata.sh` can pass. Do not replace `TBD` with generic "passed" notes.
+Every required field below must be concrete before `Scripts/verify_m10_app_store_metadata.sh` can pass. Do not replace `TBD` with generic "passed" notes. Filled-in Support URL and Privacy Policy URL values must be public HTTPS pages reachable without authentication.
 
 ## Required App Information
 
@@ -72,7 +72,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Source path | AppStoreSite |
 | Local verification | `npm test`; `npm run lint` |
 | Deployment status | Private Sites deployment appgdep_6a590cf4dd60819186a89f4264dabf14 succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site, but unauthenticated `/support` and `/privacy` requests return HTTP 401. |
-| Public App Store URL status | Pending: App Store support/privacy URLs must be public before these metadata fields can pass. |
+| Public App Store URL status | Pending: App Store support/privacy URLs must be public and unauthenticated before these metadata fields can pass. |
 
 ## Commands
 
