@@ -94,6 +94,33 @@ require_evidence_duration_at_most() {
     fi
 }
 
+require_evidence_terms() {
+    local id="$1"
+    local label="$2"
+    shift 2
+
+    local evidence
+    local normalized
+    local term
+    local missing_terms=()
+
+    evidence="$(acceptance_column "$id" 5)"
+    if is_placeholder "$evidence"; then
+        return
+    fi
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$evidence")"
+    for term in "$@"; do
+        if [[ "$normalized" != *"$term"* ]]; then
+            missing_terms+=("$term")
+        fi
+    done
+
+    if (( ${#missing_terms[@]} > 0 )); then
+        pending_items+=("$id evidence must mention $label: ${missing_terms[*]}")
+    fi
+}
+
 [[ -f "$acceptance_file" ]] || fail "missing acceptance file at $acceptance_file"
 
 row_count="$(
@@ -188,6 +215,21 @@ done
 require_evidence_duration_at_most "A01" "1000" "cold-launch"
 require_evidence_duration_at_most "A02" "400" "camera-ready"
 require_evidence_duration_at_most "A03" "300" "capture-to-result"
+require_evidence_terms "A01" "Home and no flicker proof" "home" "no flicker"
+require_evidence_terms "A02" "camera preview proof" "camera" "preview"
+require_evidence_terms "A03" "result sheet and thumbnail proof" "result sheet" "thumbnail"
+require_evidence_terms "A04" "analyze item and price proof" "item" "price"
+require_evidence_terms "A05" "marketplace list plus Best and Lowest proof" "platform" "best" "lowest"
+require_evidence_terms "A06" "clipboard listing text with no preamble proof" "clipboard" "listing text" "no preamble"
+require_evidence_terms "A07" "Home recent listing thumbnail proof" "home" "thumbnail"
+require_evidence_terms "A08" "swipe-to-delete and haptic proof" "swipe" "haptic"
+require_evidence_terms "A09" "guest and signed-in relaunch persistence proof" "relaunch" "guest" "signed" "server"
+require_evidence_terms "A10" "Reduce Motion proof" "reduce motion"
+require_evidence_terms "A11" "dark mode contrast proof" "dark" "contrast"
+require_evidence_terms "A12" "landscape portrait stability proof" "landscape" "portrait"
+require_evidence_terms "A13" "VoiceOver copy-flow proof" "voiceover" "copy"
+require_evidence_terms "A14" "Airplane mode offline retry proof" "airplane" "offline" "retry"
+require_evidence_terms "A15" "Sign in with Apple migration and duplicate proof" "sign in with apple" "migration" "duplicate"
 
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then

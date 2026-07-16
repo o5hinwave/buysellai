@@ -155,6 +155,8 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 
 Record the metadata before checking the items. Run `Scripts/preflight_m10_real_device.sh` first so the app has a Release build path for the same trusted device, then update every Result to `Pass` and replace every `TBD` evidence note. For A01-A03, include the measured duration in `ms` or seconds in the Evidence cell so the verifier can enforce the launch, camera-ready, and capture-to-result budgets.
 
+Every Evidence cell must cite the observed proof, not only say "passed". The verifier checks for these proof terms: A01 `home`, `no flicker`; A02 `camera`, `preview`; A03 `result sheet`, `thumbnail`; A04 `item`, `price`; A05 `platform`, `best`, `lowest`; A06 `clipboard`, `listing text`, `no preamble`; A07 `home`, `thumbnail`; A08 `swipe`, `haptic`; A09 `relaunch`, `guest`, `signed`, `server`; A10 `reduce motion`; A11 `dark`, `contrast`; A12 `landscape`, `portrait`; A13 `voiceover`, `copy`; A14 `airplane`, `offline`, `retry`; A15 `sign in with apple`, `migration`, `duplicate`.
+
 | Field | Value |
 | --- | --- |
 | Device model | TBD |

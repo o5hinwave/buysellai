@@ -129,6 +129,8 @@ Real-device acceptance evidence check after the manual device pass:
 bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
 ```
 
+Each real-device acceptance Evidence cell must include the observed proof terms documented in `M10_ACCEPTANCE.md`; generic "passed" notes are intentionally rejected.
+
 Until the manual device pass is complete, record the known acceptance blocker:
 
 ```sh
