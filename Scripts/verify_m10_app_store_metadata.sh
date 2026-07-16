@@ -228,7 +228,7 @@ if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
         printf 'M10 App Store metadata pending:\n'
         printf ' - %s\n' "${pending_items[@]}"
-        printf 'Complete App Store Connect metadata, screenshots, privacy/support URLs, age rating, DSA status, and review notes, then rerun without ALLOW_PENDING_METADATA=1.\n'
+        printf 'Complete the listed App Store Connect metadata items, then rerun without ALLOW_PENDING_METADATA=1.\n'
         exit 0
     fi
 

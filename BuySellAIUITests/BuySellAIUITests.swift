@@ -792,6 +792,52 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Wrong item — retake"].exists)
     }
 
+    func testM10AppStoreScreenshotsCanBeCaptured() throws {
+        let screenshotURL = appStoreScreenshotDirectory()
+
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        try saveAppStoreScreenshot("01-home", in: screenshotURL)
+
+        snap.tap()
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["Item photo"].waitForExistence(timeout: 5))
+        try saveAppStoreScreenshot("02-result", in: screenshotURL)
+
+        looksRight.tap()
+        XCTAssertTrue(app.buttons["MarketplaceSummary.best.craigslist"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["MarketplaceRow.ebay"].waitForExistence(timeout: 5))
+        try saveAppStoreScreenshot("03-marketplaces", in: screenshotURL)
+
+        tapMarketplace("ebay", in: app)
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Generated listing text"].waitForExistence(timeout: 5))
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: copy)
+        waitForExpectations(timeout: 5)
+        try saveAppStoreScreenshot("04-listing", in: screenshotURL)
+    }
+
+    private func appStoreScreenshotDirectory() -> URL {
+        if let explicitPath = ProcessInfo.processInfo.environment["M10_SCREENSHOT_DIR"], explicitPath.isEmpty == false {
+            return URL(fileURLWithPath: explicitPath, isDirectory: true)
+        }
+
+        return URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("AppStoreAssets")
+            .appendingPathComponent("Screenshots")
+            .appendingPathComponent("iPhone-16-Pro")
+    }
+
     private func tapMarketplace(
         _ rawValue: String,
         in app: XCUIApplication,
@@ -809,6 +855,35 @@ final class BuySellAIUITests: XCTestCase {
 
         XCTAssertTrue(row.isHittable, "Marketplace row was not hittable: \(rawValue)", file: file, line: line)
         row.tap()
+    }
+
+    private func saveAppStoreScreenshot(
+        _ name: String,
+        in directory: URL,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let screenshot = XCUIScreen.main.screenshot()
+        let destination = directory.appendingPathComponent("\(name).png")
+        if FileManager.default.fileExists(atPath: destination.path) == false {
+            try screenshot.pngRepresentation.write(to: destination, options: .atomic)
+        }
+
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        let byteCount = try FileManager.default
+            .attributesOfItem(atPath: destination.path)[.size] as? NSNumber
+        XCTAssertGreaterThan(
+            byteCount?.intValue ?? 0,
+            10_000,
+            "Screenshot \(name) was not written with meaningful PNG data.",
+            file: file,
+            line: line
+        )
     }
 
     private func assertSettingsState(_ expected: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {

@@ -32,8 +32,20 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Support URL | TBD |
 | Marketing URL | N/A |
 | Privacy Policy URL | TBD |
-| Screenshots | TBD |
+| Screenshots | iPhone screenshot evidence captured on iPhone 16 Pro simulator, iOS 18.6: `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png`. |
 | App Review notes | Reviewer path: launch BuySell AI, continue as a guest if prompted, grant camera access, capture a household item, choose a marketplace, review the generated listing, and copy the result. Sign in with Apple is optional for account history. Supabase Edge Functions provide item analysis and listing generation; no demo credentials are required for the guest flow. |
+
+## Screenshot Evidence
+
+| Field | Value |
+| --- | --- |
+| Device | iPhone 16 Pro simulator |
+| iOS | 18.6 |
+| Dimensions | 1206 x 2622 PNG |
+| Files | `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png` |
+| Capture test | `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured` |
+| Result bundle | `/tmp/buysell-m10-screenshots.xcresult` |
+| Result | Passed 1 UI test with 0 failures on 2026-07-16 |
 
 ## App Privacy Answers
 
