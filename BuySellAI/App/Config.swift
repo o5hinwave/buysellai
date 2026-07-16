@@ -46,6 +46,7 @@ struct AppConfig: Sendable {
             components.fragment == nil,
             let supabaseURL = URL(string: "https://\(host)"),
             trimmedAnonKey.isEmpty == false,
+            Self.isExamplePlaceholder(host: host, anonKey: trimmedAnonKey) == false,
             Self.containsProviderSecretShape(trimmedAnonKey) == false
         else {
             throw APIError.notConfigured
@@ -60,6 +61,10 @@ struct AppConfig: Sendable {
             of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}"#,
             options: .regularExpression
         ) != nil
+    }
+
+    private static func isExamplePlaceholder(host: String, anonKey: String) -> Bool {
+        host == "project-ref.supabase.co" || anonKey == "public-anon-key"
     }
 
     private static func isProjectSupabaseHost(_ host: String) -> Bool {

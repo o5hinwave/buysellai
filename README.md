@@ -132,7 +132,7 @@ M10_ANALYZE_IMAGE_JPEG=/path/to/common-item.jpg \
 bash Scripts/preflight_m10_backend.sh BuySellAI/App/Config.plist
 ```
 
-The backend preflight reads only the public Supabase URL and anon key from `Config.plist`; it does not print the anon key or any AI provider secret. Passing logs include `config:`, `project:`, `functions: analyze-image generate-listing`, `analyze item:`, and `listing bytes:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-backend.log` for the combined gate. Until the real Supabase config and sample image are available, record the known blocker:
+The backend preflight reads only the public Supabase URL and anon key from `Config.plist`; it does not print the anon key or any AI provider secret. The app and preflight both reject copied `Config.plist.example` placeholders before making backend requests. Passing logs include `config:`, `project:`, `functions: analyze-image generate-listing`, `analyze item:`, and `listing bytes:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-backend.log` for the combined gate. Until the real Supabase config and sample image are available, record the known blocker:
 
 ```sh
 ALLOW_MISSING_BACKEND=1 bash Scripts/preflight_m10_backend.sh

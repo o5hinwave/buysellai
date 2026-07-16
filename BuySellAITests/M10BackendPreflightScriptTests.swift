@@ -11,6 +11,8 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "BuySellAI/App/Config.plist"))
         XCTAssertNotNil(script.range(of: "SUPABASE_URL"))
         XCTAssertNotNil(script.range(of: "SUPABASE_ANON_KEY"))
+        XCTAssertNotNil(script.range(of: "SUPABASE_URL still contains the Config.plist.example placeholder"))
+        XCTAssertNotNil(script.range(of: "SUPABASE_ANON_KEY still contains the Config.plist.example placeholder"))
         XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
@@ -35,6 +37,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
 
         XCTAssertNotNil(script.range(of: "M10 backend preflight pending"))
         XCTAssertNotNil(script.range(of: "Config.plist is missing"))
+        XCTAssertNotNil(script.range(of: "Config.plist.example placeholder"))
         XCTAssertNotNil(script.range(of: "M10_ANALYZE_IMAGE_JPEG or M10_ANALYZE_IMAGE_DATA_URL is unset"))
         XCTAssertNotNil(script.range(of: "Complete real Supabase config, deployed Edge Functions, and an analyze sample image"))
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_BACKEND=1"))

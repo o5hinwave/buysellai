@@ -11,37 +11,37 @@ final class ConfigSecurityTests: XCTestCase {
 
     func testRuntimeConfigAcceptsHTTPSProjectSupabaseURLAndTrimsValues() throws {
         let config = try AppConfig.make(
-            supabaseURLString: "  https://project-ref.supabase.co  ",
-            anonKey: "  public-anon-key  "
+            supabaseURLString: "  https://abcdefghijklmnopqrst.supabase.co  ",
+            anonKey: "  anon-test-key  "
         )
 
-        XCTAssertEqual(config.supabaseURL.absoluteString, "https://project-ref.supabase.co")
-        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://project-ref.supabase.co/functions/v1")
-        XCTAssertEqual(config.anonKey, "public-anon-key")
+        XCTAssertEqual(config.supabaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co")
+        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co/functions/v1")
+        XCTAssertEqual(config.anonKey, "anon-test-key")
     }
 
     func testRuntimeConfigAcceptsOnlyPublicSupabaseFields() throws {
         let validConfig = try AppConfig.make(dictionary: [
-            "SUPABASE_URL": "https://project-ref.supabase.co",
-            "SUPABASE_ANON_KEY": "public-anon-key"
+            "SUPABASE_URL": "https://abcdefghijklmnopqrst.supabase.co",
+            "SUPABASE_ANON_KEY": "anon-test-key"
         ])
 
-        XCTAssertEqual(validConfig.supabaseURL.absoluteString, "https://project-ref.supabase.co")
+        XCTAssertEqual(validConfig.supabaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co")
 
         let configsWithExtraSecretSlots: [[String: Any]] = [
             [
-                "SUPABASE_URL": "https://project-ref.supabase.co",
-                "SUPABASE_ANON_KEY": "public-anon-key",
+                "SUPABASE_URL": "https://abcdefghijklmnopqrst.supabase.co",
+                "SUPABASE_ANON_KEY": "anon-test-key",
                 "GEMINI_API_KEY": "server-side-only"
             ],
             [
-                "SUPABASE_URL": "https://project-ref.supabase.co",
-                "SUPABASE_ANON_KEY": "public-anon-key",
+                "SUPABASE_URL": "https://abcdefghijklmnopqrst.supabase.co",
+                "SUPABASE_ANON_KEY": "anon-test-key",
                 "OPENAI_API_KEY": "server-side-only"
             ],
             [
-                "SUPABASE_URL": "https://project-ref.supabase.co",
-                "SUPABASE_ANON_KEY": "public-anon-key",
+                "SUPABASE_URL": "https://abcdefghijklmnopqrst.supabase.co",
+                "SUPABASE_ANON_KEY": "anon-test-key",
                 "ANTHROPIC_API_KEY": "server-side-only"
             ]
         ]
@@ -63,7 +63,7 @@ final class ConfigSecurityTests: XCTestCase {
         for secretLikeValue in providerSecretLikeValues {
             XCTAssertThrowsError(
                 try AppConfig.make(
-                    supabaseURLString: "https://project-ref.supabase.co",
+                    supabaseURLString: "https://abcdefghijklmnopqrst.supabase.co",
                     anonKey: secretLikeValue
                 )
             ) { error in
@@ -72,32 +72,46 @@ final class ConfigSecurityTests: XCTestCase {
         }
     }
 
+    func testRuntimeConfigRejectsCopiedExamplePlaceholders() throws {
+        XCTAssertThrowsError(
+            try AppConfig.make(supabaseURLString: "https://project-ref.supabase.co", anonKey: "anon-test-key")
+        ) { error in
+            XCTAssertEqual(error as? APIError, .notConfigured)
+        }
+
+        XCTAssertThrowsError(
+            try AppConfig.make(supabaseURLString: "https://abcdefghijklmnopqrst.supabase.co", anonKey: "public-anon-key")
+        ) { error in
+            XCTAssertEqual(error as? APIError, .notConfigured)
+        }
+    }
+
     func testRuntimeConfigNormalizesTrailingSlashOnProjectRoot() throws {
         let config = try AppConfig.make(
-            supabaseURLString: "https://project-ref.supabase.co/",
-            anonKey: "public-anon-key"
+            supabaseURLString: "https://abcdefghijklmnopqrst.supabase.co/",
+            anonKey: "anon-test-key"
         )
 
-        XCTAssertEqual(config.supabaseURL.absoluteString, "https://project-ref.supabase.co")
-        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://project-ref.supabase.co/functions/v1")
+        XCTAssertEqual(config.supabaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co")
+        XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co/functions/v1")
     }
 
     func testRuntimeConfigRejectsInsecureOrNonSupabaseURLs() throws {
         let invalidURLs = [
-            "http://project-ref.supabase.co",
+            "http://abcdefghijklmnopqrst.supabase.co",
             "https://supabase.co",
-            "https://nested.project-ref.supabase.co",
+            "https://nested.abcdefghijklmnopqrst.supabase.co",
             "https://example.com",
             "not a url",
-            "https://project-ref.supabase.co/functions/v1",
-            "https://project-ref.supabase.co?redirect=https://example.com",
-            "https://project-ref.supabase.co#fragment",
-            "https://anon@project-ref.supabase.co",
-            "https://project-ref.supabase.co:443"
+            "https://abcdefghijklmnopqrst.supabase.co/functions/v1",
+            "https://abcdefghijklmnopqrst.supabase.co?redirect=https://example.com",
+            "https://abcdefghijklmnopqrst.supabase.co#fragment",
+            "https://anon@abcdefghijklmnopqrst.supabase.co",
+            "https://abcdefghijklmnopqrst.supabase.co:443"
         ]
 
         for url in invalidURLs {
-            XCTAssertThrowsError(try AppConfig.make(supabaseURLString: url, anonKey: "public-anon-key")) { error in
+            XCTAssertThrowsError(try AppConfig.make(supabaseURLString: url, anonKey: "anon-test-key")) { error in
                 XCTAssertEqual(error as? APIError, .notConfigured)
             }
         }
@@ -105,7 +119,7 @@ final class ConfigSecurityTests: XCTestCase {
 
     func testRuntimeConfigRejectsBlankAnonKey() throws {
         XCTAssertThrowsError(
-            try AppConfig.make(supabaseURLString: "https://project-ref.supabase.co", anonKey: "   ")
+            try AppConfig.make(supabaseURLString: "https://abcdefghijklmnopqrst.supabase.co", anonKey: "   ")
         ) { error in
             XCTAssertEqual(error as? APIError, .notConfigured)
         }

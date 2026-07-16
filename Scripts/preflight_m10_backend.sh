@@ -143,8 +143,14 @@ fi
 supabase_url="${supabase_url%/}"
 
 [[ "$supabase_url" =~ ^https://[a-z0-9-]+\.supabase\.co$ ]] || fail "SUPABASE_URL must be a root https://<project>.supabase.co URL"
+[[ "$supabase_url" == "https://project-ref.supabase.co" ]] && pending_or_fail "SUPABASE_URL still contains the Config.plist.example placeholder"
+[[ "$anon_key" == "public-anon-key" ]] && pending_or_fail "SUPABASE_ANON_KEY still contains the Config.plist.example placeholder"
 [[ "$anon_key" =~ $provider_secret_pattern ]] && fail "SUPABASE_ANON_KEY looks like an AI provider secret"
 [[ "$supabase_url" =~ $provider_secret_pattern ]] && fail "SUPABASE_URL contains a provider secret-shaped value"
+
+if (( ${#pending_items[@]} > 0 )); then
+    print_pending_and_exit
+fi
 
 if [[ -n "${M10_ANALYZE_IMAGE_DATA_URL:-}" ]]; then
     analyze_image_data_url="$M10_ANALYZE_IMAGE_DATA_URL"
