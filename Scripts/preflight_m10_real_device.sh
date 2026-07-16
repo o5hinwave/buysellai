@@ -113,6 +113,7 @@ build_settings="$(
         -project "$project_path" \
         -scheme BuySellAI \
         -configuration Release \
+        -destination "id=${device_identifier}" \
         2>/dev/null
 )"
 

@@ -23,6 +23,8 @@ final class RealDevicePreflightScriptTests: XCTestCase {
 
         XCTAssertNotNil(script.range(of: "xcodebuild -showBuildSettings"))
         XCTAssertNotNil(script.range(of: "-configuration Release"))
+        XCTAssertNotNil(script.range(of: #"-destination "id=${device_identifier}""#))
+        XCTAssertNotNil(script.range(of: #"xcodebuild -showBuildSettings[\s\S]*-destination "id=\$\{device_identifier\}"[\s\S]*2>/dev/null"#, options: .regularExpression))
         XCTAssertNotNil(script.range(of: #"setting PRODUCT_BUNDLE_IDENTIFIER"#))
         XCTAssertNotNil(script.range(of: #"setting CODE_SIGN_STYLE"#))
         XCTAssertNotNil(script.range(of: #"setting CODE_SIGN_ENTITLEMENTS"#))
