@@ -117,6 +117,8 @@ To target a specific connected device:
 DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh
 ```
 
+The preflight ignores non-iOS `devicectl` entries. A supplied `DEVICE_ID` must match a connected iPhone or iPad.
+
 Until a trusted physical device is connected, record the known hardware blocker:
 
 ```sh

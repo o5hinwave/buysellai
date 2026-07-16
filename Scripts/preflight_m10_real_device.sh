@@ -36,14 +36,17 @@ plist_optional() {
     "${plist_buddy}" -c "Print :$1" "$device_json" 2>/dev/null || true
 }
 
+is_ios_device() {
+    local summary="$1"
+
+    [[ "$summary" =~ (iOS|iPhone|iPad|iphone|ipad) ]]
+}
+
 xcrun devicectl list devices --json-output "$device_json" --timeout 15 >/dev/null
 plutil -convert xml1 "$device_json"
 
 device_name=""
 if [[ -z "$device_identifier" ]]; then
-    first_identifier=""
-    first_name=""
-
     for index in $(seq 0 99); do
         candidate_identifier="$(plist_optional "result:devices:${index}:identifier")"
         [[ -n "$candidate_identifier" ]] || break
@@ -55,33 +58,37 @@ if [[ -z "$device_identifier" ]]; then
         candidate_product_type="$(plist_optional "result:devices:${index}:hardwareProperties:productType")"
         candidate_summary="${candidate_platform} ${candidate_product_type} ${candidate_name}"
 
-        if [[ -z "$first_identifier" ]]; then
-            first_identifier="$candidate_identifier"
-            first_name="$candidate_name"
-        fi
-
-        if [[ "$candidate_summary" =~ (iOS|iPhone|iPad|iphone|ipad) ]]; then
+        if is_ios_device "$candidate_summary"; then
             device_identifier="$candidate_identifier"
             device_name="$candidate_name"
             break
         fi
     done
-
-    if [[ -z "$device_identifier" && -n "$first_identifier" ]]; then
-        device_identifier="$first_identifier"
-        device_name="$first_name"
-    fi
 else
+    matched_device="0"
+    matched_ios_device="0"
+
     for index in $(seq 0 99); do
         candidate_identifier="$(plist_optional "result:devices:${index}:identifier")"
         [[ -n "$candidate_identifier" ]] || break
 
         if [[ "$candidate_identifier" == "$device_identifier" ]]; then
+            matched_device="1"
             device_name="$(plist_optional "result:devices:${index}:deviceProperties:name")"
             [[ -n "$device_name" ]] || device_name="$(plist_optional "result:devices:${index}:name")"
+            candidate_platform="$(plist_optional "result:devices:${index}:hardwareProperties:platform")"
+            candidate_product_type="$(plist_optional "result:devices:${index}:hardwareProperties:productType")"
+            candidate_summary="${candidate_platform} ${candidate_product_type} ${device_name}"
+            if is_ios_device "$candidate_summary"; then
+                matched_ios_device="1"
+            fi
             break
         fi
     done
+
+    if [[ "$matched_device" == "1" && "$matched_ios_device" != "1" ]]; then
+        fail "DEVICE_ID matched a non-iOS device. Use a trusted iPhone or iPad."
+    fi
 fi
 
 if [[ -z "$device_identifier" ]]; then

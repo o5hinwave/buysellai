@@ -13,6 +13,9 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"DEVICE_ID"#))
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_DEVICE"))
         XCTAssertNotNil(script.range(of: "no connected iPhone or iPad"))
+        XCTAssertNotNil(script.range(of: "is_ios_device"))
+        XCTAssertNotNil(script.range(of: "DEVICE_ID matched a non-iOS device"))
+        XCTAssertNil(script.range(of: "first_identifier"))
     }
 
     func testRealDevicePreflightRequiresReleaseSigningBeforeBuild() throws {
@@ -46,6 +49,8 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Scripts/preflight_m10_real_device.sh"))
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_DEVICE=1"))
         XCTAssertNotNil(m10.range(of: "trusted iPhone or iPad with Developer Mode enabled"))
+        XCTAssertNotNil(readme.range(of: "ignores non-iOS `devicectl` entries"))
+        XCTAssertNotNil(m10.range(of: "A supplied `DEVICE_ID` must match a connected iPhone or iPad"))
     }
 
     func testRealDeviceAcceptanceEvidenceScriptRequiresMetadataAndPromptRows() throws {
