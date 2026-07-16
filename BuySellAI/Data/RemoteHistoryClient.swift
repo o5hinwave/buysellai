@@ -25,7 +25,7 @@ actor RemoteHistoryClient {
         request.httpMethod = "GET"
         applyCommonHeaders(to: &request, config: config, accessToken: accessToken)
         let records = try await perform(request, decoding: [RemoteHistoryRecord].self)
-        return records.map(\.entry)
+        return deduplicatedEntries(from: records)
     }
 
     func upsertHistory(_ entries: [HistoryEntry], accessToken: String) async throws {
@@ -157,6 +157,18 @@ actor RemoteHistoryClient {
         default:
             throw APIError.server(httpResponse.statusCode)
         }
+    }
+
+    private func deduplicatedEntries(from records: [RemoteHistoryRecord]) -> [HistoryEntry] {
+        var seenIDs = Set<UUID>()
+        var entries: [HistoryEntry] = []
+        entries.reserveCapacity(records.count)
+
+        for record in records where seenIDs.insert(record.id).inserted {
+            entries.append(record.entry)
+        }
+
+        return entries
     }
 
 }

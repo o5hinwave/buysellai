@@ -58,6 +58,63 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].listingText, "TITLE:\nLamp")
     }
 
+    func testFetchHistoryDeduplicatesRowsByIDKeepingNewestServerOrder() async throws {
+        let duplicateID = try XCTUnwrap(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let uniqueID = try XCTUnwrap(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
+        let client = try makeClient { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            let data = Data("""
+            [
+              {
+                "id": "\(duplicateID.uuidString)",
+                "created_at": "2026-07-14T21:00:00Z",
+                "item_name": "Newest lamp",
+                "category": "home",
+                "condition": "good",
+                "suggested_price": 45,
+                "image_thumbnail_base64": null,
+                "marketplace": "ebay",
+                "listing_text": "TITLE:\\nNewest lamp"
+              },
+              {
+                "id": "\(duplicateID.uuidString)",
+                "created_at": "2026-07-14T20:00:00Z",
+                "item_name": "Older duplicate lamp",
+                "category": "home",
+                "condition": "fair",
+                "suggested_price": 25,
+                "image_thumbnail_base64": null,
+                "marketplace": "craigslist",
+                "listing_text": "TITLE:\\nOlder lamp"
+              },
+              {
+                "id": "\(uniqueID.uuidString)",
+                "created_at": "2026-07-14T19:00:00Z",
+                "item_name": "Chair",
+                "category": "furniture",
+                "condition": "fair",
+                "suggested_price": 30,
+                "image_thumbnail_base64": null,
+                "marketplace": "craigslist",
+                "listing_text": "TITLE:\\nChair"
+              }
+            ]
+            """.utf8)
+            return (response, data)
+        }
+
+        let entries = try await client.fetchHistory(accessToken: "access-token")
+
+        XCTAssertEqual(entries.map(\.id), [duplicateID, uniqueID])
+        XCTAssertEqual(entries.map(\.itemName), ["Newest lamp", "Chair"])
+        XCTAssertEqual(Set(entries.map(\.id)).count, entries.count)
+    }
+
     func testUpsertHistoryBuildsBatchPostgRESTRequest() async throws {
         let entryID = try XCTUnwrap(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
         let createdAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T19:30:00Z"))
