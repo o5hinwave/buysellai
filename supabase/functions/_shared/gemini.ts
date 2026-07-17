@@ -31,7 +31,7 @@ export async function generateJsonWithGemini(
         role: "user",
         parts,
       }],
-      generation_config: {
+      generationConfig: {
         temperature: 0.2,
         response_mime_type: "application/json",
         response_schema: responseSchema,
