@@ -6,6 +6,7 @@ struct SnapResultSheet: View {
 
     @Environment(AppStore.self) private var appStore
     @State private var store: SnapResultStore
+    @State private var isEditingName = false
     @FocusState private var focusedField: Field?
 
     init(context: SnapResultContext) {
@@ -47,6 +48,7 @@ struct SnapResultSheet: View {
                     Spacer()
                     Button("Done".localized) {
                         store.commitEdits()
+                        isEditingName = false
                         focusedField = nil
                     }
                     .accessibilityLabel("Done".localized)
@@ -96,16 +98,7 @@ struct SnapResultSheet: View {
                 PhotoThumbnail(data: context.imageData, size: 64)
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    TextField("Item name".localized, text: Binding(
-                        get: { store.nameText },
-                        set: { store.nameText = $0 }
-                    ))
-                        .brandFont(.titleLg)
-                        .foregroundStyle(Color.brand.foreground)
-                        .focused($focusedField, equals: .name)
-                        .submitLabel(.done)
-                        .onSubmit { store.commitEdits() }
-                        .accessibilityLabel("Item name".localized)
+                    itemNameControl
 
                     HStack(spacing: Spacing.xs) {
                         Text("~$")
@@ -123,6 +116,8 @@ struct SnapResultSheet: View {
                             .accessibilityLabel("Estimated price".localized)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
             }
             .accessibilitySortPriority(5)
 
@@ -173,6 +168,82 @@ struct SnapResultSheet: View {
             }
             .accessibilitySortPriority(2)
         }
+    }
+
+    @ViewBuilder
+    private var itemNameControl: some View {
+        if isEditingName {
+            TextField("Item name".localized, text: Binding(
+                get: { store.nameText },
+                set: { store.nameText = $0 }
+            ), axis: .vertical)
+                .brandFont(.titleLg)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(1...2)
+                .minimumScaleFactor(0.82)
+                .allowsTightening(true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .focused($focusedField, equals: .name)
+                .submitLabel(.done)
+                .onSubmit {
+                    store.commitEdits()
+                    isEditingName = false
+                    focusedField = nil
+                }
+                .accessibilityLabel("Item name".localized)
+        } else {
+            Button {
+                isEditingName = true
+                focusedField = .name
+            } label: {
+                Text(readableItemName)
+                    .brandFont(.titleLg)
+                    .foregroundStyle(Color.brand.foreground)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+                    .allowsTightening(true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Item name".localized)
+                .accessibilityValue(store.nameText)
+                .accessibilityHint("Double-tap to edit the item name".localized)
+        }
+    }
+
+    private var readableItemName: String {
+        let fallback = "Item name".localized
+        let name = store.nameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard name.isEmpty == false else { return fallback }
+        guard name.count > 20, name.contains("\n") == false else { return name }
+
+        let words = name.split(separator: " ").map(String.init)
+        guard words.count > 1 else { return name }
+
+        let bestSplit = (1..<words.count).min { lhs, rhs in
+            let lhsScore = splitBalanceScore(words, at: lhs)
+            let rhsScore = splitBalanceScore(words, at: rhs)
+            return lhsScore == rhsScore
+                ? lineLength(words, endIndex: lhs) < lineLength(words, endIndex: rhs)
+                : lhsScore < rhsScore
+        } ?? words.count - 1
+
+        return words[..<bestSplit].joined(separator: " ")
+            + "\n"
+            + words[bestSplit...].joined(separator: " ")
+    }
+
+    private func splitBalanceScore(_ words: [String], at index: Int) -> Int {
+        abs(lineLength(words, endIndex: index) - lineLength(words, startIndex: index))
+    }
+
+    private func lineLength(_ words: [String], startIndex: Int = 0, endIndex: Int? = nil) -> Int {
+        let endIndex = endIndex ?? words.count
+        guard startIndex < endIndex else { return 0 }
+        return words[startIndex..<endIndex].joined(separator: " ").count
     }
 
     private func errorView(message: String) -> some View {

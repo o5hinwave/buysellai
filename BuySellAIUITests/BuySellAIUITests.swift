@@ -481,7 +481,14 @@ final class BuySellAIUITests: XCTestCase {
 
         app.buttons["Take photo"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["Item photo"].waitForExistence(timeout: 5))
+        let itemName = app.buttons["Item name"]
+        XCTAssertTrue(itemName.waitForExistence(timeout: 5))
+        XCTAssertEqual(itemName.value as? String, "Vintage brass table lamp")
+        itemName.tap()
         XCTAssertTrue(app.textFields["Item name"].waitForExistence(timeout: 5))
+        if app.toolbars.buttons["Done"].waitForExistence(timeout: 2) {
+            app.toolbars.buttons["Done"].tap()
+        }
         XCTAssertTrue(app.textFields["Estimated price"].exists)
         XCTAssertTrue(app.buttons["Category, Home"].exists)
         XCTAssertTrue(app.buttons["Condition, Good"].exists)
