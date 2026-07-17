@@ -72,6 +72,25 @@ final class ConfigSecurityTests: XCTestCase {
         }
     }
 
+    func testRuntimeConfigRejectsProviderSecretShapedSupabaseURLs() throws {
+        let providerSecretLikeURLs = [
+            "https://sk-" + String(repeating: "A", count: 30) + ".supabase.co",
+            "https://abcdefghijklmnopqrst.supabase.co?token=AQ." + String(repeating: "A", count: 30),
+            "https://AIza" + String(repeating: "A", count: 30) + "@abcdefghijklmnopqrst.supabase.co"
+        ]
+
+        for url in providerSecretLikeURLs {
+            XCTAssertThrowsError(
+                try AppConfig.make(
+                    supabaseURLString: url,
+                    anonKey: "anon-test-key"
+                )
+            ) { error in
+                XCTAssertEqual(error as? APIError, .notConfigured)
+            }
+        }
+    }
+
     func testRuntimeConfigRejectsCopiedExamplePlaceholders() throws {
         XCTAssertThrowsError(
             try AppConfig.make(supabaseURLString: "https://project-ref.supabase.co", anonKey: "anon-test-key")

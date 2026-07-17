@@ -47,6 +47,7 @@ struct AppConfig: Sendable {
             let supabaseURL = URL(string: "https://\(host)"),
             trimmedAnonKey.isEmpty == false,
             Self.isExamplePlaceholder(host: host, anonKey: trimmedAnonKey) == false,
+            Self.containsProviderSecretShape(trimmedURL) == false,
             Self.containsProviderSecretShape(trimmedAnonKey) == false
         else {
             throw APIError.notConfigured
