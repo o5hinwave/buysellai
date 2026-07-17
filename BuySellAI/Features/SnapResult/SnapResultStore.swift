@@ -56,7 +56,7 @@ final class SnapResultStore {
         }
 
         do {
-            let response = try await analyzeHandler(imageData, accessToken)
+            let response = try await analyzeHandler(imageData, accessToken).validatedForDisplay()
             guard generation == analysisGeneration else { return }
             let detected = DetectedItem(
                 name: response.name,

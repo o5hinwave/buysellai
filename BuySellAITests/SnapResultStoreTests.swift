@@ -157,6 +157,30 @@ final class SnapResultStoreTests: XCTestCase {
         await store.analyze(accessToken: nil)
 
         XCTAssertEqual(store.phase, .failed(APIError.offline.localizedDescription))
+
+        let invalidStore = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in
+                AnalyzeResponse(name: "  \n\t  ", category: "Home", condition: "good", currentPrice: Decimal(45))
+            }
+        )
+
+        await invalidStore.analyze(accessToken: nil)
+
+        XCTAssertEqual(invalidStore.phase, .failed(APIError.decoding.localizedDescription))
+        XCTAssertNil(invalidStore.item)
+
+        let freeStore = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in
+                AnalyzeResponse(name: "Lamp", category: "Home", condition: "good", currentPrice: Decimal(0))
+            }
+        )
+
+        await freeStore.analyze(accessToken: nil)
+
+        XCTAssertEqual(freeStore.phase, .failed(APIError.decoding.localizedDescription))
+        XCTAssertNil(freeStore.item)
     }
 
     func testAnalyzeUnknownErrorDoesNotExposeRawDescription() async {

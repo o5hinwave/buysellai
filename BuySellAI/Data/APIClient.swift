@@ -45,7 +45,8 @@ actor APIClient {
             accessToken: accessToken,
             body: payload
         )
-        return try await perform(request, decoding: AnalyzeResponse.self)
+        let response = try await perform(request, decoding: AnalyzeResponse.self)
+        return try response.validatedForDisplay()
     }
 
     func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
@@ -161,6 +162,19 @@ struct AnalyzeResponse: Decodable, Sendable {
     let category: String
     let condition: String
     let currentPrice: Decimal
+
+    func validatedForDisplay() throws -> AnalyzeResponse {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedName.isEmpty == false, currentPrice > 0 else {
+            throw APIError.decoding
+        }
+        return AnalyzeResponse(
+            name: trimmedName,
+            category: category,
+            condition: condition,
+            currentPrice: currentPrice
+        )
+    }
 }
 
 enum APIError: LocalizedError, Equatable {

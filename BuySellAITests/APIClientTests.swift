@@ -25,7 +25,7 @@ final class APIClientTests: XCTestCase {
 
             let url = try XCTUnwrap(request.url)
             let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
-            return (response, Data(#"{"name":"Mug","category":"Home","condition":"good","currentPrice":12}"#.utf8))
+            return (response, Data(#"{"name":"  Mug  ","category":"Home","condition":"good","currentPrice":12}"#.utf8))
         }
 
         let response = try await client.analyze(image: Data([1, 2, 3]), accessToken: "access-token")
@@ -170,17 +170,25 @@ final class APIClientTests: XCTestCase {
     }
 
     func testMalformedAnalyzeJSONMapsToDecodingError() async throws {
-        let client = try makeClient { request in
-            let url = try XCTUnwrap(request.url)
-            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
-            return (response, Data(#"{"name":"Lamp","category":"Home"}"#.utf8))
-        }
+        let invalidPayloads = [
+            #"{"name":"Lamp","category":"Home"}"#,
+            #"{"name":"  \n\t  ","category":"Home","condition":"good","currentPrice":12}"#,
+            #"{"name":"Lamp","category":"Home","condition":"good","currentPrice":0}"#
+        ]
 
-        do {
-            _ = try await client.analyze(image: Data([1]))
-            XCTFail("Expected decoding error")
-        } catch {
-            XCTAssertEqual(error as? APIError, .decoding)
+        for payload in invalidPayloads {
+            let client = try makeClient { request in
+                let url = try XCTUnwrap(request.url)
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+                return (response, Data(payload.utf8))
+            }
+
+            do {
+                _ = try await client.analyze(image: Data([1]))
+                XCTFail("Expected decoding error for payload: \(payload)")
+            } catch {
+                XCTAssertEqual(error as? APIError, .decoding)
+            }
         }
     }
 
