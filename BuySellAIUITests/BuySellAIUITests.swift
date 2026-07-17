@@ -73,9 +73,10 @@ final class BuySellAIUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
 
-        let startedAt = Date()
         app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
 
+        let startedAt = Date()
         let snap = app.buttons["Snap to sell"]
         XCTAssertTrue(snap.waitForExistence(timeout: 6))
         XCTAssertLessThan(
