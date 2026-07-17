@@ -14,6 +14,21 @@ required_screenshots=(
     "04-listing.png"
 )
 pending_items=()
+unconfirmed_metadata_markers=(
+    "assumption"
+    "assumed"
+    "pending"
+    "before submission"
+    "before final submission"
+    "must confirm"
+    "needs confirmation"
+    "need confirmation"
+    "not confirmed"
+    "unconfirmed"
+    "to confirm"
+    "confirm in app store"
+    "confirm in app store connect"
+)
 
 fail() {
     printf 'error: %s\n' "$*" >&2
@@ -216,6 +231,24 @@ require_not_generic_pass() {
     esac
 }
 
+require_no_unconfirmed_assumption() {
+    local field="$1"
+    local value
+    local normalized
+    local marker
+
+    value="$(metadata_value "$field")"
+    is_placeholder "$value" && return
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$(trim "$value")")"
+    for marker in "${unconfirmed_metadata_markers[@]}"; do
+        if [[ "$normalized" == *"$marker"* ]]; then
+            pending "metadata '$field' still contains unconfirmed account-owner/legal wording: $marker"
+            return
+        fi
+    done
+}
+
 require_screenshot_assets() {
     local screenshots_value
     local file
@@ -303,6 +336,7 @@ required_fields=(
     "Age rating"
     "Made for Kids"
     "DSA trader status"
+    "Account owner legal confirmation"
     "License agreement"
     "Version number"
     "Copyright"
@@ -338,6 +372,7 @@ require_terms "License agreement" "license agreement" "apple" "standard"
 require_terms "Primary category" "primary category" "shopping"
 require_any_term "Age rating" "age rating" "4+" "9+" "12+" "17+"
 require_any_term "DSA trader status" "Digital Services Act trader status" "trader" "not a trader"
+require_terms "Account owner legal confirmation" "account-owner legal confirmation" "app store connect" "account owner" "dsa" "copyright" "age rating" "export compliance"
 require_terms "Description" "core product flow" "snap" "photo" "marketplace" "listing"
 require_terms "App privacy data types" "App Store privacy data types" "email address" "user id" "photos or videos" "other user content"
 require_terms "Account deletion" "in-app account deletion path" "delete account" "settings"
@@ -351,6 +386,11 @@ require_public_https_url "Privacy Policy URL"
 require_length_at_most "App name" 30
 require_length_at_most "Subtitle" 30
 require_length_at_most "Keywords" 100
+require_no_unconfirmed_assumption "Age rating"
+require_no_unconfirmed_assumption "DSA trader status"
+require_no_unconfirmed_assumption "Account owner legal confirmation"
+require_no_unconfirmed_assumption "Copyright"
+require_no_unconfirmed_assumption "Export compliance"
 require_screenshot_assets
 require_screenshot_capture_result
 
@@ -375,6 +415,7 @@ printf 'version: %s\n' "$(metadata_value "Version number")"
 printf 'privacy policy: %s\n' "$(metadata_value "Privacy Policy URL")"
 printf 'support: %s\n' "$(metadata_value "Support URL")"
 printf 'screenshots: %s\n' "$(metadata_value "Screenshots")"
+printf 'legal: %s\n' "$(metadata_value "Account owner legal confirmation")"
 printf 'screenshot directory: %s\n' "$screenshot_dir"
 printf 'screenshot files: %s\n' "${#required_screenshots[@]}"
 printf 'screenshot dimensions: %sx%s\n' "$expected_screenshot_width" "$expected_screenshot_height"

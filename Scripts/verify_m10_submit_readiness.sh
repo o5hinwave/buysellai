@@ -547,6 +547,7 @@ require_file_contains "$metadata_log" "version:" "App Store metadata evidence lo
 require_file_contains "$metadata_log" "privacy policy:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "support:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshots:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "legal:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot directory:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot files: 4" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot dimensions: 1206x2622" "App Store metadata evidence log"

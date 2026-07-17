@@ -1,8 +1,8 @@
 # M10 App Store Metadata Evidence
 
-This file records the App Store Connect metadata that must be ready before final submission. It is separate from the signed binary checks: the archive can validate while the product page, app privacy answers, screenshots, support URL, and review notes are still incomplete.
+This file records the App Store Connect metadata that must be ready before final submission. It is separate from the signed binary checks: the archive can validate while the product page, app privacy answers, screenshots, support URL, account-owner legal confirmation, and review notes are still incomplete.
 
-Every required field below must be concrete before `Scripts/verify_m10_app_store_metadata.sh` can pass. Do not replace `TBD` with generic "passed" notes. Filled-in Support URL and Privacy Policy URL values must be public HTTPS pages reachable without authentication.
+Every required field below must be concrete before `Scripts/verify_m10_app_store_metadata.sh` can pass. Do not replace `TBD` with generic "passed" notes, and do not leave assumption/pending/confirm-before-submission wording in legal fields. Filled-in Support URL and Privacy Policy URL values must be public HTTPS pages reachable without authentication.
 
 ## Required App Information
 
@@ -17,6 +17,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Age rating | 4+ (No objectionable content; camera/listing utility.) |
 | Made for Kids | No |
 | DSA trader status | Not a trader (assumption: individual App Store account owner is not acting as a business for this app; confirm in App Store Connect before submission.) |
+| Account owner legal confirmation | Pending - App Store Connect account owner must confirm DSA trader status, copyright, age rating, and export compliance before final submission. |
 | License agreement | Apple Standard EULA |
 
 ## Version Metadata
@@ -45,7 +46,7 @@ Every required field below must be concrete before `Scripts/verify_m10_app_store
 | Files | `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png` |
 | Capture test | `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured` |
 | Result bundle | `/tmp/buysell-submit-readiness-full.xcresult` |
-| Result | Passed as part of the retained full simulator suite `/tmp/buysell-submit-readiness-full.xcresult` with 337 tests and 0 failures on 2026-07-17; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
+| Result | Passed as part of the retained full simulator suite `/tmp/buysell-submit-readiness-full.xcresult` with 338 tests and 0 failures on 2026-07-17; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
 
 ## App Privacy Answers
 
