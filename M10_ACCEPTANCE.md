@@ -5,7 +5,7 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 ## Current Evidence
 
 - Simulator suite: `337` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
-- Focused submit-readiness preflight: `62` M10/script tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Focused submit-readiness preflight: `43` M10/script tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3228KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - App icon check: source App Store icon is a 1024x1024 non-alpha PNG and the archive contains iPhone/iPad icon PNGs.
