@@ -54,6 +54,19 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, APIError.decoding.localizedDescription)
         store.toast = nil
 
+        var freeItem = item
+        freeItem.priceEstimate = Decimal(0)
+        store.saveListing(
+            item: freeItem,
+            imageData: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp"
+        )
+
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertEqual(store.toast?.text, APIError.decoding.localizedDescription)
+        store.toast = nil
+
         store.saveListing(
             item: item,
             imageData: ImageTools.sampleJPEG(),

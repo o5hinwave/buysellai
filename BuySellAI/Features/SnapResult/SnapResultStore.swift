@@ -58,11 +58,14 @@ final class SnapResultStore {
         do {
             let response = try await analyzeHandler(imageData, accessToken).validatedForDisplay()
             guard generation == analysisGeneration else { return }
+            guard let priceEstimate = Self.listingPriceEstimate(from: response.currentPrice) else {
+                throw APIError.decoding
+            }
             let detected = DetectedItem(
                 name: response.name,
                 category: Category(apiValue: response.category),
                 condition: Condition(apiValue: response.condition),
-                priceEstimate: response.currentPrice.rounded(scale: 0)
+                priceEstimate: priceEstimate
             )
             item = detected
             nameText = detected.name
@@ -96,10 +99,13 @@ final class SnapResultStore {
         if trimmedName.isEmpty == false {
             edited.name = trimmedName
         }
-        if let number = Self.priceDecimal(from: priceText, locale: priceLocale), number > 0 {
-            edited.priceEstimate = number.rounded(scale: 0)
-            priceText = NSDecimalNumber(decimal: edited.priceEstimate).stringValue
+        nameText = edited.name
+
+        if let number = Self.priceDecimal(from: priceText, locale: priceLocale),
+           let priceEstimate = Self.listingPriceEstimate(from: number) {
+            edited.priceEstimate = priceEstimate
         }
+        priceText = NSDecimalNumber(decimal: edited.priceEstimate).stringValue
         item = edited
     }
 
@@ -134,5 +140,11 @@ final class SnapResultStore {
             .replacingOccurrences(of: groupingSeparator, with: "")
             .replacingOccurrences(of: decimalSeparator, with: ".")
             .replacingOccurrences(of: ",", with: "")
+    }
+
+    private static func listingPriceEstimate(from value: Decimal) -> Decimal? {
+        guard value > 0 else { return nil }
+        let rounded = value.rounded(scale: 0)
+        return max(rounded, Decimal(1))
     }
 }

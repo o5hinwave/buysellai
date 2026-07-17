@@ -38,6 +38,48 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "46")
     }
 
+    func testCommitEditsRestoresInvalidNameAndPriceTextToLastValidValues() {
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        store.nameText = "  \n\t  "
+        store.priceText = "0"
+
+        store.commitEdits()
+
+        XCTAssertEqual(store.item?.name, "Lamp")
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(45))
+        XCTAssertEqual(store.nameText, "Lamp")
+        XCTAssertEqual(store.priceText, "45")
+
+        store.priceText = "not a price"
+        store.commitEdits()
+
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(45))
+        XCTAssertEqual(store.priceText, "45")
+    }
+
+    func testCommitEditsRoundsSubDollarPriceUpToMinimumListingPrice() {
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Sticker",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(2)
+        )
+        store.nameText = "Sticker"
+        store.priceText = "0.49"
+
+        store.commitEdits(priceLocale: Locale(identifier: "en_US"))
+
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(1))
+        XCTAssertEqual(store.priceText, "1")
+    }
+
     func testPriceParserHandlesCurrencySymbolsAndGrouping() throws {
         XCTAssertEqual(
             SnapResultStore.priceDecimal(from: "$1,234.50", locale: Locale(identifier: "en_US")),
@@ -67,6 +109,22 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertTrue(store.showStillWorking)
         await analysisTask.value
         XCTAssertEqual(store.phase, .success)
+    }
+
+    func testAnalyzeRoundsSubDollarPriceUpToMinimumListingPrice() async throws {
+        let subDollarPrice = try XCTUnwrap(Decimal(string: "0.49", locale: Locale(identifier: "en_US_POSIX")))
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in
+                AnalyzeResponse(name: "Sticker", category: "Home", condition: "good", currentPrice: subDollarPrice)
+            }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(1))
+        XCTAssertEqual(store.priceText, "1")
     }
 
     func testStaleStillWorkingHintDoesNotLeakIntoRetriedAnalysis() async {

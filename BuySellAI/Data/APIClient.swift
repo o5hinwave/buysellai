@@ -54,20 +54,27 @@ actor APIClient {
             throw APIError.offline
         }
 
+        let itemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard itemName.isEmpty == false, item.priceEstimate > 0 else {
+            throw APIError.decoding
+        }
+        let currencyCode = item.currencyCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayCurrencyCode = currencyCode.isEmpty ? "USD" : currencyCode
+
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return """
             TITLE:
-            \(item.name) - \(item.condition.display)
+            \(itemName) - \(item.condition.display)
 
             DESCRIPTION:
-            Selling a \(item.name.lowercased()) in \(item.condition.display.lowercased()) condition. Asking \(item.priceEstimate.currency(code: item.currencyCode)). Pickup or shipping depends on the marketplace.
+            Selling a \(itemName.lowercased()) in \(item.condition.display.lowercased()) condition. Asking \(item.priceEstimate.currency(code: displayCurrencyCode)). Pickup or shipping depends on the marketplace.
             """
         }
 
         let config = try loadConfig()
         let itemPayload = ListingItemPayload(
-            name: item.name,
+            name: itemName,
             category: item.category.display,
             condition: item.condition.rawValue,
             originalPrice: item.priceEstimate,

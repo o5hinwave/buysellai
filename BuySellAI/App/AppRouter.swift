@@ -237,7 +237,7 @@ final class AppStore {
     func saveListing(item: DetectedItem, imageData: Data?, marketplace: Marketplace, listingText: String) {
         let cleanItemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanListingText = listingText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard cleanItemName.isEmpty == false, cleanListingText.isEmpty == false else {
+        guard cleanItemName.isEmpty == false, cleanListingText.isEmpty == false, item.priceEstimate > 0 else {
             showToast(APIError.decoding.localizedDescription, style: .error)
             return
         }

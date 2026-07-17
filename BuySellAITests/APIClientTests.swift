@@ -148,6 +148,53 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(listing, "TITLE:\nGuest Lamp\n\nDESCRIPTION:\nReady to list.")
     }
 
+    func testGenerateListingTrimsItemNameBeforeRequest() async throws {
+        let item = DetectedItem(
+            name: "  Lamp  ",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let item = try XCTUnwrap(json["item"] as? [String: Any])
+            XCTAssertEqual(item["name"] as? String, "Lamp")
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nLamp\n\nDESCRIPTION:\nReady."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(item: item, marketplace: .ebay)
+
+        XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nReady.")
+    }
+
+    func testGenerateListingRejectsInvalidItemBeforeRequest() async throws {
+        let invalidItems = [
+            DetectedItem(name: "  \n\t  ", category: .home, condition: .good, priceEstimate: Decimal(45)),
+            DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(0)),
+            DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(-1))
+        ]
+
+        for item in invalidItems {
+            let client = try makeClient { _ in
+                XCTFail("Invalid listing items should be rejected before a network request")
+                let url = try XCTUnwrap(URL(string: "https://example.supabase.co/functions/v1/generate-listing"))
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+
+            do {
+                _ = try await client.generateListing(item: item, marketplace: .ebay)
+                XCTFail("Expected decoding error for invalid item: \(item)")
+            } catch {
+                XCTAssertEqual(error as? APIError, .decoding)
+            }
+        }
+    }
+
     func testRateLimitMapsToFriendlyError() async {
         let client: APIClient
         do {
