@@ -4,7 +4,7 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `328` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
+- Simulator suite: `336` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6.
 - No-sign Release iPhoneOS archive: compiles and packages a `3208KB` app bundle.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - App icon check: source App Store icon is a 1024x1024 non-alpha PNG and the archive contains iPhone/iPad icon PNGs.
@@ -89,9 +89,11 @@ M10_ANALYZE_IMAGE_JPEG=/path/to/common-item.jpg \
 bash Scripts/preflight_m10_backend.sh BuySellAI/App/Config.plist
 ```
 
+Deployable Supabase Edge Function templates live in `supabase/functions/`. Deploy `analyze-image`, `generate-listing`, and `delete-account` after setting server-side `GEMINI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` secrets; do not put provider or service-role secrets in the iOS app.
+
 The backend preflight reads only the public Supabase URL and anon key from `Config.plist`; it does not print the anon key or any AI provider secret. The app and preflight both reject copied `Config.plist.example` placeholders before making backend requests. Passing logs include `config:`, `project:`, `functions: analyze-image generate-listing`, `analyze item:`, and `listing bytes:` markers.
 
-Until the real Supabase config and sample image are available, record the known blocker:
+Until the real Supabase config/functions and sample image are available, record the known blocker:
 
 ```sh
 ALLOW_MISSING_BACKEND=1 bash Scripts/preflight_m10_backend.sh
