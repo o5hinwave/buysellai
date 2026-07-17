@@ -86,6 +86,18 @@ final class BackendFunctionSourceTests: XCTestCase {
         }
     }
 
+    func testSupabaseReadmeUsesTemporaryEnvSecretWorkflow() throws {
+        let backendReadme = try read("supabase/README.md")
+
+        XCTAssertNotNil(backendReadme.range(of: #"read -rsp "Gemini API key: " GEMINI_API_KEY"#))
+        XCTAssertNotNil(backendReadme.range(of: #"read -rsp "Supabase service-role key: " SUPABASE_SERVICE_ROLE_KEY"#))
+        XCTAssertNotNil(backendReadme.range(of: "supabase secrets set --env-file .env"))
+        XCTAssertNotNil(backendReadme.range(of: "rm .env"))
+        XCTAssertNotNil(backendReadme.range(of: "unset GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY"))
+        XCTAssertNotNil(backendReadme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
+        XCTAssertNotNil(backendReadme.range(of: "The final M10 secret scan reads hidden files"))
+    }
+
     func testBackendReadinessDocsRouteThroughSmokePreflight() throws {
         let readme = try read("README.md")
         let acceptance = try read("M10_ACCEPTANCE.md")

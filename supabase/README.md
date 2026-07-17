@@ -5,9 +5,15 @@ These Edge Functions are deployment templates for the native iOS contracts. They
 Required Supabase secrets:
 
 ```sh
-supabase secrets set GEMINI_API_KEY
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY
+read -rsp "Gemini API key: " GEMINI_API_KEY; printf '\n'
+read -rsp "Supabase service-role key: " SUPABASE_SERVICE_ROLE_KEY; printf '\n'
+printf 'GEMINI_API_KEY=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\n' "$GEMINI_API_KEY" "$SUPABASE_SERVICE_ROLE_KEY" > .env
+supabase secrets set --env-file .env
+rm .env
+unset GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY
 ```
+
+Rotate any provider key that was pasted into chat, logs, or git before using it for production. Do not copy Gemini or service-role secrets into `BuySellAI/App/Config.plist`, source, tests, Xcode build settings, or long-lived shell history. The final M10 secret scan reads hidden files, so remove temporary `.env` files before collecting submit-readiness evidence.
 
 Optional model override:
 
