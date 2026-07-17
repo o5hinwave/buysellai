@@ -41,6 +41,19 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, APIError.decoding.localizedDescription)
         store.toast = nil
 
+        var blankNameItem = item
+        blankNameItem.name = "  \n\t  "
+        store.saveListing(
+            item: blankNameItem,
+            imageData: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp"
+        )
+
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertEqual(store.toast?.text, APIError.decoding.localizedDescription)
+        store.toast = nil
+
         store.saveListing(
             item: item,
             imageData: ImageTools.sampleJPEG(),
@@ -95,8 +108,22 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             itemName: "Coffee mug",
             marketplace: .facebook
         )
+        let blankListingEntry = historyEntry(
+            id: UUID(uuidString: "DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_300),
+            itemName: "Blank listing",
+            marketplace: .ebay,
+            listingText: "  \n\t  "
+        )
+        let blankNameEntry = historyEntry(
+            id: UUID(uuidString: "EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_400),
+            itemName: "  \n\t  ",
+            marketplace: .ebay,
+            listingText: "TITLE:\nBlank name"
+        )
 
-        [oldEntry, newestEntry, middleEntry].forEach { entry in
+        [oldEntry, newestEntry, middleEntry, blankListingEntry, blankNameEntry].forEach { entry in
             context.insert(HistoryEntryModel(entry: entry))
         }
         try context.save()
@@ -120,7 +147,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         id: UUID,
         createdAt: Date,
         itemName: String,
-        marketplace: Marketplace
+        marketplace: Marketplace,
+        listingText: String? = nil
     ) -> HistoryEntry {
         HistoryEntry(
             id: id,
@@ -131,7 +159,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             suggestedPrice: Decimal(25),
             imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
             marketplace: marketplace,
-            listingText: "TITLE:\n\(itemName)"
+            listingText: listingText ?? "TITLE:\n\(itemName)"
         )
     }
 

@@ -29,7 +29,8 @@ actor RemoteHistoryClient {
     }
 
     func upsertHistory(_ entries: [HistoryEntry], accessToken: String) async throws {
-        guard entries.isEmpty == false else { return }
+        let cleanEntries = entries.compactMap { $0.sanitizedForHistory() }
+        guard cleanEntries.isEmpty == false else { return }
         let config = try loadConfig()
         var request = URLRequest(url: try historyURL(config: config, queryItems: [
             URLQueryItem(name: "on_conflict", value: "id")
@@ -38,7 +39,7 @@ actor RemoteHistoryClient {
         applyCommonHeaders(to: &request, config: config, accessToken: accessToken)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("resolution=merge-duplicates,return=minimal", forHTTPHeaderField: "Prefer")
-        request.httpBody = try JSONEncoder.remoteHistory.encode(entries.map(RemoteHistoryRecord.init(entry:)))
+        request.httpBody = try JSONEncoder.remoteHistory.encode(cleanEntries.map(RemoteHistoryRecord.init(entry:)))
         try await performVoid(request)
     }
 
@@ -164,8 +165,11 @@ actor RemoteHistoryClient {
         var entries: [HistoryEntry] = []
         entries.reserveCapacity(records.count)
 
-        for record in records where seenIDs.insert(record.id).inserted {
-            entries.append(record.entry)
+        for record in records {
+            guard let entry = record.entry.sanitizedForHistory(), seenIDs.insert(entry.id).inserted else {
+                continue
+            }
+            entries.append(entry)
         }
 
         return entries

@@ -14,6 +14,8 @@ final class AppStoreMigrationTests: XCTestCase {
     func testSetSessionMigratesGuestHistoryOnceAndClearsLocalRows() async throws {
         let firstID = try XCTUnwrap(UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
         let secondID = try XCTUnwrap(UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+        let blankListingID = try XCTUnwrap(UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc"))
+        let blankNameID = try XCTUnwrap(UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
         let entries = [
             HistoryEntry(
                 id: firstID,
@@ -36,6 +38,28 @@ final class AppStoreMigrationTests: XCTestCase {
                 imageThumbnail: nil,
                 marketplace: .craigslist,
                 listingText: "TITLE:\nChair"
+            ),
+            HistoryEntry(
+                id: blankListingID,
+                createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:30:00Z")),
+                itemName: "Blank listing",
+                category: .home,
+                condition: .good,
+                suggestedPrice: Decimal(10),
+                imageThumbnail: nil,
+                marketplace: .ebay,
+                listingText: "  \n\t  "
+            ),
+            HistoryEntry(
+                id: blankNameID,
+                createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:00:00Z")),
+                itemName: "  \n\t  ",
+                category: .home,
+                condition: .good,
+                suggestedPrice: Decimal(10),
+                imageThumbnail: nil,
+                marketplace: .ebay,
+                listingText: "TITLE:\nBlank name"
             )
         ]
         let context = try makeModelContext()

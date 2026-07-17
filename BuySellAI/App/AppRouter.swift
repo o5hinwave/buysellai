@@ -235,8 +235,9 @@ final class AppStore {
     }
 
     func saveListing(item: DetectedItem, imageData: Data?, marketplace: Marketplace, listingText: String) {
+        let cleanItemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanListingText = listingText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard cleanListingText.isEmpty == false else {
+        guard cleanItemName.isEmpty == false, cleanListingText.isEmpty == false else {
             showToast(APIError.decoding.localizedDescription, style: .error)
             return
         }
@@ -246,7 +247,7 @@ final class AppStore {
         let entry = HistoryEntry(
             id: UUID(),
             createdAt: Date(),
-            itemName: item.name,
+            itemName: cleanItemName,
             category: item.category,
             condition: item.condition,
             suggestedPrice: item.priceEstimate,
@@ -444,13 +445,13 @@ final class AppStore {
 
     private func loadLocalHistory() async throws -> [HistoryEntry] {
         if let historyReader {
-            return try await historyReader.entries()
+            return try await historyReader.entries().compactMap { $0.sanitizedForHistory() }
         }
         guard let modelContext else { return [] }
         let descriptor = FetchDescriptor<HistoryEntryModel>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
-        return try modelContext.fetch(descriptor).map(\.entry)
+        return try modelContext.fetch(descriptor).compactMap { $0.entry.sanitizedForHistory() }
     }
 
     private func clearLocalHistory() throws {

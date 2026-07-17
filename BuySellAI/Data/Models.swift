@@ -145,6 +145,27 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     let imageThumbnail: Data?
     let marketplace: Marketplace
     let listingText: String
+
+    func sanitizedForHistory() -> HistoryEntry? {
+        let cleanItemName = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanListingText = listingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanItemName.isEmpty == false, cleanListingText.isEmpty == false else {
+            return nil
+        }
+
+        let cleanSuggestedPrice = suggestedPrice.flatMap { $0 > 0 ? $0 : nil }
+        return HistoryEntry(
+            id: id,
+            createdAt: createdAt,
+            itemName: cleanItemName,
+            category: category,
+            condition: condition,
+            suggestedPrice: cleanSuggestedPrice,
+            imageThumbnail: imageThumbnail,
+            marketplace: marketplace,
+            listingText: cleanListingText
+        )
+    }
 }
 
 struct AuthSession: Codable, Identifiable, Sendable, Hashable {

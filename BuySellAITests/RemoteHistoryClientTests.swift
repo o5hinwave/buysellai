@@ -60,7 +60,9 @@ final class RemoteHistoryClientTests: XCTestCase {
 
     func testFetchHistoryDeduplicatesRowsByIDKeepingNewestServerOrder() async throws {
         let duplicateID = try XCTUnwrap(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let blankListingID = try XCTUnwrap(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
         let uniqueID = try XCTUnwrap(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
+        let blankNameID = try XCTUnwrap(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -93,6 +95,17 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "listing_text": "TITLE:\\nOlder lamp"
               },
               {
+                "id": "\(blankListingID.uuidString)",
+                "created_at": "2026-07-14T19:30:00Z",
+                "item_name": "Blank listing",
+                "category": "home",
+                "condition": "good",
+                "suggested_price": 20,
+                "image_thumbnail_base64": null,
+                "marketplace": "ebay",
+                "listing_text": "  \\n\\t  "
+              },
+              {
                 "id": "\(uniqueID.uuidString)",
                 "created_at": "2026-07-14T19:00:00Z",
                 "item_name": "Chair",
@@ -102,6 +115,17 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "image_thumbnail_base64": null,
                 "marketplace": "craigslist",
                 "listing_text": "TITLE:\\nChair"
+              },
+              {
+                "id": "\(blankNameID.uuidString)",
+                "created_at": "2026-07-14T18:30:00Z",
+                "item_name": "  \\n\\t  ",
+                "category": "home",
+                "condition": "good",
+                "suggested_price": 20,
+                "image_thumbnail_base64": null,
+                "marketplace": "ebay",
+                "listing_text": "TITLE:\\nBlank name"
               }
             ]
             """.utf8)
@@ -175,6 +199,7 @@ final class RemoteHistoryClientTests: XCTestCase {
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
             let rows = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [[String: Any]])
+            XCTAssertEqual(rows.count, 1)
             let row = try XCTUnwrap(rows.first)
             XCTAssertEqual(row["id"] as? String, entryID.uuidString)
             XCTAssertEqual(row["item_name"] as? String, "Chair")
@@ -194,7 +219,11 @@ final class RemoteHistoryClientTests: XCTestCase {
             return (response, Data())
         }
 
-        try await client.upsertHistory([entry], accessToken: "access-token")
+        try await client.upsertHistory([
+            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name"),
+            entry,
+            Self.sampleEntry(itemName: "Blank listing", listingText: "  \n\t  ")
+        ], accessToken: "access-token")
     }
 
     func testFetchHistoryMalformedJSONMapsToDecodingError() async throws {
@@ -329,6 +358,10 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
 
         try await client.upsertHistory([], accessToken: "access-token")
+        try await client.upsertHistory([
+            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name"),
+            Self.sampleEntry(itemName: "Blank listing", listingText: "  \n\t  ")
+        ], accessToken: "access-token")
     }
 
     func testUpsertHistoryTimeoutMapsToFriendlyError() async throws {
@@ -644,17 +677,20 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
     }
 
-    private static func sampleEntry() -> HistoryEntry {
+    private static func sampleEntry(
+        itemName: String = "Lamp",
+        listingText: String = "TITLE:\nLamp"
+    ) -> HistoryEntry {
         HistoryEntry(
             id: UUID(),
             createdAt: Date(timeIntervalSince1970: 1_784_679_600),
-            itemName: "Lamp",
+            itemName: itemName,
             category: .home,
             condition: .good,
             suggestedPrice: Decimal(20),
             imageThumbnail: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: listingText
         )
     }
 
