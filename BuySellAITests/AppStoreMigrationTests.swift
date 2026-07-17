@@ -179,6 +179,114 @@ final class AppStoreMigrationTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, "Signed out.")
     }
 
+    func testSetSessionMigrationUploadFailureKeepsGuestHistoryVisibleAndLocalRowsIntact() async throws {
+        let entry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:00:00Z")),
+            itemName: "Guest lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(45),
+            imageThumbnail: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nGuest lamp"
+        )
+        let context = try makeModelContext()
+        context.insert(HistoryEntryModel(entry: entry))
+        try context.save()
+
+        var uploadCount = 0
+        let remoteHistoryClient = try makeRemoteHistoryClient { request in
+            switch request.httpMethod {
+            case "POST":
+                uploadCount += 1
+                throw URLError(.notConnectedToInternet)
+            case "GET":
+                XCTFail("Migration upload failure should not fetch remote history.")
+                let response = try XCTUnwrap(HTTPURLResponse(url: try XCTUnwrap(request.url), statusCode: 200, httpVersion: nil, headerFields: nil))
+                return (response, Self.remoteRows(for: []))
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(url: try XCTUnwrap(request.url), statusCode: 500, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+        }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "AppStoreMigrationUploadFailureTests-\(UUID().uuidString)"))
+        let store = AppStore(defaults: defaults, remoteHistoryClient: remoteHistoryClient)
+        store.configure(modelContext: context)
+
+        let session = AuthSession(
+            userID: "user-123",
+            email: "person@example.com",
+            accessToken: "access-token",
+            refreshToken: "refresh-token"
+        )
+
+        await store.setSession(session)
+
+        XCTAssertEqual(uploadCount, 1)
+        XCTAssertEqual(store.session?.userID, session.userID)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.history.map(\.itemName), ["Guest lamp"])
+        XCTAssertEqual(try context.fetch(FetchDescriptor<HistoryEntryModel>()).map(\.id), [entry.id])
+        XCTAssertEqual(store.toast?.text, APIError.offline.localizedDescription)
+    }
+
+    func testSetSessionRemoteFetchFailureAfterMigrationKeepsMigratedRowsVisible() async throws {
+        let entry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "12121212-1212-1212-1212-121212121212")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:00:00Z")),
+            itemName: "Guest chair",
+            category: .furniture,
+            condition: .fair,
+            suggestedPrice: Decimal(30),
+            imageThumbnail: nil,
+            marketplace: .craigslist,
+            listingText: "TITLE:\nGuest chair"
+        )
+        let context = try makeModelContext()
+        context.insert(HistoryEntryModel(entry: entry))
+        try context.save()
+
+        var uploadCount = 0
+        var fetchCount = 0
+        let remoteHistoryClient = try makeRemoteHistoryClient { request in
+            switch request.httpMethod {
+            case "POST":
+                uploadCount += 1
+                let response = try XCTUnwrap(HTTPURLResponse(url: try XCTUnwrap(request.url), statusCode: 204, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            case "GET":
+                fetchCount += 1
+                throw URLError(.timedOut)
+            default:
+                XCTFail("Unexpected request method: \(request.httpMethod ?? "nil")")
+                let response = try XCTUnwrap(HTTPURLResponse(url: try XCTUnwrap(request.url), statusCode: 500, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+        }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "AppStoreMigrationFetchFailureTests-\(UUID().uuidString)"))
+        let store = AppStore(defaults: defaults, remoteHistoryClient: remoteHistoryClient)
+        store.configure(modelContext: context)
+
+        let session = AuthSession(
+            userID: "user-123",
+            email: "person@example.com",
+            accessToken: "access-token",
+            refreshToken: "refresh-token"
+        )
+
+        await store.setSession(session)
+
+        XCTAssertEqual(uploadCount, 1)
+        XCTAssertEqual(fetchCount, 1)
+        XCTAssertEqual(store.session?.userID, session.userID)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.history.map(\.itemName), ["Guest chair"])
+        XCTAssertTrue(try context.fetch(FetchDescriptor<HistoryEntryModel>()).isEmpty)
+        XCTAssertEqual(store.toast?.text, APIError.timeout.localizedDescription)
+    }
+
     private func makeModelContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: HistoryEntryModel.self, configurations: configuration)

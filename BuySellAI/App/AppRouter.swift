@@ -415,8 +415,10 @@ final class AppStore {
             return
         }
 
+        var localHistoryFallback: [HistoryEntry] = []
         do {
             let localHistory = try await loadLocalHistory()
+            localHistoryFallback = localHistory
             guard isCurrentSession(session) else { return }
             if localHistory.isEmpty == false {
                 try await remoteHistoryClient.upsertHistory(localHistory, accessToken: accessToken)
@@ -430,6 +432,9 @@ final class AppStore {
             showToast(text, style: .success)
         } catch {
             guard isCurrentSession(session), isCurrentHistoryMutationGeneration(sessionGeneration) else { return }
+            if localHistoryFallback.isEmpty == false {
+                history = localHistoryFallback
+            }
             showToast(APIError.userMessage(for: error), style: .error)
         }
     }
