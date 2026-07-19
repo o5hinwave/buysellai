@@ -3,7 +3,10 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mode="${1:-full}"
+config_path="${SUPABASE_CONFIG_PATH:-$repo_root/BuySellAI/App/Config.plist}"
+linked_ref_file="$repo_root/supabase/.temp/project-ref"
 secret_file=""
+project_ref=""
 
 fail() {
     printf 'error: %s\n' "$*" >&2
@@ -16,13 +19,18 @@ Usage:
   bash Scripts/setup_supabase_secrets.sh [full|gemini-only]
 
 Prompts for server-side Supabase Edge Function secrets, writes them to a
-0600 temporary env file outside the repository, runs `supabase secrets set`,
-then removes the temporary file. Never put Gemini, service-role, or Apple
-private-key material in BuySellAI/App/Config.plist.
+0600 temporary env file outside the repository, runs `supabase secrets set`
+against the resolved project ref, then removes the temporary file. Never put
+Gemini, service-role, or Apple private-key material in
+BuySellAI/App/Config.plist.
 
 For CI, set SUPABASE_SECRETS_FROM_ENV=1 and provide the required secret
 environment variables. In full mode this includes APPLE_PRIVATE_KEY_PATH,
 which must point to a .p8 file outside the repository.
+
+Set SUPABASE_PROJECT_REF=<project-ref> to choose the target project without
+requiring `supabase link`. If unset, the helper derives the ref from
+BuySellAI/App/Config.plist, then falls back to supabase/.temp/project-ref.
 USAGE
 }
 
@@ -30,7 +38,7 @@ cleanup() {
     if [[ -n "$secret_file" && -f "$secret_file" ]]; then
         rm -f "$secret_file"
     fi
-    unset GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY APPLE_TEAM_ID APPLE_KEY_ID APPLE_CLIENT_ID APPLE_PRIVATE_KEY APPLE_PRIVATE_KEY_PATH
+    unset GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY APPLE_TEAM_ID APPLE_KEY_ID APPLE_CLIENT_ID APPLE_PRIVATE_KEY APPLE_PRIVATE_KEY_PATH SUPABASE_PROJECT_REF
 }
 
 read_secret() {
@@ -95,6 +103,91 @@ write_secret() {
     printf '%s=%s\n' "$key" "$value" >> "$secret_file"
 }
 
+validate_project_ref() {
+    local ref="$1"
+
+    [[ "$ref" =~ ^[a-z0-9-]+$ ]] || fail "SUPABASE_PROJECT_REF must contain only lowercase letters, numbers, and hyphens"
+    [[ "$ref" != "project-ref" ]] || fail "SUPABASE_PROJECT_REF still contains the placeholder project-ref"
+}
+
+project_ref_from_config() {
+    local url_value
+
+    [[ -f "$config_path" ]] || return 1
+    [[ -x /usr/libexec/PlistBuddy ]] || return 1
+
+    url_value="$(/usr/libexec/PlistBuddy -c "Print :SUPABASE_URL" "$config_path" 2>/dev/null || true)"
+    [[ -n "$url_value" ]] || return 1
+
+    SUPABASE_URL_VALUE="$url_value" python3 <<'PY'
+import os
+import re
+from urllib.parse import urlparse
+
+url_value = os.environ["SUPABASE_URL_VALUE"].strip()
+parsed = urlparse(url_value)
+
+try:
+    port = parsed.port
+except ValueError:
+    raise SystemExit(1)
+
+host = parsed.hostname.lower() if parsed.hostname else ""
+if (
+    parsed.scheme != "https"
+    or not host
+    or parsed.username is not None
+    or parsed.password is not None
+    or port is not None
+    or parsed.path not in ("", "/")
+    or parsed.params
+    or parsed.query
+    or parsed.fragment
+):
+    raise SystemExit(1)
+
+parts = host.split(".")
+if len(parts) != 3 or parts[1:] != ["supabase", "co"] or not re.fullmatch(r"[a-z0-9-]+", parts[0]):
+    raise SystemExit(1)
+if parts[0] == "project-ref":
+    raise SystemExit("BuySellAI/App/Config.plist still contains the placeholder Supabase project URL")
+
+print(parts[0])
+PY
+}
+
+resolve_project_ref() {
+    local ref="${SUPABASE_PROJECT_REF:-}"
+
+    if [[ -n "$ref" ]]; then
+        ref="$(printf '%s' "$ref" | tr -d '[:space:]')"
+        validate_project_ref "$ref"
+        project_ref="$ref"
+        return
+    fi
+
+    if [[ -f "$config_path" ]]; then
+        if ref="$(project_ref_from_config)"; then
+            validate_project_ref "$ref"
+            project_ref="$ref"
+            return
+        fi
+
+        fail "Supabase project ref could not be derived from ${config_path#$repo_root/}; set SUPABASE_PROJECT_REF=<project-ref> or rerun Scripts/setup_supabase_config.sh"
+    fi
+
+    if [[ -f "$linked_ref_file" ]]; then
+        ref="$(tr -d '[:space:]' < "$linked_ref_file")"
+        if [[ -n "$ref" ]]; then
+            validate_project_ref "$ref"
+            project_ref="$ref"
+            return
+        fi
+    fi
+
+    fail "SUPABASE_PROJECT_REF is required, or write BuySellAI/App/Config.plist with Scripts/setup_supabase_config.sh, or run supabase link --project-ref <project-ref>"
+}
+
 case "$mode" in
     full|gemini-only)
         ;;
@@ -108,6 +201,9 @@ case "$mode" in
 esac
 
 command -v supabase >/dev/null 2>&1 || fail "supabase CLI is required"
+command -v python3 >/dev/null 2>&1 || fail "python3 is required"
+
+resolve_project_ref
 
 trap cleanup EXIT
 secret_file="$(mktemp "${TMPDIR:-/tmp}/buysell-supabase-secrets.XXXXXX")"
@@ -140,10 +236,11 @@ if [[ "$mode" == "full" ]]; then
     write_secret "APPLE_PRIVATE_KEY" "$APPLE_PRIVATE_KEY"
 fi
 
-supabase secrets set --env-file "$secret_file"
+supabase secrets set --project-ref "$project_ref" --env-file "$secret_file"
 
 printf 'Supabase secrets set\n'
 printf 'mode: %s\n' "$mode"
+printf 'project ref: %s\n' "$project_ref"
 if [[ "$mode" == "full" ]]; then
     printf 'secrets: GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY APPLE_TEAM_ID APPLE_KEY_ID APPLE_CLIENT_ID APPLE_PRIVATE_KEY\n'
 else

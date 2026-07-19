@@ -32,10 +32,10 @@ Deployable Supabase Edge Function templates live in `supabase/functions/` for th
 Safe secret setup for the existing Edge Functions:
 
 ```sh
-bash Scripts/setup_supabase_secrets.sh full
+SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full
 ```
 
-The helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It writes a 0600 temporary env file outside the repository, calls `supabase secrets set --env-file`, and removes the temp file on exit. Use `bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands that would remain in history.
+The helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It resolves the target from `SUPABASE_PROJECT_REF`, `BuySellAI/App/Config.plist`, or the linked Supabase project before prompting for secrets, writes a 0600 temporary env file outside the repository, calls `supabase secrets set --project-ref <project-ref> --env-file`, and removes the temp file on exit. Use `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands that would remain in history.
 
 Optional backend tuning:
 
@@ -61,7 +61,7 @@ The migrations create the signed-in `history` table, harden it with native value
 ALLOW_MISSING_SUPABASE_DEPLOY=1 bash Scripts/deploy_supabase_backend.sh preflight
 ```
 
-After `Scripts/setup_supabase_config.sh`, `Scripts/setup_supabase_secrets.sh full`, and `supabase link --project-ref <project-ref>` are complete, deploy the schema and functions with:
+After `Scripts/setup_supabase_config.sh`, `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full`, and `supabase link --project-ref <project-ref>` are complete, deploy the schema and functions with:
 
 ```sh
 CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy | tee /tmp/buysell-submit-readiness-supabase-deploy.log

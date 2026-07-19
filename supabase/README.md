@@ -5,10 +5,10 @@ These Edge Functions are deployment templates for the native iOS contracts. They
 Required Supabase secrets:
 
 ```sh
-bash Scripts/setup_supabase_secrets.sh full
+SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full
 ```
 
-The helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It writes a 0600 temporary env file outside the repository, calls `supabase secrets set --env-file`, then removes the temp file on exit. Use `bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Rotate any provider key that was pasted into chat, logs, or git before using it for production. Do not copy Gemini or service-role secrets into `BuySellAI/App/Config.plist`, source, tests, Xcode build settings, or long-lived shell history. The final M10 secret scan reads hidden files, so remove any temporary local secret files before collecting submit-readiness evidence.
+The helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It resolves the target from `SUPABASE_PROJECT_REF`, `BuySellAI/App/Config.plist`, or the linked Supabase project before prompting for secrets, writes a 0600 temporary env file outside the repository, calls `supabase secrets set --project-ref <project-ref> --env-file`, then removes the temp file on exit. Use `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Rotate any provider key that was pasted into chat, logs, or git before using it for production. Do not copy Gemini or service-role secrets into `BuySellAI/App/Config.plist`, source, tests, Xcode build settings, or long-lived shell history. The final M10 secret scan reads hidden files, so remove any temporary local secret files before collecting submit-readiness evidence.
 
 Optional backend tuning:
 
