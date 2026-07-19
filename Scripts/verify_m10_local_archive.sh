@@ -218,6 +218,11 @@ if plist_key_exists NSPhotoLibraryAddUsageDescription "$info_plist"; then
     fail "camera-only build should not request photo-library add permission"
 fi
 
+bundled_font="$(
+    find "$app_path" -maxdepth 2 \( -name '*.ttf' -o -name '*.otf' -o -name '*OFL*' \) -print -quit
+)"
+[[ -z "$bundled_font" ]] || fail "archived app must not bundle legacy custom font assets: $bundled_font"
+
 printf 'M10 local archive check passed\n'
 printf 'archive: %s\n' "$archive_path"
 if [[ -n "$snapshot_root" ]]; then
@@ -227,4 +232,5 @@ printf 'bundle id: %s\n' "$bundle_id"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"
 printf 'app icon: AppIcon 1024x1024 source, 120x120 iPhone, 152x152 iPad\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
+printf 'custom fonts: none bundled\n'
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"

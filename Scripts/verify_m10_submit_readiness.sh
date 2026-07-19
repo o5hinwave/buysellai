@@ -568,6 +568,7 @@ require_file_contains "$no_sign_log" "bundle id: com.rhodes.buysellai" "no-sign 
 require_file_contains "$no_sign_log" "release build:" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "app icon:" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "system design: current presentation, no UIDesignRequiresCompatibility" "no-sign archive verifier log"
+require_file_contains "$no_sign_log" "custom fonts: none bundled" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "app size:" "no-sign archive verifier log"
 require_file_contains "$latest_design_log" "M10 latest design SDK passed" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "xcode:" "latest design SDK evidence log"

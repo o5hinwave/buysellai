@@ -57,6 +57,10 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "ITSAppUsesNonExemptEncryption"))
         XCTAssertNotNil(script.range(of: "NSPhotoLibraryUsageDescription"))
         XCTAssertNotNil(script.range(of: "NSPhotoLibraryAddUsageDescription"))
+        XCTAssertNotNil(script.range(of: "*.ttf"))
+        XCTAssertNotNil(script.range(of: "*.otf"))
+        XCTAssertNotNil(script.range(of: "archived app must not bundle legacy custom font assets"))
+        XCTAssertNotNil(script.range(of: "custom fonts: none bundled"))
     }
 
     func testAcceptanceDocsRouteNoSignArchiveThroughLocalVerifier() throws {
@@ -70,6 +74,7 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "Binary-size check: archived app bundle stays under `20 MB`."))
         XCTAssertNotNil(m10.range(of: "App icon check: source App Store icon is a text-free camera-first 1024x1024 non-alpha PNG and the archive contains iPhone/iPad icon PNGs."))
         XCTAssertNotNil(m10.range(of: "Current-system design check: archived app omits `UIDesignRequiresCompatibility`."))
+        XCTAssertNotNil(m10.range(of: "Custom font packaging check: archived app bundle contains no legacy custom font assets."))
         XCTAssertNotNil(m10.range(of: "Privacy manifest content check"))
     }
 

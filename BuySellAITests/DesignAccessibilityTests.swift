@@ -384,6 +384,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(plist["UIAppFonts"])
         XCTAssertNotNil(typography.range(of: ".system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))"))
         XCTAssertNil(typography.range(of: "Font.custom("))
+        let fontsURL = projectURL("BuySellAI/Resources/Fonts")
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: fontsURL.path, isDirectory: &isDirectory) {
+            XCTAssertTrue(isDirectory.boolValue)
+            let fontFiles = try FileManager.default.contentsOfDirectory(atPath: fontsURL.path)
+            XCTAssertTrue(fontFiles.isEmpty, "Legacy custom fonts should not be shipped in the synchronized app target.")
+        }
         for style in BrandTextStyle.allCases {
             switch style.textStyle {
             case .largeTitle, .title, .title2, .title3, .body, .caption, .caption2, .headline:

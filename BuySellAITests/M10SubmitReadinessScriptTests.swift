@@ -92,6 +92,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "archive: $no_sign_archive"))
         XCTAssertNotNil(script.range(of: "app icon:"))
         XCTAssertNotNil(script.range(of: "system design: current presentation, no UIDesignRequiresCompatibility"))
+        XCTAssertNotNil(script.range(of: "custom fonts: none bundled"))
         XCTAssertNotNil(script.range(of: "latest design SDK evidence log"))
         XCTAssertNotNil(script.range(of: "xcode:"))
         XCTAssertNotNil(script.range(of: "iphoneos sdk:"))

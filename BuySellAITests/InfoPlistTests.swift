@@ -93,6 +93,18 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertNil(typography.range(of: "Inter-"))
     }
 
+    func testLegacyCustomFontAssetsAreNotBundledBySynchronizedTarget() throws {
+        let fontsURL = projectURL("BuySellAI/Resources/Fonts")
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: fontsURL.path, isDirectory: &isDirectory) else {
+            return
+        }
+        XCTAssertTrue(isDirectory.boolValue)
+
+        let fontFiles = try FileManager.default.contentsOfDirectory(atPath: fontsURL.path)
+        XCTAssertTrue(fontFiles.isEmpty, "Synchronized app resources should not bundle legacy custom font assets.")
+    }
+
     func testLaunchScreenUsesFixedWhiteBrandWordmark() throws {
         let storyboard = try String(
             contentsOf: projectURL("BuySellAI/Resources/Base.lproj/LaunchScreen.storyboard"),
