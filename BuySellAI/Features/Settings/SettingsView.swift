@@ -157,17 +157,14 @@ struct SettingsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    IconCircleButton(
-                        systemImage: "xmark",
-                        accessibilityLabel: "Close settings",
-                        size: 40,
-                        material: true,
-                        materialForeground: Color.brand.foreground,
-                        materialStroke: Color.brand.border,
-                        usesAccessibleMaterialStroke: true
-                    ) {
+                    Button {
+                        Haptics.impact(.light)
                         dismiss()
+                    } label: {
+                        Label("Close settings".localized, systemImage: "xmark")
                     }
+                    .labelStyle(.iconOnly)
+                    .accessibilityLabel("Close settings".localized)
                     .accessibilitySortPriority(2)
                 }
             }
@@ -227,10 +224,11 @@ private struct SettingsActionRow: View {
                 title: title,
                 systemImage: systemImage,
                 iconTint: iconTint,
-                titleTint: titleTint
+                titleTint: titleTint,
+                showsDisclosureIndicator: true
             )
         }
-        .buttonStyle(PressButtonStyle())
+        .buttonStyle(.automatic)
         .accessibilityLabel(Text(title.localized))
         .settingsAccessibilityIdentifier(accessibilityIdentifier)
     }
@@ -242,26 +240,28 @@ private struct SettingsRowLabel: View {
     var iconTint: Color
     var titleTint: Color = Color.brand.foreground
     var value: String?
+    var showsDisclosureIndicator = false
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: systemImage)
-                .brandSymbol(.rowIcon)
+                .font(.body.weight(.regular))
+                .imageScale(.large)
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(iconTint)
                 .frame(width: 32, height: 32)
-                .background {
-                    NativeMaterialRoundedBackground(
-                        cornerRadius: Radius.sm,
-                        tint: iconTint,
-                        tintOpacity: 0.12,
-                        strokeOpacity: 0.36
-                    )
-                }
                 .accessibilityHidden(true)
 
             labelContent
+
+            if showsDisclosureIndicator {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(minHeight: 44)
         .contentShape(Rectangle())
@@ -331,13 +331,8 @@ private struct DeleteAccountView: View {
     @FocusState private var isConfirmationFocused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Text("Delete account".localized)
-                    .brandFont(.titleXL)
-                    .foregroundStyle(Color.brand.foreground)
-                    .accessibilitySortPriority(4)
-
+        List {
+            Section {
                 Text("Type DELETE to confirm.".localized)
                     .brandFont(.body)
                     .foregroundStyle(Color.brand.mutedForeground)
@@ -353,17 +348,16 @@ private struct DeleteAccountView: View {
                     .accessibilityIdentifier("Settings.DeleteAccountConfirmation")
                     .accessibilitySortPriority(2)
             }
-            .frame(maxWidth: contentMaxWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-            .padding(.bottom, bottomContentInset)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .contentMargins(.bottom, bottomContentInset, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             deleteBottomAction
         }
         .background(Color.clear)
+        .navigationTitle("Delete account".localized)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             isConfirmationFocused = true
@@ -374,25 +368,23 @@ private struct DeleteAccountView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                IconCircleButton(
-                    systemImage: "xmark",
-                    accessibilityLabel: "Close delete account",
-                    size: 40,
-                    material: true,
-                    materialForeground: Color.brand.foreground,
-                    materialStroke: Color.brand.border,
-                    usesAccessibleMaterialStroke: true
-                ) {
+                Button {
+                    Haptics.impact(.light)
                     dismiss()
+                } label: {
+                    Label("Close delete account".localized, systemImage: "xmark")
                 }
-                    .accessibilitySortPriority(5)
+                .labelStyle(.iconOnly)
+                .accessibilityLabel("Close delete account".localized)
+                .accessibilitySortPriority(5)
             }
         }
     }
 
     private var deleteBottomAction: some View {
-        PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account", maxFillWidth: contentMaxWidth) {
+        Button(role: .destructive) {
             guard isDeletingAccount == false else { return }
+            Haptics.impact(.light)
             isDeletingAccount = true
             deleteAccountTask = Task { @MainActor in
                 let didDelete = await appStore.deleteAccount()
@@ -403,8 +395,16 @@ private struct DeleteAccountView: View {
                     dismiss()
                 }
             }
+        } label: {
+            Label(isDeletingAccount ? "Deleting…".localized : "Delete account".localized, systemImage: "person.crop.circle.badge.xmark")
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
+        .tint(Color.brand.destructive)
         .disabled(confirmation != "DELETE" || isDeletingAccount)
+        .accessibilityLabel((isDeletingAccount ? "Deleting…" : "Delete account").localized)
         .accessibilityIdentifier("Settings.ConfirmDeleteAccount")
         .accessibilitySortPriority(1)
         .frame(maxWidth: contentMaxWidth)
@@ -412,7 +412,7 @@ private struct DeleteAccountView: View {
         .padding(.horizontal, Spacing.xl)
         .padding(.top, Spacing.md)
         .padding(.bottom, Spacing.md)
-        .nativeMaterialBar(tintOpacity: 0.78)
+        .background(.bar)
     }
 
     private var contentMaxWidth: CGFloat {

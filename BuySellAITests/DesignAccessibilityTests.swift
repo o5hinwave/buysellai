@@ -1127,14 +1127,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(settings.range(of: "UIApplication.shared.open"))
     }
 
-    func testSettingsRowsUseIconLedNativeLabelsWithStableTapHeight() throws {
+    func testSettingsRowsUseNativeDisclosureLabelsWithStableTapHeight() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(settings.range(of: "private struct SettingsRowLabel: View"))
         XCTAssertNotNil(settings.range(of: #".frame(width: 32, height: 32)"#))
-        XCTAssertNotNil(settings.range(of: "NativeMaterialRoundedBackground("))
-        XCTAssertNotNil(settings.range(of: "tint: iconTint"))
-        XCTAssertNotNil(settings.range(of: "tintOpacity: 0.12"))
+        XCTAssertNotNil(settings.range(of: #".symbolRenderingMode(.hierarchical)"#))
+        XCTAssertNotNil(settings.range(of: #"var showsDisclosureIndicator = false"#))
+        XCTAssertNotNil(settings.range(of: #"showsDisclosureIndicator: true"#))
+        XCTAssertNotNil(settings.range(of: #"Image(systemName: "chevron.right")"#))
+        XCTAssertNil(settings.range(of: "NativeMaterialRoundedBackground("))
         XCTAssertNil(settings.range(of: ".background(iconTint.opacity(0.12)"))
         XCTAssertNotNil(settings.range(of: #".frame(minHeight: 44)"#))
         XCTAssertNotNil(settings.range(of: #".contentShape(Rectangle())"#))
@@ -1164,24 +1166,27 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: "private struct SettingsActionRow: View"))
         XCTAssertNotNil(settings.range(of: "Button(role: role)"))
         XCTAssertNotNil(settings.range(of: "Haptics.impact(.light)"))
-        XCTAssertNotNil(settings.range(of: ".buttonStyle(PressButtonStyle())"))
+        XCTAssertNotNil(settings.range(of: ".buttonStyle(.automatic)"))
         XCTAssertNotNil(settings.range(of: ".accessibilityLabel(Text(title.localized))"))
         XCTAssertNotNil(settings.range(of: ".settingsAccessibilityIdentifier(accessibilityIdentifier)"))
         XCTAssertGreaterThanOrEqual(settings.components(separatedBy: "SettingsActionRow(").count - 1, 6)
+        XCTAssertNil(settings.range(of: ".buttonStyle(PressButtonStyle())"))
         XCTAssertNil(settings.range(of: #"Button("Close".localized)"#))
     }
 
-    func testSettingsCloseControlsUseReadableMaterialIconButtons() throws {
+    func testSettingsCloseControlsUseNativeToolbarIconButtons() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(settings.range(of: #"accessibilityLabel: "Close settings""#))
-        XCTAssertNotNil(settings.range(of: #"accessibilityLabel: "Close delete account""#))
-        XCTAssertGreaterThanOrEqual(settings.components(separatedBy: "materialForeground: Color.brand.foreground").count - 1, 2)
-        XCTAssertGreaterThanOrEqual(settings.components(separatedBy: "materialStroke: Color.brand.border").count - 1, 2)
-        XCTAssertGreaterThanOrEqual(settings.components(separatedBy: "usesAccessibleMaterialStroke: true").count - 1, 2)
+        XCTAssertNotNil(settings.range(of: #"Label("Close settings".localized, systemImage: "xmark")"#))
+        XCTAssertNotNil(settings.range(of: #"Label("Close delete account".localized, systemImage: "xmark")"#))
+        XCTAssertGreaterThanOrEqual(settings.components(separatedBy: #".labelStyle(.iconOnly)"#).count - 1, 2)
+        XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Close settings".localized)"#))
+        XCTAssertNotNil(settings.range(of: #".accessibilityLabel("Close delete account".localized)"#))
+        XCTAssertNil(settings.range(of: "IconCircleButton("))
+        XCTAssertNil(settings.range(of: "materialForeground: Color.brand.foreground"))
     }
 
-    func testDeleteAccountViewUsesScrollableKeyboardAwareMaterialActionBar() throws {
+    func testDeleteAccountViewUsesNativeKeyboardAwareListAndActionBar() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
         let deleteViewRange = try XCTUnwrap(settings.range(of: "private struct DeleteAccountView"))
         let safariRange = try XCTUnwrap(settings.range(of: "private struct SafariDestination", range: deleteViewRange.upperBound..<settings.endIndex))
@@ -1189,12 +1194,24 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(deleteView.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(deleteView.range(of: #"@Environment(\.horizontalSizeClass) private var horizontalSizeClass"#))
-        XCTAssertNotNil(deleteView.range(of: "ScrollView {"))
+        XCTAssertNotNil(deleteView.range(of: "List {"))
+        XCTAssertNotNil(deleteView.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(deleteView.range(of: ".scrollContentBackground(.hidden)"))
+        XCTAssertNotNil(deleteView.range(of: #".contentMargins(.bottom, bottomContentInset, for: .scrollContent)"#))
         XCTAssertNotNil(deleteView.range(of: ".scrollDismissesKeyboard(.interactively)"))
         XCTAssertNotNil(deleteView.range(of: ".safeAreaInset(edge: .bottom)"))
         XCTAssertNotNil(deleteView.range(of: "deleteBottomAction"))
-        XCTAssertNotNil(deleteView.range(of: #"PrimaryPillButton(title: isDeletingAccount ? "Deleting…" : "Delete account", maxFillWidth: contentMaxWidth)"#))
-        XCTAssertNotNil(deleteView.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
+        XCTAssertNotNil(deleteView.range(of: "Button(role: .destructive)"))
+        XCTAssertNotNil(deleteView.range(of: #"Label(isDeletingAccount ? "Deleting…".localized : "Delete account".localized, systemImage: "person.crop.circle.badge.xmark")"#))
+        XCTAssertNotNil(deleteView.range(of: ".buttonStyle(.borderedProminent)"))
+        XCTAssertNotNil(deleteView.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNotNil(deleteView.range(of: ".controlSize(.large)"))
+        XCTAssertNotNil(deleteView.range(of: ".tint(Color.brand.destructive)"))
+        XCTAssertNotNil(deleteView.range(of: ".background(.bar)"))
+        XCTAssertNotNil(deleteView.range(of: #".navigationTitle("Delete account".localized)"#))
+        XCTAssertNil(deleteView.range(of: "ScrollView {"))
+        XCTAssertNil(deleteView.range(of: "PrimaryPillButton("))
+        XCTAssertNil(deleteView.range(of: ".nativeMaterialBar("))
         XCTAssertNotNil(deleteView.range(of: "private var contentMaxWidth: CGFloat"))
         XCTAssertNotNil(deleteView.range(of: "usesRegularWidthLayout ? 560 : .infinity"))
         XCTAssertNotNil(deleteView.range(of: "private var bottomContentInset: CGFloat"))

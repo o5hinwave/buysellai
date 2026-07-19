@@ -59,6 +59,8 @@ final class HapticRoutingTests: XCTestCase {
         XCTAssertNotNil(dangerZone.range(of: #"showDeleteAccount = true"#))
         XCTAssertNotNil(source.range(of: #".navigationDestination(isPresented: $showDeleteAccount)"#))
         XCTAssertNotNil(actionRow.range(of: "Haptics.impact(.light)"))
+        XCTAssertNotNil(actionRow.range(of: ".buttonStyle(.automatic)"))
+        XCTAssertNil(actionRow.range(of: ".buttonStyle(PressButtonStyle())"))
         XCTAssertNil(dangerZone.range(of: ".simultaneousGesture(TapGesture().onEnded {"))
     }
 
