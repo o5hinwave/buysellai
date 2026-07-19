@@ -35,9 +35,9 @@ secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log
 ui_evidence_log="${M10_UI_EVIDENCE_LOG:-/tmp/buysell-submit-readiness-ui.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-420}"
-min_unit_tests="${M10_MIN_UNIT_TESTS:-389}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-70}"
+min_tests="${M10_MIN_TESTS:-501}"
+min_unit_tests="${M10_MIN_UNIT_TESTS:-469}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-79}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
     "ArchivePackagingScriptTests/testLatestDesignSDKVerifierRequiresLiquidGlassCapableToolchain()"

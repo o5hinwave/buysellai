@@ -4,10 +4,10 @@ This checklist tracks the remaining submit-readiness work for BuySell AI iOS. Si
 
 ## Current Evidence
 
-- Simulator suite: `469` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6, from the current full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`.
-- Unit target: `389` `BuySellAITests` tests pass on iPhone 16 Pro simulator, iOS 18.6, in the retained default unit bundle `/tmp/buysell-full-unit-tests-9.xcresult`.
+- Simulator suite: `501` unit/UI tests pass on iPhone 16 Pro simulator, iOS 18.6, from the current full-suite result bundle `/tmp/buysell-submit-readiness-full.xcresult`.
+- Unit target: `469` `BuySellAITests` tests pass on iPhone 16 Pro simulator, iOS 18.6, in the retained default unit bundle `/tmp/buysell-full-unit-tests-9.xcresult`.
 - Chunked simulator UI evidence: all `32` `BuySellAIUITests` tests pass through `M10_UI_SNAPSHOT_ROOT=/tmp/buysell-m10-ui-worktree bash Scripts/run_m10_ui_tests.sh`, with the rollup retained at `/tmp/buysell-m10-ui-tests/summary.log` and per-test `.xcresult`/`.log` artifacts under `/tmp/buysell-m10-ui-tests/`.
-- Focused M10 guardrail slice: `464` tests pass on iPhone 16 Pro simulator, iOS 18.6, from `/tmp/buysell-submit-readiness-focused.xcresult`, including the required M10 script, metadata, Today nomination, backend, signing, performance, UI-evidence, and real-device guardrails.
+- Focused M10 guardrail slice: `79` tests pass on iPhone 16 Pro simulator, iOS 18.6, from `/tmp/buysell-submit-readiness-focused.xcresult`, including the required M10 script, metadata, Today nomination, backend, signing, performance, UI-evidence, and real-device guardrails.
 - No-sign Release iPhoneOS archive: compiles and packages a `3936KB` app bundle from the lean snapshot worktree `/private/tmp/buysell-m10-archive-worktree`; refreshed evidence is retained at `/tmp/buysell-submit-readiness-nosign.log` and `/tmp/buysell-submit-readiness-nosign.xcarchive`.
 - Binary-size check: archived app bundle stays under `20 MB`.
 - App icon check: source App Store icon is a text-free camera-first 1024x1024 non-alpha PNG and the archive contains iPhone/iPad icon PNGs.
@@ -328,7 +328,7 @@ The combined gate checks that pass logs retain their concrete artifact markers: 
 
 The combined gate also requires the App Store metadata log's `screenshot brand signal: warm orange present` marker and the Today feature nomination log's Apple source, placement, lead-time, role, story, and asset markers. It requires a clean git worktree, so every release source, screenshot, script, and evidence-document change must be committed or intentionally stashed before final submit-readiness can pass.
 
-The combined gate checks a retained unit test suite result bundle; the current default evidence is `/tmp/buysell-full-unit-tests-9.xcresult` with `389` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
+The combined gate checks a retained unit test suite result bundle; the current default evidence is `/tmp/buysell-full-unit-tests-9.xcresult` with `469` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
 
 Until the latest-design SDK, signed archive, App Store metadata/submission, backend, real-device, and manual evidence gates are complete, record the known blockers:
 
