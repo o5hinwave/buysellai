@@ -177,7 +177,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl"))
         XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
         XCTAssertNil(root.range(of: ".background(Color.brand.background)\n        .clipShape(UnevenRoundedRectangle("))
-        XCTAssertNotNil(picker.range(of: ".nativeMaterialBar(tintOpacity: 0.78, showsTopDivider: false, showsBottomDivider: true)"))
+        XCTAssertNotNil(picker.range(of: "NavigationStack {"))
+        XCTAssertNotNil(picker.range(of: "List {"))
+        XCTAssertNotNil(picker.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(picker.range(of: #".navigationTitle("Pick where to sell".localized)"#))
+        XCTAssertNil(picker.range(of: "ScrollView {"))
+        XCTAssertNil(picker.range(of: "LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders])"))
+        XCTAssertNil(picker.range(of: ".nativeMaterialBar(tintOpacity: 0.78, showsTopDivider: false, showsBottomDivider: true)"))
         XCTAssertNotNil(listing.range(of: "NavigationStack {"))
         XCTAssertNotNil(listing.range(of: ".listStyle(.insetGrouped)"))
         XCTAssertNotNil(listing.range(of: ".toolbar {"))
@@ -242,7 +248,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)"))
         XCTAssertNil(home.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))"))
 
-        XCTAssertNotNil(marketplace.range(of: "tint: label == \"Best\" ? Color.brand.success : Color.brand.surface"))
+        XCTAssertNotNil(marketplace.range(of: ".buttonStyle(.bordered)"))
+        XCTAssertNotNil(marketplace.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNotNil(marketplace.range(of: ".tint(label == \"Best\" ? Color.brand.success : Color.brand.primary)"))
+        XCTAssertNil(marketplace.range(of: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"))
         XCTAssertNil(marketplace.range(of: ".background((label == \"Best\" ? Color.brand.success : Color.brand.secondary).opacity(0.14), in: Capsule())"))
         XCTAssertNotNil(marketplaceRow.range(of: "tintOpacity: 0.7,\n                    strokeOpacity: 0.54"))
         XCTAssertNil(marketplaceRow.range(of: ".background(Color.brand.secondary, in: Capsule())"))
@@ -784,11 +793,19 @@ final class DesignAccessibilityTests: XCTestCase {
         )
     }
 
-    func testMarketplacePickerScrollContentClearsSystemHomeIndicator() throws {
+    func testMarketplacePickerUsesNativeNavigationListChrome() throws {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
+        XCTAssertNotNil(marketplace.range(of: #"NavigationStack {"#))
+        XCTAssertNotNil(marketplace.range(of: #"List {"#))
+        XCTAssertNotNil(marketplace.range(of: #"Section("Marketplace choices".localized) {"#))
+        XCTAssertNotNil(marketplace.range(of: #".listStyle(.insetGrouped)"#))
+        XCTAssertNotNil(marketplace.range(of: #".scrollContentBackground(.hidden)"#))
         XCTAssertNotNil(marketplace.range(of: #".contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)"#))
-        XCTAssertNotNil(marketplace.range(of: #".padding(.bottom, Spacing.xxl)"#))
+        XCTAssertNotNil(marketplace.range(of: #".navigationTitle("Pick where to sell".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
+        XCTAssertNil(marketplace.range(of: #".padding(.bottom, Spacing.xxl)"#))
+        XCTAssertNil(marketplace.range(of: #"pinnedViews: [.sectionHeaders]"#))
     }
 
     func testMarketplaceRowsReserveStablePayoutAndDeltaSpace() throws {
@@ -856,7 +873,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(picker.range(of: #".frame(minHeight: 72)"#))
     }
 
-    func testMarketplaceSummaryActionsAdaptForAccessibilityDynamicTypeAndMaterial() throws {
+    func testMarketplaceSummaryActionsAdaptForAccessibilityDynamicTypeAndNativeButtons() throws {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
         XCTAssertNotNil(marketplace.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
@@ -866,9 +883,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(marketplace.range(of: #"HStack(spacing: Spacing.sm)"#))
         XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: "Best", estimate: best)"#))
         XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: "Lowest", estimate: lowest)"#))
-        XCTAssertNotNil(marketplace.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"#))
-        XCTAssertNotNil(marketplace.range(of: #"NativeMaterialRoundedBackground("#))
-        XCTAssertNotNil(marketplace.range(of: #"tint: label == "Best" ? Color.brand.success : Color.brand.surface"#))
+        XCTAssertNotNil(marketplace.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNotNil(marketplace.range(of: #".buttonBorderShape(.capsule)"#))
+        XCTAssertNotNil(marketplace.range(of: #".controlSize(.large)"#))
+        XCTAssertNotNil(marketplace.range(of: #".monospacedDigit()"#))
+        XCTAssertNotNil(marketplace.range(of: #".tint(label == "Best" ? Color.brand.success : Color.brand.primary)"#))
+        XCTAssertNil(marketplace.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"#))
+        XCTAssertNil(marketplace.range(of: #"NativeMaterialRoundedBackground("#))
         XCTAssertNotNil(marketplace.range(of: #"private var summaryLineLimit: Int"#))
         XCTAssertNotNil(marketplace.range(of: #"dynamicTypeSize.isAccessibilitySize ? 2 : 1"#))
         XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel("Computing marketplace payouts".localized)"#))
