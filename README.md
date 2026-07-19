@@ -27,6 +27,8 @@ It writes only those public keys to `BuySellAI/App/Config.plist`, rejects copied
 
 Keep AI provider secrets, including Gemini keys, out of the iOS bundle. Add them to the Supabase Edge Function environment instead, using the variable name expected by the deployed functions (commonly `GEMINI_API_KEY`), then let the app call the existing `analyze-image` and `generate-listing` functions through Supabase. Rotate any provider key that was pasted into chat, logs, or git before using it for production. The bundled config parser accepts only `SUPABASE_URL` and `SUPABASE_ANON_KEY` and rejects provider-secret-shaped values.
 
+Current submit-readiness state: `BuySellAI/App/Config.plist` is intentionally absent until the real Supabase project URL and public anon key are supplied, no linked project file exists under `supabase/.temp/`, and `supabase projects list` currently returns `Unauthorized` on this machine. The Gemini key must be set only after `supabase login` and the target project ref are available, using `Scripts/setup_supabase_secrets.sh`; it must not be copied into `Config.plist`, source, tests, README examples, or shell history.
+
 Deployable Supabase Edge Function templates live in `supabase/functions/` for the app's `analyze-image`, `generate-listing`, `store-apple-token`, and `delete-account` routes. They preserve the native iOS contracts while keeping `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and Sign in with Apple private-key material server-side.
 
 Safe secret setup for the existing Edge Functions:
