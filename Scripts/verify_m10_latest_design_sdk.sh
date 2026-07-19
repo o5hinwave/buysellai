@@ -128,18 +128,23 @@ require_buttons_marker ".nativeStandardButtonBackground(tintOpacity: 0.64, strok
 require_buttons_marker ".nativeIconButtonBackground("
 require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
-require_home_marker ".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"
-require_home_marker ".nativeGlassButtonStyle(.standard)"
-require_home_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"
+require_home_marker ".listStyle(.insetGrouped)"
+require_home_marker "SnapActionRow()"
+require_home_marker ".toolbar {"
+require_home_marker '.navigationTitle("BuySell".localized)'
 require_camera_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"
-require_auth_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"
-require_auth_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"
+require_auth_marker ".listStyle(.insetGrouped)"
+require_auth_marker "NavigationLink(value: AuthRoute.email)"
+require_auth_marker ".buttonStyle(.borderedProminent)"
+require_auth_marker ".background(.bar)"
 require_snap_result_marker "private func categoryMenuItemIcon(for category: Category) -> String"
 require_snap_result_marker "private func conditionMenuItemIcon(for condition: Condition) -> String"
 require_snap_result_marker "systemImage: categoryMenuItemIcon(for: category)"
 require_snap_result_marker "systemImage: conditionMenuItemIcon(for: condition)"
 require_snap_result_marker 'Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)'
-require_tutorial_marker ".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"
+require_tutorial_marker ".listStyle(.insetGrouped)"
+require_tutorial_marker ".background(.bar)"
+require_tutorial_marker ".buttonStyle(.borderedProminent)"
 
 if /usr/libexec/PlistBuddy -c "Print :UIDesignRequiresCompatibility" "$info_plist" >/dev/null 2>&1; then
     fail "Info.plist must not request iOS design compatibility mode"
@@ -169,9 +174,11 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
         printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
-        printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, home, and setup controls\n'
-        printf 'standalone control groups: Home header actions, Home CTA stack, and Camera top controls use GlassEffectContainer on iOS 26+\n'
-        printf 'auth setup control groups: provider actions and sticky guest/email actions use GlassEffectContainer on iOS 26+\n'
+        printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
+        printf 'home setup: native inset grouped task list with toolbar account and settings actions\n'
+        printf 'camera setup: top and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
+        printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
+        printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
         printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
         printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
         printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
@@ -190,9 +197,11 @@ printf 'liquid glass sdk: Xcode and iPhoneOS SDK %s or newer\n' "$min_sdk_major"
 printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
 printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
 printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
-printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, home, and setup controls\n'
-printf 'standalone control groups: Home header actions, Home CTA stack, and Camera top controls use GlassEffectContainer on iOS 26+\n'
-printf 'auth setup control groups: provider actions and sticky guest/email actions use GlassEffectContainer on iOS 26+\n'
+printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
+printf 'home setup: native inset grouped task list with toolbar account and settings actions\n'
+printf 'camera setup: top and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
+printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
+printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
 printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
 printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'

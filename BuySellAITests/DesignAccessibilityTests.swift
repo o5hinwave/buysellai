@@ -170,8 +170,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: ".nativeLiquidGlassControlGroup"))
         XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
         XCTAssertNotNil(camera.range(of: ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"))
-        XCTAssertNotNil(auth.range(of: ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"))
-        XCTAssertGreaterThanOrEqual(auth.components(separatedBy: ".nativeLiquidGlassControlGroup(spacing: Spacing.md)").count - 1, 2)
+        XCTAssertNotNil(auth.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(auth.range(of: ".toolbar {"))
+        XCTAssertNotNil(auth.range(of: ".background(.bar)"))
+        XCTAssertNil(auth.range(of: ".nativeLiquidGlassControlGroup"))
         XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeStandardButtonBackground(").count - 1, 2)
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl"))
@@ -520,13 +522,14 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(buttons.range(of: ".buttonStyle(PressButtonStyle())"))
         XCTAssertNotNil(buttons.range(of: ".accessibilityLabel(Text(title.localized))"))
         XCTAssertNotNil(auth.range(of: #"private var guestBottomAction: some View"#))
-        XCTAssertNotNil(auth.range(of: #"TextActionButton(title: "Keep going without an account", minHeight: guestActionMinHeight)"#))
-        XCTAssertNotNil(auth.range(of: #".nativeLiquidGlassControlGroup(spacing: Spacing.md)"#))
-        XCTAssertNotNil(auth.range(of: #".nativeMaterialBar(tintOpacity: 0.78)"#))
-        XCTAssertNil(auth.range(of: #"Button("Keep going without an account".localized)"#))
+        XCTAssertNotNil(auth.range(of: #"Text("Keep going without an account".localized)"#))
+        XCTAssertNotNil(auth.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNotNil(auth.range(of: #".background(.bar)"#))
+        XCTAssertNil(auth.range(of: #"TextActionButton(title: "Keep going without an account""#))
+        XCTAssertNil(auth.range(of: #".nativeMaterialBar(tintOpacity: 0.78)"#))
     }
 
-    func testFocusedInputChromeUsesStrongFocusBorderAndSharedMotion() throws {
+    func testFocusedInputChromeUsesStrongFocusBorderAndSharedMotionWhereCustomInputsRemain() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
         let auth = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
@@ -544,8 +547,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(buttons.range(of: "Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor)"))
         XCTAssertNotNil(buttons.range(of: "ButtonStateOpacity.disabled"))
         XCTAssertNotNil(buttons.range(of: "AppMotion.animation(reduceMotion: shouldReduceMotion)"))
-        XCTAssertNotNil(auth.range(of: ".focusedInputChrome(isFocused: focusedField == .email)"))
-        XCTAssertNotNil(auth.range(of: ".focusedInputChrome(isFocused: focusedField == .password)"))
+        XCTAssertNil(auth.range(of: ".focusedInputChrome("))
         XCTAssertNotNil(settings.range(of: "@FocusState private var isConfirmationFocused: Bool"))
         XCTAssertNotNil(settings.range(of: ".focusedInputChrome(isFocused: isConfirmationFocused)"))
         XCTAssertGreaterThanOrEqual(snapResult.components(separatedBy: ".focusedInputChrome(").count - 1, 2)
@@ -1041,25 +1043,26 @@ final class DesignAccessibilityTests: XCTestCase {
         let authStore = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthStore.swift"), encoding: .utf8)
 
         XCTAssertNotNil(authView.range(of: #"NavigationStack(path: $path)"#))
-        XCTAssertNotNil(authView.range(of: #"path.append(.email)"#))
+        XCTAssertNotNil(authView.range(of: #"NavigationLink(value: AuthRoute.email)"#))
         XCTAssertNotNil(authView.range(of: #".navigationDestination(for: AuthRoute.self)"#))
         XCTAssertNotNil(authView.range(of: #"private struct EmailSignInView"#))
         XCTAssertNil(authView.range(of: "showsEmailForm"))
         XCTAssertNil(authStore.range(of: "showsEmailForm"))
     }
 
-    func testAuthSignInProviderButtonsUseFiftySixPointPills() throws {
+    func testAuthSignInProviderActionsUseNativeListRows() throws {
         let authView = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
-        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(buttons.range(of: #".frame(maxWidth: fillWidth, minHeight: 56)"#))
-        XCTAssertNotNil(buttons.range(of: #"fillsWidth ? (maxFillWidth ?? .infinity) : nil"#))
-        XCTAssertNotNil(
-            authView.range(of: #"SecondaryPillButton(title: "Continue with Email", systemImage: "envelope.fill", minHeight: 56)"#)
-        )
+        XCTAssertNotNil(authView.range(of: #"Button {"#))
+        XCTAssertNotNil(authView.range(of: #"signInWithApple()"#))
+        XCTAssertNotNil(authView.range(of: #"Label("Continue with Apple".localized, systemImage: "apple.logo")"#))
+        XCTAssertNotNil(authView.range(of: #"NavigationLink(value: AuthRoute.email)"#))
+        XCTAssertNotNil(authView.range(of: #"Label("Continue with Email".localized, systemImage: "envelope.fill")"#))
+        XCTAssertNil(authView.range(of: #"PrimaryPillButton(title: "Continue with Apple""#))
+        XCTAssertNil(authView.range(of: #"SecondaryPillButton(title: "Continue with Email""#))
     }
 
-    func testAuthSetupAndEmailFormUseKeyboardAwareMaterialLayout() throws {
+    func testAuthSetupAndEmailFormUseKeyboardAwareNativeListLayout() throws {
         let authView = try String(contentsOf: projectURL("BuySellAI/Features/Auth/AuthView.swift"), encoding: .utf8)
         let emailViewRange = try XCTUnwrap(authView.range(of: "private struct EmailSignInView"))
         let routeRange = try XCTUnwrap(authView.range(of: "private enum Field", range: emailViewRange.upperBound..<authView.endIndex))
@@ -1071,17 +1074,25 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(authView.range(of: #"usesRegularWidthLayout ? 560 : .infinity"#))
         XCTAssertNotNil(authView.range(of: #".frame(maxWidth: authContentMaxWidth)"#))
         XCTAssertNotNil(authView.range(of: #".scrollDismissesKeyboard(.interactively)"#))
+        XCTAssertNotNil(authView.range(of: #"List {"#))
+        XCTAssertNotNil(authView.range(of: #".listStyle(.insetGrouped)"#))
+        XCTAssertNotNil(authView.range(of: #".navigationTitle("Sign in".localized)"#))
+        XCTAssertNotNil(authView.range(of: #"private var closeAuthButton: some View"#))
+        XCTAssertNotNil(authView.range(of: #".contentMargins(.bottom, authBottomContentInset, for: .scrollContent)"#))
 
         XCTAssertNotNil(emailView.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(emailView.range(of: #"@Environment(\.horizontalSizeClass) private var horizontalSizeClass"#))
-        XCTAssertNotNil(emailView.range(of: "ScrollView {"))
+        XCTAssertNotNil(emailView.range(of: "List {"))
+        XCTAssertNotNil(emailView.range(of: ".listStyle(.insetGrouped)"))
         XCTAssertNotNil(emailView.range(of: ".scrollDismissesKeyboard(.interactively)"))
         XCTAssertNotNil(emailView.range(of: ".safeAreaInset(edge: .bottom)"))
         XCTAssertNotNil(emailView.range(of: "emailBottomAction(store)"))
-        XCTAssertNotNil(emailView.range(of: #"PrimaryPillButton(title: "Sign in", systemImage: "arrow.right", maxFillWidth: contentMaxWidth)"#))
-        XCTAssertNotNil(authView.range(of: ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"))
-        XCTAssertGreaterThanOrEqual(authView.components(separatedBy: ".nativeLiquidGlassControlGroup(spacing: Spacing.md)").count - 1, 2)
-        XCTAssertNotNil(emailView.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
+        XCTAssertNotNil(emailView.range(of: #"Label("Sign in".localized, systemImage: "arrow.right")"#))
+        XCTAssertNotNil(emailView.range(of: ".buttonStyle(.borderedProminent)"))
+        XCTAssertNotNil(emailView.range(of: ".background(.bar)"))
+        XCTAssertNil(authView.range(of: ".nativeLiquidGlassControlGroup"))
+        XCTAssertNil(emailView.range(of: "PrimaryPillButton("))
+        XCTAssertNil(emailView.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
         XCTAssertNotNil(emailView.range(of: "private var contentMaxWidth: CGFloat"))
         XCTAssertNotNil(emailView.range(of: "dynamicTypeSize.isAccessibilitySize ? 120 : 96"))
     }

@@ -28,6 +28,7 @@
 - Listing has moved from custom material panels to a native navigation/list compose sheet with toolbar dismissal and a system bottom action bar.
 - Snap Result has moved from a custom scroll/pill composition to a native navigation/list review sheet with a sticky system decision action and bordered retake/retry/menu controls.
 - Settings has moved to a quieter native grouped-list surface with standard row highlighting, disclosure indicators, toolbar icon buttons, and a native destructive account confirmation flow.
+- Auth has moved from a centered custom pill setup screen to a native inset grouped sign-in sheet with row-based provider actions, `NavigationLink` email entry, toolbar dismissal, native form rows, and system bottom bars for guest/sign-in actions.
 - Native material and Liquid Glass fallbacks are centralized, but final SDK evidence remains pending until Xcode/iPhoneOS SDK 27+ is available.
 - The camera and critical flow have strong simulator coverage, but final camera quality cannot be accepted until a trusted physical device and Instruments traces are recorded.
 - Local loading, empty, offline, error, and success states are represented across tests and screens; backend production states remain pending without real Supabase config and deployed functions.
@@ -47,6 +48,6 @@
 2. Replace Home’s legacy hero/pill task hub with native grouped-list navigation and toolbar affordances.
 3. Keep launch and SwiftUI splash visually aligned through system-bold wordmark styling and shared launch color tokens.
 4. Replace the legacy onboarding carousel with a compact first-use guide that preserves first-launch and re-entry behavior.
-5. Continue redesigning Auth and Camera surfaces toward the same first-party visual system.
+5. Continue redesigning the Camera surface toward the same first-party visual system.
 6. Preserve the current native material layer and continue final SDK verification when the latest toolchain is available.
 7. Use real Supabase config/deploy evidence, signed archive/export evidence, physical-device acceptance, and Instruments traces to close the remaining M10 gates.
