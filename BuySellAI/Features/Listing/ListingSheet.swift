@@ -21,28 +21,30 @@ struct ListingSheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.xl) {
-                header
+        NavigationStack {
+            List {
+                Section {
+                    header
+                }
 
-                switch store.phase {
-                case .idle, .loading:
-                    loading
-                case .success:
-                    listingText
-                case .failed(let message):
-                    error(message)
+                phaseSections
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, bottomContentInset, for: .scrollContent)
+            .navigationTitle("Listing draft".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    closeListingButton
                 }
             }
-            .frame(maxWidth: sheetContentMaxWidth)
-            .frame(maxWidth: .infinity)
-            .padding(Spacing.xl)
-            .padding(.bottom, bottomContentInset)
+            .safeAreaInset(edge: .bottom) {
+                bottomActions
+            }
+            .background(Color.clear)
         }
         .background(Color.clear)
-        .safeAreaInset(edge: .bottom) {
-            bottomActions
-        }
         .task {
             await store.generateIfNeeded(accessToken: await appStore.authenticatedAccessToken())
         }
@@ -51,36 +53,12 @@ struct ListingSheet: View {
         }
     }
 
-    @ViewBuilder
     private var header: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            accessibilityHeader
-        } else {
-            regularHeader
-        }
-    }
-
-    private var regularHeader: some View {
-        HStack(spacing: Spacing.md) {
+        HStack(alignment: .center, spacing: Spacing.md) {
             MarketplaceIcon(marketplace: context.marketplace)
             headerTitle
-            Spacer(minLength: Spacing.md)
-            closeListingButton
         }
-        .accessibilitySortPriority(4)
-    }
-
-    private var accessibilityHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack(alignment: .center, spacing: Spacing.md) {
-                MarketplaceIcon(marketplace: context.marketplace)
-                Spacer(minLength: Spacing.md)
-                closeListingButton
-            }
-
-            headerTitle
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, Spacing.xs)
         .accessibilitySortPriority(4)
     }
 
@@ -103,32 +81,50 @@ struct ListingSheet: View {
     }
 
     private var closeListingButton: some View {
-        IconCircleButton(
-            systemImage: "xmark",
-            accessibilityLabel: "Close listing",
-            material: true,
-            materialForeground: Color.brand.foreground,
-            materialStroke: Color.brand.border,
-            usesAccessibleMaterialStroke: true
-        ) {
+        Button {
+            Haptics.impact(.light)
             appStore.closeFlow()
+        } label: {
+            Label("Close listing".localized, systemImage: "xmark")
+        }
+        .labelStyle(.iconOnly)
+        .accessibilityLabel("Close listing".localized)
+    }
+
+    @ViewBuilder
+    private var phaseSections: some View {
+        switch store.phase {
+        case .idle, .loading:
+            Section {
+                loading
+            }
+        case .success:
+            Section("Generated listing text".localized) {
+                listingText
+            }
+        case .failed(let message):
+            Section {
+                error(message)
+            }
         }
     }
 
     private var loading: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Writing your listing…".localized)
-                .brandFont(.title)
-                .foregroundStyle(Color.brand.foreground)
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            Label("Writing your listing…".localized, systemImage: "pencil.and.outline")
+                .brandFont(.bodyLg)
+                .foregroundStyle(.primary)
+
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 ForEach(0..<8, id: \.self) { index in
-                    SkeletonLine(width: index == 7 ? 180 : nil)
+                    SkeletonLine(width: skeletonLineWidth(for: index))
                 }
             }
-            .padding(Spacing.lg)
-            .nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)
         }
+        .padding(.vertical, Spacing.sm)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("Writing your listing…".localized)
+        .accessibilityAddTraits(.updatesFrequently)
         .accessibilitySortPriority(3)
     }
 
@@ -139,28 +135,52 @@ struct ListingSheet: View {
             .lineSpacing(4)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Spacing.lg)
-            .nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)
+            .padding(.vertical, Spacing.sm)
             .accessibilityLabel("Generated listing text".localized)
             .accessibilityValue(store.listingText)
             .accessibilitySortPriority(3)
     }
 
     private func error(_ message: String) -> some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Spacing.md) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.title2)
+                .foregroundStyle(Color.brand.destructive)
+                .accessibilityHidden(true)
+
             Text(message)
                 .brandFont(.bodyLg)
-                .foregroundStyle(Color.brand.destructive)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("Listing.ErrorMessage")
-            PrimaryPillButton(title: "Regenerate", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+
+            Button {
+                Haptics.impact(.light)
                 regenerateListing()
+            } label: {
+                Label("Regenerate".localized, systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
-            SecondaryPillButton(title: "Wrong item — retake", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .tint(Color.brand.primary)
+            .accessibilityLabel("Regenerate".localized)
+
+            Button {
+                Haptics.impact(.light)
                 retakePhoto()
+            } label: {
+                Label("Wrong item — retake".localized, systemImage: "camera.rotate")
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .accessibilityLabel("Wrong item — retake".localized)
         }
-        .frame(maxWidth: .infinity, minHeight: 260)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.xl)
         .accessibilitySortPriority(3)
         .task(id: message) {
             appStore.showToast(message, style: .error)
@@ -179,33 +199,36 @@ struct ListingSheet: View {
 
     private var successBottomActions: some View {
         VStack(spacing: Spacing.sm) {
-            PrimaryPillButton(
-                title: "Copy listing",
-                systemImage: "doc.on.doc.fill",
-                maxFillWidth: sheetContentMaxWidth,
-                hapticStyle: nil
-            ) {
+            Button {
                 copyListing()
+            } label: {
+                Label("Copy listing".localized, systemImage: "doc.on.doc.fill")
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .tint(Color.brand.primary)
             .disabled(copyableListingText.isEmpty)
+            .accessibilityLabel("Copy listing".localized)
             .accessibilitySortPriority(3)
 
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: Spacing.sm) {
-                    GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+                    secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
                         retakePhoto()
                     }
-                    GhostButton(title: "Regenerate", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+                    secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise") {
                         regenerateListing()
                     }
                 }
                 .accessibilitySortPriority(2)
             } else {
                 HStack(spacing: Spacing.sm) {
-                    GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+                    secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
                         retakePhoto()
                     }
-                    GhostButton(title: "Regenerate", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+                    secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise") {
                         regenerateListing()
                     }
                 }
@@ -221,8 +244,30 @@ struct ListingSheet: View {
         }
         .frame(maxWidth: sheetContentMaxWidth)
         .frame(maxWidth: .infinity)
-        .padding(Spacing.lg)
-        .nativeMaterialBar(tintOpacity: 0.78)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
+        .padding(.bottom, Spacing.sm)
+        .background(.bar)
+    }
+
+    private func secondaryActionButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            Haptics.impact(.light)
+            action()
+        } label: {
+            Label(title.localized, systemImage: systemImage)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
+        .accessibilityLabel(title.localized)
     }
 
     private func regenerateListing() {
@@ -275,7 +320,18 @@ struct ListingSheet: View {
     }
 
     private var bottomContentInset: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 220 : 150
+        dynamicTypeSize.isAccessibilitySize ? 240 : 164
+    }
+
+    private func skeletonLineWidth(for index: Int) -> CGFloat? {
+        switch index {
+        case 1, 4:
+            240
+        case 7:
+            180
+        default:
+            nil
+        }
     }
 
     private func clipboardStatus(expected cleanText: String) -> String {

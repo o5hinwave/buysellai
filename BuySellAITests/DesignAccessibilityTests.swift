@@ -178,15 +178,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
         XCTAssertNil(root.range(of: ".background(Color.brand.background)\n        .clipShape(UnevenRoundedRectangle("))
         XCTAssertNotNil(picker.range(of: ".nativeMaterialBar(tintOpacity: 0.78, showsTopDivider: false, showsBottomDivider: true)"))
-        XCTAssertNotNil(listing.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
+        XCTAssertNotNil(listing.range(of: "NavigationStack {"))
+        XCTAssertNotNil(listing.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(listing.range(of: ".toolbar {"))
+        XCTAssertNotNil(listing.range(of: ".background(.bar)"))
         XCTAssertNotNil(snapResult.range(of: ".background(Color.clear)"))
         XCTAssertNotNil(picker.range(of: ".background(Color.clear)"))
         XCTAssertNotNil(listing.range(of: ".background(Color.clear)"))
-        XCTAssertNotNil(listing.range(of: #"accessibilityLabel: "Close listing""#))
-        XCTAssertNotNil(listing.range(of: "material: true"))
-        XCTAssertNotNil(listing.range(of: "materialForeground: Color.brand.foreground"))
-        XCTAssertNotNil(listing.range(of: "materialStroke: Color.brand.border"))
-        XCTAssertNotNil(listing.range(of: "usesAccessibleMaterialStroke: true"))
+        XCTAssertNotNil(listing.range(of: #"Label("Close listing".localized, systemImage: "xmark")"#))
+        XCTAssertNotNil(listing.range(of: #".accessibilityLabel("Close listing".localized)"#))
+        XCTAssertNil(listing.range(of: "IconCircleButton("))
+        XCTAssertNil(listing.range(of: "material: true"))
     }
 
     func testAuthAndSettingsSheetsUseNativeMaterialPresentationChrome() throws {
@@ -229,10 +231,11 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(toast.range(of: ".nativeMaterialPill(tintOpacity: 0.78, strokeOpacity: 0.84)"))
         XCTAssertNil(toast.range(of: ".background(Color.brand.surfaceElevated, in: Capsule())"))
 
-        XCTAssertGreaterThanOrEqual(
-            listing.components(separatedBy: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)").count - 1,
-            2
-        )
+        XCTAssertNotNil(listing.range(of: #"Section("Generated listing text".localized) {"#))
+        XCTAssertNotNil(listing.range(of: "Text(store.listingText)"))
+        XCTAssertNotNil(listing.range(of: ".textSelection(.enabled)"))
+        XCTAssertNotNil(listing.range(of: ".buttonStyle(.borderedProminent)"))
+        XCTAssertNil(listing.range(of: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)"))
         XCTAssertNil(listing.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"))
         XCTAssertNotNil(home.range(of: "EmptyHistoryView()"))
         XCTAssertNotNil(home.range(of: #"Image(systemName: "clock.arrow.circlepath")"#))
@@ -697,7 +700,7 @@ final class DesignAccessibilityTests: XCTestCase {
             searchRange = range.upperBound..<appSources.endIndex
         }
 
-        XCTAssertGreaterThanOrEqual(calls.count, 5)
+        XCTAssertGreaterThanOrEqual(calls.count, 4)
         for source in calls {
             XCTAssertNotNil(source.range(of: #"material: true"#), "Icon circle buttons should use shared native material chrome: \(source)")
         }
@@ -1389,7 +1392,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #".accessibilityElement(children: .combine)"#).count - 1, 2)
     }
 
-    func testListingGeneratedTextPanelMatchesPromptRequirements() throws {
+    func testListingGeneratedTextRowMatchesPromptRequirements() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
         let panelRange = try XCTUnwrap(listing.range(of: "private var listingText: some View"))
         let errorRange = try XCTUnwrap(listing.range(of: "private func error", range: panelRange.upperBound..<listing.endIndex))
@@ -1397,36 +1400,46 @@ final class DesignAccessibilityTests: XCTestCase {
         let bottomRange = try XCTUnwrap(listing.range(of: "@ViewBuilder", range: errorRange.upperBound..<listing.endIndex))
         let errorSource = String(listing[errorRange.lowerBound..<bottomRange.lowerBound])
 
+        XCTAssertNotNil(listing.range(of: #"Section("Generated listing text".localized) {"#))
         XCTAssertNotNil(panelSource.range(of: "Text(store.listingText)"))
         XCTAssertNotNil(panelSource.range(of: ".brandFont(.body)"))
         XCTAssertNotNil(panelSource.range(of: ".lineSpacing(4)"))
         XCTAssertNotNil(panelSource.range(of: ".textSelection(.enabled)"))
-        XCTAssertNotNil(panelSource.range(of: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)"))
+        XCTAssertNotNil(panelSource.range(of: ".padding(.vertical, Spacing.sm)"))
+        XCTAssertNil(panelSource.range(of: ".nativeMaterialPanel("))
         XCTAssertNil(panelSource.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"))
         XCTAssertNotNil(panelSource.range(of: #".accessibilityLabel("Generated listing text".localized)"#))
         XCTAssertNotNil(panelSource.range(of: #".accessibilityValue(store.listingText)"#))
+        XCTAssertNotNil(errorSource.range(of: #".accessibilityIdentifier("Listing.ErrorMessage")"#))
+        XCTAssertNotNil(errorSource.range(of: ".buttonStyle(.borderedProminent)"))
+        XCTAssertNotNil(errorSource.range(of: ".buttonStyle(.bordered)"))
         XCTAssertNotNil(errorSource.range(of: #".task(id: message)"#))
         XCTAssertNotNil(errorSource.range(of: #"appStore.showToast(message, style: .error)"#))
         XCTAssertNil(listing.range(of: #".onChange(of: store.phase)"#))
     }
 
-    func testListingHeaderSeparatesCloseControlAtAccessibilityDynamicType() throws {
+    func testListingUsesNativeNavigationListAndToolbarClose() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
 
         XCTAssertNotNil(listing.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(listing.range(of: #"@ViewBuilder"#))
+        XCTAssertNotNil(listing.range(of: #"NavigationStack {"#))
+        XCTAssertNotNil(listing.range(of: #"List {"#))
+        XCTAssertNotNil(listing.range(of: #".listStyle(.insetGrouped)"#))
+        XCTAssertNotNil(listing.range(of: #".navigationTitle("Listing draft".localized)"#))
+        XCTAssertNotNil(listing.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
+        XCTAssertNotNil(listing.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
         XCTAssertNotNil(listing.range(of: #"private var header: some View"#))
-        XCTAssertNotNil(listing.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
-        XCTAssertNotNil(listing.range(of: #"private var regularHeader: some View"#))
-        XCTAssertNotNil(listing.range(of: #"private var accessibilityHeader: some View"#))
-        XCTAssertNotNil(listing.range(of: #"VStack(alignment: .leading, spacing: Spacing.md)"#))
         XCTAssertNotNil(listing.range(of: #"HStack(alignment: .center, spacing: Spacing.md)"#))
         XCTAssertNotNil(listing.range(of: #"private var headerTitle: some View"#))
         XCTAssertNotNil(listing.range(of: #"private var closeListingButton: some View"#))
+        XCTAssertNotNil(listing.range(of: #"Label("Close listing".localized, systemImage: "xmark")"#))
+        XCTAssertNotNil(listing.range(of: #".labelStyle(.iconOnly)"#))
+        XCTAssertNotNil(listing.range(of: #"Haptics.impact(.light)"#))
         XCTAssertNotNil(listing.range(of: #".lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)"#))
         XCTAssertNotNil(listing.range(of: #".fixedSize(horizontal: false, vertical: true)"#))
-        XCTAssertNotNil(listing.range(of: #"accessibilityLabel: "Close listing""#))
-        XCTAssertGreaterThanOrEqual(listing.components(separatedBy: "closeListingButton").count - 1, 3)
+        XCTAssertNotNil(listing.range(of: #".accessibilityLabel("Close listing".localized)"#))
+        XCTAssertNil(listing.range(of: #"private var regularHeader: some View"#))
+        XCTAssertNil(listing.range(of: #"private var accessibilityHeader: some View"#))
     }
 
     func testListingSuccessActionsAreStickyAndOrderedAfterGenerationSucceeds() throws {
@@ -1438,16 +1451,20 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: ".safeAreaInset(edge: .bottom)"))
         XCTAssertNotNil(listing.range(of: "case .success:\n            successBottomActions"))
         XCTAssertNotNil(listing.range(of: "case .idle, .loading, .failed:\n            EmptyView()"))
-        XCTAssertNotNil(bottomSource.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
+        XCTAssertNotNil(bottomSource.range(of: ".background(.bar)"))
         XCTAssertNotNil(listing.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(listing.range(of: #".padding(.bottom, bottomContentInset)"#))
+        XCTAssertNotNil(listing.range(of: #".contentMargins(.bottom, bottomContentInset, for: .scrollContent)"#))
         XCTAssertNotNil(listing.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
         XCTAssertNotNil(listing.range(of: #"private var bottomContentInset: CGFloat"#))
-        XCTAssertNotNil(listing.range(of: #"dynamicTypeSize.isAccessibilitySize ? 220 : 150"#))
+        XCTAssertNotNil(listing.range(of: #"dynamicTypeSize.isAccessibilitySize ? 240 : 164"#))
+        XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.borderedProminent)"))
+        XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.bordered)"))
+        XCTAssertNotNil(bottomSource.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNotNil(bottomSource.range(of: ".controlSize(.large)"))
 
-        let copyRange = try XCTUnwrap(bottomSource.range(of: #"title: "Copy listing""#))
-        let retakeRange = try XCTUnwrap(bottomSource.range(of: #"title: "Wrong item — retake""#))
-        let regenerateButtonRange = try XCTUnwrap(bottomSource.range(of: #"title: "Regenerate""#))
+        let copyRange = try XCTUnwrap(bottomSource.range(of: #"Label("Copy listing".localized, systemImage: "doc.on.doc.fill")"#))
+        let retakeRange = try XCTUnwrap(bottomSource.range(of: #"secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate")"#))
+        let regenerateButtonRange = try XCTUnwrap(bottomSource.range(of: #"secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise")"#))
         let footerRange = try XCTUnwrap(bottomSource.range(of: #"Text("Tip: paste, add photos, hit list. That's it.".localized)"#))
 
         XCTAssertLessThan(copyRange.lowerBound, retakeRange.lowerBound)
