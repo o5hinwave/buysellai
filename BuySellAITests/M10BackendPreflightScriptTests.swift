@@ -202,6 +202,11 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "SUPABASE_SECRETS_FROM_ENV"))
         XCTAssertNotNil(script.range(of: "SUPABASE_PROJECT_REF"))
         XCTAssertNotNil(script.range(of: "resolve_project_ref"))
+        XCTAssertNotNil(script.range(of: "preflight"))
+        XCTAssertNotNil(script.range(of: "require_secret_access"))
+        XCTAssertNotNil(script.range(of: "supabase secrets list --project-ref \"$project_ref\" --output json >/dev/null"))
+        XCTAssertNotNil(script.range(of: "before entering secrets"))
+        XCTAssertNotNil(script.range(of: "Supabase secret setup preflight passed"))
         XCTAssertNotNil(script.range(of: "BuySellAI/App/Config.plist"))
         XCTAssertNotNil(script.range(of: "supabase/.temp/project-ref"))
         XCTAssertNotNil(script.range(of: "SUPABASE_PROJECT_REF is required"))
@@ -223,8 +228,10 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNil(script.range(of: "SUPABASE_SERVICE_ROLE_KEY="))
 
         for text in [readme, backendReadme] {
+            XCTAssertNotNil(text.range(of: "Scripts/setup_supabase_secrets.sh preflight"))
             XCTAssertNotNil(text.range(of: "Scripts/setup_supabase_secrets.sh full"))
             XCTAssertNotNil(text.range(of: "0600 temporary env file outside the repository"))
+            XCTAssertNotNil(text.range(of: "before any secret values are requested"))
             XCTAssertNotNil(text.range(of: "SUPABASE_SECRETS_FROM_ENV"))
             XCTAssertNotNil(text.range(of: "SUPABASE_PROJECT_REF"))
             XCTAssertNotNil(text.range(of: "supabase secrets set --project-ref <project-ref> --env-file"))

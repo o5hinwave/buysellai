@@ -16,13 +16,16 @@ fail() {
 usage() {
     cat <<'USAGE'
 Usage:
-  bash Scripts/setup_supabase_secrets.sh [full|gemini-only]
+  bash Scripts/setup_supabase_secrets.sh [preflight|full|gemini-only]
 
 Prompts for server-side Supabase Edge Function secrets, writes them to a
 0600 temporary env file outside the repository, runs `supabase secrets set`
 against the resolved project ref, then removes the temporary file. Never put
 Gemini, service-role, or Apple private-key material in
 BuySellAI/App/Config.plist.
+
+Preflight resolves the project and verifies Supabase CLI secret access before
+any secret values are requested.
 
 For CI, set SUPABASE_SECRETS_FROM_ENV=1 and provide the required secret
 environment variables. In full mode this includes APPLE_PRIVATE_KEY_PATH,
@@ -188,8 +191,14 @@ resolve_project_ref() {
     fail "SUPABASE_PROJECT_REF is required, or write BuySellAI/App/Config.plist with Scripts/setup_supabase_config.sh, or run supabase link --project-ref <project-ref>"
 }
 
+require_secret_access() {
+    if ! supabase secrets list --project-ref "$project_ref" --output json >/dev/null 2>&1; then
+        fail "Supabase secret access unavailable for project '$project_ref'; run supabase login and confirm the project before entering secrets"
+    fi
+}
+
 case "$mode" in
-    full|gemini-only)
+    preflight|full|gemini-only)
         ;;
     -h|--help|help)
         usage
@@ -204,6 +213,14 @@ command -v supabase >/dev/null 2>&1 || fail "supabase CLI is required"
 command -v python3 >/dev/null 2>&1 || fail "python3 is required"
 
 resolve_project_ref
+require_secret_access
+
+if [[ "$mode" == "preflight" ]]; then
+    printf 'Supabase secret setup preflight passed\n'
+    printf 'project ref: %s\n' "$project_ref"
+    printf 'secret access: available\n'
+    exit 0
+fi
 
 trap cleanup EXIT
 secret_file="$(mktemp "${TMPDIR:-/tmp}/buysell-supabase-secrets.XXXXXX")"
