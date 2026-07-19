@@ -21,22 +21,33 @@ struct SnapResultSheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.xl) {
+        NavigationStack {
+            List {
                 switch store.phase {
                 case .idle, .loading:
-                    loadingView
+                    Section {
+                        loadingView
+                    }
                 case .success:
                     if let item = store.item {
                         resultView(item: item)
                     }
                 case .failed(let message):
-                    errorView(message: message)
+                    Section {
+                        errorView(message: message)
+                    }
                 }
             }
-            .frame(maxWidth: sheetContentMaxWidth)
-            .frame(maxWidth: .infinity)
-            .padding(Spacing.xl)
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, listBottomContentInset, for: .scrollContent)
+            .navigationTitle("Item details".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                if case .success = store.phase, let item = store.item {
+                    decisionBar(item: item)
+                }
+            }
         }
         .background(Color.clear)
         .task {
@@ -84,9 +95,15 @@ struct SnapResultSheet: View {
                         .multilineTextAlignment(.center)
                         .accessibilityIdentifier("SnapResult.StillWorkingAlert")
                         .accessibilityLabel("Still working… tap Retry to try again.".localized)
-                    SecondaryPillButton(title: "Retry", fillsWidth: false) {
+                    Button {
+                        Haptics.impact(.light)
                         retryAnalysis()
+                    } label: {
+                        Label("Retry".localized, systemImage: "arrow.clockwise")
                     }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.large)
                 }
             }
         }
@@ -112,11 +129,15 @@ struct SnapResultSheet: View {
         )
     }
 
+    @ViewBuilder
     private func resultView(item: DetectedItem) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xl) {
+        Section {
             resultHeader
+                .frame(maxWidth: sheetContentMaxWidth, alignment: .leading)
                 .accessibilitySortPriority(5)
+        }
 
+        Section {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
                     ChipButton(
@@ -137,19 +158,42 @@ struct SnapResultSheet: View {
             }
             .accessibilitySortPriority(4)
 
-            PrimaryPillButton(title: "Looks right — pick where to sell", maxFillWidth: sheetContentMaxWidth) {
-                store.commitEdits()
-                guard let item = store.item else { return }
-                if let preferred = context.preferredMarketplace {
-                    appStore.presentListing(item: item, imageData: context.imageData, marketplace: preferred)
-                } else {
-                    appStore.presentMarketplacePicker(item: item, imageData: context.imageData)
-                }
-            }
-            .accessibilitySortPriority(3)
-
             secondaryActions(item: item)
-            .accessibilitySortPriority(2)
+                .accessibilitySortPriority(2)
+        }
+    }
+
+    private func decisionBar(item: DetectedItem) -> some View {
+        VStack(spacing: Spacing.xs) {
+            Button {
+                proceedWithItem(item)
+            } label: {
+                Label("Looks right — pick where to sell".localized, systemImage: "checkmark.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .tint(Color.brand.primary)
+            .accessibilityLabel("Looks right — pick where to sell".localized)
+            .accessibilitySortPriority(3)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.top, Spacing.sm)
+        .padding(.bottom, Spacing.sm)
+        .frame(maxWidth: sheetContentMaxWidth)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    private func proceedWithItem(_ fallbackItem: DetectedItem) {
+        Haptics.impact(.medium)
+        store.commitEdits()
+        let item = store.item ?? fallbackItem
+        if let preferred = context.preferredMarketplace {
+            appStore.presentListing(item: item, imageData: context.imageData, marketplace: preferred)
+        } else {
+            appStore.presentMarketplacePicker(item: item, imageData: context.imageData)
         }
     }
 
@@ -175,15 +219,29 @@ struct SnapResultSheet: View {
     }
 
     private var retakeButton: some View {
-        GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+        Button {
+            Haptics.impact(.light)
             appStore.retakePhoto(keeping: context.preferredMarketplace)
+        } label: {
+            Label("Wrong item — retake".localized, systemImage: "camera.rotate")
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
     }
 
     private var retryButton: some View {
-        GhostButton(title: "Try again", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+        Button {
+            Haptics.impact(.light)
             retryAnalysis()
+        } label: {
+            Label("Try again".localized, systemImage: "arrow.clockwise")
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
     }
 
     @ViewBuilder
@@ -252,7 +310,9 @@ struct SnapResultSheet: View {
         } label: {
             SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)
         }
-        .buttonStyle(PressButtonStyle())
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
         })
@@ -279,7 +339,9 @@ struct SnapResultSheet: View {
         } label: {
             SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)
         }
-        .buttonStyle(PressButtonStyle())
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
         })
@@ -418,12 +480,27 @@ struct SnapResultSheet: View {
                 .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
-            PrimaryPillButton(title: "Retake photo", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+            Button {
+                Haptics.impact(.light)
                 appStore.retakePhoto(keeping: context.preferredMarketplace)
+            } label: {
+                Label("Retake photo".localized, systemImage: "camera.rotate")
+                    .frame(maxWidth: .infinity)
             }
-            SecondaryPillButton(title: "Try again", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .tint(Color.brand.primary)
+            Button {
+                Haptics.impact(.light)
                 retryAnalysis()
+            } label: {
+                Label("Try again".localized, systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
         }
         .frame(maxWidth: .infinity, minHeight: 420)
         .task(id: message) {
@@ -439,6 +516,10 @@ struct SnapResultSheet: View {
 
     private var sheetContentMaxWidth: CGFloat {
         usesRegularWidthLayout ? 760 : .infinity
+    }
+
+    private var listBottomContentInset: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 144 : 96
     }
 
     private var usesRegularWidthLayout: Bool {
@@ -518,9 +599,9 @@ private struct SnapResultMenuLabel: View {
         .brandFont(.caption)
         .foregroundStyle(Color.brand.foreground)
         .padding(.horizontal, Spacing.md)
-        .frame(maxWidth: maxWidth ?? .infinity, minHeight: 56)
-        .nativeMaterialPanel(cornerRadius: Radius.pill, tintOpacity: 0.72)
-        .contentShape(Capsule())
+        .padding(.vertical, Spacing.xs)
+        .frame(maxWidth: maxWidth ?? .infinity, minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private var lineLimit: Int {

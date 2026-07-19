@@ -607,7 +607,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #".accessibilityIdentifier("SnapResult.StillWorkingAlert")"#))
         XCTAssertNotNil(source.range(of: #"UIAccessibility.post("#))
         XCTAssertNotNil(source.range(of: #"notification: .announcement"#))
-        XCTAssertNotNil(source.range(of: #"SecondaryPillButton(title: "Retry""#))
+        XCTAssertNotNil(source.range(of: #"Label("Retry".localized, systemImage: "arrow.clockwise")"#))
+        XCTAssertNotNil(source.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(source.range(of: #"SecondaryPillButton(title: "Retry""#))
     }
 
     func testSnapResultErrorStateOffersRetakeBeforeRetry() throws {
@@ -616,12 +618,33 @@ final class DesignAccessibilityTests: XCTestCase {
         let fieldRange = try XCTUnwrap(source.range(of: "private enum Field"))
         let errorSource = String(source[errorRange.lowerBound..<fieldRange.lowerBound])
 
-        let retakeRange = try XCTUnwrap(errorSource.range(of: #"title: "Retake photo""#))
-        let retryRange = try XCTUnwrap(errorSource.range(of: #"title: "Try again""#))
+        let retakeRange = try XCTUnwrap(errorSource.range(of: #"Label("Retake photo".localized, systemImage: "camera.rotate")"#))
+        let retryRange = try XCTUnwrap(errorSource.range(of: #"Label("Try again".localized, systemImage: "arrow.clockwise")"#))
 
         XCTAssertLessThan(retakeRange.lowerBound, retryRange.lowerBound)
+        XCTAssertNotNil(errorSource.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNotNil(errorSource.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(errorSource.range(of: #"PrimaryPillButton"#))
+        XCTAssertNil(errorSource.range(of: #"SecondaryPillButton"#))
         XCTAssertNotNil(errorSource.range(of: #".task(id: message)"#))
         XCTAssertNotNil(errorSource.range(of: #"appStore.showToast(message, style: .error)"#))
+    }
+
+    func testSnapResultUsesNativeListAndStickyDecisionAction() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"NavigationStack {"#))
+        XCTAssertNotNil(source.range(of: #"List {"#))
+        XCTAssertNotNil(source.range(of: #".listStyle(.insetGrouped)"#))
+        XCTAssertNotNil(source.range(of: #".scrollContentBackground(.hidden)"#))
+        XCTAssertNotNil(source.range(of: #".contentMargins(.bottom, listBottomContentInset, for: .scrollContent)"#))
+        XCTAssertNotNil(source.range(of: #".navigationTitle("Item details".localized)"#))
+        XCTAssertNotNil(source.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
+        XCTAssertNotNil(source.range(of: #".safeAreaInset(edge: .bottom)"#))
+        XCTAssertNotNil(source.range(of: #"private func decisionBar(item: DetectedItem) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"Label("Looks right — pick where to sell".localized, systemImage: "checkmark.circle.fill")"#))
+        XCTAssertNotNil(source.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNil(source.range(of: #"PrimaryPillButton(title: "Looks right — pick where to sell""#))
     }
 
     func testSnapResultVisibleCancellationRetriesOnceAndKeepsManualRetry() throws {
@@ -963,7 +986,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(store.range(of: "func selectCondition(_ condition: Condition)"))
     }
 
-    func testSnapResultChangeMenuTriggersUsePressMaterialAndCurrentValues() throws {
+    func testSnapResultChangeMenuTriggersUseNativeBorderedControlsAndCurrentValues() throws {
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
         let categoryRange = try XCTUnwrap(snapResult.range(of: "private func categoryMenuButton"))
         let itemNameRange = try XCTUnwrap(snapResult.range(of: "private var itemNameControl"))
@@ -974,17 +997,20 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)"#))
-        XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonStyle(PressButtonStyle())"#).count - 1, 2)
+        XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonStyle(.bordered)"#).count - 1, 2)
+        XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonBorderShape(.capsule)"#).count - 1, 2)
+        XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".controlSize(.large)"#).count - 1, 2)
         XCTAssertEqual(menuSource.components(separatedBy: #".accessibilityValue(Text(selected.display.localized))"#).count - 1, 2)
         XCTAssertNotNil(menuSource.range(of: #".accessibilityHint("Opens category choices".localized)"#))
         XCTAssertNotNil(menuSource.range(of: #".accessibilityHint("Opens condition choices".localized)"#))
         XCTAssertNil(menuSource.range(of: #".buttonStyle(.plain)"#))
+        XCTAssertNil(menuSource.range(of: #".buttonStyle(PressButtonStyle())"#))
         XCTAssertNotNil(labelSource.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(labelSource.range(of: #"Image(systemName: "chevron.down")"#))
-        XCTAssertNotNil(labelSource.range(of: #".nativeMaterialPanel(cornerRadius: Radius.pill, tintOpacity: 0.72)"#))
-        XCTAssertNotNil(labelSource.range(of: #".contentShape(Capsule())"#))
+        XCTAssertNil(labelSource.range(of: #".nativeMaterialPanel("#))
+        XCTAssertNotNil(labelSource.range(of: #".contentShape(Rectangle())"#))
         XCTAssertNotNil(labelSource.range(of: "private var lineLimit: Int {\n        2\n    }"))
-        XCTAssertNotNil(labelSource.range(of: #".frame(maxWidth: maxWidth ?? .infinity, minHeight: 56)"#))
+        XCTAssertNotNil(labelSource.range(of: #".frame(maxWidth: maxWidth ?? .infinity, minHeight: 44)"#))
     }
 
     func testSnapResultSecondaryActionsUseReadableHybridOnNarrowPhonesAndGridOnWideLayouts() throws {
