@@ -190,10 +190,10 @@ private struct SnapActionRow: View {
     var body: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: "camera.viewfinder")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(Color.brand.primaryText)
-                .frame(width: 44, height: 44)
-                .background(Color.brand.primaryMuted, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .font(.title.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryForeground)
+                .frame(width: 56, height: 56)
+                .background(Color.brand.primary, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
@@ -207,6 +207,8 @@ private struct SnapActionRow: View {
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
             }
             .layoutPriority(1)
+
+            Spacer(minLength: Spacing.sm)
 
             Image(systemName: "chevron.right")
                 .brandSymbol(.chevron)
