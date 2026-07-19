@@ -29,7 +29,7 @@
 - Snap Result has moved from a custom scroll/pill composition to a native navigation/list review sheet with a sticky system decision action and bordered retake/retry/menu controls.
 - Settings has moved to a quieter native grouped-list surface with standard row highlighting, disclosure indicators, toolbar icon buttons, and a native destructive account confirmation flow.
 - Auth has moved from a centered custom pill setup screen to a native inset grouped sign-in sheet with row-based provider actions, `NavigationLink` email entry, toolbar dismissal, native form rows, and system bottom bars for guest/sign-in actions.
-- Camera has moved toward a first-party capture surface with AVFoundation tap-to-focus/exposure, a focus indicator, capability-aware front/rear switching, torch gating, and full-screen aspect-fill preview while preserving camera-only capture, orientation handling, and downsampled upload data.
+- Camera has moved toward a first-party capture surface with AVFoundation tap-to-focus/exposure, a focus indicator, capability-aware front/rear switching, scene-phase pause/restart recovery, torch gating, and full-screen aspect-fill preview while preserving camera-only capture, orientation handling, and downsampled upload data.
 - Native material and Liquid Glass fallbacks are centralized, but final SDK evidence remains pending until Xcode/iPhoneOS SDK 27+ is available.
 - The camera and critical flow have strong simulator coverage, but final camera quality cannot be accepted until a trusted physical device and Instruments traces are recorded.
 - Local loading, empty, offline, error, and success states are represented across tests and screens; backend production states remain pending without real Supabase config and deployed functions.

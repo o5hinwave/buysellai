@@ -100,7 +100,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback"))
         XCTAssertNotNil(script.range(of: "standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls"))
         XCTAssertNotNil(script.range(of: "home setup: native inset grouped task list with toolbar account and settings actions"))
-        XCTAssertNotNil(script.range(of: "camera setup: native top controls, tap focus, camera switching, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+"))
+        XCTAssertNotNil(script.range(of: "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+"))
         XCTAssertNotNil(script.range(of: "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars"))
         XCTAssertNotNil(script.range(of: "tutorial setup: native inset grouped guide with a system bottom bar"))
         XCTAssertNotNil(script.range(of: "menu item icons: category and condition menus use SF Symbols with selected checkmarks"))

@@ -249,6 +249,31 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "_ = await controller.focusAndExpose(at: tap.devicePoint)"))
     }
 
+    func testCameraScenePhasePausesAndRestartsSession() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"@Environment(\.scenePhase) private var scenePhase"#))
+        XCTAssertNotNil(source.range(of: #"@State private var didPauseSessionForScenePhase = false"#))
+        XCTAssertNotNil(source.range(of: #"@State private var restartTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: "private func startCamera() async"))
+        XCTAssertNotNil(source.range(of: "guard scenePhase == .active else"))
+        XCTAssertNotNil(source.range(of: ".task {\n            await startCamera()\n        }"))
+        XCTAssertNotNil(source.range(of: ".onChange(of: scenePhase) { _, newPhase in"))
+        XCTAssertNotNil(source.range(of: "private func handleScenePhase(_ phase: ScenePhase)"))
+        XCTAssertNotNil(source.range(of: "case .active:"))
+        XCTAssertNotNil(source.range(of: "guard didPauseSessionForScenePhase else { return }"))
+        XCTAssertNotNil(source.range(of: "restartCameraAfterInterruption()"))
+        XCTAssertNotNil(source.range(of: "case .inactive, .background:"))
+        XCTAssertNotNil(source.range(of: "pauseCameraForScenePhase()"))
+        XCTAssertNotNil(source.range(of: "private func pauseCameraForScenePhase()"))
+        XCTAssertNotNil(source.range(of: "controller.stop()"))
+        XCTAssertNotNil(source.range(of: "captureTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "private func restartCameraAfterInterruption()"))
+        XCTAssertNotNil(source.range(of: "restartTask = Task { @MainActor in"))
+        XCTAssertNotNil(source.range(of: "await startCamera()"))
+        XCTAssertNotNil(source.range(of: "restartTask?.cancel()"))
+    }
+
     private func projectURL(_ path: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

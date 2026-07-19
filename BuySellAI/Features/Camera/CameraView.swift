@@ -10,12 +10,14 @@ struct CameraView: View {
     @Environment(\.appReduceMotion) private var appReduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var controller = CameraController()
     @State private var state: CameraStartResult?
     @State private var flashOn = false
     @State private var cameraCapabilities = CameraCapabilities.unavailable
     @State private var isCapturing = false
     @State private var isSwitchingCamera = false
+    @State private var didPauseSessionForScenePhase = false
     @State private var bracketOpacity = 0.6
     @State private var focusIndicator: CameraFocusIndicator?
     @State private var captureErrorToast: ToastMessage?
@@ -23,6 +25,7 @@ struct CameraView: View {
     @State private var flashTask: Task<Void, Never>?
     @State private var cameraSwitchTask: Task<Void, Never>?
     @State private var focusTask: Task<Void, Never>?
+    @State private var restartTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -60,22 +63,10 @@ struct CameraView: View {
             }
         }
         .task {
-            if LaunchArguments.contains(LaunchArguments.uiTestingCameraDenied) {
-                state = .denied
-                return
-            }
-            if LaunchArguments.contains(LaunchArguments.uiTestingCameraReady) {
-                cameraCapabilities = CameraCapabilities(position: .back, isTorchAvailable: true, canSwitchCamera: true)
-                state = .ready
-                return
-            }
-            let startResult = await controller.start()
-            state = startResult
-            if case .ready = startResult {
-                cameraCapabilities = await controller.capabilities()
-            } else {
-                cameraCapabilities = .unavailable
-            }
+            await startCamera()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            handleScenePhase(newPhase)
         }
         .onDisappear {
             flashTask?.cancel()
@@ -84,6 +75,8 @@ struct CameraView: View {
             cameraSwitchTask = nil
             focusTask?.cancel()
             focusTask = nil
+            restartTask?.cancel()
+            restartTask = nil
             cancelInFlightCapture()
         }
     }
@@ -348,6 +341,91 @@ struct CameraView: View {
         shouldReduceMotion ? .opacity : .scale(scale: 1.18).combined(with: .opacity)
     }
 
+    private func startCamera() async {
+        guard scenePhase == .active else {
+            didPauseSessionForScenePhase = true
+            cameraCapabilities = .unavailable
+            state = nil
+            controller.stop()
+            return
+        }
+
+        if LaunchArguments.contains(LaunchArguments.uiTestingCameraDenied) {
+            cameraCapabilities = .unavailable
+            state = .denied
+            return
+        }
+        if LaunchArguments.contains(LaunchArguments.uiTestingCameraReady) {
+            cameraCapabilities = CameraCapabilities(position: .back, isTorchAvailable: true, canSwitchCamera: true)
+            state = .ready
+            return
+        }
+
+        let startResult = await controller.start()
+        if Task.isCancelled {
+            controller.stop()
+            return
+        }
+        guard scenePhase == .active else {
+            didPauseSessionForScenePhase = true
+            cameraCapabilities = .unavailable
+            state = nil
+            controller.stop()
+            return
+        }
+        state = startResult
+        if case .ready = startResult {
+            cameraCapabilities = await controller.capabilities()
+        } else {
+            cameraCapabilities = .unavailable
+        }
+    }
+
+    private func handleScenePhase(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            guard didPauseSessionForScenePhase else { return }
+            didPauseSessionForScenePhase = false
+            restartCameraAfterInterruption()
+        case .inactive, .background:
+            guard case .ready = state else { return }
+            didPauseSessionForScenePhase = true
+            pauseCameraForScenePhase()
+        @unknown default:
+            break
+        }
+    }
+
+    private func pauseCameraForScenePhase() {
+        flashOn = false
+        flashTask?.cancel()
+        flashTask = nil
+        focusTask?.cancel()
+        focusTask = nil
+        focusIndicator = nil
+        cameraSwitchTask?.cancel()
+        cameraSwitchTask = nil
+        isSwitchingCamera = false
+        if isCapturing {
+            captureTask?.cancel()
+            captureTask = nil
+            isCapturing = false
+        }
+        controller.stop()
+    }
+
+    private func restartCameraAfterInterruption() {
+        guard isCapturing == false else { return }
+        state = nil
+        cameraCapabilities = .unavailable
+        restartTask?.cancel()
+        restartTask = Task { @MainActor in
+            await startCamera()
+            guard Task.isCancelled == false else { return }
+            restartTask = nil
+        }
+    }
+
     private func toggleFlash() {
         guard isFlashAvailable else { return }
         let requestedState = !flashOn
@@ -454,8 +532,11 @@ struct CameraView: View {
         focusIndicator = nil
         cameraSwitchTask?.cancel()
         cameraSwitchTask = nil
+        restartTask?.cancel()
+        restartTask = nil
         isSwitchingCamera = false
         isCapturing = false
+        didPauseSessionForScenePhase = false
         controller.stop()
     }
 
