@@ -58,6 +58,8 @@
 	<string>Broadest audience, small fees</string>
 	<key>BuySell</key>
 	<string>BuySell</string>
+	<key>BuySell.</key>
+	<string>BuySell.</string>
 	<key>BuySell AI</key>
 	<string>BuySell AI</string>
 	<key>BuySell got an answer it couldn't read.</key>

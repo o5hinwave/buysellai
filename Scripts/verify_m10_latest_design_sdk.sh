@@ -131,7 +131,10 @@ require_chips_marker ".nativeGlassButtonStyle(.standard)"
 require_home_marker ".listStyle(.insetGrouped)"
 require_home_marker "SnapActionRow()"
 require_home_marker ".toolbar {"
-require_home_marker '.navigationTitle("BuySell".localized)'
+require_home_marker 'ToolbarItem(placement: .principal)'
+require_home_marker "BrandWordmark(size: .regular)"
+require_home_marker '.navigationTitle("BuySell.".localized)'
+require_home_marker ".navigationBarTitleDisplayMode(.inline)"
 require_camera_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"
 require_camera_marker "CameraPreview(session: controller.session) { tap in"
 require_camera_marker "handleFocusTap(tap)"
@@ -183,7 +186,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
         printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
         printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
-        printf 'home setup: native inset grouped task list with toolbar account and settings actions\n'
+        printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
@@ -206,7 +209,7 @@ printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
 printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
 printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
 printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
-printf 'home setup: native inset grouped task list with toolbar account and settings actions\n'
+printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
 printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
 printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'

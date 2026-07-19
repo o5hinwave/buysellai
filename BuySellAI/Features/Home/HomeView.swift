@@ -60,9 +60,14 @@ struct HomeView: View {
             }
             .listStyle(.insetGrouped)
             .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
-            .navigationTitle("BuySell".localized)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("BuySell.".localized)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    BrandWordmark(size: .regular)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.88)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     accountButton
                 }
