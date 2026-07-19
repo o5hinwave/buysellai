@@ -7,6 +7,8 @@ struct CameraView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.appReduceMotion) private var appReduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var controller = CameraController()
     @State private var state: CameraStartResult?
     @State private var flashOn = false
@@ -14,6 +16,8 @@ struct CameraView: View {
     @State private var isCapturing = false
     @State private var bracketOpacity = 0.6
     @State private var captureErrorToast: ToastMessage?
+    @State private var captureTask: Task<Void, Never>?
+    @State private var flashTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -47,11 +51,11 @@ struct CameraView: View {
             }
         }
         .task {
-            if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-denied") {
+            if LaunchArguments.contains(LaunchArguments.uiTestingCameraDenied) {
                 state = .denied
                 return
             }
-            if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-ready") {
+            if LaunchArguments.contains(LaunchArguments.uiTestingCameraReady) {
                 isFlashAvailable = true
                 state = .ready
                 return
@@ -65,7 +69,9 @@ struct CameraView: View {
             }
         }
         .onDisappear {
-            controller.stop()
+            flashTask?.cancel()
+            flashTask = nil
+            cancelInFlightCapture()
         }
     }
 
@@ -92,7 +98,7 @@ struct CameraView: View {
                 VStack {
                     HStack {
                         IconCircleButton(systemImage: "xmark", accessibilityLabel: "Close camera", size: 40, material: true) {
-                            controller.stop()
+                            cancelInFlightCapture()
                             onCancel()
                         }
 
@@ -111,33 +117,11 @@ struct CameraView: View {
                     }
                     .padding(.horizontal, Spacing.md)
                     .padding(.top, proxy.safeAreaInsets.top + Spacing.md)
+                    .nativeLiquidGlassControlGroup(spacing: Spacing.md)
 
                     Spacer()
 
-                    VStack(spacing: Spacing.sm) {
-                        Button {
-                            capture()
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.brand.primaryForeground, lineWidth: 5)
-                                    .frame(width: 76, height: 76)
-                                Circle()
-                                    .fill(Color.brand.primaryForeground)
-                                    .frame(width: 64, height: 64)
-                            }
-                        }
-                        .buttonStyle(PressButtonStyle())
-                        .disabled(isCapturing)
-                        .accessibilityLabel("Take photo".localized)
-                        .accessibilityHint("Captures the current view".localized)
-
-                        Text("Fit the whole item in the frame".localized)
-                            .brandFont(.caption)
-                            .foregroundStyle(Color.brand.primaryForeground)
-                            .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
-                    }
-                    .padding(.bottom, proxy.safeAreaInsets.bottom + Spacing.xxl)
+                    cameraBottomControls(safeAreaBottom: proxy.safeAreaInsets.bottom)
                 }
 
                 if isCapturing {
@@ -149,6 +133,68 @@ struct CameraView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func cameraBottomControls(safeAreaBottom: CGFloat) -> some View {
+        VStack(spacing: Spacing.sm) {
+            shutterButton
+            cameraHintLabel
+        }
+        .frame(maxWidth: cameraBottomMaxWidth)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? Spacing.xl : 0)
+        .padding(.bottom, safeAreaBottom + cameraBottomPadding)
+    }
+
+    private var shutterButton: some View {
+        Button {
+            capture()
+        } label: {
+            ZStack {
+                Circle()
+                    .stroke(Color.brand.primaryForeground, lineWidth: 5)
+                    .frame(width: 76, height: 76)
+                Circle()
+                    .fill(Color.brand.primaryForeground)
+                    .frame(width: 64, height: 64)
+            }
+        }
+        .buttonStyle(PressButtonStyle())
+        .disabled(isCapturing)
+        .accessibilityLabel("Take photo".localized)
+        .accessibilityHint("Captures the current view".localized)
+    }
+
+    @ViewBuilder
+    private var cameraHintLabel: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            Text("Fit the whole item in the frame".localized)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.foreground)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.xs)
+                .nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)
+        } else {
+            Text("Fit the whole item in the frame".localized)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.primaryForeground)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+                .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
+        }
+    }
+
+    private var cameraBottomPadding: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? Spacing.xxxl : Spacing.xxl
+    }
+
+    private var cameraBottomMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 420 : .infinity
     }
 
     private var starting: some View {
@@ -163,40 +209,92 @@ struct CameraView: View {
     }
 
     private var permissionDenied: some View {
-        VStack(spacing: Spacing.lg) {
+        fallbackPanel {
             Text("Camera access needed to snap items.".localized)
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.82)
+                .accessibilitySortPriority(3)
 
-            PrimaryPillButton(title: "Open Settings", systemImage: "gearshape.fill", fillsWidth: false) {
+            PrimaryPillButton(
+                title: "Open Settings",
+                systemImage: "gearshape.fill",
+                fillsWidth: fallbackActionsFillWidth,
+                maxFillWidth: fallbackActionMaxWidth
+            ) {
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                 openURL(url)
             }
+            .accessibilitySortPriority(2)
 
-            SecondaryPillButton(title: "Close", fillsWidth: false) {
+            SecondaryPillButton(
+                title: "Close",
+                fillsWidth: fallbackActionsFillWidth,
+                maxFillWidth: fallbackActionMaxWidth
+            ) {
                 controller.stop()
                 onCancel()
             }
+            .accessibilitySortPriority(1)
         }
-        .padding(Spacing.xl)
-        .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
-        .padding(Spacing.xl)
     }
 
     private var cameraFailed: some View {
-        VStack(spacing: Spacing.lg) {
+        fallbackPanel {
             Text("Camera couldn't start.".localized)
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
-            SecondaryPillButton(title: "Close", fillsWidth: false) {
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.82)
+                .accessibilitySortPriority(2)
+
+            SecondaryPillButton(
+                title: "Close",
+                fillsWidth: fallbackActionsFillWidth,
+                maxFillWidth: fallbackActionMaxWidth
+            ) {
                 controller.stop()
                 onCancel()
             }
+            .accessibilitySortPriority(1)
         }
-        .padding(Spacing.xl)
-        .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
-        .padding(Spacing.xl)
+    }
+
+    private func fallbackPanel<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    content()
+                }
+                .frame(maxWidth: fallbackPanelMaxWidth)
+                .padding(Spacing.xl)
+                .nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78)
+                .padding(Spacing.xl)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    private var fallbackPanelMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 420 : .infinity
+    }
+
+    private var fallbackActionMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 360 : .infinity
+    }
+
+    private var fallbackActionsFillWidth: Bool {
+        dynamicTypeSize.isAccessibilitySize
+    }
+
+    private var usesRegularWidthLayout: Bool {
+        horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
     }
 
     private var flashAccessibilityLabel: String {
@@ -208,52 +306,67 @@ struct CameraView: View {
         guard isFlashAvailable else { return }
         let requestedState = !flashOn
         flashOn = requestedState
-        Task {
+        flashTask?.cancel()
+        flashTask = Task { @MainActor in
             let applied = await controller.setTorch(enabled: requestedState)
-            guard applied == false else { return }
-            await MainActor.run {
+            guard Task.isCancelled == false else { return }
+            if applied == false {
                 flashOn = false
                 isFlashAvailable = false
             }
+            flashTask = nil
         }
     }
 
     private func capture() {
         guard !isCapturing else { return }
         Haptics.impact(.medium)
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing-camera-sample-capture") {
+        if LaunchArguments.contains(LaunchArguments.uiTestingCameraSampleCapture) {
             isCapturing = true
-            Task {
-                try? await Task.sleep(nanoseconds: 150_000_000)
-                await MainActor.run {
+            captureTask = Task {
+                do {
+                    try await Task.sleep(nanoseconds: 150_000_000)
+                    guard Task.isCancelled == false else { return }
                     controller.stop()
                     isCapturing = false
+                    captureTask = nil
                     onCapture(ImageTools.sampleJPEG())
+                } catch {
+                    guard Task.isCancelled == false else { return }
+                    isCapturing = false
+                    captureTask = nil
                 }
             }
             return
         }
 
         isCapturing = true
-        Task {
+        captureTask = Task {
             do {
                 let data = try await controller.capturePhoto(flashOn: flashOn)
+                guard Task.isCancelled == false else { return }
                 controller.stop()
-                await MainActor.run {
-                    isCapturing = false
-                    onCapture(data)
-                }
+                isCapturing = false
+                captureTask = nil
+                onCapture(data)
             } catch {
-                await MainActor.run {
-                    isCapturing = false
-                    Haptics.notify(.error)
-                    captureErrorToast = ToastMessage(
-                        text: CameraError.captureFailed.localizedDescription,
-                        style: .error
-                    )
-                }
+                guard Task.isCancelled == false else { return }
+                isCapturing = false
+                captureTask = nil
+                Haptics.notify(.error)
+                captureErrorToast = ToastMessage(
+                    text: CameraError.captureFailed.localizedDescription,
+                    style: .error
+                )
             }
         }
+    }
+
+    private func cancelInFlightCapture() {
+        captureTask?.cancel()
+        captureTask = nil
+        isCapturing = false
+        controller.stop()
     }
 
     private var shouldReduceMotion: Bool {

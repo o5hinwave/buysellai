@@ -18,38 +18,121 @@ final class RootPresentationTests: XCTestCase {
         XCTAssertLessThan(tutorialDelayRange.lowerBound, tutorialPresentationRange.lowerBound)
     }
 
-    func testPromptSheetsUseSpecifiedDetentsDragIndicatorsAndCornerRadius() throws {
+    func testStartupHistoryLoadUsesSwiftUITaskCancellation() throws {
         let root = try appRouterSource()
 
-        let snapResult = try sheetBlock(
-            in: root,
-            startingWith: #".sheet(item: $store.snapResultContext)"#,
-            endingBefore: #".sheet(item: $store.marketplacePickerContext)"#
-        )
-        XCTAssertNotNil(snapResult.range(of: "SnapResultSheet(context: context)"))
-        XCTAssertNotNil(snapResult.range(of: ".presentationDetents([.medium, .large])"))
-        XCTAssertNotNil(snapResult.range(of: ".presentationDragIndicator(.visible)"))
-        XCTAssertNotNil(snapResult.range(of: ".presentationCornerRadius(28)"))
+        let configureRange = try XCTUnwrap(root.range(of: ".task {\n            appStore.configure(modelContext: modelContext)"))
+        let loadHistoryRange = try XCTUnwrap(root.range(of: "await appStore.loadHistory()"))
+        let splashTaskRange = try XCTUnwrap(root.range(of: ".task {\n            try? await Task.sleep(nanoseconds: 300_000_000)"))
 
-        let marketplace = try sheetBlock(
-            in: root,
-            startingWith: #".sheet(item: $store.marketplacePickerContext)"#,
-            endingBefore: #".sheet(item: $store.listingContext)"#
-        )
-        XCTAssertNotNil(marketplace.range(of: "MarketplacePickerSheet(context: context)"))
-        XCTAssertNotNil(marketplace.range(of: ".presentationDetents([.large])"))
-        XCTAssertNotNil(marketplace.range(of: ".presentationDragIndicator(.visible)"))
-        XCTAssertNotNil(marketplace.range(of: ".presentationCornerRadius(28)"))
+        XCTAssertLessThan(configureRange.lowerBound, loadHistoryRange.lowerBound)
+        XCTAssertLessThan(loadHistoryRange.lowerBound, splashTaskRange.lowerBound)
+        XCTAssertNil(root.range(of: "Task { @MainActor in\n                await appStore.loadHistory()"))
+    }
 
-        let listing = try sheetBlock(
+    func testSellingFlowUsesCustomOverlayWithSpecifiedChrome() throws {
+        let root = try appRouterSource()
+
+        XCTAssertNotNil(root.range(of: "FlowSheetOverlay(context: flowSheetContext, reduceMotion: shouldReduceMotion)"))
+        XCTAssertNotNil(root.range(of: "private struct FlowSheetOverlay"))
+        XCTAssertNotNil(root.range(of: ".accessibilityHidden(appStore.flowSheetContext != nil)"))
+        XCTAssertNotNil(root.range(of: "Color.brand.shadow.opacity(0.10)"))
+        XCTAssertNotNil(root.range(of: "DragGesture(minimumDistance: 8)"))
+        XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
+        XCTAssertNotNil(root.range(of: "appStore.dismissFlowSheet()"))
+        XCTAssertNil(root.range(of: ".sheet(isPresented: flowSheetBinding)"))
+        XCTAssertNil(root.range(of: ".background(Color.brand.background)\n        .clipShape(UnevenRoundedRectangle("))
+        XCTAssertNil(root.range(of: #".sheet(item: $store.snapResultContext)"#))
+        XCTAssertNil(root.range(of: #".sheet(item: $store.marketplacePickerContext)"#))
+        XCTAssertNil(root.range(of: #".sheet(item: $store.listingContext)"#))
+
+        let overlay = try sheetBlock(
             in: root,
-            startingWith: #".sheet(item: $store.listingContext)"#,
-            endingBefore: #".overlay(alignment: .top)"#
+            startingWith: #"private struct FlowSheetOverlay"#,
+            endingBefore: #"struct SplashView"#
         )
-        XCTAssertNotNil(listing.range(of: "ListingSheet(context: context)"))
-        XCTAssertNotNil(listing.range(of: ".presentationDetents([.large])"))
-        XCTAssertNotNil(listing.range(of: ".presentationDragIndicator(.visible)"))
-        XCTAssertNotNil(listing.range(of: ".presentationCornerRadius(28)"))
+
+        XCTAssertNotNil(overlay.range(of: "case .snapResult(let context):"))
+        XCTAssertNotNil(overlay.range(of: "SnapResultSheet(context: context)"))
+        XCTAssertNotNil(overlay.range(of: "case .marketplacePicker(let context):"))
+        XCTAssertNotNil(overlay.range(of: "MarketplacePickerSheet(context: context)"))
+        XCTAssertNotNil(overlay.range(of: "case .listing(let context):"))
+        XCTAssertNotNil(overlay.range(of: "ListingSheet(context: context)"))
+        XCTAssertNotNil(overlay.range(of: "proxy.size.height * 0.64"))
+        XCTAssertNotNil(overlay.range(of: "mediumSheetHeight(in: proxy)"))
+        XCTAssertNotNil(overlay.range(of: "largeSheetHeight(in: proxy)"))
+        XCTAssertNotNil(overlay.range(of: ".accessibilityElement(children: .contain)"))
+        XCTAssertNotNil(overlay.range(of: ".accessibilityAddTraits(.isModal)"))
+        XCTAssertNotNil(overlay.range(of: ".accessibilityAction(.escape)"))
+        XCTAssertNotNil(overlay.range(of: ".accessibilitySortPriority(1_000)"))
+    }
+
+    func testSellingFlowOverlayExposesAccessibleSheetIdentityAndDetentAdjustment() throws {
+        let root = try appRouterSource()
+        let overlay = try sheetBlock(
+            in: root,
+            startingWith: #"private struct FlowSheetOverlay"#,
+            endingBefore: #"struct SplashView"#
+        )
+
+        XCTAssertNotNil(overlay.range(of: #".accessibilityHidden(true)"#))
+        XCTAssertNotNil(overlay.range(of: #".accessibilityLabel(flowSheetAccessibilityLabel)"#))
+        XCTAssertNotNil(overlay.range(of: #".accessibilityValue(flowSheetAccessibilityValue)"#))
+        XCTAssertNotNil(overlay.range(of: #".accessibilityHint(flowSheetAccessibilityHint)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Item details".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Marketplace choices".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Listing draft".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Half height".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Expanded".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Swipe up or down to resize. Escape closes the sheet.".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"Text("Escape closes the sheet.".localized)"#))
+        XCTAssertNotNil(overlay.range(of: #"FlowSheetAdjustableActionModifier(isEnabled: isSnapResultSheet)"#))
+        XCTAssertNotNil(overlay.range(of: #"private func adjustSnapResultDetent(_ direction: AccessibilityAdjustmentDirection)"#))
+        XCTAssertNotNil(overlay.range(of: #"case .increment:"#))
+        XCTAssertNotNil(overlay.range(of: #"snapResultDetent = .large"#))
+        XCTAssertNotNil(overlay.range(of: #"case .decrement:"#))
+        XCTAssertNotNil(overlay.range(of: #"snapResultDetent = .medium"#))
+        XCTAssertNotNil(overlay.range(of: #"content.accessibilityAdjustableAction(action)"#))
+    }
+
+    func testSnapResultFlowSheetSupportsMediumLargeDragDetents() throws {
+        let root = try appRouterSource()
+        let overlay = try sheetBlock(
+            in: root,
+            startingWith: #"private struct FlowSheetOverlay"#,
+            endingBefore: #"struct SplashView"#
+        )
+
+        XCTAssertNotNil(root.range(of: "private enum FlowSheetDetent: Equatable"))
+        XCTAssertNotNil(overlay.range(of: "@State private var snapResultDetent: FlowSheetDetent = .medium"))
+        XCTAssertNotNil(overlay.range(of: ".animation(reduceMotion ? AppMotion.quick : AppMotion.sheet, value: snapResultDetent)"))
+        XCTAssertNotNil(overlay.range(of: ".onChange(of: context) { _, newContext in"))
+        XCTAssertNotNil(overlay.range(of: "snapResultDetent = .medium"))
+        XCTAssertNotNil(overlay.range(of: "case .medium:\n                mediumSheetHeight(in: proxy)"))
+        XCTAssertNotNil(overlay.range(of: "case .large:\n                largeSheetHeight(in: proxy)"))
+        XCTAssertNotNil(overlay.range(of: "interactiveDragOffset(for: value.translation.height)"))
+        XCTAssertNotNil(overlay.range(of: "shouldExpandSnapResult(for: value)"))
+        XCTAssertNotNil(overlay.range(of: "shouldCollapseSnapResult(for: value)"))
+        XCTAssertNotNil(overlay.range(of: "snapResultDetent = .large"))
+        XCTAssertNotNil(overlay.range(of: "snapResultDetent = .medium"))
+        XCTAssertNotNil(overlay.range(of: "translationHeight * 0.22"))
+        XCTAssertNotNil(overlay.range(of: "value.translation.height < -72 || value.predictedEndTranslation.height < -132"))
+        XCTAssertNotNil(overlay.range(of: "value.translation.height > 72 || value.predictedEndTranslation.height > 132"))
+        XCTAssertNotNil(overlay.range(of: "value.translation.height > 220 || value.predictedEndTranslation.height > 320"))
+    }
+
+    func testSellingFlowAvoidsAccidentalBackdropTapDismissal() throws {
+        let root = try appRouterSource()
+        let overlay = try sheetBlock(
+            in: root,
+            startingWith: #"private struct FlowSheetOverlay"#,
+            endingBefore: #"struct SplashView"#
+        )
+
+        XCTAssertNotNil(overlay.range(of: "DragGesture(minimumDistance: 8)"))
+        XCTAssertNotNil(overlay.range(of: ".accessibilityAction(.escape)"))
+        XCTAssertNotNil(overlay.range(of: "appStore.dismissFlowSheet()"))
+        XCTAssertNil(overlay.range(of: ".onTapGesture"))
     }
 
     private func appRouterSource() throws -> String {

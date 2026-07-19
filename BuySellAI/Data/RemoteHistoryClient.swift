@@ -98,7 +98,10 @@ actor RemoteHistoryClient {
             return try await sendMapped(request, decoding: decoding)
         } catch let error as URLError where error.code == .networkConnectionLost {
             return try await sendMapped(request, decoding: decoding)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -110,7 +113,10 @@ actor RemoteHistoryClient {
             try await sendVoidMapped(request)
         } catch let error as URLError where error.code == .networkConnectionLost {
             try await sendVoidMapped(request)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -118,7 +124,10 @@ actor RemoteHistoryClient {
     private func sendMapped<Response: Decodable>(_ request: URLRequest, decoding: Response.Type) async throws -> Response {
         do {
             return try await send(request, decoding: decoding)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -126,7 +135,10 @@ actor RemoteHistoryClient {
     private func sendVoidMapped(_ request: URLRequest) async throws {
         do {
             try await sendVoid(request)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -153,6 +165,8 @@ actor RemoteHistoryClient {
         switch httpResponse.statusCode {
         case 200...299:
             return
+        case 401, 403:
+            throw APIError.sessionExpired
         case 429:
             throw APIError.rateLimited
         default:

@@ -24,7 +24,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -71,7 +71,7 @@ final class BuySellAIUITests: XCTestCase {
 
     func testHomeLaunchReachesPrimaryActionWithinSimulatorBudget() {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences", "--reset-auth", "--reset-history"]
 
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
@@ -501,10 +501,10 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
         XCTAssertTrue(bestSummary.label.contains("Best, Craigslist, estimated payout"))
 
-        let ebayRow = app.buttons["MarketplaceRow.ebay"]
-        XCTAssertTrue(ebayRow.waitForExistence(timeout: 5))
-        XCTAssertTrue(ebayRow.label.contains("eBay, estimated payout"))
-        tapMarketplace("ebay", in: app)
+        let craigslistRow = app.buttons["MarketplaceRow.craigslist"]
+        XCTAssertTrue(craigslistRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(craigslistRow.label.contains("Craigslist, estimated payout"))
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -545,9 +545,34 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Looks right — pick where to sell"].waitForExistence(timeout: 5))
     }
 
+    func testAuthGuestEscapeRemainsReachableAtAccessibilityThree() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--ui-testing",
+            "--skip-tutorial",
+            "--reset-auth",
+            "-UIPreferredContentSizeCategoryName",
+            UIContentSizeCategory.accessibilityExtraExtraExtraLarge.rawValue
+        ]
+        app.launch()
+
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5))
+
+        let keepGoing = app.buttons["Keep going without an account"]
+        XCTAssertTrue(keepGoing.exists)
+        XCTAssertTrue(keepGoing.isHittable)
+        keepGoing.tap()
+
+        XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
+    }
+
     func testGuestHistoryPersistsAfterCopyAndRelaunch() {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences", "--reset-auth", "--reset-history"]
         app.launch()
 
         let snap = app.buttons["Snap to sell"]
@@ -558,7 +583,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -634,7 +659,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -672,7 +697,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -705,7 +730,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let offlineMessage = app.staticTexts["Listing.ErrorMessage"]
         if offlineMessage.waitForExistence(timeout: 5) == false {
@@ -793,7 +818,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -804,7 +829,7 @@ final class BuySellAIUITests: XCTestCase {
         let screenshotURL = appStoreScreenshotDirectory()
 
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-preferences", "--reset-auth", "--reset-history"]
         app.launch()
 
         let snap = app.buttons["Snap to sell"]
@@ -819,10 +844,10 @@ final class BuySellAIUITests: XCTestCase {
 
         looksRight.tap()
         XCTAssertTrue(app.buttons["MarketplaceSummary.best.craigslist"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["MarketplaceRow.ebay"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["MarketplaceRow.craigslist"].waitForExistence(timeout: 5))
         try saveAppStoreScreenshot("03-marketplaces", in: screenshotURL)
 
-        tapMarketplace("ebay", in: app)
+        tapMarketplace("craigslist", in: app)
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Generated listing text"].waitForExistence(timeout: 5))
@@ -843,7 +868,25 @@ final class BuySellAIUITests: XCTestCase {
             .deletingLastPathComponent()
             .appendingPathComponent("AppStoreAssets")
             .appendingPathComponent("Screenshots")
-            .appendingPathComponent("iPhone-16-Pro")
+            .appendingPathComponent(appStoreScreenshotDeviceFolder())
+    }
+
+    private func appStoreScreenshotDeviceFolder() -> String {
+        let rawDeviceName = ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] ?? "iPhone 16 Pro"
+        let deviceName = rawDeviceName.replacingOccurrences(
+            of: #"^Clone \d+ of "#,
+            with: "",
+            options: .regularExpression
+        )
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-"))
+        let normalized = deviceName
+            .replacingOccurrences(of: "(", with: "")
+            .replacingOccurrences(of: ")", with: "")
+            .replacingOccurrences(of: " ", with: "-")
+        return normalized.unicodeScalars.map { scalar in
+            allowed.contains(scalar) ? String(scalar) : "-"
+        }
+        .joined()
     }
 
     private func tapMarketplace(
@@ -852,17 +895,35 @@ final class BuySellAIUITests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let row = app.buttons["MarketplaceRow.\(rawValue)"]
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "Missing marketplace row: \(rawValue)", file: file, line: line)
-
-        var attempts = 0
-        while row.isHittable == false && attempts < 6 {
-            app.swipeUp()
-            attempts += 1
-        }
+        let row = revealMarketplace(rawValue, in: app, file: file, line: line)
 
         XCTAssertTrue(row.isHittable, "Marketplace row was not hittable: \(rawValue)", file: file, line: line)
         row.tap()
+    }
+
+    private func revealMarketplace(
+        _ rawValue: String,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> XCUIElement {
+        let row = app.buttons["MarketplaceRow.\(rawValue)"]
+
+        var revealAttempts = 0
+        while row.waitForExistence(timeout: revealAttempts == 0 ? 3 : 0.5) == false && revealAttempts < 8 {
+            app.swipeUp()
+            revealAttempts += 1
+        }
+
+        XCTAssertTrue(row.exists, "Missing marketplace row: \(rawValue)", file: file, line: line)
+
+        var hittableAttempts = 0
+        while row.isHittable == false && hittableAttempts < 8 {
+            app.swipeUp()
+            hittableAttempts += 1
+        }
+
+        return row
     }
 
     private func saveAppStoreScreenshot(
@@ -874,9 +935,7 @@ final class BuySellAIUITests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let screenshot = XCUIScreen.main.screenshot()
         let destination = directory.appendingPathComponent("\(name).png")
-        if FileManager.default.fileExists(atPath: destination.path) == false {
-            try screenshot.pngRepresentation.write(to: destination, options: .atomic)
-        }
+        try screenshot.pngRepresentation.write(to: destination, options: .atomic)
 
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = name

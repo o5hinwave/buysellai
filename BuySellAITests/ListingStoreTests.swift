@@ -37,14 +37,14 @@ final class ListingStoreTests: XCTestCase {
         let secondTask = Task { await store.generate(accessToken: nil) }
         await waitUntil { secondContinuation != nil }
 
-        secondContinuation?.resume(returning: "Fresh listing")
+        secondContinuation?.resume(returning: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
         await secondTask.value
 
-        firstContinuation?.resume(returning: "Old listing")
+        firstContinuation?.resume(returning: "TITLE:\nOld listing\n\nDESCRIPTION:\nOutdated copy.")
         await firstTask.value
 
         XCTAssertEqual(store.phase, .success)
-        XCTAssertEqual(store.listingText, "Fresh listing")
+        XCTAssertEqual(store.listingText, "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
     }
 
     func testStaleGenerateFailureDoesNotOverrideLatestSuccess() async {
@@ -72,17 +72,17 @@ final class ListingStoreTests: XCTestCase {
         let secondTask = Task { await store.generate(accessToken: nil) }
         await waitUntil { secondContinuation != nil }
 
-        secondContinuation?.resume(returning: "Fresh listing")
+        secondContinuation?.resume(returning: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
         await secondTask.value
 
         firstContinuation?.resume(throwing: APIError.timeout)
         await firstTask.value
 
         XCTAssertEqual(store.phase, .success)
-        XCTAssertEqual(store.listingText, "Fresh listing")
+        XCTAssertEqual(store.listingText, "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
     }
 
-    func testGenerateCancellationUsesFriendlyRetryCopy() async {
+    func testGenerateCancellationReturnsToIdleWithoutFailureCopy() async {
         let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
@@ -92,7 +92,22 @@ final class ListingStoreTests: XCTestCase {
 
         await store.generate(accessToken: nil)
 
-        XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
+        XCTAssertEqual(store.phase, .idle)
+        XCTAssertEqual(store.listingText, "")
+    }
+
+    func testGenerateURLSessionCancellationReturnsToIdleWithoutFailureCopy() async {
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _ in throw URLError(.cancelled) }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .idle)
+        XCTAssertEqual(store.listingText, "")
     }
 
     func testGenerateTransportErrorUsesFriendlyOfflineCopy() async {
@@ -108,27 +123,97 @@ final class ListingStoreTests: XCTestCase {
         XCTAssertEqual(store.phase, .failed(APIError.offline.localizedDescription))
     }
 
-    func testBlankGeneratedOrExistingListingUsesFriendlyRetryCopy() async {
+    func testListingFixtureCopyIsPolishedAndContractSafe() throws {
+        let text = ListingFixtureText.sample(for: lamp)
+
+        XCTAssertNoThrow(try ListingTextContract.validatedGenerated(text))
+        XCTAssertTrue(text.contains("TITLE:\nLamp - Good"))
+        XCTAssertTrue(text.contains("DESCRIPTION:\nLamp in good condition. Asking $45. See photos for details."))
+        XCTAssertFalse(text.localizedCaseInsensitiveContains("selling a"))
+        XCTAssertFalse(text.localizedCaseInsensitiveContains("here's your listing"))
+        XCTAssertFalse(text.localizedCaseInsensitiveContains("pickup or shipping depends"))
+    }
+
+    func testValidatedGeneratedListingReturnsTrimmedCopy() async {
         let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _ in "  \n\t  " }
+            generateHandler: { _, _, _ in
+                "  \nTITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.\n  "
+            }
         )
 
         await store.generate(accessToken: nil)
 
-        XCTAssertEqual(store.phase, .failed(APIError.decoding.localizedDescription))
-        XCTAssertEqual(store.listingText, "")
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.listingText, "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
+    }
 
-        let reopenedStore = ListingStore(
+    func testExistingListingReturnsTrimmedCopyWhenReopened() {
+        let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
-            existingListingText: "  \n\t  "
+            existingListingText: "  \nTITLE:\nStored listing\n\nDESCRIPTION:\nReady to post.\n  "
         )
 
-        XCTAssertEqual(reopenedStore.phase, .failed(APIError.decoding.localizedDescription))
-        XCTAssertEqual(reopenedStore.listingText, "")
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.listingText, "TITLE:\nStored listing\n\nDESCRIPTION:\nReady to post.")
+    }
+
+    func testUnsafeGeneratedOrExistingListingUsesFriendlyRetryCopy() async {
+        for unsafeText in [
+            "  \n\t  ",
+            "TITLE:\nLamp",
+            "Here's your listing:\nTITLE:\nLamp\n\nDESCRIPTION:\nReady.",
+            "Sure, here's your listing:\nTITLE:\nLamp\n\nDESCRIPTION:\nReady.",
+            "Draft listing:\nTITLE:\nLamp\n\nDESCRIPTION:\nReady.",
+            "```text\nTITLE:\nLamp\n\nDESCRIPTION:\nReady.\n```",
+            "TITLE:\nLamp\n\n```\n\nDESCRIPTION:\nReady."
+        ] {
+            let store = ListingStore(
+                item: lamp,
+                marketplace: .ebay,
+                existingListingText: nil,
+                generateHandler: { _, _, _ in unsafeText }
+            )
+
+            await store.generate(accessToken: nil)
+
+            XCTAssertEqual(store.phase, .failed(APIError.decoding.localizedDescription))
+            XCTAssertEqual(store.listingText, "")
+
+            let reopenedStore = ListingStore(
+                item: lamp,
+                marketplace: .ebay,
+                existingListingText: unsafeText
+            )
+
+            XCTAssertEqual(reopenedStore.phase, .failed(APIError.decoding.localizedDescription))
+            XCTAssertEqual(reopenedStore.listingText, "")
+        }
+    }
+
+    func testGeneratedListingRequiresTitleAndDescriptionBodies() async {
+        for unsafeText in [
+            "TITLE:\nLamp",
+            "TITLE:\n\nDESCRIPTION:\nReady.",
+            "TITLE:\n   \n\nDESCRIPTION:\nReady.",
+            "TITLE:\nLamp\n\nDESCRIPTION:\n",
+            "TITLE:\nLamp\n\nDESCRIPTION:\n   "
+        ] {
+            let store = ListingStore(
+                item: lamp,
+                marketplace: .ebay,
+                existingListingText: nil,
+                generateHandler: { _, _, _ in unsafeText }
+            )
+
+            await store.generate(accessToken: nil)
+
+            XCTAssertEqual(store.phase, .failed(APIError.decoding.localizedDescription))
+            XCTAssertEqual(store.listingText, "")
+        }
     }
 
     func testGenerateUnknownErrorDoesNotExposeRawDescription() async {

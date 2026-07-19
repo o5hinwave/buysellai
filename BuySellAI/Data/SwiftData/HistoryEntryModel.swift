@@ -27,6 +27,19 @@ final class HistoryEntryModel {
         self.listingText = entry.listingText
     }
 
+    func update(from entry: HistoryEntry) {
+        id = entry.id
+        createdAt = entry.createdAt
+        itemName = entry.itemName
+        categoryRawValue = entry.category?.rawValue
+        conditionRawValue = entry.condition?.rawValue
+        suggestedPrice = entry.suggestedPrice?.doubleValue
+        suggestedPriceRawValue = entry.suggestedPrice.map(Self.decimalString)
+        imageThumbnail = entry.imageThumbnail
+        marketplaceRawValue = entry.marketplace.rawValue
+        listingText = entry.listingText
+    }
+
     var entry: HistoryEntry {
         HistoryEntry(
             id: id,

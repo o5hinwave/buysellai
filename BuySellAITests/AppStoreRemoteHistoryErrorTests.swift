@@ -23,7 +23,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
                 suggestedPrice: Decimal(45),
                 imageThumbnail: Data([1, 2, 3]),
                 marketplace: .ebay,
-                listingText: "TITLE:\nLamp"
+                listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
             ),
             HistoryEntry(
                 id: secondID,
@@ -34,7 +34,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
                 suggestedPrice: Decimal(30),
                 imageThumbnail: nil,
                 marketplace: .craigslist,
-                listingText: "TITLE:\nChair"
+                listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition."
             )
         ]
         var observedRequest: URLRequest?
@@ -74,6 +74,35 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, APIError.timeout.localizedDescription)
     }
 
+    func testSignedInLoadHistoryWithUnusableTokenShowsSessionExpiredToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            XCTFail("History should not load remotely without a usable access token")
+            throw URLError(.badServerResponse)
+        }
+        store.session = expiredSignedInSession
+        store.history = [entry]
+
+        await store.loadHistory()
+
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.toast?.text, APIError.sessionExpired.localizedDescription)
+    }
+
+    func testSignedInCancelledLoadHistoryLeavesCurrentRowsAndDoesNotToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            throw URLError(.cancelled)
+        }
+        store.session = signedInSession
+        store.history = [entry]
+
+        await store.loadHistory()
+
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertNil(store.toast)
+    }
+
     func testSignedInLateLoadHistoryDoesNotOverwriteNewlySavedListing() async throws {
         let staleRemoteEntry = HistoryEntry(
             id: try XCTUnwrap(UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")),
@@ -84,7 +113,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             suggestedPrice: Decimal(12),
             imageThumbnail: nil,
             marketplace: .craigslist,
-            listingText: "TITLE:\nStale remote lamp"
+            listingText: "TITLE:\nStale remote lamp\n\nDESCRIPTION:\nStale remote lamp in fair condition."
         )
         let fetchStarted = expectation(description: "remote fetch started")
         let postReturned = expectation(description: "remote save returned")
@@ -126,7 +155,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         let loadTask = Task { await store.loadHistory() }
         await fulfillment(of: [fetchStarted], timeout: 1)
 
-        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
 
         releaseFetch.signal()
@@ -147,7 +176,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             suggestedPrice: Decimal(20),
             imageThumbnail: nil,
             marketplace: .craigslist,
-            listingText: "TITLE:\nOlder remote chair"
+            listingText: "TITLE:\nOlder remote chair\n\nDESCRIPTION:\nOlder remote chair in fair condition."
         )
         let fetchStarted = expectation(description: "session remote fetch started")
         let postReturned = expectation(description: "remote save returned")
@@ -188,7 +217,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         let signInTask = Task { await store.setSession(signedInSession) }
         await fulfillment(of: [fetchStarted], timeout: 1)
 
-        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
 
         releaseFetch.signal()
@@ -211,10 +240,99 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         }
         store.session = signedInSession
 
-        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         await waitForToast(APIError.rateLimited.localizedDescription, in: store)
 
         XCTAssertTrue(store.history.isEmpty)
+    }
+
+    func testSignedInSaveListingWithUnusableTokenRollsBackAndShowsSessionExpiredToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            XCTFail("History should not save remotely without a usable access token")
+            throw URLError(.badServerResponse)
+        }
+        store.session = expiredSignedInSession
+        store.history = [entry]
+
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
+        await waitForToast(APIError.sessionExpired.localizedDescription, in: store)
+
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+    }
+
+    func testSignedInSaveListingCancellationKeepsOptimisticRowAndDoesNotToast() async throws {
+        let store = try makeStore { _ in
+            throw URLError(.cancelled)
+        }
+        store.session = signedInSession
+
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
+        await settleAsyncCompletions()
+
+        XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
+        XCTAssertNil(store.toast)
+    }
+
+    func testSignedInCopyFromReopenedListingUpsertsExistingHistoryRow() async throws {
+        let originalEntry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "12121212-3434-5656-7878-909090909090")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-14T18:00:00Z")),
+            itemName: "Lamp",
+            category: .home,
+            condition: .good,
+            suggestedPrice: Decimal(45),
+            imageThumbnail: nil,
+            marketplace: .ebay,
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
+        )
+        let upsertReturned = expectation(description: "remote replacement upsert returned")
+        var observedRows: [[String: Any]] = []
+        let store = try makeStore { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            observedRows = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [[String: Any]])
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            upsertReturned.fulfill()
+            return (response, Data())
+        }
+        store.session = signedInSession
+        store.history = [originalEntry]
+
+        let updatedItem = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .likeNew,
+            priceEstimate: Decimal(60)
+        )
+        store.saveListing(
+            item: updatedItem,
+            imageData: nil,
+            marketplace: .craigslist,
+            listingText: "TITLE:\nUpdated lamp\n\nDESCRIPTION:\nUpdated lamp in like new condition.",
+            replacing: originalEntry
+        )
+
+        await fulfillment(of: [upsertReturned], timeout: 1)
+
+        XCTAssertEqual(store.history.count, 1)
+        XCTAssertEqual(store.history.first?.id, originalEntry.id)
+        XCTAssertEqual(store.history.first?.createdAt, originalEntry.createdAt)
+        XCTAssertEqual(store.history.first?.marketplace, .craigslist)
+        XCTAssertEqual(store.history.first?.condition, .likeNew)
+        XCTAssertEqual(store.history.first?.listingText, "TITLE:\nUpdated lamp\n\nDESCRIPTION:\nUpdated lamp in like new condition.")
+        let row = try XCTUnwrap(observedRows.first)
+        XCTAssertEqual(observedRows.count, 1)
+        XCTAssertEqual(row["id"] as? String, originalEntry.id.uuidString)
+        XCTAssertEqual(row["created_at"] as? String, ISO8601DateFormatter().string(from: originalEntry.createdAt))
+        XCTAssertEqual(row["marketplace"] as? String, "craigslist")
+        XCTAssertEqual(row["listing_text"] as? String, "TITLE:\nUpdated lamp\n\nDESCRIPTION:\nUpdated lamp in like new condition.")
     }
 
     func testSignedInSaveFailureAfterSignOutDoesNotReplaceSignOutToast() async throws {
@@ -236,7 +354,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         }
         store.session = signedInSession
 
-        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp")
+        store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         await fulfillment(of: [postStarted], timeout: 1)
 
         store.signOut()
@@ -268,6 +386,21 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await waitForToast(APIError.server(503).localizedDescription, in: store)
 
         XCTAssertEqual(store.history.map(\.id), [entry.id])
+    }
+
+    func testSignedInDeleteHistoryCancellationDoesNotShowGenericToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            throw URLError(.cancelled)
+        }
+        store.session = signedInSession
+        store.history = [entry]
+
+        store.deleteHistory(entry)
+        await settleAsyncCompletions()
+
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertNil(store.toast)
     }
 
     func testSignedInDeleteFailureAfterNewerSaveDoesNotRestoreStaleSnapshot() async throws {
@@ -314,7 +447,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await fulfillment(of: [deleteStarted], timeout: 1)
         XCTAssertTrue(store.history.isEmpty)
 
-        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase")
+        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase\n\nDESCRIPTION:\nVase in like new condition.")
         XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
 
         releaseDelete.signal()
@@ -337,6 +470,21 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await waitForToast(APIError.offline.localizedDescription, in: store)
 
         XCTAssertEqual(store.history.map(\.id), [entry.id])
+    }
+
+    func testSignedInClearHistoryCancellationDoesNotShowGenericToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            throw URLError(.cancelled)
+        }
+        store.session = signedInSession
+        store.history = [entry]
+
+        store.clearHistory()
+        await settleAsyncCompletions()
+
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertNil(store.toast)
     }
 
     func testSignedInClearFailureAfterNewerSaveDoesNotRestoreStaleSnapshot() async throws {
@@ -377,7 +525,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await fulfillment(of: [clearStarted], timeout: 1)
         XCTAssertTrue(store.history.isEmpty)
 
-        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase")
+        store.saveListing(item: vase, imageData: nil, marketplace: .craigslist, listingText: "TITLE:\nVase\n\nDESCRIPTION:\nVase in like new condition.")
         XCTAssertEqual(store.history.map(\.itemName), ["Vase"])
 
         releaseClear.signal()
@@ -445,6 +593,39 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, APIError.rateLimited.localizedDescription)
     }
 
+    func testDeleteAccountWithUnusableTokenShowsSessionExpiredToast() async throws {
+        let entry = historyEntry
+        let store = try makeStore { _ in
+            XCTFail("Account delete should not call the backend without a usable access token")
+            throw URLError(.badServerResponse)
+        }
+        store.session = expiredSignedInSession
+        store.history = [entry]
+
+        let didDelete = await store.deleteAccount()
+
+        XCTAssertFalse(didDelete)
+        XCTAssertEqual(store.session?.userID, expiredSignedInSession.userID)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.toast?.text, APIError.sessionExpired.localizedDescription)
+    }
+
+    func testDeleteAccountCancellationKeepsSessionHistoryAndDoesNotToast() async throws {
+        let store = try makeStore { _ in
+            throw URLError(.cancelled)
+        }
+        let entry = historyEntry
+        store.session = signedInSession
+        store.history = [entry]
+
+        let didDelete = await store.deleteAccount()
+
+        XCTAssertFalse(didDelete)
+        XCTAssertEqual(store.session?.userID, signedInSession.userID)
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertNil(store.toast)
+    }
+
     private var signedInSession: AuthSession {
         AuthSession(
             userID: "user-123",
@@ -453,6 +634,17 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             refreshToken: "refresh-token"
         )
     }
+
+    private var expiredSignedInSession: AuthSession {
+        AuthSession(
+            userID: "user-123",
+            email: "person@example.com",
+            accessToken: Self.expiredAccessToken,
+            refreshToken: nil
+        )
+    }
+
+    private static let expiredAccessToken = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjF9.signature"
 
     private var lamp: DetectedItem {
         DetectedItem(
@@ -482,7 +674,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
             suggestedPrice: Decimal(45),
             imageThumbnail: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
     }
 
@@ -506,6 +698,28 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
 
     private static func jsonValue<T>(_ value: T?) -> Any {
         value ?? NSNull()
+    }
+
+    private static func bodyData(from request: URLRequest) -> Data? {
+        if let httpBody = request.httpBody {
+            return httpBody
+        }
+        guard let stream = request.httpBodyStream else {
+            return nil
+        }
+
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        let bufferSize = 1_024
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: bufferSize)
+            if count <= 0 { break }
+            data.append(buffer, count: count)
+        }
+        return data
     }
 
     private func makeStore(

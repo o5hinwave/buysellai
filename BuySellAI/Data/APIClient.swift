@@ -12,7 +12,7 @@ actor APIClient {
     init(
         session: URLSession? = nil,
         config: AppConfig? = nil,
-        isUITesting: Bool = ProcessInfo.processInfo.arguments.contains("--ui-testing")
+        isUITesting: Bool = LaunchArguments.isUITesting
     ) {
         if let session {
             self.session = session
@@ -27,7 +27,11 @@ actor APIClient {
     }
 
     func analyze(image: Data, accessToken: String? = nil) async throws -> AnalyzeResponse {
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing-analyze-offline") {
+        guard image.isEmpty == false else {
+            throw APIError.decoding
+        }
+
+        if LaunchArguments.contains(LaunchArguments.uiTestingAnalyzeOffline) {
             try await Task.sleep(nanoseconds: 250_000_000)
             throw APIError.offline
         }
@@ -50,7 +54,7 @@ actor APIClient {
     }
 
     func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
-        if ProcessInfo.processInfo.arguments.contains("--ui-testing-generate-offline") {
+        if LaunchArguments.contains(LaunchArguments.uiTestingGenerateOffline) {
             throw APIError.offline
         }
 
@@ -63,20 +67,14 @@ actor APIClient {
 
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
-            return """
-            TITLE:
-            \(itemName) - \(item.condition.display)
-
-            DESCRIPTION:
-            Selling a \(itemName.lowercased()) in \(item.condition.display.lowercased()) condition. Asking \(item.priceEstimate.currency(code: displayCurrencyCode)). Pickup or shipping depends on the marketplace.
-            """
+            return ListingFixtureText.sample(for: item, currencyCode: displayCurrencyCode)
         }
 
         let config = try loadConfig()
         let itemPayload = ListingItemPayload(
             name: itemName,
-            category: item.category.display,
-            condition: item.condition.rawValue,
+            category: item.category.apiValue,
+            condition: item.condition.apiValue,
             originalPrice: item.priceEstimate,
             currentPrice: item.priceEstimate
         )
@@ -88,10 +86,7 @@ actor APIClient {
             body: payload
         )
         let response = try await perform(request, decoding: GenerateListingResponse.self)
-        guard response.listing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
-            throw APIError.decoding
-        }
-        return response.listing
+        return try ListingTextContract.validatedGenerated(response.listing)
     }
 
     private func loadConfig() throws -> AppConfig {
@@ -130,7 +125,10 @@ actor APIClient {
         } catch let error as URLError where error.code == .networkConnectionLost {
             logger.warning("Retrying network connection lost")
             return try await sendMapped(request, decoding: decoding)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -138,7 +136,10 @@ actor APIClient {
     private func sendMapped<Response: Decodable>(_ request: URLRequest, decoding: Response.Type) async throws -> Response {
         do {
             return try await send(request, decoding: decoding)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -191,6 +192,8 @@ enum APIError: LocalizedError, Equatable {
     case server(Int)
     case decoding
     case notConfigured
+    case sessionExpired
+    case accountAlreadyLinked
     case unknown
 
     var errorDescription: String? {
@@ -206,7 +209,11 @@ enum APIError: LocalizedError, Equatable {
         case .decoding:
             "BuySell got an answer it couldn't read.".localized
         case .notConfigured:
-            "Backend is not configured yet.".localized
+            "BuySell isn't ready yet. Try again later.".localized
+        case .sessionExpired:
+            "Sign in again to continue.".localized
+        case .accountAlreadyLinked:
+            "That Apple account is already linked to another BuySell account.".localized
         case .unknown:
             "Something went wrong. Try again.".localized
         }
@@ -218,6 +225,8 @@ enum APIError: LocalizedError, Equatable {
         }
         if let error = error as? URLError {
             switch error.code {
+            case .cancelled:
+                return .unknown
             case .notConnectedToInternet,
                  .networkConnectionLost,
                  .dataNotAllowed,
@@ -233,6 +242,22 @@ enum APIError: LocalizedError, Equatable {
             }
         }
         return .unknown
+    }
+
+    static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        if let error = error as? URLError, error.code == .cancelled {
+            return true
+        }
+        return false
+    }
+
+    static func rethrowCancellation(_ error: Error) throws {
+        if isCancellation(error) {
+            throw CancellationError()
+        }
     }
 
     static func userMessage(for error: Error) -> String {

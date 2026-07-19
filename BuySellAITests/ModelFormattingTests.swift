@@ -2,6 +2,38 @@ import XCTest
 @testable import BuySellAI
 
 final class ModelFormattingTests: XCTestCase {
+    func testCategoryDisplayIsLocalizedButAPIValueStaysBackendStable() {
+        XCTAssertEqual(Category.home.display, "Home")
+        XCTAssertEqual(Category.home.apiValue, "Home")
+        XCTAssertEqual(
+            Category.allCases.map(\.apiValue),
+            [
+                "Electronics", "Furniture", "Clothing", "Shoes", "Bags", "Jewelry",
+                "Toys", "Kids", "Home", "Tools", "Sports", "Books", "Media", "Music",
+                "Collectibles", "Art", "Other"
+            ]
+        )
+        XCTAssertEqual(Category(apiValue: "Home"), .home)
+        XCTAssertEqual(Category(apiValue: "home"), .home)
+        XCTAssertEqual(Category(apiValue: "Collectibles"), .collectibles)
+    }
+
+    func testConditionDisplayIsLocalizedButAPIValueStaysBackendStable() {
+        XCTAssertEqual(Condition.likeNew.display, "Like New")
+        XCTAssertEqual(Condition.likeNew.apiValue, "likeNew")
+        XCTAssertEqual(Condition.good.display, "Good")
+        XCTAssertEqual(Condition.good.apiValue, "good")
+        XCTAssertEqual(Condition(apiValue: "Like New"), .likeNew)
+        XCTAssertEqual(Condition(apiValue: "for_parts"), .forParts)
+    }
+
+    func testThemePreferenceDisplayIsLocalizedAndRawValuesStayPersistent() {
+        XCTAssertEqual(ThemePreference.system.display, "System")
+        XCTAssertEqual(ThemePreference.light.display, "Light")
+        XCTAssertEqual(ThemePreference.dark.display, "Dark")
+        XCTAssertEqual(ThemePreference.allCases.map(\.rawValue), ["system", "light", "dark"])
+    }
+
     func testDecimalCurrencyFormattingAvoidsDoublePrecisionLoss() throws {
         let value = try XCTUnwrap(Decimal(string: "9007199254740993"))
 

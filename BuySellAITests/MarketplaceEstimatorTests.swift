@@ -18,7 +18,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             (.stockx, "StockX", "Sneakers & collectibles"),
             (.goat, "GOAT", "Sneakers, authenticated"),
             (.kidizen, "Kidizen", "Kids clothes"),
-            (.vinted, "Vinted", "Fashion, no seller fees"),
+            (.vinted, "Vinted", "Fashion, no listing fees"),
             (.vestiaire, "Vestiaire", "Luxury pre-owned"),
             (.therealreal, "The RealReal", "Authenticated luxury"),
             (.swappa, "Swappa", "Used tech & phones"),
@@ -27,7 +27,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             (.bonanza, "Bonanza", "General resale, low fees"),
             (.curtsy, "Curtsy", "Women's fashion (mobile)"),
             (.nextdoor, "Nextdoor", "Neighborhood local sales"),
-            (.amazon, "Amazon", "Amazon seller — high reach, high fee"),
+            (.amazon, "Amazon", "Amazon marketplace — high reach, high fee"),
             (.shopify, "Shopify", "Your own storefront"),
             (.rubylane, "Ruby Lane", "Antiques & fine art"),
             (.tcgplayer, "TCGplayer", "Trading cards")
@@ -39,6 +39,10 @@ final class MarketplaceEstimatorTests: XCTestCase {
         for (marketplace, displayName, blurb) in expected {
             XCTAssertEqual(marketplace.displayName, displayName)
             XCTAssertEqual(marketplace.blurb, blurb)
+            XCTAssertNil(
+                blurb.range(of: #"\bseller\b"#, options: [.regularExpression, .caseInsensitive]),
+                "\(displayName) blurb should not call the user a seller."
+            )
         }
     }
 
@@ -107,9 +111,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
 
         XCTAssertEqual(estimates.count, Marketplace.allCases.count)
         XCTAssertEqual(estimates.first?.badge, .best)
+        XCTAssertEqual(estimates.first?.id, .craigslist)
         XCTAssertEqual(estimates.last?.badge, .lowest)
         XCTAssertEqual(estimates.first?.payout, Decimal(100))
         XCTAssertEqual(estimates.last?.id, .therealreal)
+
+        let craigslistIndex = try? XCTUnwrap(estimates.firstIndex { $0.id == .craigslist })
+        let nextdoorIndex = try? XCTUnwrap(estimates.firstIndex { $0.id == .nextdoor })
+        XCTAssertEqual(estimates[craigslistIndex ?? 0].payout, estimates[nextdoorIndex ?? 0].payout)
+        XCTAssertLessThan(craigslistIndex ?? .max, nextdoorIndex ?? .max)
     }
 
     func testMarketplaceEstimateCodableRoundTripPreservesPayoutAndBadge() throws {

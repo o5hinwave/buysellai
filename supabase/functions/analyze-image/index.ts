@@ -30,6 +30,7 @@ const categories = [
 ];
 
 const conditions = ["new", "likeNew", "good", "fair", "forParts"];
+const maxImageBytes = 6_000_000;
 
 serve(async (request) => {
   const options = handleOptions(request);
@@ -85,7 +86,32 @@ function requireImageDataUrl(value: unknown): { base64: string } {
     throw new HttpError("imageDataUrl is not valid base64", 400);
   }
 
+  const bytes = decodeImageBase64(base64);
+  if (bytes.byteLength > maxImageBytes) {
+    throw new HttpError("imageDataUrl is too large", 413);
+  }
+  if (!isJpegBytes(bytes)) {
+    throw new HttpError("imageDataUrl must contain JPEG bytes", 400);
+  }
+
   return { base64 };
+}
+
+function decodeImageBase64(base64: string): Uint8Array {
+  try {
+    const binary = atob(base64);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  } catch {
+    throw new HttpError("imageDataUrl is not valid base64", 400);
+  }
+}
+
+function isJpegBytes(bytes: Uint8Array): boolean {
+  return bytes.byteLength >= 4 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[bytes.byteLength - 2] === 0xff &&
+    bytes[bytes.byteLength - 1] === 0xd9;
 }
 
 function normalizeAnalyzeResult(result: Record<string, unknown>) {

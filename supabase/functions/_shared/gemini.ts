@@ -1,4 +1,4 @@
-import { HttpError, requireEnv } from "./http.ts";
+import { fetchWithTimeout, HttpError, requireEnv, timeoutFromEnv } from "./http.ts";
 
 type GeminiPart = { text?: string };
 type GeminiResponse = {
@@ -18,11 +18,15 @@ export async function generateJsonWithGemini(
 ): Promise<Record<string, unknown>> {
   const apiKey = requireEnv("GEMINI_API_KEY");
   const model = Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-3.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const timeoutMs = timeoutFromEnv("GEMINI_TIMEOUT_MS", 18_000);
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
     body: JSON.stringify({
       system_instruction: {
         parts: [{ text: systemInstruction }],
@@ -33,17 +37,22 @@ export async function generateJsonWithGemini(
       }],
       generationConfig: {
         temperature: 0.2,
-        response_mime_type: "application/json",
-        response_schema: responseSchema,
+        responseMimeType: "application/json",
+        responseSchema,
       },
     }),
+  }, {
+    timeoutMs,
+    timeoutMessage: "Provider request timed out",
+    transportMessage: "Provider transport failed",
   });
+  const responseText = await response.text();
 
   if (!response.ok) {
     throw new HttpError("Provider request failed", response.status === 429 ? 429 : 502);
   }
 
-  const payload = await response.json() as GeminiResponse;
+  const payload = parseProviderPayload(responseText);
   const text = payload.candidates?.[0]?.content?.parts
     ?.map((part) => part.text ?? "")
     .join("")
@@ -56,13 +65,27 @@ export async function generateJsonWithGemini(
   return parseModelJson(text);
 }
 
+function parseProviderPayload(text: string): GeminiResponse {
+  try {
+    return JSON.parse(text) as GeminiResponse;
+  } catch {
+    throw new HttpError("Provider response was not valid JSON", 502);
+  }
+}
+
 function parseModelJson(text: string): Record<string, unknown> {
   const unfenced = text
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
 
-  const parsed = JSON.parse(unfenced);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(unfenced);
+  } catch {
+    throw new HttpError("Provider response was not valid model JSON", 502);
+  }
+
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new HttpError("Provider response was not a JSON object", 502);
   }

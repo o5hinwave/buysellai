@@ -5,12 +5,14 @@ archive_path="${1:-/tmp/BuySellAI-nosign.xcarchive}"
 max_app_size_kb="${MAX_APP_SIZE_KB:-20480}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "${script_dir}/.." && pwd)"
+source_root="$(cd "${script_dir}/.." && pwd)"
+work_root="$source_root"
+snapshot_root="${M10_LOCAL_ARCHIVE_SNAPSHOT_ROOT:-}"
 app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
-app_icon_contents="${repo_root}/BuySellAI/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
-app_icon_source="${repo_root}/BuySellAI/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+app_icon_contents=""
+app_icon_source=""
 iphone_icon="${app_path}/AppIcon60x60@2x.png"
 ipad_icon="${app_path}/AppIcon76x76@2x~ipad.png"
 plist_buddy="/usr/libexec/PlistBuddy"
@@ -18,6 +20,52 @@ plist_buddy="/usr/libexec/PlistBuddy"
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
+}
+
+prepare_snapshot() {
+    local target="$1"
+    local parent
+    local name
+    local -a entries
+
+    [[ -n "$target" ]] || return 0
+
+    parent="$(dirname "$target")"
+    name="$(basename "$target")"
+    mkdir -p "$parent"
+    parent="$(cd "$parent" && pwd -P)"
+    target="${parent}/${name}"
+
+    case "$target" in
+        /tmp/*|/private/tmp/*) ;;
+        *) fail "M10_LOCAL_ARCHIVE_SNAPSHOT_ROOT must be under /tmp" ;;
+    esac
+    [[ "$target" != "$source_root" ]] || fail "M10_LOCAL_ARCHIVE_SNAPSHOT_ROOT must not point at the source checkout"
+
+    rm -rf "$target"
+    mkdir -p "$target"
+
+    entries=(
+        "BuySellAI"
+        "BuySellAI.xcodeproj"
+        "BuySellAITests"
+        "BuySellAIUITests"
+        "Scripts"
+        "supabase"
+        "AppStoreAssets"
+        "M10_ACCEPTANCE.md"
+        "M10_APP_STORE_METADATA.md"
+        "M10_INSTRUMENTS.md"
+        "README.md"
+        ".gitignore"
+    )
+
+    for entry in "${entries[@]}"; do
+        rsync -a "${source_root}/${entry}" "$target/"
+    done
+
+    work_root="$target"
+    snapshot_root="$target"
 }
 
 plist_value() {
@@ -109,6 +157,10 @@ require_privacy_manifest_values() {
     [[ "$(plist_value NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPITypeReasons:0 "$manifest")" == "CA92.1" ]] || fail "privacy manifest UserDefaults reason must be CA92.1"
 }
 
+prepare_snapshot "$snapshot_root"
+app_icon_contents="${work_root}/BuySellAI/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
+app_icon_source="${work_root}/BuySellAI/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+
 rm -rf "$archive_path"
 
 [[ -f "$app_icon_contents" ]] || fail "missing AppIcon Contents.json"
@@ -117,7 +169,7 @@ grep -Fq '"filename" : "AppIcon-1024.png"' "$app_icon_contents" || fail "AppIcon
 require_png_dimensions "$app_icon_source" 1024 1024 "source App Store icon"
 
 xcodebuild archive \
-    -project "${repo_root}/BuySellAI.xcodeproj" \
+    -project "${work_root}/BuySellAI.xcodeproj" \
     -scheme BuySellAI \
     -configuration Release \
     -destination 'generic/platform=iOS' \
@@ -154,6 +206,10 @@ release_build="$(plist_value CFBundleVersion "$info_plist")"
 [[ "$(plist_value CFBundleIcons~ipad:CFBundlePrimaryIcon:CFBundleIconFiles:0 "$info_plist")" == "AppIcon60x60" ]] || fail "iPad primary icon files must include AppIcon60x60"
 [[ "$(plist_value CFBundleIcons~ipad:CFBundlePrimaryIcon:CFBundleIconFiles:1 "$info_plist")" == "AppIcon76x76" ]] || fail "iPad primary icon files must include AppIcon76x76"
 
+if plist_key_exists UIDesignRequiresCompatibility "$info_plist"; then
+    fail "archived app must not request iOS design compatibility mode"
+fi
+
 if plist_key_exists NSPhotoLibraryUsageDescription "$info_plist"; then
     fail "camera-only build should not request photo-library read permission"
 fi
@@ -164,7 +220,11 @@ fi
 
 printf 'M10 local archive check passed\n'
 printf 'archive: %s\n' "$archive_path"
+if [[ -n "$snapshot_root" ]]; then
+    printf 'snapshot root: %s\n' "$snapshot_root"
+fi
 printf 'bundle id: %s\n' "$bundle_id"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"
 printf 'app icon: AppIcon 1024x1024 source, 120x120 iPhone, 152x152 iPad\n'
+printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"

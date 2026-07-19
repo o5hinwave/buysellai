@@ -1,12 +1,13 @@
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Environment(AppStore.self) private var appStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var pendingDeletion: HistoryEntry?
 
     var body: some View {
-        @Bindable var store = appStore
-
         NavigationStack {
             List {
                 Section {
@@ -37,17 +38,24 @@ struct HomeView: View {
                             }
 
                             VStack(spacing: Spacing.sm) {
-                                PrimaryPillButton(title: "Snap to sell", systemImage: "camera.fill", showsGlow: true) {
+                                PrimaryPillButton(
+                                    title: "Snap to sell",
+                                    systemImage: "camera.fill",
+                                    maxFillWidth: heroContentMaxWidth,
+                                    showsGlow: true
+                                ) {
                                     appStore.startSnapFlow()
                                 }
                                 .accessibilityHint("Opens the camera".localized)
 
-                                SecondaryPillButton(title: "How it works") {
-                                    store.isShowingTutorial = true
-                                }
+                            SecondaryPillButton(title: "How it works", maxFillWidth: heroContentMaxWidth) {
+                                appStore.presentTutorial()
                             }
-                            .padding(.top, Spacing.xs)
                         }
+                        .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
+                        .padding(.top, Spacing.xs)
+                    }
+                        .frame(maxWidth: heroContentMaxWidth)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Spacing.xl)
                     }
@@ -58,21 +66,21 @@ struct HomeView: View {
 
                 Section {
                     if appStore.history.isEmpty {
-                        EmptyHistoryView()
+                        EmptyHistoryView(maxWidth: sectionContentMaxWidth)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.brand.background)
                             .listRowInsets(EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.xl, trailing: Spacing.lg))
                     } else {
                         ForEach(appStore.history) { entry in
                             Button {
-                                appStore.reopenListing(entry)
+                                reopenHistoryEntry(entry)
                             } label: {
                                 HistoryRow(entry: entry)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressButtonStyle())
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
-                                    pendingDeletion = entry
+                                    requestDeleteConfirmation(for: entry)
                                 } label: {
                                     Label("Delete listing".localized, systemImage: "trash")
                                 }
@@ -93,11 +101,14 @@ struct HomeView: View {
                         .tracking(0.88)
                         .padding(.horizontal, Spacing.lg)
                         .padding(.top, Spacing.sm)
+                        .frame(maxWidth: sectionContentMaxWidth, alignment: .leading)
+                        .frame(maxWidth: .infinity)
                 }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.brand.background)
+            .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
             .refreshable {
                 await appStore.loadHistory()
             }
@@ -119,45 +130,118 @@ struct HomeView: View {
         }
     }
 
+    private var heroContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 680 : .infinity
+    }
+
+    private var sectionContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 760 : .infinity
+    }
+
+    private var usesRegularWidthLayout: Bool {
+        horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    @ViewBuilder
     private var header: some View {
-        HStack(spacing: Spacing.sm) {
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
-                BrandWordmark()
-                Text("Snap · Pick · Sell".localized)
-                    .brandFont(.caption)
-                    .foregroundStyle(Color.brand.mutedForeground)
-            }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    brandLockup
 
-            Spacer(minLength: Spacing.md)
-
-            Button {
-                if appStore.session == nil {
-                    appStore.isShowingAuth = true
-                } else {
-                    appStore.signOut()
+                    HStack(spacing: Spacing.sm) {
+                        HStack(spacing: Spacing.sm) {
+                            accountButton
+                            settingsButton
+                        }
+                        .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
+                        Spacer(minLength: 0)
+                    }
                 }
-            } label: {
-                Text((appStore.session == nil ? "Sign in" : "Sign out").localized)
-                    .brandFont(.caption)
-                    .foregroundStyle(Color.brand.foreground)
-                    .lineLimit(1)
-                    .padding(.horizontal, Spacing.md)
-                    .frame(minHeight: 44)
-                    .background(Color.brand.secondary, in: Capsule())
-            }
-            .buttonStyle(PressButtonStyle())
-            .accessibilityLabel((appStore.session == nil ? "Sign in" : "Sign out").localized)
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    brandLockup
 
-            IconCircleButton(systemImage: "gearshape.fill", accessibilityLabel: "Settings", size: 40) {
-                appStore.isShowingSettings = true
+                    Spacer(minLength: Spacing.md)
+
+                    HStack(spacing: Spacing.sm) {
+                        accountButton
+                        settingsButton
+                    }
+                    .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
+                }
             }
-            .frame(width: 44, height: 44)
         }
-        .frame(minHeight: 56)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+    }
+
+    private var brandLockup: some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            BrandWordmark()
+            Text("Snap · Pick · Sell".localized)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+        }
+    }
+
+    private var accountButton: some View {
+        let title = (appStore.session == nil ? "Sign in" : "Sign out").localized
+
+        return Button {
+            handleAccountButtonTap()
+        } label: {
+            Text(title)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.82)
+                .padding(.horizontal, Spacing.md)
+                .frame(minHeight: 44)
+                .nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)
+        }
+        .buttonStyle(PressButtonStyle())
+        .tint(Color.brand.primary)
+        .nativeGlassButtonStyle(.standard)
+        .accessibilityLabel(title)
+    }
+
+    private var settingsButton: some View {
+        IconCircleButton(
+            systemImage: "gearshape.fill",
+            accessibilityLabel: "Settings",
+            size: 40,
+            material: true,
+            materialForeground: Color.brand.foreground,
+            materialStroke: Color.brand.border,
+            usesAccessibleMaterialStroke: true
+        ) {
+            appStore.presentSettings()
+        }
+        .frame(width: 44, height: 44)
+    }
+
+    private func handleAccountButtonTap() {
+        Haptics.impact(.light)
+        if appStore.session == nil {
+            appStore.presentAuth()
+        } else {
+            appStore.signOut()
+        }
     }
 
     private func historyAccessibilityLabel(_ entry: HistoryEntry) -> String {
         HistoryAccessibilityText.rowLabel(for: entry, relativeDate: relativeDate(entry.createdAt))
+    }
+
+    private func reopenHistoryEntry(_ entry: HistoryEntry) {
+        Haptics.impact(.light)
+        appStore.reopenListing(entry)
+    }
+
+    private func requestDeleteConfirmation(for entry: HistoryEntry) {
+        Haptics.impact(.light)
+        pendingDeletion = entry
     }
 
     private var deleteConfirmationBinding: Binding<Bool> {
@@ -173,20 +257,25 @@ struct HomeView: View {
 
     private func confirmDelete() {
         guard let pendingDeletion else { return }
-        appStore.deleteHistory(pendingDeletion)
+        HistoryDeletionFeedback.perform()
+        appStore.deleteHistory(pendingDeletion, emitsFeedback: false)
         self.pendingDeletion = nil
     }
 }
 
 private struct EmptyHistoryView: View {
+    let maxWidth: CGFloat
+
     var body: some View {
         Text("Your past listings will show up here.".localized)
             .brandFont(.caption)
             .foregroundStyle(Color.brand.mutedForeground)
             .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, minHeight: 96)
+            .frame(maxWidth: .infinity, minHeight: 56)
             .padding(.horizontal, Spacing.lg)
-            .background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
+            .nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)
+            .frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
     }
 }
 

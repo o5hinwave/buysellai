@@ -47,7 +47,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             item: blankNameItem,
             imageData: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
 
         XCTAssertTrue(store.history.isEmpty)
@@ -60,7 +60,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             item: freeItem,
             imageData: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
 
         XCTAssertTrue(store.history.isEmpty)
@@ -71,7 +71,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             item: item,
             imageData: ImageTools.sampleJPEG(),
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
 
         let immediateEntry = try XCTUnwrap(store.history.first)
@@ -84,7 +84,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(models.count, 1)
         let persistedEntry = try XCTUnwrap(models.first?.entry)
         XCTAssertEqual(persistedEntry.id, immediateEntry.id)
-        XCTAssertEqual(persistedEntry.listingText, "TITLE:\nLamp")
+        XCTAssertEqual(persistedEntry.listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         try assertThumbnailIsCappedAtListingSize(persistedEntry.imageThumbnail)
 
         store.history.removeAll()
@@ -133,7 +133,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             createdAt: Date(timeIntervalSince1970: 1_700_000_400),
             itemName: "  \n\t  ",
             marketplace: .ebay,
-            listingText: "TITLE:\nBlank name"
+            listingText: "TITLE:\nBlank name\n\nDESCRIPTION:\nBlank name in good condition."
         )
 
         [oldEntry, newestEntry, middleEntry, blankListingEntry, blankNameEntry].forEach { entry in
@@ -148,6 +148,76 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(store.history.map(\.id), [newestEntry.id, middleEntry.id, oldEntry.id])
         XCTAssertEqual(store.history.map(\.itemName), ["Oak chair", "Coffee mug", "Desk lamp"])
         XCTAssertEqual(store.history.map(\.marketplace), [.craigslist, .facebook, .ebay])
+    }
+
+    func testGuestCopyFromReopenedListingUpdatesExistingHistoryRow() async throws {
+        let context = try makeModelContext()
+        let suiteName = "AppStoreLocalHistoryReopenTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let originalEntry = historyEntry(
+            id: UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            itemName: "Desk lamp",
+            marketplace: .ebay,
+            listingText: "TITLE:\nDesk lamp\n\nDESCRIPTION:\nDesk lamp in good condition."
+        )
+        context.insert(HistoryEntryModel(entry: originalEntry))
+        try context.save()
+
+        let store = AppStore(defaults: defaults)
+        store.configure(modelContext: context)
+        await store.loadHistory()
+
+        let updatedItem = DetectedItem(
+            name: "Desk lamp",
+            category: .home,
+            condition: .likeNew,
+            priceEstimate: Decimal(60)
+        )
+        store.saveListing(
+            item: updatedItem,
+            imageData: nil,
+            marketplace: .craigslist,
+            listingText: "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.",
+            replacing: originalEntry
+        )
+
+        XCTAssertEqual(store.history.count, 1)
+        let visibleEntry = try XCTUnwrap(store.history.first)
+        XCTAssertEqual(visibleEntry.id, originalEntry.id)
+        XCTAssertEqual(visibleEntry.createdAt, originalEntry.createdAt)
+        XCTAssertEqual(visibleEntry.marketplace, .craigslist)
+        XCTAssertEqual(visibleEntry.condition, .likeNew)
+        XCTAssertEqual(visibleEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+
+        let models = try context.fetch(FetchDescriptor<HistoryEntryModel>())
+        XCTAssertEqual(models.count, 1)
+        let persistedEntry = try XCTUnwrap(models.first?.entry)
+        XCTAssertEqual(persistedEntry.id, originalEntry.id)
+        XCTAssertEqual(persistedEntry.createdAt, originalEntry.createdAt)
+        XCTAssertEqual(persistedEntry.marketplace, .craigslist)
+        XCTAssertEqual(persistedEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+    }
+
+    func testClearHistoryWithoutModelContextStillClearsVisibleRowsAndShowsToast() throws {
+        let suiteName = "AppStoreLocalHistoryClearFallbackTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let entry = historyEntry(
+            id: UUID(uuidString: "ABBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB") ?? UUID(),
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            itemName: "Desk lamp",
+            marketplace: .ebay
+        )
+        let store = AppStore(defaults: defaults)
+        store.history = [entry]
+
+        store.clearHistory()
+
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertEqual(store.toast?.text, "History cleared.")
+        XCTAssertEqual(store.toast?.style, .success)
     }
 
     private func makeModelContext() throws -> ModelContext {
@@ -172,7 +242,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             suggestedPrice: Decimal(25),
             imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
             marketplace: marketplace,
-            listingText: listingText ?? "TITLE:\n\(itemName)"
+            listingText: listingText ?? "TITLE:\n\(itemName)\n\nDESCRIPTION:\n\(itemName) in good condition."
         )
     }
 

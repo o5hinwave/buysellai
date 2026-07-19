@@ -23,6 +23,7 @@ final class SnapResultStore {
     private let analyzeHandler: AnalyzeHandler
     private let stillWorkingDelayNanoseconds: UInt64
     private var analysisGeneration = 0
+    private var stillWorkingTask: Task<Void, Never>?
 
     init(
         imageData: Data,
@@ -44,12 +45,14 @@ final class SnapResultStore {
     func analyze(accessToken: String?) async {
         analysisGeneration += 1
         let generation = analysisGeneration
+        cancelStillWorkingTask()
         phase = .loading
         showStillWorking = false
         item = nil
 
-        Task { @MainActor in
+        stillWorkingTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: stillWorkingDelayNanoseconds)
+            guard Task.isCancelled == false else { return }
             if phase == .loading, generation == analysisGeneration {
                 showStillWorking = true
             }
@@ -58,6 +61,7 @@ final class SnapResultStore {
         do {
             let response = try await analyzeHandler(imageData, accessToken).validatedForDisplay()
             guard generation == analysisGeneration else { return }
+            cancelStillWorkingTask()
             guard let priceEstimate = Self.listingPriceEstimate(from: response.currentPrice) else {
                 throw APIError.decoding
             }
@@ -72,12 +76,14 @@ final class SnapResultStore {
             priceText = NSDecimalNumber(decimal: detected.priceEstimate).stringValue
             phase = .success
             AnalysisFeedback.performSuccess()
-        } catch is CancellationError {
+        } catch let error where APIError.isCancellation(error) {
             guard generation == analysisGeneration else { return }
-            phase = .failed(APIError.unknown.localizedDescription)
-            AnalysisFeedback.performFailure()
+            cancelStillWorkingTask()
+            phase = .idle
+            showStillWorking = false
         } catch {
             guard generation == analysisGeneration else { return }
+            cancelStillWorkingTask()
             phase = .failed(APIError.userMessage(for: error))
             AnalysisFeedback.performFailure()
         }
@@ -85,12 +91,30 @@ final class SnapResultStore {
 
     func cycleCategory() {
         commitEdits()
-        item?.category = item?.category.next() ?? .other
+        guard var edited = item else { return }
+        edited.category = edited.category.next()
+        item = edited
     }
 
     func cycleCondition() {
         commitEdits()
-        item?.condition = item?.condition.next() ?? .good
+        guard var edited = item else { return }
+        edited.condition = edited.condition.next()
+        item = edited
+    }
+
+    func selectCategory(_ category: Category) {
+        commitEdits()
+        guard var edited = item else { return }
+        edited.category = category
+        item = edited
+    }
+
+    func selectCondition(_ condition: Condition) {
+        commitEdits()
+        guard var edited = item else { return }
+        edited.condition = condition
+        item = edited
     }
 
     func commitEdits(priceLocale: Locale = .current) {
@@ -146,5 +170,10 @@ final class SnapResultStore {
         guard value > 0 else { return nil }
         let rounded = value.rounded(scale: 0)
         return max(rounded, Decimal(1))
+    }
+
+    private func cancelStillWorkingTask() {
+        stillWorkingTask?.cancel()
+        stillWorkingTask = nil
     }
 }

@@ -49,6 +49,153 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.refreshToken, "refresh-token")
     }
 
+    func testAppleIdentityTokenExchangeStoresAuthorizationCodeServerSide() async throws {
+        var requestPaths: [String] = []
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            requestPaths.append(url.path)
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+
+            if url.path == "/auth/v1/token" {
+                return (response, Data(#"{"access_token":"supabase-access","refresh_token":"refresh-token","user":{"id":"server-user","email":"person@example.com"}}"#.utf8))
+            }
+
+            XCTAssertEqual(url.absoluteString, "https://example.supabase.co/functions/v1/store-apple-token")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer supabase-access")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["authorization_code"] as? String, "apple-code")
+            XCTAssertEqual(json["apple_user_id"] as? String, "apple-user")
+
+            let emptyResponse = try XCTUnwrap(HTTPURLResponse(
+                url: url,
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (emptyResponse, Data())
+        }
+
+        let session = try await client.exchangeAppleIdentityToken(
+            identityToken: "apple-jwt",
+            authorizationCode: "apple-code",
+            nonce: "raw-nonce",
+            appleUserID: "apple-user",
+            email: nil
+        )
+
+        XCTAssertEqual(requestPaths, ["/auth/v1/token", "/functions/v1/store-apple-token"])
+        XCTAssertEqual(session.userID, "server-user")
+        XCTAssertEqual(session.accessToken, "supabase-access")
+    }
+
+    func testAppleIdentityTokenExchangeFailsWhenAuthorizationCodeCannotBeStored() async throws {
+        var requestPaths: [String] = []
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            requestPaths.append(url.path)
+
+            if url.path == "/auth/v1/token" {
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data(#"{"access_token":"supabase-access","refresh_token":"refresh-token","user":{"id":"server-user","email":"person@example.com"}}"#.utf8))
+            }
+
+            XCTAssertEqual(url.path, "/functions/v1/store-apple-token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer supabase-access")
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: url,
+                statusCode: 502,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                authorizationCode: "apple-code",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected Apple sign-in to fail when server-side token storage fails.")
+        } catch {
+            XCTAssertEqual(error as? APIError, .server(502))
+        }
+
+        XCTAssertEqual(requestPaths, [
+            "/auth/v1/token",
+            "/functions/v1/store-apple-token",
+            "/functions/v1/store-apple-token"
+        ])
+    }
+
+    func testAppleIdentityTokenExchangeMapsLinkedAppleAccountConflictWithoutRetry() async throws {
+        var requestPaths: [String] = []
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            requestPaths.append(url.path)
+
+            if url.path == "/auth/v1/token" {
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                ))
+                return (response, Data(#"{"access_token":"supabase-access","refresh_token":"refresh-token","user":{"id":"server-user","email":"person@example.com"}}"#.utf8))
+            }
+
+            XCTAssertEqual(url.path, "/functions/v1/store-apple-token")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer supabase-access")
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: url,
+                statusCode: 409,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"error":"Apple account is already linked"}"#.utf8))
+        }
+
+        do {
+            _ = try await client.exchangeAppleIdentityToken(
+                identityToken: "apple-jwt",
+                authorizationCode: "apple-code",
+                nonce: "raw-nonce",
+                appleUserID: "apple-user",
+                email: nil
+            )
+            XCTFail("Expected linked Apple account conflicts to stop sign-in.")
+        } catch {
+            XCTAssertEqual(error as? APIError, .accountAlreadyLinked)
+            XCTAssertEqual(
+                error.localizedDescription,
+                "That Apple account is already linked to another BuySell account."
+            )
+        }
+
+        XCTAssertEqual(requestPaths, [
+            "/auth/v1/token",
+            "/functions/v1/store-apple-token"
+        ])
+    }
+
     func testAppleIdentityTokenExchangeFallsBackToAppleUserIDWhenServerUserIsMissing() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -102,6 +249,44 @@ final class SupabaseAuthClientTests: XCTestCase {
         XCTAssertEqual(session.email, "person@example.com")
         XCTAssertEqual(session.accessToken, "email-access")
         XCTAssertEqual(session.refreshToken, "email-refresh")
+    }
+
+    func testEmailSignInTrimsEmailBeforeRequestAndFallbackIdentity() async throws {
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["email"] as? String, "person@example.com")
+            XCTAssertEqual(json["password"] as? String, "secret")
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            ))
+            return (response, Data(#"{"access_token":"email-access","refresh_token":"email-refresh"}"#.utf8))
+        }
+
+        let session = try await client.signInWithEmail(email: " \n person@example.com \t", password: "secret")
+
+        XCTAssertEqual(session.userID, "person@example.com")
+        XCTAssertEqual(session.email, "person@example.com")
+        XCTAssertEqual(session.accessToken, "email-access")
+        XCTAssertEqual(session.refreshToken, "email-refresh")
+    }
+
+    func testEmailSignInWhitespaceOnlyEmailFailsBeforeNetworkRequest() async throws {
+        let client = try makeClient { _ in
+            XCTFail("Whitespace-only email should not make a network request.")
+            throw URLError(.badURL)
+        }
+
+        do {
+            _ = try await client.signInWithEmail(email: " \n\t ", password: "secret")
+            XCTFail("Expected decoding error")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
     }
 
     func testRefreshSessionBuildsRefreshTokenGrantAndPreservesIdentity() async throws {
@@ -253,7 +438,7 @@ final class SupabaseAuthClientTests: XCTestCase {
         }
     }
 
-    func testRefreshSessionNonSuccessStatusMapsToServerError() async throws {
+    func testRefreshSessionUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -266,9 +451,9 @@ final class SupabaseAuthClientTests: XCTestCase {
 
         do {
             _ = try await client.refreshSession(Self.refreshableSession)
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(401))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 

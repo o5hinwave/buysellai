@@ -80,6 +80,65 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "1")
     }
 
+    func testCycleActionsCommitTextEditsAndReplaceDetectedItemSafely() {
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        store.nameText = "  Brass lamp  "
+        store.priceText = "$52.40"
+
+        store.cycleCategory()
+
+        XCTAssertEqual(store.item?.name, "Brass lamp")
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(52))
+        XCTAssertEqual(store.item?.category, .tools)
+        XCTAssertEqual(store.item?.condition, .good)
+
+        store.cycleCondition()
+
+        XCTAssertEqual(store.item?.condition, .fair)
+        XCTAssertEqual(store.item?.category, .tools)
+    }
+
+    func testSelectionActionsCommitTextEditsAndApplyExactValues() {
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        store.nameText = "  Brass lamp  "
+        store.priceText = "$52.40"
+
+        store.selectCategory(.art)
+
+        XCTAssertEqual(store.item?.name, "Brass lamp")
+        XCTAssertEqual(store.item?.priceEstimate, Decimal(52))
+        XCTAssertEqual(store.item?.category, .art)
+        XCTAssertEqual(store.item?.condition, .good)
+
+        store.selectCondition(.likeNew)
+
+        XCTAssertEqual(store.item?.condition, .likeNew)
+        XCTAssertEqual(store.item?.category, .art)
+    }
+
+    func testCycleActionsDoNotUseOptionalChainedObservedMutation() throws {
+        let source = try String(
+            contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertNil(source.range(of: "item?.category ="))
+        XCTAssertNil(source.range(of: "item?.condition ="))
+        XCTAssertNotNil(source.range(of: "guard var edited = item else { return }"))
+    }
+
     func testPriceParserHandlesCurrencySymbolsAndGrouping() throws {
         XCTAssertEqual(
             SnapResultStore.priceDecimal(from: "$1,234.50", locale: Locale(identifier: "en_US")),
@@ -160,6 +219,16 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.phase, .success)
     }
 
+    func testStillWorkingTimerIsOwnedAndCancelledAtTerminalStates() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "private var stillWorkingTask: Task<Void, Never>?"))
+        XCTAssertNotNil(source.range(of: "stillWorkingTask = Task { @MainActor in"))
+        XCTAssertNotNil(source.range(of: "guard Task.isCancelled == false else { return }"))
+        XCTAssertNotNil(source.range(of: "private func cancelStillWorkingTask()"))
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "cancelStillWorkingTask()").count - 1, 4)
+    }
+
     func testStaleAnalyzeSuccessDoesNotOverrideLatestRetry() async {
         var attempts = 0
         var firstContinuation: CheckedContinuation<AnalyzeResponse, Error>?
@@ -195,7 +264,7 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "45")
     }
 
-    func testAnalyzeCancellationUsesFriendlyRetryCopy() async {
+    func testAnalyzeCancellationReturnsToIdleWithoutFailureCopy() async {
         let store = SnapResultStore(
             imageData: Data(),
             analyzeHandler: { _, _ in throw CancellationError() }
@@ -203,7 +272,22 @@ final class SnapResultStoreTests: XCTestCase {
 
         await store.analyze(accessToken: nil)
 
-        XCTAssertEqual(store.phase, .failed(APIError.unknown.localizedDescription))
+        XCTAssertEqual(store.phase, .idle)
+        XCTAssertFalse(store.showStillWorking)
+        XCTAssertNil(store.item)
+    }
+
+    func testAnalyzeURLSessionCancellationReturnsToIdleWithoutFailureCopy() async {
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in throw URLError(.cancelled) }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .idle)
+        XCTAssertFalse(store.showStillWorking)
+        XCTAssertNil(store.item)
     }
 
     func testAnalyzeTransportErrorUsesFriendlyOfflineCopy() async {
@@ -272,5 +356,12 @@ final class SnapResultStoreTests: XCTestCase {
             await Task.yield()
         }
         XCTAssertTrue(condition(), file: file, line: line)
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
     }
 }

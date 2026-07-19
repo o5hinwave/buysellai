@@ -5,25 +5,15 @@ struct HowItWorksView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.appReduceMotion) private var appReduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var index = 0
+    @FocusState private var isKeyboardFocused: Bool
 
     private let slides = TutorialSlide.slides
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button("Skip".localized) {
-                    onClose()
-                }
-                .brandFont(.button)
-                .foregroundStyle(Color.brand.foreground)
-                .frame(minWidth: 64, minHeight: 44)
-                .accessibilityLabel("Skip".localized)
-
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.lg)
+            headerControls
 
             Spacer(minLength: Spacing.xl)
 
@@ -36,34 +26,30 @@ struct HowItWorksView: View {
                 }
             }
             .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: index)
-            .gesture(
-                DragGesture(minimumDistance: 24)
-                    .onEnded { value in
-                        if value.translation.width < -40 {
-                            advance()
-                        } else if value.translation.width > 40 {
-                            retreat()
-                        }
-                    }
-            )
 
             Spacer(minLength: Spacing.xl)
 
-            HStack {
-                DotPager(index: index, count: slides.count)
-
-                Spacer()
-
-                PrimaryPillButton(title: index == slides.count - 1 ? "Get started" : "Next", fillsWidth: false) {
-                    advance()
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.bottom, Spacing.xl)
+            footerSurface
         }
         .background(Color.brand.background.ignoresSafeArea())
+        .contentShape(Rectangle())
+        .gesture(slideSwipeGesture)
         .accessibilityElement(children: .contain)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment:
+                incrementSlide()
+            case .decrement:
+                decrementSlide()
+            @unknown default:
+                break
+            }
+        }
         .focusable()
+        .focused($isKeyboardFocused)
+        .task {
+            isKeyboardFocused = true
+        }
         .onKeyPress(.space) {
             advance()
             return .handled
@@ -78,6 +64,94 @@ struct HowItWorksView: View {
         }
     }
 
+    private var headerControls: some View {
+        HStack {
+            TextActionButton(title: "Skip", minWidth: 64) {
+                onClose()
+            }
+            .padding(.horizontal, Spacing.xs)
+            .nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)
+
+            Spacer()
+        }
+        .padding(.horizontal, Spacing.xl)
+        .padding(.vertical, Spacing.sm)
+        .nativeMaterialBar(tintOpacity: 0.72, showsTopDivider: false, showsBottomDivider: true)
+    }
+
+    private var footerSurface: some View {
+        footerControls
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.xl)
+            .nativeMaterialBar(tintOpacity: 0.72, showsTopDivider: true, showsBottomDivider: false)
+    }
+
+    private var slideSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                if value.translation.width < -40 {
+                    advance()
+                } else if value.translation.width > 40 {
+                    retreat()
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var footerControls: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            accessibilityFooterControls
+        } else {
+            ViewThatFits(in: .horizontal) {
+                centeredFooterControls
+                trailingStackedFooterControls
+            }
+        }
+    }
+
+    private var centeredFooterControls: some View {
+        ZStack {
+            DotPager(index: index, count: slides.count)
+
+            HStack {
+                Spacer(minLength: Spacing.md)
+
+                PrimaryPillButton(title: primaryActionTitle, fillsWidth: false) {
+                    advance()
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .frame(minWidth: centeredFooterMinimumWidth, minHeight: 56)
+    }
+
+    private var trailingStackedFooterControls: some View {
+        VStack(spacing: Spacing.md) {
+            DotPager(index: index, count: slides.count)
+
+            HStack {
+                Spacer()
+                PrimaryPillButton(title: primaryActionTitle, fillsWidth: false) {
+                    advance()
+                }
+            }
+        }
+    }
+
+    private var accessibilityFooterControls: some View {
+        VStack(spacing: Spacing.md) {
+            DotPager(index: index, count: slides.count)
+            PrimaryPillButton(title: primaryActionTitle, maxFillWidth: .infinity) {
+                advance()
+            }
+        }
+    }
+
+    private var centeredFooterMinimumWidth: CGFloat {
+        396
+    }
+
     private var transition: AnyTransition {
         shouldReduceMotion ? .opacity : .asymmetric(
             insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -89,15 +163,27 @@ struct HowItWorksView: View {
         AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
     }
 
+    private var primaryActionTitle: String {
+        index == slides.count - 1 ? "Get started" : "Next"
+    }
+
     private func advance() {
         if index == slides.count - 1 {
             onClose()
         } else {
-            index += 1
+            incrementSlide()
         }
     }
 
     private func retreat() {
+        decrementSlide()
+    }
+
+    private func incrementSlide() {
+        index = min(slides.count - 1, index + 1)
+    }
+
+    private func decrementSlide() {
         index = max(0, index - 1)
     }
 }

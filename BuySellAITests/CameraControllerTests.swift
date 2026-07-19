@@ -40,6 +40,25 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "settings.flashMode = flashOn ? .on : .off"))
     }
 
+    func testCaptureRejectsUnstartedSessionBeforeTouchingPhotoOutput() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+        let captureStart = try XCTUnwrap(source.range(of: "func capturePhoto(flashOn: Bool) async throws -> Data {"))
+        let captureEnd = try XCTUnwrap(source.range(of: "private func stopRunningSynchronously()"))
+        let captureSource = String(source[captureStart.lowerBound..<captureEnd.lowerBound])
+
+        let guardRange = try XCTUnwrap(captureSource.range(of: "guard self.configured, self.session.isRunning else"))
+        let failureRange = try XCTUnwrap(captureSource.range(
+            of: "continuation.resume(throwing: CameraError.captureFailed)",
+            range: guardRange.lowerBound..<captureSource.endIndex
+        ))
+        let settingsRange = try XCTUnwrap(captureSource.range(of: "let settings = AVCapturePhotoSettings()"))
+        let captureCallRange = try XCTUnwrap(captureSource.range(of: "self.photoOutput.capturePhoto(with: settings, delegate: delegate)"))
+
+        XCTAssertLessThan(guardRange.lowerBound, settingsRange.lowerBound)
+        XCTAssertLessThan(failureRange.lowerBound, settingsRange.lowerBound)
+        XCTAssertLessThan(settingsRange.lowerBound, captureCallRange.lowerBound)
+    }
+
     func testCaptureVideoRotationAngleMatchesDeviceOrientation() {
         XCTAssertEqual(CameraVideoRotation.angle(for: .portrait), 90)
         XCTAssertEqual(CameraVideoRotation.angle(for: .landscapeLeft), 0)
@@ -53,11 +72,40 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertEqual(CameraVideoRotation.angle(for: .faceDown), 90)
     }
 
+    func testCameraPreviewUpdatesRotationFromWindowSceneOrientation() throws {
+        XCTAssertEqual(CameraPreviewRotation.angle(for: .portrait), 90)
+        XCTAssertEqual(CameraPreviewRotation.angle(for: .landscapeLeft), 0)
+        XCTAssertEqual(CameraPreviewRotation.angle(for: .landscapeRight), 180)
+        XCTAssertEqual(CameraPreviewRotation.angle(for: .portraitUpsideDown), 270)
+        XCTAssertEqual(CameraPreviewRotation.angle(for: .unknown), 90)
+
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraPreview.swift"), encoding: .utf8)
+        XCTAssertNotNil(source.range(of: "override func layoutSubviews()"))
+        XCTAssertNotNil(source.range(of: "videoPreviewLayer.frame = bounds"))
+        XCTAssertNotNil(source.range(of: "func updateVideoRotation()"))
+        XCTAssertNotNil(source.range(of: "window?.windowScene?.interfaceOrientation ?? .portrait"))
+        XCTAssertNotNil(source.range(of: "connection.videoRotationAngle = angle"))
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "view.updateVideoRotation()").count - 1, 1)
+        XCTAssertNotNil(source.range(of: "uiView.updateVideoRotation()"))
+    }
+
     func testCameraConfigurationUnlocksOnlyAfterSuccessfulLock() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
 
         XCTAssertEqual(source.components(separatedBy: "defer { device.unlockForConfiguration() }").count - 1, 2)
         XCTAssertNil(source.range(of: #"catch\s*\{\s*device\.unlockForConfiguration\(\)\s*\}"#, options: .regularExpression))
+    }
+
+    func testCameraConfigurationLogsFocusExposureFallbackWithoutEmptyCatch() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+        let configureStart = try XCTUnwrap(source.range(of: "private func configureIfNeeded() throws {"))
+        let selectionStart = try XCTUnwrap(source.range(of: "private static func preferredBackCamera()"))
+        let configureSource = String(source[configureStart.lowerBound..<selectionStart.lowerBound])
+
+        XCTAssertNotNil(source.range(of: #"import os"#))
+        XCTAssertNotNil(source.range(of: #"Logger(subsystem: "BuySellAI", category: "Camera")"#))
+        XCTAssertNotNil(configureSource.range(of: #"logger.warning("Camera focus and exposure configuration skipped")"#))
+        XCTAssertNil(configureSource.range(of: #"catch\s*\{\s*\}"#, options: .regularExpression))
     }
 
     func testCameraConfigurationCommitIsScopedToAllThrowingSetupPaths() throws {
@@ -82,10 +130,62 @@ final class CameraControllerTests: XCTestCase {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
         let successRange = try XCTUnwrap(source.range(of: "case .success(let data):"))
         let searchRange = successRange.lowerBound..<source.endIndex
-        let stopRange = try XCTUnwrap(source.range(of: "self?.stop()", range: searchRange))
+        let stopRange = try XCTUnwrap(source.range(of: "self?.stopRunningSynchronously()", range: searchRange))
         let downscaleRange = try XCTUnwrap(source.range(of: "ImageTools.jpegDataDownscaled", range: searchRange))
 
         XCTAssertLessThan(stopRange.lowerBound, downscaleRange.lowerBound)
+    }
+
+    func testCaptureRejectsMalformedPhotoDataBeforeContinuingFlow() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+        let successRange = try XCTUnwrap(source.range(of: "case .success(let data):"))
+        let searchRange = successRange.lowerBound..<source.endIndex
+
+        XCTAssertNotNil(source.range(of: "guard let downscaled = ImageTools.jpegDataDownscaled", range: searchRange))
+        XCTAssertNotNil(source.range(of: "continuation.resume(throwing: CameraError.captureFailed)", range: searchRange))
+        XCTAssertNotNil(source.range(of: "continuation.resume(returning: downscaled)", range: searchRange))
+    }
+
+    func testCameraCloseCancelsInFlightCaptureBeforeContinuingFlow() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"@State private var captureTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: #"@State private var flashTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: "private func cancelInFlightCapture()"))
+        XCTAssertNotNil(source.range(of: "captureTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "flashTask?.cancel()"))
+
+        let closeRange = try XCTUnwrap(source.range(of: #"accessibilityLabel: "Close camera""#))
+        let closeSearchRange = closeRange.lowerBound..<source.endIndex
+        let cancelRange = try XCTUnwrap(source.range(of: "cancelInFlightCapture()", range: closeSearchRange))
+        let onCancelRange = try XCTUnwrap(source.range(of: "onCancel()", range: closeSearchRange))
+        XCTAssertLessThan(cancelRange.lowerBound, onCancelRange.lowerBound)
+
+        XCTAssertNotNil(source.range(of: ".onDisappear {\n            flashTask?.cancel()\n            flashTask = nil\n            cancelInFlightCapture()\n        }"))
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "captureTask = Task").count - 1, 2)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "guard Task.isCancelled == false else { return }").count - 1, 3)
+    }
+
+    func testCameraFlashToggleTaskIsOwnedAndCancelled() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "flashTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "flashTask = Task { @MainActor in"))
+        XCTAssertNotNil(source.range(of: "let applied = await controller.setTorch(enabled: requestedState)"))
+        XCTAssertNotNil(source.range(of: "guard Task.isCancelled == false else { return }"))
+        XCTAssertNotNil(source.range(of: "flashTask = nil"))
+        XCTAssertNil(source.range(of: "Task {\n            let applied = await controller.setTorch(enabled: requestedState)"))
+    }
+
+    func testSynchronousCaptureFreezeUsesCameraQueueWithoutSelfDeadlock() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "private static let queueKey = DispatchSpecificKey<Bool>()"))
+        XCTAssertNotNil(source.range(of: "queue.setSpecific(key: Self.queueKey, value: true)"))
+        XCTAssertNotNil(source.range(of: "private func stopRunningSynchronously()"))
+        XCTAssertNotNil(source.range(of: "DispatchQueue.getSpecific(key: Self.queueKey) == true"))
+        XCTAssertNotNil(source.range(of: "queue.sync"))
+        XCTAssertNotNil(source.range(of: "private func stopRunningIfNeeded()"))
     }
 
     func testCameraSelectionUsesBackCameraOnlyFallbackChain() throws {

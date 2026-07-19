@@ -31,6 +31,10 @@ final class AuthErrorPresentationTests: XCTestCase {
             AuthErrorPresentation.message(for: APIError.rateLimited),
             "Too many tries right now. Give it a minute."
         )
+        XCTAssertEqual(
+            AuthErrorPresentation.message(for: APIError.accountAlreadyLinked),
+            "That Apple account is already linked to another BuySell account."
+        )
     }
 
     func testTransportErrorsMapToFriendlyAuthCopy() {

@@ -44,7 +44,10 @@ actor AccountClient {
             try await sendVoidMapped(request)
         } catch let error as URLError where error.code == .networkConnectionLost {
             try await sendVoidMapped(request)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -52,7 +55,10 @@ actor AccountClient {
     private func sendVoidMapped(_ request: URLRequest) async throws {
         do {
             try await sendVoid(request)
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            try APIError.rethrowCancellation(error)
             throw APIError.mapTransport(error)
         }
     }
@@ -65,6 +71,8 @@ actor AccountClient {
         switch httpResponse.statusCode {
         case 200...299:
             return
+        case 401, 403:
+            throw APIError.sessionExpired
         case 429:
             throw APIError.rateLimited
         default:

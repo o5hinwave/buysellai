@@ -12,11 +12,17 @@ struct AppConfig: Sendable {
         guard let url = Bundle.main.url(forResource: "Config", withExtension: "plist") else {
             throw APIError.notConfigured
         }
-        let data = try Data(contentsOf: url)
-        guard let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
+        do {
+            let data = try Data(contentsOf: url)
+            guard let dictionary = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
+                throw APIError.notConfigured
+            }
+            return try AppConfig.make(dictionary: dictionary)
+        } catch let error as APIError {
+            throw error
+        } catch {
             throw APIError.notConfigured
         }
-        return try AppConfig.make(dictionary: dictionary)
     }
 
     static func make(dictionary: [String: Any]) throws -> AppConfig {

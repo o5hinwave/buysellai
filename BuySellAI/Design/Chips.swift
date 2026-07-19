@@ -20,9 +20,16 @@ struct ChipButton: View {
                 .lineLimit(1)
                 .padding(.horizontal, Spacing.md)
                 .frame(minHeight: Self.minimumTapTarget)
-                .background(tint.opacity(0.12), in: Capsule())
+                .nativeRoundedButtonBackground(
+                    cornerRadius: Radius.pill,
+                    tint: tint,
+                    tintOpacity: 0.12,
+                    strokeOpacity: 0.5
+                )
         }
         .buttonStyle(PressButtonStyle())
+        .tint(tint)
+        .nativeGlassButtonStyle(.standard)
         .accessibilityLabel(Text((accessibilityLabel ?? title).localized))
         .optionalAccessibilityHint(accessibilityHint)
     }

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashable {
@@ -32,162 +33,267 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
     var id: Marketplace { self }
 
     init(apiValue: String) {
-        let normalized = Self.normalizedIdentifier(apiValue)
-        self = Marketplace.allCases.first {
-            Self.normalizedIdentifier($0.rawValue) == normalized ||
-            Self.normalizedIdentifier($0.displayName) == normalized
+        let normalized = apiValue
+            .lowercased()
+            .filter { $0.isLetter || $0.isNumber }
+        let normalizedWithoutMarketplace = normalized.hasSuffix("marketplace")
+            ? String(normalized.dropLast("marketplace".count))
+            : normalized
+
+        self = Marketplace.allCases.first { marketplace in
+            let displayName = marketplace.displayName.lowercased().filter { $0.isLetter || $0.isNumber }
+            return marketplace.rawValue == normalized
+                || marketplace.rawValue == normalizedWithoutMarketplace
+                || displayName == normalized
+                || displayName == normalizedWithoutMarketplace
         } ?? .ebay
     }
 
     var displayName: String {
-        displayNameKey.localized
-    }
-
-    var blurb: String {
-        blurbKey.localized
-    }
-
-    private var displayNameKey: String {
         switch self {
-        case .ebay: "eBay"
-        case .craigslist: "Craigslist"
-        case .facebook: "Facebook"
-        case .poshmark: "Poshmark"
-        case .mercari: "Mercari"
-        case .offerup: "OfferUp"
-        case .depop: "Depop"
-        case .whatnot: "Whatnot"
-        case .grailed: "Grailed"
-        case .reverb: "Reverb"
-        case .etsy: "Etsy"
-        case .stockx: "StockX"
-        case .goat: "GOAT"
-        case .kidizen: "Kidizen"
-        case .vinted: "Vinted"
-        case .vestiaire: "Vestiaire"
-        case .therealreal: "The RealReal"
-        case .swappa: "Swappa"
-        case .tradesy: "Tradesy"
-        case .chairish: "Chairish"
-        case .bonanza: "Bonanza"
-        case .curtsy: "Curtsy"
-        case .nextdoor: "Nextdoor"
-        case .amazon: "Amazon"
-        case .shopify: "Shopify"
-        case .rubylane: "Ruby Lane"
-        case .tcgplayer: "TCGplayer"
+        case .ebay:
+            String(localized: "eBay")
+        case .craigslist:
+            String(localized: "Craigslist")
+        case .facebook:
+            String(localized: "Facebook")
+        case .poshmark:
+            String(localized: "Poshmark")
+        case .mercari:
+            String(localized: "Mercari")
+        case .offerup:
+            String(localized: "OfferUp")
+        case .depop:
+            String(localized: "Depop")
+        case .whatnot:
+            String(localized: "Whatnot")
+        case .grailed:
+            String(localized: "Grailed")
+        case .reverb:
+            String(localized: "Reverb")
+        case .etsy:
+            String(localized: "Etsy")
+        case .stockx:
+            String(localized: "StockX")
+        case .goat:
+            String(localized: "GOAT")
+        case .kidizen:
+            String(localized: "Kidizen")
+        case .vinted:
+            String(localized: "Vinted")
+        case .vestiaire:
+            String(localized: "Vestiaire")
+        case .therealreal:
+            String(localized: "The RealReal")
+        case .swappa:
+            String(localized: "Swappa")
+        case .tradesy:
+            String(localized: "Tradesy")
+        case .chairish:
+            String(localized: "Chairish")
+        case .bonanza:
+            String(localized: "Bonanza")
+        case .curtsy:
+            String(localized: "Curtsy")
+        case .nextdoor:
+            String(localized: "Nextdoor")
+        case .amazon:
+            String(localized: "Amazon")
+        case .shopify:
+            String(localized: "Shopify")
+        case .rubylane:
+            String(localized: "Ruby Lane")
+        case .tcgplayer:
+            String(localized: "TCGplayer")
         }
     }
 
-    private var blurbKey: String {
+    var blurb: String {
         switch self {
-        case .ebay: "Broadest audience, small fees"
-        case .craigslist: "Local, no fees, cash"
-        case .facebook: "Facebook Marketplace — free local reach"
-        case .poshmark: "Fashion & closet items"
-        case .mercari: "Ship anything, casual buyers"
-        case .offerup: "Local pickup, mobile-first"
-        case .depop: "Vintage & Gen-Z fashion"
-        case .whatnot: "Live-stream selling"
-        case .grailed: "Menswear, streetwear, designer"
-        case .reverb: "Music gear"
-        case .etsy: "Handmade, vintage, craft"
-        case .stockx: "Sneakers & collectibles"
-        case .goat: "Sneakers, authenticated"
-        case .kidizen: "Kids clothes"
-        case .vinted: "Fashion, no seller fees"
-        case .vestiaire: "Luxury pre-owned"
-        case .therealreal: "Authenticated luxury"
-        case .swappa: "Used tech & phones"
-        case .tradesy: "Designer bags & shoes"
-        case .chairish: "Vintage furniture & decor"
-        case .bonanza: "General resale, low fees"
-        case .curtsy: "Women's fashion (mobile)"
-        case .nextdoor: "Neighborhood local sales"
-        case .amazon: "Amazon seller — high reach, high fee"
-        case .shopify: "Your own storefront"
-        case .rubylane: "Antiques & fine art"
-        case .tcgplayer: "Trading cards"
+        case .ebay:
+            String(localized: "Broadest audience, small fees")
+        case .craigslist:
+            String(localized: "Local, no fees, cash")
+        case .facebook:
+            String(localized: "Facebook Marketplace — free local reach")
+        case .poshmark:
+            String(localized: "Fashion & closet items")
+        case .mercari:
+            String(localized: "Ship anything, casual buyers")
+        case .offerup:
+            String(localized: "Local pickup, mobile-first")
+        case .depop:
+            String(localized: "Vintage & Gen-Z fashion")
+        case .whatnot:
+            String(localized: "Live-stream selling")
+        case .grailed:
+            String(localized: "Menswear, streetwear, designer")
+        case .reverb:
+            String(localized: "Music gear")
+        case .etsy:
+            String(localized: "Handmade, vintage, craft")
+        case .stockx:
+            String(localized: "Sneakers & collectibles")
+        case .goat:
+            String(localized: "Sneakers, authenticated")
+        case .kidizen:
+            String(localized: "Kids clothes")
+        case .vinted:
+            String(localized: "Fashion, no listing fees")
+        case .vestiaire:
+            String(localized: "Luxury pre-owned")
+        case .therealreal:
+            String(localized: "Authenticated luxury")
+        case .swappa:
+            String(localized: "Used tech & phones")
+        case .tradesy:
+            String(localized: "Designer bags & shoes")
+        case .chairish:
+            String(localized: "Vintage furniture & decor")
+        case .bonanza:
+            String(localized: "General resale, low fees")
+        case .curtsy:
+            String(localized: "Women's fashion (mobile)")
+        case .nextdoor:
+            String(localized: "Neighborhood local sales")
+        case .amazon:
+            String(localized: "Amazon marketplace — high reach, high fee")
+        case .shopify:
+            String(localized: "Your own storefront")
+        case .rubylane:
+            String(localized: "Antiques & fine art")
+        case .tcgplayer:
+            String(localized: "Trading cards")
         }
     }
 
     var brandTint: Color {
         switch self {
-        case .ebay: Color.brand.platformEbay
-        case .mercari: Color.brand.platformMercari
-        case .poshmark: Color.brand.platformPoshmark
-        case .facebook: Color.brand.platformFacebook
-        case .offerup: Color.brand.platformOfferUp
-        case .craigslist: Color.brand.platformCraigslist
-        case .depop: Color.brand.platformDepop
-        case .whatnot: Color.brand.platformWhatnot
-        case .etsy: Color.brand.platformEtsy
-        case .stockx: Color.brand.platformStockX
-        case .grailed: Color.brand.platformGrailed
-        case .reverb: Color.brand.platformReverb
-        case .vinted: Color.brand.platformVinted
-        case .nextdoor: Color.brand.platformNextdoor
-        case .amazon: Color.brand.platformAmazon
-        case .goat: Color.brand.platformGOAT
-        case .kidizen: Color.brand.platformKidizen
-        case .vestiaire: Color.brand.platformVestiaire
-        case .therealreal: Color.brand.platformTheRealReal
-        case .swappa: Color.brand.platformSwappa
-        case .tradesy: Color.brand.platformTradesy
-        case .chairish: Color.brand.platformChairish
-        case .bonanza: Color.brand.platformBonanza
-        case .curtsy: Color.brand.platformCurtsy
-        case .shopify: Color.brand.platformShopify
-        case .rubylane: Color.brand.platformRubyLane
-        case .tcgplayer: Color.brand.platformTCGplayer
+        case .ebay:
+            Color.brand.platformEbay
+        case .craigslist:
+            Color.brand.platformCraigslist
+        case .facebook:
+            Color.brand.platformFacebook
+        case .poshmark:
+            Color.brand.platformPoshmark
+        case .mercari:
+            Color.brand.platformMercari
+        case .offerup:
+            Color.brand.platformOfferUp
+        case .depop:
+            Color.brand.platformDepop
+        case .whatnot:
+            Color.brand.platformWhatnot
+        case .grailed:
+            Color.brand.platformGrailed
+        case .reverb:
+            Color.brand.platformReverb
+        case .etsy:
+            Color.brand.platformEtsy
+        case .stockx:
+            Color.brand.platformStockX
+        case .goat:
+            Color.brand.platformGOAT
+        case .kidizen:
+            Color.brand.platformKidizen
+        case .vinted:
+            Color.brand.platformVinted
+        case .vestiaire:
+            Color.brand.platformVestiaire
+        case .therealreal:
+            Color.brand.platformTheRealReal
+        case .swappa:
+            Color.brand.platformSwappa
+        case .tradesy:
+            Color.brand.platformTradesy
+        case .chairish:
+            Color.brand.platformChairish
+        case .bonanza:
+            Color.brand.platformBonanza
+        case .curtsy:
+            Color.brand.platformCurtsy
+        case .nextdoor:
+            Color.brand.platformNextdoor
+        case .amazon:
+            Color.brand.platformAmazon
+        case .shopify:
+            Color.brand.platformShopify
+        case .rubylane:
+            Color.brand.platformRubyLane
+        case .tcgplayer:
+            Color.brand.platformTCGplayer
+        }
+    }
+
+    var shortMark: String {
+        switch self {
+        case .therealreal:
+            "TRR"
+        case .tcgplayer:
+            "TCG"
+        default:
+            String(displayName.prefix(1))
         }
     }
 
     var feeMultiplier: Decimal {
         switch self {
-        case .craigslist, .nextdoor: Decimal(1.00)
-        case .facebook, .vinted: Decimal(0.95)
-        case .offerup, .bonanza: Decimal(0.92)
-        case .mercari: Decimal(0.90)
-        case .stockx, .goat: Decimal(0.905)
-        case .ebay: Decimal(0.87)
-        case .swappa: Decimal(0.88)
-        case .amazon, .etsy, .shopify: Decimal(0.85)
-        case .reverb: Decimal(0.91)
-        case .poshmark: Decimal(0.80)
-        case .depop, .whatnot, .kidizen, .curtsy: Decimal(0.88)
-        case .grailed: Decimal(0.84)
-        case .vestiaire: Decimal(0.82)
-        case .therealreal: Decimal(0.70)
-        case .tradesy: Decimal(0.81)
-        case .chairish: Decimal(0.78)
-        case .rubylane: Decimal(0.86)
-        case .tcgplayer: Decimal(0.89)
+        case .ebay:
+            decimal("0.87")
+        case .craigslist, .nextdoor:
+            decimal("1")
+        case .facebook, .vinted:
+            decimal("0.95")
+        case .poshmark:
+            decimal("0.8")
+        case .mercari:
+            decimal("0.9")
+        case .offerup, .bonanza:
+            decimal("0.92")
+        case .depop, .whatnot, .kidizen, .swappa, .curtsy:
+            decimal("0.88")
+        case .grailed:
+            decimal("0.84")
+        case .reverb:
+            decimal("0.91")
+        case .etsy, .amazon, .shopify:
+            decimal("0.85")
+        case .stockx, .goat:
+            decimal("0.905")
+        case .vestiaire:
+            decimal("0.82")
+        case .therealreal:
+            decimal("0.7")
+        case .tradesy:
+            decimal("0.81")
+        case .chairish:
+            decimal("0.78")
+        case .rubylane:
+            decimal("0.86")
+        case .tcgplayer:
+            decimal("0.89")
         }
     }
 
     var fixedDeduction: Decimal {
         switch self {
-        case .craigslist, .facebook, .nextdoor, .offerup: Decimal(0)
-        case .shopify: Decimal(2)
-        case .amazon: Decimal(3)
-        case .therealreal: Decimal(5)
-        case .chairish: Decimal(4)
-        default: Decimal(1)
+        case .craigslist, .facebook, .offerup, .nextdoor:
+            decimal("0")
+        case .therealreal:
+            decimal("5")
+        case .chairish:
+            decimal("4")
+        case .amazon:
+            decimal("3")
+        case .shopify:
+            decimal("2")
+        default:
+            decimal("1")
         }
     }
 
-    var shortMark: String {
-        if self == .tcgplayer { return "TCG" }
-        if self == .therealreal { return "TRR" }
-        return String(displayName.prefix(1)).uppercased()
-    }
-
-    private static func normalizedIdentifier(_ value: String) -> String {
-        value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .replacingOccurrences(of: "marketplace", with: "")
-            .filter { $0.isLetter || $0.isNumber }
+    private func decimal(_ value: String) -> Decimal {
+        Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }
 }

@@ -55,6 +55,28 @@ is_placeholder() {
     return 1
 }
 
+is_generic_evidence() {
+    local value="$1"
+    local normalized
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$value")"
+    normalized="$(
+        sed -E '
+            s/^[[:space:]]+|[[:space:]]+$//g
+            s/[[:punct:]]+/ /g
+            s/[[:space:]]+/ /g
+            s/^[[:space:]]+|[[:space:]]+$//g
+        ' <<< "$normalized"
+    )"
+
+    case "$normalized" in
+        "pass"|"passed"|"tested"|"verified"|"done"|"works"|"ok"|"okay"|"all good"|"looks good"|"complete"|"completed")
+            return 0
+            ;;
+    esac
+    return 1
+}
+
 numeric_value() {
     awk '
         match($0, /[0-9]+([.][0-9]+)?/) {
@@ -344,6 +366,8 @@ for index in "${!required_ids[@]}"; do
 
     if is_placeholder "$evidence"; then
         pending_items+=("$id evidence is not recorded")
+    elif is_generic_evidence "$evidence"; then
+        pending_items+=("$id evidence is too generic; cite observed proof instead of a pass note")
     fi
 done
 
@@ -357,6 +381,7 @@ require_evidence_terms "P05" "retained profiling trace proof" "time profiler" "a
 if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
         printf 'M10 Instruments evidence pending:\n'
+        printf 'file: %s\n' "$evidence_file"
         printf ' - %s\n' "${pending_items[@]}"
         printf 'Record Time Profiler and Allocations traces, mark P01-P05 as Pass, add evidence notes, then rerun without ALLOW_PENDING_INSTRUMENTS=1.\n'
         exit 0

@@ -5,11 +5,11 @@ archive_path="${1:-/tmp/BuySellAI-appstore.xcarchive}"
 export_path="${2:-/tmp/BuySellAI-appstore-export}"
 allow_missing_team="${ALLOW_MISSING_TEAM:-0}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
+snapshot_root="${M10_APP_STORE_EXPORT_SNAPSHOT_ROOT:-}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "${script_dir}/.." && pwd)"
-project_path="${repo_root}/BuySellAI.xcodeproj"
-entitlements_path="${repo_root}/BuySellAI/BuySellAI.entitlements"
+source_root="$(cd "${script_dir}/.." && pwd)"
+work_root="$source_root"
 app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
@@ -28,6 +28,52 @@ trap cleanup EXIT
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
+}
+
+prepare_snapshot() {
+    local target="$1"
+    local parent
+    local name
+    local -a entries
+
+    [[ -n "$target" ]] || return 0
+
+    parent="$(dirname "$target")"
+    name="$(basename "$target")"
+    mkdir -p "$parent"
+    parent="$(cd "$parent" && pwd -P)"
+    target="${parent}/${name}"
+
+    case "$target" in
+        /tmp/*|/private/tmp/*) ;;
+        *) fail "M10_APP_STORE_EXPORT_SNAPSHOT_ROOT must be under /tmp" ;;
+    esac
+    [[ "$target" != "$source_root" ]] || fail "M10_APP_STORE_EXPORT_SNAPSHOT_ROOT must not point at the source checkout"
+
+    rm -rf "$target"
+    mkdir -p "$target"
+
+    entries=(
+        "BuySellAI"
+        "BuySellAI.xcodeproj"
+        "BuySellAITests"
+        "BuySellAIUITests"
+        "Scripts"
+        "supabase"
+        "AppStoreAssets"
+        "M10_ACCEPTANCE.md"
+        "M10_APP_STORE_METADATA.md"
+        "M10_INSTRUMENTS.md"
+        "README.md"
+        ".gitignore"
+    )
+
+    for entry in "${entries[@]}"; do
+        rsync -a "${source_root}/${entry}" "$target/"
+    done
+
+    work_root="$target"
+    snapshot_root="$target"
 }
 
 setting() {
@@ -55,6 +101,10 @@ if [[ -n "$m10_development_team" ]]; then
     team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
 fi
 
+prepare_snapshot "$snapshot_root"
+project_path="${work_root}/BuySellAI.xcodeproj"
+entitlements_path="${work_root}/BuySellAI/BuySellAI.entitlements"
+
 build_settings="$(
     xcodebuild -showBuildSettings \
         -project "$project_path" \
@@ -74,6 +124,9 @@ development_team="$(setting DEVELOPMENT_TEAM)"
 if [[ -z "$development_team" ]]; then
     if [[ "$allow_missing_team" == "1" ]]; then
         printf 'M10 App Store export preflight pending: DEVELOPMENT_TEAM is unset\n'
+        if [[ -n "$snapshot_root" ]]; then
+            printf 'snapshot root: %s\n' "$snapshot_root"
+        fi
         printf 'Set M10_DEVELOPMENT_TEAM or select an Apple development team in Xcode, then rerun without ALLOW_MISSING_TEAM=1 to export the App Store Connect IPA.\n'
         exit 0
     fi
@@ -160,6 +213,9 @@ printf 'M10 App Store export preflight passed\n'
 printf 'archive: %s\n' "$archive_path"
 printf 'export: %s\n' "$export_path"
 printf 'ipa: %s\n' "$ipa_path"
+if [[ -n "$snapshot_root" ]]; then
+    printf 'snapshot root: %s\n' "$snapshot_root"
+fi
 printf 'bundle id: %s\n' "$exported_bundle_id"
 printf 'sign in with apple: %s\n' "$exported_sign_in_with_apple"
 printf 'release build: %s (%s)\n' "$release_version" "$release_build"

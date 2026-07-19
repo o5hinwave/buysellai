@@ -70,7 +70,9 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
         XCTAssertNotNil(readme.range(of: "Scripts/preflight_m10_app_store_validate.sh"))
+        XCTAssertNotNil(readme.range(of: "/tmp/buysell-submit-readiness-app-store-validation-preflight.log"))
         XCTAssertNotNil(m10.range(of: "Scripts/preflight_m10_app_store_validate.sh"))
+        XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-app-store-validation-preflight.log"))
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh"))
         XCTAssertNotNil(m10.range(of: "App Store Connect validation"))
     }

@@ -19,7 +19,7 @@ final class HistorySwiftDataTests: XCTestCase {
             suggestedPrice: suggestedPrice,
             imageThumbnail: Data([1, 2, 3]),
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp"
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
 
         context.insert(HistoryEntryModel(entry: entry))
@@ -32,6 +32,6 @@ final class HistorySwiftDataTests: XCTestCase {
         XCTAssertEqual(fetched[0].suggestedPriceRawValue, "19.99")
         XCTAssertEqual(fetched[0].entry.suggestedPrice, suggestedPrice)
         XCTAssertEqual(fetched[0].entry.marketplace, .ebay)
-        XCTAssertEqual(fetched[0].entry.listingText, "TITLE:\nLamp")
+        XCTAssertEqual(fetched[0].entry.listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
     }
 }

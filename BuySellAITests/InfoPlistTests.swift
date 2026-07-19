@@ -36,6 +36,21 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertEqual(plist["UILaunchStoryboardName"] as? String, "LaunchScreen")
     }
 
+    func testAppDoesNotOptOutOfCurrentSystemDesign() throws {
+        let plist = try projectInfoPlist()
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertNil(
+            plist["UIDesignRequiresCompatibility"],
+            "BuySell should not request iOS design compatibility mode; current-system visuals stay centralized in the shared native material layer."
+        )
+        XCTAssertNotNil(readme.range(of: "UIDesignRequiresCompatibility"))
+        XCTAssertNotNil(readme.range(of: "design compatibility mode"))
+        XCTAssertNotNil(m10.range(of: "UIDesignRequiresCompatibility"))
+        XCTAssertNotNil(m10.range(of: "design compatibility mode"))
+    }
+
     func testPhotoLibraryPermissionIsAbsentForCameraOnlyBuild() throws {
         let plist = try projectInfoPlist()
         let appSource = try appSwiftFiles()

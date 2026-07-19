@@ -3,6 +3,9 @@ import Foundation
 enum MarketplaceEstimator {
     static func estimates(for base: Decimal) -> [MarketplaceEstimate] {
         let positiveBase = base < Decimal(1) ? Decimal(1) : base
+        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.allCases.enumerated().map { index, marketplace in
+            (marketplace, index)
+        })
         let rawEstimates = Marketplace.allCases.map { marketplace -> (Marketplace, Decimal) in
             let payout = (positiveBase * marketplace.feeMultiplier - marketplace.fixedDeduction).rounded(scale: 0)
             return (marketplace, payout < Decimal(1) ? Decimal(1) : payout)
@@ -17,7 +20,12 @@ enum MarketplaceEstimator {
                 let delta = average == 0 ? 0 : ((payout.doubleValue - average) / average) * 100
                 return MarketplaceEstimate(id: marketplace, payout: payout, deltaPct: delta, badge: .none)
             }
-            .sorted { $0.payout.doubleValue > $1.payout.doubleValue }
+            .sorted { lhs, rhs in
+                if lhs.payout != rhs.payout {
+                    return lhs.payout > rhs.payout
+                }
+                return (catalogOrder[lhs.id] ?? Int.max) < (catalogOrder[rhs.id] ?? Int.max)
+            }
 
         return sorted.enumerated().map { index, estimate in
             var copy = estimate

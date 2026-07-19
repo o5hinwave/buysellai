@@ -9,27 +9,38 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 head_epoch="$(git -C "$repo_root" log -1 --format=%ct 2>/dev/null || printf '0')"
 
 full_result="${M10_FULL_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}"
+unit_result="${M10_UNIT_XCRESULT:-/tmp/buysell-full-unit-tests-9.xcresult}"
 focused_result="${M10_FOCUSED_XCRESULT:-/tmp/buysell-submit-readiness-focused.xcresult}"
+source_typecheck_log="${M10_SOURCE_TYPECHECK_LOG:-/tmp/buysell-local-source-typecheck.log}"
 no_sign_archive="${M10_NOSIGN_ARCHIVE:-/tmp/buysell-submit-readiness-nosign.xcarchive}"
 signed_archive="${M10_SIGNED_ARCHIVE:-/tmp/BuySellAI-signed.xcarchive}"
 app_store_archive="${M10_APP_STORE_ARCHIVE:-/tmp/BuySellAI-appstore.xcarchive}"
 app_store_export="${M10_APP_STORE_EXPORT:-/tmp/BuySellAI-appstore-export}"
 app_store_metadata="${M10_APP_STORE_METADATA:-M10_APP_STORE_METADATA.md}"
+today_feature_nomination="${M10_TODAY_FEATURE_NOMINATION:-M10_TODAY_FEATURE_NOMINATION.md}"
 instruments_evidence="${M10_INSTRUMENTS_EVIDENCE:-M10_INSTRUMENTS.md}"
 no_sign_log="${M10_NOSIGN_LOG:-/tmp/buysell-submit-readiness-nosign.log}"
+latest_design_log="${M10_LATEST_DESIGN_SDK_LOG:-/tmp/buysell-submit-readiness-latest-design-sdk.log}"
 signed_log="${M10_SIGNED_ARCHIVE_LOG:-/tmp/buysell-submit-readiness-signed-preflight.log}"
 export_log="${M10_APP_STORE_EXPORT_LOG:-/tmp/buysell-submit-readiness-export-preflight.log}"
 validation_log="${M10_APP_STORE_VALIDATION_LOG:-/tmp/buysell-submit-readiness-app-store-validation-preflight.log}"
 metadata_log="${M10_APP_STORE_METADATA_LOG:-/tmp/buysell-submit-readiness-app-store-metadata.log}"
+today_feature_log="${M10_TODAY_FEATURE_LOG:-/tmp/buysell-submit-readiness-today-feature.log}"
 backend_log="${M10_BACKEND_LOG:-/tmp/buysell-submit-readiness-backend.log}"
+supabase_deploy_log="${M10_SUPABASE_DEPLOY_LOG:-/tmp/buysell-submit-readiness-supabase-deploy.log}"
+supabase_schema_log="${M10_SUPABASE_SCHEMA_CHECK_LOG:-/tmp/buysell-submit-readiness-supabase-schema.log}"
+supabase_function_log="${M10_SUPABASE_FUNCTION_CHECK_LOG:-/tmp/buysell-submit-readiness-supabase-functions.log}"
 real_device_log="${M10_REAL_DEVICE_LOG:-/tmp/buysell-submit-readiness-real-device-preflight.log}"
 secret_log="${M10_SECRET_SCAN_LOG:-/tmp/buysell-submit-readiness-secret-scan.log}"
+ui_evidence_log="${M10_UI_EVIDENCE_LOG:-/tmp/buysell-submit-readiness-ui.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
-min_tests="${M10_MIN_TESTS:-320}"
-min_focused_tests="${M10_MIN_FOCUSED_TESTS:-60}"
+min_tests="${M10_MIN_TESTS:-420}"
+min_unit_tests="${M10_MIN_UNIT_TESTS:-389}"
+min_focused_tests="${M10_MIN_FOCUSED_TESTS:-70}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"
+    "ArchivePackagingScriptTests/testLatestDesignSDKVerifierRequiresLiquidGlassCapableToolchain()"
     "SignedArchivePreflightScriptTests/testSignedArchivePreflightProducesSignedArchiveWhenTeamIsConfigured()"
     "AppStoreExportPreflightScriptTests/testAppStoreExportPreflightChecksExportedIPAContents()"
     "AppStoreValidationPreflightScriptTests/testAppStoreValidationPreflightChecksPrivacyManifestContents()"
@@ -37,7 +48,12 @@ required_focused_tests=(
     "M10PerformanceEvidenceScriptTests/testPerformanceEvidenceScriptRequiresFullSuiteAndNamedBudgetTests()"
     "M10InstrumentsEvidenceScriptTests/testInstrumentsEvidenceScriptEnforcesPromptBudgets()"
     "M10BackendPreflightScriptTests/testBackendPreflightScriptValidatesConfigAndCallsRequiredSupabaseRoutes()"
+    "M10BackendPreflightScriptTests/testSupabaseDeployHelperGuardsRemoteSchemaAndFunctionDeployment()"
     "M10AppStoreMetadataScriptTests/testMetadataVerifierRequiresConcreteAppStoreConnectSubmissionFields()"
+    "M10AppStoreMetadataScriptTests/testTodayFeatureNominationPackageRoutesThroughVerifier()"
+    "M10UITestRunnerScriptTests/testChunkedUITestRunnerRunsEveryUITestWithIsolatedResultBundles()"
+    "M10UITestRunnerScriptTests/testUIEvidenceVerifierChecksChunkedResultBundles()"
+    "M10UITestRunnerScriptTests/testDocsDescribeChunkedUITestRunnerEvidence()"
     "M10SubmitReadinessScriptTests/testSubmitReadinessScriptAggregatesAllM10EvidenceGates()"
     "ConfigSecurityTests/testRuntimeConfigRejectsProviderSecretShapedAnonKeys()"
     "SigningCapabilityTests/testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning()"
@@ -73,6 +89,24 @@ require_file_contains() {
 
     if ! grep -Fq "$expected" "$file"; then
         pending "$label does not contain '$expected'"
+    fi
+}
+
+require_clean_release_worktree() {
+    local status
+
+    if ! git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        pending "release source state could not be checked because this is not a git worktree"
+        return
+    fi
+
+    if ! status="$(git -C "$repo_root" status --porcelain --untracked-files=all 2>/dev/null)"; then
+        pending "release source state could not be checked with git status"
+        return
+    fi
+
+    if [[ -n "$status" ]]; then
+        pending "release source worktree has uncommitted changes; commit or stash them before final submit-readiness"
     fi
 }
 
@@ -343,6 +377,14 @@ require_app_store_metadata_evidence() {
     fi
 }
 
+require_today_feature_nomination_evidence() {
+    local output
+
+    if ! output="$(M10_APP_STORE_METADATA="$app_store_metadata" bash "${script_dir}/verify_m10_today_feature_nomination.sh" "$today_feature_nomination" 2>&1)"; then
+        pending "Today feature nomination evidence is incomplete: $(head -n 1 <<< "$output")"
+    fi
+}
+
 require_submit_checkboxes() {
     local unchecked
 
@@ -502,8 +544,11 @@ require_result_log_final() {
 
 [[ -f "$acceptance_file" ]] || fail "missing acceptance file at $acceptance_file"
 [[ -f "$app_store_metadata" ]] || pending "App Store metadata evidence file is missing at $app_store_metadata"
+[[ -f "$today_feature_nomination" ]] || pending "Today feature nomination package is missing at $today_feature_nomination"
 
+require_clean_release_worktree
 require_xcresult_passed "$full_result" "$min_tests" "full simulator suite"
+require_xcresult_passed "$unit_result" "$min_unit_tests" "unit test suite"
 require_xcresult_passed "$focused_result" "$min_focused_tests" "focused M10 preflight suite"
 require_xcresult_contains_tests "$focused_result" "focused M10 preflight suite"
 require_directory "$no_sign_archive" "no-sign Release archive"
@@ -511,6 +556,7 @@ require_directory "$signed_archive" "signed Release archive"
 require_directory "$app_store_archive" "App Store Connect archive"
 require_directory "$app_store_export" "App Store export directory"
 require_fresh_artifact "$full_result" "full simulator suite result bundle"
+require_fresh_artifact "$unit_result" "unit test suite result bundle"
 require_fresh_artifact "$focused_result" "focused M10 preflight result bundle"
 require_fresh_artifact "$no_sign_archive" "no-sign Release archive"
 require_fresh_artifact "$signed_archive" "signed Release archive"
@@ -521,7 +567,25 @@ require_file_contains "$no_sign_log" "archive: $no_sign_archive" "no-sign archiv
 require_file_contains "$no_sign_log" "bundle id: com.rhodes.buysellai" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "release build:" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "app icon:" "no-sign archive verifier log"
+require_file_contains "$no_sign_log" "system design: current presentation, no UIDesignRequiresCompatibility" "no-sign archive verifier log"
 require_file_contains "$no_sign_log" "app size:" "no-sign archive verifier log"
+require_file_contains "$latest_design_log" "M10 latest design SDK passed" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "xcode:" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "iphoneos sdk:" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "liquid glass sdk:" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "source: BuySellAI/Design/NativeMaterialSurface.swift" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, home, and setup controls" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "standalone control groups: Home header actions, Home CTA stack, and Camera top controls use GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "auth setup control groups: provider actions and sticky guest/email actions use GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "menu item icons: category and condition menus use SF Symbols with selected checkmarks" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "system design: current presentation, no UIDesignRequiresCompatibility" "latest design SDK evidence log"
+require_file_contains "$source_typecheck_log" "BuySellAI local source typecheck passed" "local source typecheck log"
+require_file_contains "$source_typecheck_log" "target: arm64-apple-ios17.0-simulator" "local source typecheck log"
+require_file_contains "$source_typecheck_log" "sdk:" "local source typecheck log"
+require_file_contains "$source_typecheck_log" "sources: app unit ui" "local source typecheck log"
 require_file_contains "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_file_contains "$signed_log" "archive: $signed_archive" "signed archive preflight log"
 require_file_contains "$signed_log" "bundle id: com.rhodes.buysellai" "signed archive preflight log"
@@ -546,14 +610,32 @@ require_file_contains "$metadata_log" "bundle id: com.rhodes.buysellai" "App Sto
 require_file_contains "$metadata_log" "version:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "privacy policy:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "support:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "accessibility url:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshots:" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "legal:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshot sets: iPhone 6.9, iPad 13" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot directory:" "App Store metadata evidence log"
-require_file_contains "$metadata_log" "screenshot files: 4" "App Store metadata evidence log"
-require_file_contains "$metadata_log" "screenshot dimensions: 1206x2622" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshot files: 8" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshot dimensions: iPhone 6.9 1320x2868; iPad 13 2064x2752" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "iphone 6.9 screenshot directory: AppStoreAssets/Screenshots/iPhone-16-Pro-Max" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "ipad 13 screenshot directory: AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshot quality: no blank or dark-strip artifacts" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "screenshot brand signal: warm orange present" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot result bundle:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "iphone 6.9 screenshot result bundle: /tmp/buysell-m10-screenshots-iphone-16-pro-max.xcresult" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "ipad 13 screenshot result bundle: /tmp/buysell-m10-screenshots-ipad-pro-13.xcresult" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "screenshot capture test: BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured()" "App Store metadata evidence log"
 require_file_contains "$metadata_log" "app privacy:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "accessibility labels:" "App Store metadata evidence log"
+require_file_contains "$metadata_log" "accessibility evidence:" "App Store metadata evidence log"
+require_file_contains "$today_feature_log" "M10 Today feature nomination package passed" "Today feature nomination log"
+require_file_contains "$today_feature_log" "file: $today_feature_nomination" "Today feature nomination log"
+require_file_contains "$today_feature_log" "placement: Today tab and Apps tab editorial consideration" "Today feature nomination log"
+require_file_contains "$today_feature_log" "story:" "Today feature nomination log"
+require_file_contains "$today_feature_log" "lead time:" "Today feature nomination log"
+require_file_contains "$today_feature_log" "role: Account Holder, Admin, App Manager, or Marketing" "Today feature nomination log"
+require_file_contains "$today_feature_log" "assets: screenshots iPhone 6.9, iPad 13, text-free 1024 icon" "Today feature nomination log"
+require_file_contains "$today_feature_log" "source: Apple Getting Featured on the App Store" "Today feature nomination log"
 require_same_marker_value "$export_log" "ipa:" "App Store export preflight log" "$validation_log" "ipa:" "App Store validation preflight log" "validated IPA"
 require_same_marker_value "$no_sign_log" "bundle id:" "no-sign archive verifier log" "$signed_log" "bundle id:" "signed archive preflight log" "signed bundle id"
 require_same_marker_value "$signed_log" "bundle id:" "signed archive preflight log" "$export_log" "bundle id:" "App Store export preflight log" "exported bundle id"
@@ -566,9 +648,34 @@ require_same_marker_value "$export_log" "release build:" "App Store export prefl
 require_file_contains "$backend_log" "M10 backend preflight passed" "backend preflight log"
 require_file_contains "$backend_log" "config:" "backend preflight log"
 require_file_contains "$backend_log" "project:" "backend preflight log"
-require_file_contains "$backend_log" "functions: analyze-image generate-listing" "backend preflight log"
+require_file_contains "$backend_log" "schema: history apple_auth_tokens" "backend preflight log"
+require_file_contains "$backend_log" "functions: analyze-image generate-listing store-apple-token delete-account" "backend preflight log"
+require_file_contains "$backend_log" "protected functions: store-apple-token delete-account" "backend preflight log"
+require_file_contains "$backend_log" "protected tables: history apple_auth_tokens" "backend preflight log"
 require_file_contains "$backend_log" "analyze item:" "backend preflight log"
+require_file_contains "$backend_log" "analyze rejection contract: missing jpeg base64" "backend preflight log"
+require_file_contains "$backend_log" "listing contract: title-description-plain-text" "backend preflight log"
+require_file_contains "$backend_log" "listing rejection contract: platform category condition" "backend preflight log"
 require_file_contains "$backend_log" "listing bytes:" "backend preflight log"
+require_file_contains "$supabase_deploy_log" "M10 Supabase deploy passed" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "config:" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "project:" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "project ref:" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "schema: history apple_auth_tokens" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "constraints: history category condition marketplace listing apple-token-identity" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "functions: analyze-image generate-listing store-apple-token delete-account" "Supabase deploy log"
+require_file_contains "$supabase_deploy_log" "secrets: required names present" "Supabase deploy log"
+require_file_contains "$supabase_schema_log" "Supabase schema static check passed" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "tables: history apple_auth_tokens" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "rls: history apple_auth_tokens forced" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "policy: history authenticated select-auth-uid" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "grants: history authenticated service_role apple_auth_tokens service_role" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "constraints: history category condition marketplace listing apple-token-identity" "Supabase schema static check log"
+require_file_contains "$supabase_schema_log" "swift parity: category condition marketplace" "Supabase schema static check log"
+require_file_contains "$supabase_function_log" "Supabase function Deno check passed" "Supabase function type-check log"
+require_file_contains "$supabase_function_log" "functions: analyze-image generate-listing store-apple-token delete-account" "Supabase function type-check log"
+require_same_marker_value "$supabase_deploy_log" "project:" "Supabase deploy log" "$backend_log" "project:" "backend preflight log" "backend project"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive validation" "$signed_log" "archive:" "signed archive preflight log" "signed archive validation metadata"
 require_metadata_references_marker_value "$acceptance_file" "App Store validation" "$validation_log" "ipa:" "App Store validation preflight log" "App Store validation metadata"
@@ -587,6 +694,13 @@ require_same_marker_value "$signed_log" "release build:" "signed archive preflig
 require_metadata_references_marker_value "$acceptance_file" "Device model" "$real_device_log" "device name:" "real-device preflight log" "acceptance device metadata"
 require_file_contains "$secret_log" "M10 secret scan self-test passed" "secret scan log"
 require_file_contains "$secret_log" "M10 secret scan passed" "secret scan log"
+require_file_contains "$ui_evidence_log" "M10 UI evidence passed" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "summary: /tmp/buysell-m10-ui-tests/summary.log" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "result root: /tmp/buysell-m10-ui-tests" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "tests: 32" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "test: BuySellAIUITests/BuySellAIUITests/testTutorialCanBeSkippedAndHappyPathCopiesListingWithUITestHooks" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "test: BuySellAIUITests/BuySellAIUITests/testAuthGuestEscapeRemainsReachableAtAccessibilityThree" "chunked UI evidence log"
+require_file_contains "$ui_evidence_log" "test: BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured" "chunked UI evidence log"
 require_file_contains "$performance_log" "M10 performance evidence passed" "performance evidence log"
 require_file_contains "$performance_log" "full suite: $full_result" "performance evidence log"
 require_file_contains "$performance_log" "archive log: $no_sign_log" "performance evidence log"
@@ -602,13 +716,20 @@ require_same_marker_value "$no_sign_log" "release build:" "no-sign archive verif
 require_file_contains "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_file_contains "$instruments_log" "file: $instruments_evidence" "Instruments evidence log"
 require_fresh_pass_log "$no_sign_log" "M10 local archive check passed" "no-sign archive verifier log"
+require_fresh_pass_log "$latest_design_log" "M10 latest design SDK passed" "latest design SDK evidence log"
+require_fresh_pass_log "$source_typecheck_log" "BuySellAI local source typecheck passed" "local source typecheck log"
 require_fresh_pass_log "$signed_log" "M10 signed archive preflight passed" "signed archive preflight log"
 require_fresh_pass_log "$export_log" "M10 App Store export preflight passed" "App Store export preflight log"
 require_fresh_pass_log "$validation_log" "M10 App Store validation preflight passed" "App Store validation preflight log"
 require_fresh_pass_log "$metadata_log" "M10 App Store metadata evidence passed" "App Store metadata evidence log"
+require_fresh_pass_log "$today_feature_log" "M10 Today feature nomination package passed" "Today feature nomination log"
+require_fresh_pass_log "$supabase_deploy_log" "M10 Supabase deploy passed" "Supabase deploy log"
+require_fresh_pass_log "$supabase_schema_log" "Supabase schema static check passed" "Supabase schema static check log"
 require_fresh_pass_log "$backend_log" "M10 backend preflight passed" "backend preflight log"
+require_fresh_pass_log "$supabase_function_log" "Supabase function Deno check passed" "Supabase function type-check log"
 require_fresh_pass_log "$real_device_log" "M10 real-device preflight passed" "real-device preflight log"
 require_fresh_pass_log "$secret_log" "M10 secret scan passed" "secret scan log"
+require_fresh_pass_log "$ui_evidence_log" "M10 UI evidence passed" "chunked UI evidence log"
 require_fresh_pass_log "$performance_log" "M10 performance evidence passed" "performance evidence log"
 require_fresh_pass_log "$instruments_log" "M10 Instruments evidence passed" "Instruments evidence log"
 require_metadata_references_marker_value "$instruments_evidence" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "Instruments signed archive metadata"
@@ -617,6 +738,7 @@ require_metadata_matches_marker_value "$instruments_evidence" "Release build" "$
 require_same_metadata_value "$acceptance_file" "iOS version" "acceptance" "$instruments_evidence" "iOS version" "Instruments" "M10 physical-device iOS version"
 require_same_metadata_value "$acceptance_file" "Release build" "acceptance" "$instruments_evidence" "Release build" "Instruments" "M10 physical-device release build"
 require_app_store_metadata_evidence
+require_today_feature_nomination_evidence
 require_acceptance_evidence
 require_submit_checkboxes
 require_result_log_final
@@ -625,7 +747,7 @@ if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
         printf 'M10 submit readiness pending:\n'
         printf ' - %s\n' "${pending_items[@]}"
-        printf 'Complete every signed archive, App Store, backend, real-device, and evidence item, then rerun without ALLOW_PENDING_M10=1.\n'
+        printf 'Complete every latest-design SDK, signed archive, App Store, Supabase deploy, backend, real-device, and evidence item, then rerun without ALLOW_PENDING_M10=1.\n'
         exit 0
     fi
 
@@ -635,8 +757,14 @@ if (( ${#pending_items[@]} > 0 )); then
 fi
 
 printf 'M10 submit readiness passed\n'
+printf 'source state: clean worktree at current HEAD\n'
 printf 'acceptance: %s\n' "$acceptance_file"
 printf 'full suite: %s\n' "$full_result"
+printf 'unit suite: %s\n' "$unit_result"
 printf 'focused suite: %s\n' "$focused_result"
+printf 'source typecheck: %s\n' "$source_typecheck_log"
 printf 'archive: %s\n' "$no_sign_archive"
 printf 'metadata: %s\n' "$app_store_metadata"
+printf 'today feature: %s\n' "$today_feature_log"
+printf 'supabase deploy: %s\n' "$supabase_deploy_log"
+printf 'supabase schema: %s\n' "$supabase_schema_log"

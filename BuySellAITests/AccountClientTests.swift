@@ -85,7 +85,7 @@ final class AccountClientTests: XCTestCase {
         }
     }
 
-    func testDeleteAccountNonSuccessStatusMapsToServerError() async throws {
+    func testDeleteAccountUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -98,9 +98,9 @@ final class AccountClientTests: XCTestCase {
 
         do {
             try await client.deleteAccount(accessToken: "access-token")
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(403))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 

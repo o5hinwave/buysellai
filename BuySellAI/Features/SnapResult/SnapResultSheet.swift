@@ -5,8 +5,14 @@ struct SnapResultSheet: View {
     let context: SnapResultContext
 
     @Environment(AppStore.self) private var appStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var store: SnapResultStore
     @State private var isEditingName = false
+    @State private var automaticCancellationRetryCount = 0
+    @State private var analysisTask: Task<Void, Never>?
+    @State private var analysisTaskID = UUID()
+    @State private var isSheetVisible = true
     @FocusState private var focusedField: Field?
 
     init(context: SnapResultContext) {
@@ -28,16 +34,21 @@ struct SnapResultSheet: View {
                     errorView(message: message)
                 }
             }
+            .frame(maxWidth: sheetContentMaxWidth)
+            .frame(maxWidth: .infinity)
             .padding(Spacing.xl)
         }
-        .background(Color.brand.background)
+        .background(Color.clear)
         .task {
-            await store.analyzeIfNeeded(accessToken: appStore.session?.accessToken)
+            isSheetVisible = true
+            await store.analyzeIfNeeded(accessToken: await appStore.authenticatedAccessToken())
         }
-        .onChange(of: store.phase) { _, phase in
-            if case .failed(let message) = phase {
-                appStore.showToast(message, style: .error)
-            }
+        .onDisappear {
+            isSheetVisible = false
+            cancelAnalysisTask()
+        }
+        .onChange(of: store.phase) { oldPhase, newPhase in
+            retryVisibleAnalysisIfCancelled(from: oldPhase, to: newPhase)
         }
         .onChange(of: store.showStillWorking) { _, isShowing in
             announceStillWorkingAlertIfNeeded(isShowing)
@@ -65,7 +76,7 @@ struct SnapResultSheet: View {
             Text("Analyzing your photo…".localized)
                 .brandFont(.title)
                 .foregroundStyle(Color.brand.foreground)
-            if store.showStillWorking {
+            if store.showStillWorking || (store.phase == .idle && automaticCancellationRetryCount > 0) {
                 VStack(spacing: Spacing.sm) {
                     Text("Still working… tap Retry to try again.".localized)
                         .brandFont(.caption)
@@ -74,7 +85,7 @@ struct SnapResultSheet: View {
                         .accessibilityIdentifier("SnapResult.StillWorkingAlert")
                         .accessibilityLabel("Still working… tap Retry to try again.".localized)
                     SecondaryPillButton(title: "Retry", fillsWidth: false) {
-                        Task { await store.analyze(accessToken: appStore.session?.accessToken) }
+                        retryAnalysis()
                     }
                 }
             }
@@ -82,6 +93,15 @@ struct SnapResultSheet: View {
         .frame(maxWidth: .infinity, minHeight: 360)
         .accessibilityElement(children: .combine)
         .accessibilitySortPriority(3)
+    }
+
+    private func retryVisibleAnalysisIfCancelled(from oldPhase: SnapResultStore.Phase, to newPhase: SnapResultStore.Phase) {
+        guard isSheetVisible,
+              automaticCancellationRetryCount == 0,
+              oldPhase == .loading,
+              newPhase == .idle else { return }
+        automaticCancellationRetryCount += 1
+        analyzeIfNeeded()
     }
 
     private func announceStillWorkingAlertIfNeeded(_ isShowing: Bool) {
@@ -94,32 +114,8 @@ struct SnapResultSheet: View {
 
     private func resultView(item: DetectedItem) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
-            HStack(alignment: .center, spacing: Spacing.md) {
-                PhotoThumbnail(data: context.imageData, size: 64)
-
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    itemNameControl
-
-                    HStack(spacing: Spacing.xs) {
-                        Text("~$")
-                            .brandFont(.title)
-                            .foregroundStyle(Color.brand.primaryText)
-                        TextField("Price".localized, text: Binding(
-                            get: { store.priceText },
-                            set: { store.priceText = $0 }
-                        ))
-                            .brandFont(.title)
-                            .foregroundStyle(Color.brand.primaryText)
-                            .keyboardType(.decimalPad)
-                            .focused($focusedField, equals: .price)
-                            .onSubmit { store.commitEdits() }
-                            .accessibilityLabel("Estimated price".localized)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
-            }
-            .accessibilitySortPriority(5)
+            resultHeader
+                .accessibilitySortPriority(5)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
@@ -141,7 +137,7 @@ struct SnapResultSheet: View {
             }
             .accessibilitySortPriority(4)
 
-            PrimaryPillButton(title: "Looks right — pick where to sell") {
+            PrimaryPillButton(title: "Looks right — pick where to sell", maxFillWidth: sheetContentMaxWidth) {
                 store.commitEdits()
                 guard let item = store.item else { return }
                 if let preferred = context.preferredMarketplace {
@@ -152,21 +148,184 @@ struct SnapResultSheet: View {
             }
             .accessibilitySortPriority(3)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: Spacing.sm) {
-                GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
-                    appStore.retakePhoto(keeping: context.preferredMarketplace)
-                }
-                GhostButton(title: "Try again", systemImage: "arrow.clockwise") {
-                    Task { await store.analyze(accessToken: appStore.session?.accessToken) }
-                }
-                GhostButton(title: "Change category", systemImage: "tag") {
-                    store.cycleCategory()
-                }
-                GhostButton(title: "Change condition", systemImage: "slider.horizontal.3") {
-                    store.cycleCondition()
-                }
-            }
+            secondaryActions(item: item)
             .accessibilitySortPriority(2)
+        }
+    }
+
+    @ViewBuilder
+    private func secondaryActions(item: DetectedItem) -> some View {
+        if usesRegularSecondaryActionGrid {
+            LazyVGrid(columns: secondaryActionColumns, spacing: Spacing.sm) {
+                retakeButton
+                retryButton
+                categoryMenuButton(selected: item.category)
+                conditionMenuButton(selected: item.condition)
+            }
+        } else {
+            VStack(spacing: Spacing.sm) {
+                LazyVGrid(columns: compactQuickActionColumns, spacing: Spacing.sm) {
+                    retakeButton
+                    retryButton
+                }
+                categoryMenuButton(selected: item.category)
+                conditionMenuButton(selected: item.condition)
+            }
+        }
+    }
+
+    private var retakeButton: some View {
+        GhostButton(title: "Wrong item — retake", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
+            appStore.retakePhoto(keeping: context.preferredMarketplace)
+        }
+    }
+
+    private var retryButton: some View {
+        GhostButton(title: "Try again", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+            retryAnalysis()
+        }
+    }
+
+    @ViewBuilder
+    private var resultHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                PhotoThumbnail(data: context.imageData, size: 64)
+                itemSummaryControls
+            }
+        } else {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                PhotoThumbnail(data: context.imageData, size: 64)
+                itemSummaryControls
+            }
+        }
+    }
+
+    private var itemSummaryControls: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            itemNameControl
+            priceEditor
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
+    }
+
+    private var priceEditor: some View {
+        HStack(spacing: 0) {
+            Text("~$")
+                .brandFont(.title)
+                .foregroundStyle(Color.brand.primaryText)
+            TextField("Price".localized, text: Binding(
+                get: { store.priceText },
+                set: { store.priceText = $0 }
+            ))
+                .brandFont(.title)
+                .foregroundStyle(Color.brand.primaryText)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(.plain)
+                .focused($focusedField, equals: .price)
+                .onSubmit { store.commitEdits() }
+                .accessibilityLabel("Estimated price".localized)
+        }
+        .focusedInputChrome(
+            isFocused: focusedField == .price,
+            horizontalPadding: Spacing.sm,
+            verticalPadding: Spacing.xxs
+        )
+    }
+
+    private func categoryMenuButton(selected: Category) -> some View {
+        Menu {
+            ForEach(Category.allCases, id: \.self) { category in
+                Button {
+                    Haptics.impact(.light)
+                    store.selectCategory(category)
+                } label: {
+                    menuItemLabel(
+                        title: category.display,
+                        systemImage: categoryMenuItemIcon(for: category),
+                        isSelected: category == selected
+                    )
+                }
+                .accessibilityLabel(category.display)
+            }
+        } label: {
+            SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)
+        }
+        .buttonStyle(PressButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded {
+            Haptics.impact(.light)
+        })
+        .accessibilityLabel("Change category".localized)
+        .accessibilityValue(Text(selected.display.localized))
+        .accessibilityHint("Opens category choices".localized)
+    }
+
+    private func conditionMenuButton(selected: Condition) -> some View {
+        Menu {
+            ForEach(Condition.allCases, id: \.self) { condition in
+                Button {
+                    Haptics.impact(.light)
+                    store.selectCondition(condition)
+                } label: {
+                    menuItemLabel(
+                        title: condition.display,
+                        systemImage: conditionMenuItemIcon(for: condition),
+                        isSelected: condition == selected
+                    )
+                }
+                .accessibilityLabel(condition.display)
+            }
+        } label: {
+            SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)
+        }
+        .buttonStyle(PressButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded {
+            Haptics.impact(.light)
+        })
+        .accessibilityLabel("Change condition".localized)
+        .accessibilityValue(Text(selected.display.localized))
+        .accessibilityHint("Opens condition choices".localized)
+    }
+
+    @ViewBuilder
+    private func menuItemLabel(title: String, systemImage: String, isSelected: Bool) -> some View {
+        Label {
+            Text(title.localized)
+        } icon: {
+            Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)
+        }
+    }
+
+    private func categoryMenuItemIcon(for category: Category) -> String {
+        switch category {
+        case .electronics: "display"
+        case .furniture: "house"
+        case .clothing: "tshirt"
+        case .shoes: "shoeprints.fill"
+        case .bags: "handbag"
+        case .jewelry: "sparkles"
+        case .toys: "gamecontroller"
+        case .kids: "figure.2"
+        case .home: "house"
+        case .tools: "wrench.and.screwdriver"
+        case .sports: "sportscourt"
+        case .books: "books.vertical"
+        case .media: "play.rectangle"
+        case .music: "music.note"
+        case .collectibles: "star"
+        case .art: "paintpalette"
+        case .other: "shippingbox"
+        }
+    }
+
+    private func conditionMenuItemIcon(for condition: Condition) -> String {
+        switch condition {
+        case .new: "sparkles"
+        case .likeNew: "checkmark.seal"
+        case .good: "hand.thumbsup"
+        case .fair: "exclamationmark.circle"
+        case .forParts: "wrench"
         }
     }
 
@@ -184,6 +343,11 @@ struct SnapResultSheet: View {
                 .allowsTightening(true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .focused($focusedField, equals: .name)
+                .focusedInputChrome(
+                    isFocused: focusedField == .name,
+                    horizontalPadding: Spacing.sm,
+                    verticalPadding: Spacing.xxs
+                )
                 .submitLabel(.done)
                 .onSubmit {
                     store.commitEdits()
@@ -193,6 +357,7 @@ struct SnapResultSheet: View {
                 .accessibilityLabel("Item name".localized)
         } else {
             Button {
+                Haptics.impact(.light)
                 isEditingName = true
                 focusedField = .name
             } label: {
@@ -205,7 +370,7 @@ struct SnapResultSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-                .buttonStyle(.plain)
+                .buttonStyle(PressButtonStyle())
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .accessibilityLabel("Item name".localized)
@@ -253,20 +418,117 @@ struct SnapResultSheet: View {
                 .brandFont(.bodyLg)
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
-            PrimaryPillButton(title: "Retake photo", systemImage: "camera.rotate") {
+            PrimaryPillButton(title: "Retake photo", systemImage: "camera.rotate", maxFillWidth: sheetContentMaxWidth) {
                 appStore.retakePhoto(keeping: context.preferredMarketplace)
             }
-            SecondaryPillButton(title: "Try again", systemImage: "arrow.clockwise") {
-                Task { await store.analyze(accessToken: appStore.session?.accessToken) }
+            SecondaryPillButton(title: "Try again", systemImage: "arrow.clockwise", maxFillWidth: sheetContentMaxWidth) {
+                retryAnalysis()
             }
         }
         .frame(maxWidth: .infinity, minHeight: 420)
+        .task(id: message) {
+            appStore.showToast(message, style: .error)
+        }
         .accessibilitySortPriority(3)
     }
 
     private enum Field {
         case name
         case price
+    }
+
+    private var sheetContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 760 : .infinity
+    }
+
+    private var usesRegularWidthLayout: Bool {
+        horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    private var secondaryActionColumns: [GridItem] {
+        [GridItem(.flexible()), GridItem(.flexible())]
+    }
+
+    private var compactQuickActionColumns: [GridItem] {
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible()), GridItem(.flexible())]
+    }
+
+    private var usesRegularSecondaryActionGrid: Bool {
+        (usesRegularWidthLayout || UIScreen.main.bounds.width >= 430)
+            && dynamicTypeSize.isAccessibilitySize == false
+    }
+
+    private func retryAnalysis() {
+        startAnalysisTask(retry: true)
+    }
+
+    private func analyzeIfNeeded() {
+        startAnalysisTask(retry: false)
+    }
+
+    private func startAnalysisTask(retry: Bool) {
+        cancelAnalysisTask()
+        let taskID = UUID()
+        analysisTaskID = taskID
+        analysisTask = Task { @MainActor in
+            if retry {
+                await store.analyze(accessToken: await appStore.authenticatedAccessToken())
+            } else {
+                await store.analyzeIfNeeded(accessToken: await appStore.authenticatedAccessToken())
+            }
+            guard Task.isCancelled == false, analysisTaskID == taskID else { return }
+            analysisTask = nil
+        }
+    }
+
+    private func cancelAnalysisTask() {
+        analysisTask?.cancel()
+        analysisTask = nil
+    }
+}
+
+private struct SnapResultMenuLabel: View {
+    let title: String
+    let systemImage: String
+    var maxWidth: CGFloat?
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        HStack(spacing: Spacing.xs) {
+            Image(systemName: systemImage)
+                .imageScale(.medium)
+                .accessibilityHidden(true)
+
+            Text(title.localized)
+                .lineLimit(lineLimit)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(minimumScaleFactor)
+                .layoutPriority(1)
+
+            Spacer(minLength: Spacing.xs)
+
+            Image(systemName: "chevron.down")
+                .brandSymbol(.smallChevron)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .accessibilityHidden(true)
+        }
+        .brandFont(.caption)
+        .foregroundStyle(Color.brand.foreground)
+        .padding(.horizontal, Spacing.md)
+        .frame(maxWidth: maxWidth ?? .infinity, minHeight: 56)
+        .nativeMaterialPanel(cornerRadius: Radius.pill, tintOpacity: 0.72)
+        .contentShape(Capsule())
+    }
+
+    private var lineLimit: Int {
+        2
+    }
+
+    private var minimumScaleFactor: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 0.82 : 0.8
     }
 }
 
@@ -283,7 +545,7 @@ struct PhotoThumbnail: View {
             } else {
                 Color.brand.primaryMuted
                     .overlay {
-                        Image(systemName: "photo")
+                        Image(systemName: "camera.fill")
                             .foregroundStyle(Color.brand.primaryText)
                     }
             }

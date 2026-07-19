@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import UIKit
 
 enum CameraStartResult {
@@ -10,11 +11,18 @@ enum CameraStartResult {
 final class CameraController: NSObject, @unchecked Sendable {
     let session = AVCaptureSession()
 
+    private static let queueKey = DispatchSpecificKey<Bool>()
     private let queue = DispatchQueue(label: "BuySellAI.CameraController")
     private let photoOutput = AVCapturePhotoOutput()
+    private let logger = Logger(subsystem: "BuySellAI", category: "Camera")
     private var videoDevice: AVCaptureDevice?
     private var configured = false
     private var photoDelegate: PhotoCaptureDelegate?
+
+    override init() {
+        super.init()
+        queue.setSpecific(key: Self.queueKey, value: true)
+    }
 
     func start() async -> CameraStartResult {
         let granted = await requestPermissionIfNeeded()
@@ -37,9 +45,7 @@ final class CameraController: NSObject, @unchecked Sendable {
 
     func stop() {
         queue.async {
-            if self.session.isRunning {
-                self.session.stopRunning()
-            }
+            self.stopRunningIfNeeded()
         }
     }
 
@@ -82,6 +88,11 @@ final class CameraController: NSObject, @unchecked Sendable {
     func capturePhoto(flashOn: Bool) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
+                guard self.configured, self.session.isRunning else {
+                    continuation.resume(throwing: CameraError.captureFailed)
+                    return
+                }
+
                 let settings = AVCapturePhotoSettings()
                 if let pixelFormat = settings.availablePreviewPhotoPixelFormatTypes.first {
                     settings.previewPhotoFormat = [
@@ -106,8 +117,11 @@ final class CameraController: NSObject, @unchecked Sendable {
                     self?.photoDelegate = nil
                     switch result {
                     case .success(let data):
-                        self?.stop()
-                        let downscaled = ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)
+                        self?.stopRunningSynchronously()
+                        guard let downscaled = ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85) else {
+                            continuation.resume(throwing: CameraError.captureFailed)
+                            return
+                        }
                         continuation.resume(returning: downscaled)
                     case .failure(let error):
                         continuation.resume(throwing: error)
@@ -116,6 +130,23 @@ final class CameraController: NSObject, @unchecked Sendable {
                 self.photoDelegate = delegate
                 self.photoOutput.capturePhoto(with: settings, delegate: delegate)
             }
+        }
+    }
+
+    private func stopRunningSynchronously() {
+        if DispatchQueue.getSpecific(key: Self.queueKey) == true {
+            stopRunningIfNeeded()
+            return
+        }
+
+        queue.sync {
+            self.stopRunningIfNeeded()
+        }
+    }
+
+    private func stopRunningIfNeeded() {
+        if session.isRunning {
+            session.stopRunning()
         }
     }
 
@@ -164,7 +195,9 @@ final class CameraController: NSObject, @unchecked Sendable {
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
-        } catch {}
+        } catch {
+            logger.warning("Camera focus and exposure configuration skipped")
+        }
 
         videoDevice = device
         configured = true

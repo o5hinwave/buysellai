@@ -45,6 +45,14 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
     case other
 
     var display: String {
+        displayKey.localized
+    }
+
+    var apiValue: String {
+        displayKey
+    }
+
+    private var displayKey: String {
         switch self {
         case .electronics: "Electronics"
         case .furniture: "Furniture"
@@ -74,7 +82,7 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
             .replacingOccurrences(of: "-", with: "")
         self = Category.allCases.first {
             $0.rawValue.replacingOccurrences(of: "_", with: "") == normalized ||
-            $0.display.lowercased().replacingOccurrences(of: " ", with: "") == normalized
+            $0.displayKey.lowercased().replacingOccurrences(of: " ", with: "") == normalized
         } ?? .other
     }
 
@@ -91,6 +99,14 @@ enum Condition: String, Codable, CaseIterable, Sendable, Hashable {
     case forParts
 
     var display: String {
+        displayKey.localized
+    }
+
+    var apiValue: String {
+        rawValue
+    }
+
+    private var displayKey: String {
         switch self {
         case .new: "New"
         case .likeNew: "Like New"
@@ -148,7 +164,8 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
 
     func sanitizedForHistory() -> HistoryEntry? {
         let cleanItemName = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanListingText = listingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanListingText = (try? ListingTextContract.validatedStored(listingText))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard cleanItemName.isEmpty == false, cleanListingText.isEmpty == false else {
             return nil
         }
@@ -165,6 +182,91 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
             marketplace: marketplace,
             listingText: cleanListingText
         )
+    }
+}
+
+enum ListingTextContract {
+    static func validatedGenerated(_ text: String) throws -> String {
+        try validated(text, requiresSections: true)
+    }
+
+    static func validatedStored(_ text: String) throws -> String {
+        try validated(text, requiresSections: true)
+    }
+
+    private static func validated(_ text: String, requiresSections: Bool) throws -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false,
+              startsWithTitle(trimmed),
+              hasMarkdownFence(trimmed) == false,
+              hasPreamble(trimmed) == false
+        else {
+            throw APIError.decoding
+        }
+
+        if requiresSections {
+            guard hasRequiredListingSections(trimmed) else {
+                throw APIError.decoding
+            }
+        }
+
+        return trimmed
+    }
+
+    private static func hasMarkdownFence(_ text: String) -> Bool {
+        text.contains("```")
+    }
+
+    private static func startsWithTitle(_ text: String) -> Bool {
+        text.range(of: #"^TITLE\s*:"#, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+
+    private static func hasPreamble(_ text: String) -> Bool {
+        let normalized = text
+            .prefix(96)
+            .lowercased()
+            .replacingOccurrences(of: "’", with: "'")
+        return normalized.range(
+            of: #"^here(?:'s| is)\s+(?:your\s+)?listing\s*[:\-]"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    private static func hasRequiredListingSections(_ text: String) -> Bool {
+        guard let titleRange = text.range(
+            of: #"(?m)^TITLE\s*:"#,
+            options: [.regularExpression, .caseInsensitive]
+        ),
+            let descriptionRange = text[titleRange.upperBound...].range(
+                of: #"(?m)^DESCRIPTION\s*:"#,
+                options: [.regularExpression, .caseInsensitive]
+            )
+        else {
+            return false
+        }
+
+        let titleBody = text[titleRange.upperBound..<descriptionRange.lowerBound]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let descriptionBody = text[descriptionRange.upperBound...]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return titleBody.isEmpty == false && descriptionBody.isEmpty == false
+    }
+}
+
+enum ListingFixtureText {
+    static func sample(for item: DetectedItem, currencyCode: String? = nil) -> String {
+        let itemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = itemName.isEmpty ? "Item" : itemName
+        let resolvedCurrencyCode = (currencyCode ?? item.currencyCode).trimmingCharacters(in: .whitespacesAndNewlines)
+        let price = item.priceEstimate.currency(code: resolvedCurrencyCode.isEmpty ? "USD" : resolvedCurrencyCode)
+
+        return """
+        TITLE:
+        \(displayName) - \(item.condition.display)
+
+        DESCRIPTION:
+        \(displayName) in \(item.condition.display.lowercased()) condition. Asking \(price). See photos for details.
+        """
     }
 }
 
@@ -200,6 +302,10 @@ enum ThemePreference: String, Codable, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 
     var display: String {
+        displayKey.localized
+    }
+
+    private var displayKey: String {
         switch self {
         case .system: "System"
         case .light: "Light"
@@ -226,6 +332,7 @@ struct ListingContext: Identifiable, Equatable {
     let imageData: Data?
     let marketplace: Marketplace
     let existingListingText: String?
+    let existingHistoryEntry: HistoryEntry?
 }
 
 extension Array where Element: Equatable {

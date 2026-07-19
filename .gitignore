@@ -5,6 +5,7 @@ BuySellAI/App/Config.plist
 .env
 .env.*
 !.env.example
+supabase/.temp/
 *.xcresult/
 *.xcarchive/
 *.ipa

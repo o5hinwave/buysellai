@@ -34,6 +34,25 @@ final class LocalizationCoverageTests: XCTestCase {
         )
     }
 
+    func testCategoryAndConditionDisplayValuesRouteThroughLocalizationWithoutChangingAPIKeys() throws {
+        let models = try String(contentsOf: projectURL("BuySellAI/Data/Models.swift"), encoding: .utf8)
+        let apiClient = try String(contentsOf: projectURL("BuySellAI/Data/APIClient.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(models.range(of: "displayKey.localized"))
+        XCTAssertNotNil(models.range(of: "var apiValue: String"))
+        XCTAssertNotNil(apiClient.range(of: "category: item.category.apiValue"))
+        XCTAssertNotNil(apiClient.range(of: "condition: item.condition.apiValue"))
+        XCTAssertNil(apiClient.range(of: "category: item.category.display"))
+    }
+
+    func testThemePreferenceDisplayRoutesThroughLocalization() throws {
+        let models = try String(contentsOf: projectURL("BuySellAI/Data/Models.swift"), encoding: .utf8)
+        let themePreferenceSource = try XCTUnwrap(models.range(of: "enum ThemePreference").map { models[$0.lowerBound...] })
+
+        XCTAssertNotNil(themePreferenceSource.range(of: "displayKey.localized"))
+        XCTAssertNotNil(themePreferenceSource.range(of: "private var displayKey: String"))
+    }
+
     func testSwiftUIStringLiteralsUseLocalizationWrappers() throws {
         let checkedCallPattern = #"\b(?:Text|Button|Label|Section|TextField|navigationTitle|confirmationDialog)\(\s*"((?:\\.|[^"\\])*)""#
         let regex = try NSRegularExpression(pattern: checkedCallPattern)
@@ -69,8 +88,8 @@ final class LocalizationCoverageTests: XCTestCase {
         let patterns = [
             #""((?:\\.|[^"\\])*)"\.localized"#,
             #"String\.localizedFormat\("((?:\\.|[^"\\])*)""#,
-            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton)\(\s*title:\s*"((?:\\.|[^"\\])*)""#,
-            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton)\(\s*title:\s*[^,\n]*\?\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)""#,
+            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton|TextActionButton)\(\s*title:\s*"((?:\\.|[^"\\])*)""#,
+            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton|TextActionButton)\(\s*title:\s*[^,\n]*\?\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)""#,
             #"\bIconCircleButton\([\s\S]*?accessibilityLabel:\s*"((?:\\.|[^"\\])*)""#,
             #"accessibilityHint:\s*"((?:\\.|[^"\\])*)""#
         ]

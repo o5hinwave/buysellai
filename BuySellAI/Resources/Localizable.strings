@@ -1,215 +1,470 @@
-" AI" = " AI";
-"." = ".";
-"$45" = "$45";
-"%@ %@" = "%@ %@";
-"%@ · %@" = "%@ · %@";
-"%@, %@" = "%@, %@";
-"%@, %@, %@" = "%@, %@, %@";
-"%@, estimated payout %d dollars, %d percent %@ average" = "%@, estimated payout %d dollars, %d percent %@ average";
-"%@, estimated payout %d dollars, average payout" = "%@, estimated payout %d dollars, average payout";
-"About" = "About";
-"Account" = "Account";
-"Account deleted." = "Account deleted.";
-"Analyzing your photo…" = "Analyzing your photo…";
-"Amazon" = "Amazon";
-"Amazon seller — high reach, high fee" = "Amazon seller — high reach, high fee";
-"Antiques & fine art" = "Antiques & fine art";
-"Appearance" = "Appearance";
-"App" = "App";
-"Art" = "Art";
-"Authenticated luxury" = "Authenticated luxury";
-"Backend is not configured yet." = "Backend is not configured yet.";
-"Bags" = "Bags";
-"Best" = "Best";
-"Bonanza" = "Bonanza";
-"Books" = "Books";
-"Broadest audience, small fees" = "Broadest audience, small fees";
-"BuySell" = "BuySell";
-"BuySell AI" = "BuySell AI";
-"BuySell got an answer it couldn't read." = "BuySell got an answer it couldn't read.";
-"BuySell is having trouble. Try again." = "BuySell is having trouble. Try again.";
-"Camera access needed to snap items." = "Camera access needed to snap items.";
-"Camera couldn't start." = "Camera couldn't start.";
-"Camera isn't available on this device." = "Camera isn't available on this device.";
-"Cancel" = "Cancel";
-"Captures the current view" = "Captures the current view";
-"Capturing photo" = "Capturing photo";
-"Category" = "Category";
-"Change category" = "Change category";
-"Change condition" = "Change condition";
-"Changes the category" = "Changes the category";
-"Changes the condition" = "Changes the condition";
-"Chairish" = "Chairish";
-"Clear all listing history? This can't be undone." = "Clear all listing history? This can't be undone.";
-"Clear history" = "Clear history";
-"Close" = "Close";
-"Close camera" = "Close camera";
-"Close delete account" = "Close delete account";
-"Close listing" = "Close listing";
-"Close settings" = "Close settings";
-"Clothing" = "Clothing";
-"Collectibles" = "Collectibles";
-"Continue with Apple" = "Continue with Apple";
-"Continue with Email" = "Continue with Email";
-"Condition" = "Condition";
-"Copied — paste it into %@" = "Copied — paste it into %@";
-"Copy and paste." = "Copy and paste.";
-"Copy listing" = "Copy listing";
-"Couldn't clear history." = "Couldn't clear history.";
-"Couldn't compute prices. Tap a marketplace anyway to draft a listing." = "Couldn't compute prices. Tap a marketplace anyway to draft a listing.";
-"Couldn't delete this listing." = "Couldn't delete this listing.";
-"Couldn't load recent listings." = "Couldn't load recent listings.";
-"Couldn't save this listing." = "Couldn't save this listing.";
-"Craigslist" = "Craigslist";
-"Curtsy" = "Curtsy";
-"Danger zone" = "Danger zone";
-"Dark" = "Dark";
-"DELETE" = "DELETE";
-"Delete account" = "Delete account";
-"Delete confirmation" = "Delete confirmation";
-"Delete listing" = "Delete listing";
-"Delete this listing? This can't be undone." = "Delete this listing? This can't be undone.";
-"Deleting…" = "Deleting…";
-"Depop" = "Depop";
-"Designer bags & shoes" = "Designer bags & shoes";
-"Done" = "Done";
-"Double-tap to edit the item name" = "Double-tap to edit the item name";
-"Electronics" = "Electronics";
-"Email" = "Email";
-"Estimated price" = "Estimated price";
-"Etsy" = "Etsy";
-"Fair" = "Fair";
-"Facebook" = "Facebook";
-"Facebook Marketplace — free local reach" = "Facebook Marketplace — free local reach";
-"Fashion & closet items" = "Fashion & closet items";
-"Fashion, no seller fees" = "Fashion, no seller fees";
-"Fit the whole item in the frame" = "Fit the whole item in the frame";
-"Flash unavailable" = "Flash unavailable";
-"For parts" = "For parts";
-"Furniture" = "Furniture";
-"General resale, low fees" = "General resale, low fees";
-"Generated listing text" = "Generated listing text";
-"Get started" = "Get started";
-"GOAT" = "GOAT";
-"Good" = "Good";
-"Grailed" = "Grailed";
-"Handmade, vintage, craft" = "Handmade, vintage, craft";
-"History cleared." = "History cleared.";
-"Home" = "Home";
-"How it works" = "How it works";
-"Item name" = "Item name";
-"Item photo" = "Item photo";
-"Jewelry" = "Jewelry";
-"Keep going without an account" = "Keep going without an account";
-"Kids" = "Kids";
-"Kids clothes" = "Kids clothes";
-"Kidizen" = "Kidizen";
-"Light" = "Light";
-"Like New" = "Like New";
-"Listing for %@" = "Listing for %@";
-"Live-stream selling" = "Live-stream selling";
-"Local pickup, mobile-first" = "Local pickup, mobile-first";
-"Local, no fees, cash" = "Local, no fees, cash";
-"Looks right — pick where to sell" = "Looks right — pick where to sell";
-"Lowest" = "Lowest";
-"Luxury pre-owned" = "Luxury pre-owned";
-"Media" = "Media";
-"Mercari" = "Mercari";
-"Menswear, streetwear, designer" = "Menswear, streetwear, designer";
-"Music" = "Music";
-"Music gear" = "Music gear";
-"Name, category, condition, price — in seconds." = "Name, category, condition, price — in seconds.";
-"Neighborhood local sales" = "Neighborhood local sales";
-"New" = "New";
-"Next" = "Next";
-"Nextdoor" = "Nextdoor";
-"no photo" = "no photo";
-"Not signed in" = "Not signed in";
-"OfferUp" = "OfferUp";
-"Open Settings" = "Open Settings";
-"Opens the camera" = "Opens the camera";
-"Other" = "Other";
-"Password" = "Password";
-"Photo couldn't be captured." = "Photo couldn't be captured.";
-"photo attached" = "photo attached";
-"Pick where to sell" = "Pick where to sell";
-"Pick where to sell." = "Pick where to sell.";
-"Point, tap, done. We handle the rest." = "Point, tap, done. We handle the rest.";
-"Poshmark" = "Poshmark";
-"Price" = "Price";
-"Privacy policy" = "Privacy policy";
-"Rate BuySell" = "Rate BuySell";
-"Recent listings" = "Recent listings";
-"Reduce Motion" = "Reduce Motion";
-"Regenerate" = "Regenerate";
-"Reverb" = "Reverb";
-"Retake photo" = "Retake photo";
-"Retry" = "Retry";
-"Ruby Lane" = "Ruby Lane";
-"Sell anything in three taps." = "Sell anything in three taps.";
-"Settings" = "Settings";
-"Ship anything, casual buyers" = "Ship anything, casual buyers";
-"Shopify" = "Shopify";
-"Shoes" = "Shoes";
-"Sign in" = "Sign in";
-"Sign in to sync your listings across devices." = "Sign in to sync your listings across devices.";
-"Sign in couldn't finish. Try again." = "Sign in couldn't finish. Try again.";
-"Sign out" = "Sign out";
-"Signed in." = "Signed in.";
-"Signed in. Listings synced." = "Signed in. Listings synced.";
-"Signed in with Apple" = "Signed in with Apple";
-"Signed out." = "Signed out.";
-"Skip" = "Skip";
-"Snap · Pick · Sell" = "Snap · Pick · Sell";
-"Snap a photo." = "Snap a photo.";
-"Snap a photo. Pick a marketplace. Copy your listing." = "Snap a photo. Pick a marketplace. Copy your listing.";
-"Snap to sell" = "Snap to sell";
-"Sneakers & collectibles" = "Sneakers & collectibles";
-"Sneakers, authenticated" = "Sneakers, authenticated";
-"Something went wrong. Try again." = "Something went wrong. Try again.";
-"Sports" = "Sports";
-"Starting camera…" = "Starting camera…";
-"Step %d of %d" = "Step %d of %d";
-"Still working… tap Retry to try again." = "Still working… tap Retry to try again.";
-"StockX" = "StockX";
-"Swappa" = "Swappa";
-"System" = "System";
-"TCGplayer" = "TCGplayer";
-"Take photo" = "Take photo";
-"Terms" = "Terms";
-"The RealReal" = "The RealReal";
-"Thanks for rating BuySell." = "Thanks for rating BuySell.";
-"That took too long. Try again." = "That took too long. Try again.";
-"Theme" = "Theme";
-"Tip: paste, add photos, hit list. That's it." = "Tip: paste, add photos, hit list. That's it.";
-"Tools" = "Tools";
-"Too many tries right now. Give it a minute." = "Too many tries right now. Give it a minute.";
-"Toys" = "Toys";
-"Trading cards" = "Trading cards";
-"Tradesy" = "Tradesy";
-"Try again" = "Try again";
-"Turn flash off" = "Turn flash off";
-"Turn flash on" = "Turn flash on";
-"Turn stuff into cash in three taps." = "Turn stuff into cash in three taps.";
-"Tutorial progress" = "Tutorial progress";
-"Type DELETE to confirm." = "Type DELETE to confirm.";
-"Used tech & phones" = "Used tech & phones";
-"Version" = "Version";
-"Vintage & Gen-Z fashion" = "Vintage & Gen-Z fashion";
-"Vintage furniture & decor" = "Vintage furniture & decor";
-"Vestiaire" = "Vestiaire";
-"Vinted" = "Vinted";
-"Women's fashion (mobile)" = "Women's fashion (mobile)";
-"We figure out what it is." = "We figure out what it is.";
-"We rank every marketplace by how much you'd get." = "We rank every marketplace by how much you'd get.";
-"Welcome to BuySell." = "Welcome to BuySell.";
-"Whatnot" = "Whatnot";
-"Writing your listing…" = "Writing your listing…";
-"Wrong item — retake" = "Wrong item — retake";
-"Your listing is written for you. Paste it in." = "Your listing is written for you. Paste it in.";
-"Your own storefront" = "Your own storefront";
-"Your past listings will show up here." = "Your past listings will show up here.";
-"You're offline. Reconnect and try again." = "You're offline. Reconnect and try again.";
-"above" = "above";
-"below" = "below";
-"eBay" = "eBay";
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key> AI</key>
+	<string> AI</string>
+	<key>$45</key>
+	<string>$45</string>
+	<key>%@ %@</key>
+	<string>%@ %@</string>
+	<key>%@ · %@</key>
+	<string>%@ · %@</string>
+	<key>%@, %@</key>
+	<string>%@, %@</string>
+	<key>%@, %@, %@</key>
+	<string>%@, %@, %@</string>
+	<key>%@, estimated payout %d dollars, %d percent %@ average</key>
+	<string>%@, estimated payout %d dollars, %d percent %@ average</string>
+	<key>%@, estimated payout %d dollars, average payout</key>
+	<string>%@, estimated payout %d dollars, average payout</string>
+	<key>.</key>
+	<string>.</string>
+	<key>About</key>
+	<string>About</string>
+	<key>Account</key>
+	<string>Account</string>
+	<key>Account deleted.</key>
+	<string>Account deleted.</string>
+	<key>Account deleted. Local history couldn't be cleared.</key>
+	<string>Account deleted. Local history couldn't be cleared.</string>
+	<key>Amazon</key>
+	<string>Amazon</string>
+	<key>Amazon marketplace — high reach, high fee</key>
+	<string>Amazon marketplace — high reach, high fee</string>
+	<key>Analyzing your photo…</key>
+	<string>Analyzing your photo…</string>
+	<key>Antiques &amp; fine art</key>
+	<string>Antiques &amp; fine art</string>
+	<key>App</key>
+	<string>App</string>
+	<key>Appearance</key>
+	<string>Appearance</string>
+	<key>Apple sign-in was disconnected.</key>
+	<string>Apple sign-in was disconnected.</string>
+	<key>Art</key>
+	<string>Art</string>
+	<key>Authenticated luxury</key>
+	<string>Authenticated luxury</string>
+	<key>Bags</key>
+	<string>Bags</string>
+	<key>Best</key>
+	<string>Best</string>
+	<key>Bonanza</key>
+	<string>Bonanza</string>
+	<key>Books</key>
+	<string>Books</string>
+	<key>Broadest audience, small fees</key>
+	<string>Broadest audience, small fees</string>
+	<key>BuySell</key>
+	<string>BuySell</string>
+	<key>BuySell AI</key>
+	<string>BuySell AI</string>
+	<key>BuySell got an answer it couldn't read.</key>
+	<string>BuySell got an answer it couldn't read.</string>
+	<key>BuySell is having trouble. Try again.</key>
+	<string>BuySell is having trouble. Try again.</string>
+	<key>BuySell isn't ready yet. Try again later.</key>
+	<string>BuySell isn't ready yet. Try again later.</string>
+	<key>Camera access needed to snap items.</key>
+	<string>Camera access needed to snap items.</string>
+	<key>Camera couldn't start.</key>
+	<string>Camera couldn't start.</string>
+	<key>Camera isn't available on this device.</key>
+	<string>Camera isn't available on this device.</string>
+	<key>Cancel</key>
+	<string>Cancel</string>
+	<key>Captures the current view</key>
+	<string>Captures the current view</string>
+	<key>Capturing photo</key>
+	<string>Capturing photo</string>
+	<key>Category</key>
+	<string>Category</string>
+	<key>Chairish</key>
+	<string>Chairish</string>
+	<key>Change category</key>
+	<string>Change category</string>
+	<key>Change condition</key>
+	<string>Change condition</string>
+	<key>Changes the category</key>
+	<string>Changes the category</string>
+	<key>Changes the condition</key>
+	<string>Changes the condition</string>
+	<key>Clear all listing history? This can't be undone.</key>
+	<string>Clear all listing history? This can't be undone.</string>
+	<key>Clear history</key>
+	<string>Clear history</string>
+	<key>Close</key>
+	<string>Close</string>
+	<key>Close camera</key>
+	<string>Close camera</string>
+	<key>Close delete account</key>
+	<string>Close delete account</string>
+	<key>Close listing</key>
+	<string>Close listing</string>
+	<key>Close settings</key>
+	<string>Close settings</string>
+	<key>Clothing</key>
+	<string>Clothing</string>
+	<key>Collectibles</key>
+	<string>Collectibles</string>
+	<key>Computing marketplace payouts</key>
+	<string>Computing marketplace payouts</string>
+	<key>Condition</key>
+	<string>Condition</string>
+	<key>Continue with Apple</key>
+	<string>Continue with Apple</string>
+	<key>Continue with Email</key>
+	<string>Continue with Email</string>
+	<key>Copied — paste it into %@</key>
+	<string>Copied — paste it into %@</string>
+	<key>Copy and paste.</key>
+	<string>Copy and paste.</string>
+	<key>Copy listing</key>
+	<string>Copy listing</string>
+	<key>Couldn't clear history.</key>
+	<string>Couldn't clear history.</string>
+	<key>Couldn't compute prices. Tap a marketplace anyway to draft a listing.</key>
+	<string>Couldn't compute prices. Tap a marketplace anyway to draft a listing.</string>
+	<key>Couldn't delete this listing.</key>
+	<string>Couldn't delete this listing.</string>
+	<key>Couldn't load recent listings.</key>
+	<string>Couldn't load recent listings.</string>
+	<key>Couldn't save this listing.</key>
+	<string>Couldn't save this listing.</string>
+	<key>Craigslist</key>
+	<string>Craigslist</string>
+	<key>Curtsy</key>
+	<string>Curtsy</string>
+	<key>DELETE</key>
+	<string>DELETE</string>
+	<key>Danger zone</key>
+	<string>Danger zone</string>
+	<key>Dark</key>
+	<string>Dark</string>
+	<key>Delete account</key>
+	<string>Delete account</string>
+	<key>Delete confirmation</key>
+	<string>Delete confirmation</string>
+	<key>Delete listing</key>
+	<string>Delete listing</string>
+	<key>Delete this listing? This can't be undone.</key>
+	<string>Delete this listing? This can't be undone.</string>
+	<key>Deleting…</key>
+	<string>Deleting…</string>
+	<key>Depop</key>
+	<string>Depop</string>
+	<key>Designer bags &amp; shoes</key>
+	<string>Designer bags &amp; shoes</string>
+	<key>Done</key>
+	<string>Done</string>
+	<key>Double-tap to edit the item name</key>
+	<string>Double-tap to edit the item name</string>
+	<key>Drafts a listing without a payout estimate</key>
+	<string>Drafts a listing without a payout estimate</string>
+	<key>Electronics</key>
+	<string>Electronics</string>
+	<key>Email</key>
+	<string>Email</string>
+	<key>Escape closes the sheet.</key>
+	<string>Escape closes the sheet.</string>
+	<key>Estimated price</key>
+	<string>Estimated price</string>
+	<key>Etsy</key>
+	<string>Etsy</string>
+	<key>Expanded</key>
+	<string>Expanded</string>
+	<key>Facebook</key>
+	<string>Facebook</string>
+	<key>Facebook Marketplace — free local reach</key>
+	<string>Facebook Marketplace — free local reach</string>
+	<key>Fair</key>
+	<string>Fair</string>
+	<key>Fashion &amp; closet items</key>
+	<string>Fashion &amp; closet items</string>
+	<key>Fashion, no listing fees</key>
+	<string>Fashion, no listing fees</string>
+	<key>Fit the whole item in the frame</key>
+	<string>Fit the whole item in the frame</string>
+	<key>Flash unavailable</key>
+	<string>Flash unavailable</string>
+	<key>For parts</key>
+	<string>For parts</string>
+	<key>Furniture</key>
+	<string>Furniture</string>
+	<key>GOAT</key>
+	<string>GOAT</string>
+	<key>General resale, low fees</key>
+	<string>General resale, low fees</string>
+	<key>Generated listing text</key>
+	<string>Generated listing text</string>
+	<key>Get started</key>
+	<string>Get started</string>
+	<key>Good</key>
+	<string>Good</string>
+	<key>Grailed</key>
+	<string>Grailed</string>
+	<key>Half height</key>
+	<string>Half height</string>
+	<key>Handmade, vintage, craft</key>
+	<string>Handmade, vintage, craft</string>
+	<key>History cleared.</key>
+	<string>History cleared.</string>
+	<key>Home</key>
+	<string>Home</string>
+	<key>How it works</key>
+	<string>How it works</string>
+	<key>Item details</key>
+	<string>Item details</string>
+	<key>Item name</key>
+	<string>Item name</string>
+	<key>Item photo</key>
+	<string>Item photo</string>
+	<key>Jewelry</key>
+	<string>Jewelry</string>
+	<key>Keep going without an account</key>
+	<string>Keep going without an account</string>
+	<key>Kidizen</key>
+	<string>Kidizen</string>
+	<key>Kids</key>
+	<string>Kids</string>
+	<key>Kids clothes</key>
+	<string>Kids clothes</string>
+	<key>Light</key>
+	<string>Light</string>
+	<key>Like New</key>
+	<string>Like New</string>
+	<key>Listing draft</key>
+	<string>Listing draft</string>
+	<key>Listing for %@</key>
+	<string>Listing for %@</string>
+	<key>Live-stream selling</key>
+	<string>Live-stream selling</string>
+	<key>Local pickup, mobile-first</key>
+	<string>Local pickup, mobile-first</string>
+	<key>Local, no fees, cash</key>
+	<string>Local, no fees, cash</string>
+	<key>Looks right — pick where to sell</key>
+	<string>Looks right — pick where to sell</string>
+	<key>Lowest</key>
+	<string>Lowest</string>
+	<key>Luxury pre-owned</key>
+	<string>Luxury pre-owned</string>
+	<key>Marketplace choices</key>
+	<string>Marketplace choices</string>
+	<key>Media</key>
+	<string>Media</string>
+	<key>Menswear, streetwear, designer</key>
+	<string>Menswear, streetwear, designer</string>
+	<key>Mercari</key>
+	<string>Mercari</string>
+	<key>Music</key>
+	<string>Music</string>
+	<key>Music gear</key>
+	<string>Music gear</string>
+	<key>Name, category, condition, price — in seconds.</key>
+	<string>Name, category, condition, price — in seconds.</string>
+	<key>Neighborhood local sales</key>
+	<string>Neighborhood local sales</string>
+	<key>New</key>
+	<string>New</string>
+	<key>Next</key>
+	<string>Next</string>
+	<key>Nextdoor</key>
+	<string>Nextdoor</string>
+	<key>Not signed in</key>
+	<string>Not signed in</string>
+	<key>OfferUp</key>
+	<string>OfferUp</string>
+	<key>Open Settings</key>
+	<string>Open Settings</string>
+	<key>Opens category choices</key>
+	<string>Opens category choices</string>
+	<key>Opens condition choices</key>
+	<string>Opens condition choices</string>
+	<key>Opens the camera</key>
+	<string>Opens the camera</string>
+	<key>Other</key>
+	<string>Other</string>
+	<key>Password</key>
+	<string>Password</string>
+	<key>Photo couldn't be captured.</key>
+	<string>Photo couldn't be captured.</string>
+	<key>Pick where to sell</key>
+	<string>Pick where to sell</string>
+	<key>Pick where to sell.</key>
+	<string>Pick where to sell.</string>
+	<key>Point, tap, done. We handle the rest.</key>
+	<string>Point, tap, done. We handle the rest.</string>
+	<key>Poshmark</key>
+	<string>Poshmark</string>
+	<key>Price</key>
+	<string>Price</string>
+	<key>Privacy policy</key>
+	<string>Privacy policy</string>
+	<key>Rate BuySell</key>
+	<string>Rate BuySell</string>
+	<key>Rating isn't available right now.</key>
+	<string>Rating isn't available right now.</string>
+	<key>Recent listings</key>
+	<string>Recent listings</string>
+	<key>Reduce Motion</key>
+	<string>Reduce Motion</string>
+	<key>Regenerate</key>
+	<string>Regenerate</string>
+	<key>Retake photo</key>
+	<string>Retake photo</string>
+	<key>Retry</key>
+	<string>Retry</string>
+	<key>Reverb</key>
+	<string>Reverb</string>
+	<key>Ruby Lane</key>
+	<string>Ruby Lane</string>
+	<key>Sell anything in three taps.</key>
+	<string>Sell anything in three taps.</string>
+	<key>Settings</key>
+	<string>Settings</string>
+	<key>Ship anything, casual buyers</key>
+	<string>Ship anything, casual buyers</string>
+	<key>Shoes</key>
+	<string>Shoes</string>
+	<key>Shopify</key>
+	<string>Shopify</string>
+	<key>Sign in</key>
+	<string>Sign in</string>
+	<key>Sign in again to continue.</key>
+	<string>Sign in again to continue.</string>
+	<key>Sign in couldn't finish. Try again.</key>
+	<string>Sign in couldn't finish. Try again.</string>
+	<key>Sign in to sync your listings across devices.</key>
+	<string>Sign in to sync your listings across devices.</string>
+	<key>Sign out</key>
+	<string>Sign out</string>
+	<key>Signed in with Apple</key>
+	<string>Signed in with Apple</string>
+	<key>Signed in.</key>
+	<string>Signed in.</string>
+	<key>Signed in. Listings synced.</key>
+	<string>Signed in. Listings synced.</string>
+	<key>Signed in. Listings synced. Local history couldn't be cleared.</key>
+	<string>Signed in. Listings synced. Local history couldn't be cleared.</string>
+	<key>Signed out.</key>
+	<string>Signed out.</string>
+	<key>Skip</key>
+	<string>Skip</string>
+	<key>Snap a photo.</key>
+	<string>Snap a photo.</string>
+	<key>Snap a photo. Pick a marketplace. Copy your listing.</key>
+	<string>Snap a photo. Pick a marketplace. Copy your listing.</string>
+	<key>Snap to sell</key>
+	<string>Snap to sell</string>
+	<key>Snap · Pick · Sell</key>
+	<string>Snap · Pick · Sell</string>
+	<key>Sneakers &amp; collectibles</key>
+	<string>Sneakers &amp; collectibles</string>
+	<key>Sneakers, authenticated</key>
+	<string>Sneakers, authenticated</string>
+	<key>Something went wrong. Try again.</key>
+	<string>Something went wrong. Try again.</string>
+	<key>Sports</key>
+	<string>Sports</string>
+	<key>Starting camera…</key>
+	<string>Starting camera…</string>
+	<key>Step %d of %d</key>
+	<string>Step %d of %d</string>
+	<key>Still working… tap Retry to try again.</key>
+	<string>Still working… tap Retry to try again.</string>
+	<key>StockX</key>
+	<string>StockX</string>
+	<key>Swappa</key>
+	<string>Swappa</string>
+	<key>Swipe up or down to resize. Escape closes the sheet.</key>
+	<string>Swipe up or down to resize. Escape closes the sheet.</string>
+	<key>System</key>
+	<string>System</string>
+	<key>TCGplayer</key>
+	<string>TCGplayer</string>
+	<key>Take photo</key>
+	<string>Take photo</string>
+	<key>Terms</key>
+	<string>Terms</string>
+	<key>Thanks for rating BuySell.</key>
+	<string>Thanks for rating BuySell.</string>
+	<key>That Apple account is already linked to another BuySell account.</key>
+	<string>That Apple account is already linked to another BuySell account.</string>
+	<key>That took too long. Try again.</key>
+	<string>That took too long. Try again.</string>
+	<key>The RealReal</key>
+	<string>The RealReal</string>
+	<key>Theme</key>
+	<string>Theme</string>
+	<key>Tip: paste, add photos, hit list. That's it.</key>
+	<string>Tip: paste, add photos, hit list. That's it.</string>
+	<key>Too many tries right now. Give it a minute.</key>
+	<string>Too many tries right now. Give it a minute.</string>
+	<key>Tools</key>
+	<string>Tools</string>
+	<key>Toys</key>
+	<string>Toys</string>
+	<key>Tradesy</key>
+	<string>Tradesy</string>
+	<key>Trading cards</key>
+	<string>Trading cards</string>
+	<key>Try again</key>
+	<string>Try again</string>
+	<key>Turn flash off</key>
+	<string>Turn flash off</string>
+	<key>Turn flash on</key>
+	<string>Turn flash on</string>
+	<key>Turn stuff into cash in three taps.</key>
+	<string>Turn stuff into cash in three taps.</string>
+	<key>Tutorial progress</key>
+	<string>Tutorial progress</string>
+	<key>Type DELETE to confirm.</key>
+	<string>Type DELETE to confirm.</string>
+	<key>Used tech &amp; phones</key>
+	<string>Used tech &amp; phones</string>
+	<key>Version</key>
+	<string>Version</string>
+	<key>Vestiaire</key>
+	<string>Vestiaire</string>
+	<key>Vintage &amp; Gen-Z fashion</key>
+	<string>Vintage &amp; Gen-Z fashion</string>
+	<key>Vintage furniture &amp; decor</key>
+	<string>Vintage furniture &amp; decor</string>
+	<key>Vinted</key>
+	<string>Vinted</string>
+	<key>We figure out what it is.</key>
+	<string>We figure out what it is.</string>
+	<key>We rank every marketplace by how much you'd get.</key>
+	<string>We rank every marketplace by how much you'd get.</string>
+	<key>Welcome to BuySell.</key>
+	<string>Welcome to BuySell.</string>
+	<key>Whatnot</key>
+	<string>Whatnot</string>
+	<key>Women's fashion (mobile)</key>
+	<string>Women's fashion (mobile)</string>
+	<key>Writing your listing…</key>
+	<string>Writing your listing…</string>
+	<key>Wrong item — retake</key>
+	<string>Wrong item — retake</string>
+	<key>You're offline. Reconnect and try again.</key>
+	<string>You're offline. Reconnect and try again.</string>
+	<key>Your listing is written for you. Paste it in.</key>
+	<string>Your listing is written for you. Paste it in.</string>
+	<key>Your own storefront</key>
+	<string>Your own storefront</string>
+	<key>Your past listings will show up here.</key>
+	<string>Your past listings will show up here.</string>
+	<key>above</key>
+	<string>above</string>
+	<key>below</key>
+	<string>below</string>
+	<key>eBay</key>
+	<string>eBay</string>
+	<key>no photo</key>
+	<string>no photo</string>
+	<key>photo attached</key>
+	<string>photo attached</string>
+</dict>
+</plist>

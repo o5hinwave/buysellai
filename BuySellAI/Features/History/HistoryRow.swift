@@ -1,39 +1,77 @@
 import SwiftUI
 
+enum HistoryRowLayout {
+    static let thumbnailSize: CGFloat = 56
+    static let rowMinHeight: CGFloat = 72
+    static let accessibilityRowMinHeight: CGFloat = 112
+}
+
 struct HistoryRow: View {
     let entry: HistoryEntry
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        rowContent
+            .padding(Spacing.sm)
+            .frame(minHeight: rowMinHeight)
+            .nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.74, strokeOpacity: 0.66)
+    }
+
+    @ViewBuilder
+    private var rowContent: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            accessibilityRowContent
+        } else {
+            regularRowContent
+        }
+    }
+
+    private var regularRowContent: some View {
         HStack(spacing: Spacing.md) {
             thumbnail
 
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text(entry.itemName)
-                    .brandFont(.bodyLg)
-                    .foregroundStyle(Color.brand.foreground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-
-                Text(String.localizedFormat("%@ · %@", entry.marketplace.displayName, relativeDate(entry.createdAt)))
-                    .brandFont(.caption)
-                    .foregroundStyle(Color.brand.mutedForeground)
-                    .lineLimit(1)
-            }
+            historyCopy(itemLineLimit: 1, metaLineLimit: 1)
 
             Spacer(minLength: Spacing.sm)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.brand.mutedForeground)
-                .accessibilityHidden(true)
+            chevron
         }
-        .padding(Spacing.sm)
-        .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                .stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1)
-        )
+    }
+
+    private var accessibilityRowContent: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            thumbnail
+            historyCopy(itemLineLimit: 3, metaLineLimit: 2)
+                .padding(.trailing, Spacing.lg)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottomTrailing) {
+            chevron
+        }
+    }
+
+    private func historyCopy(itemLineLimit: Int, metaLineLimit: Int) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            Text(entry.itemName)
+                .brandFont(.bodyLg)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(itemLineLimit)
+                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.leading)
+
+            Text(String.localizedFormat("%@ · %@", entry.marketplace.displayName, relativeDate(entry.createdAt)))
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .lineLimit(metaLineLimit)
+                .minimumScaleFactor(0.82)
+                .multilineTextAlignment(.leading)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .brandSymbol(.chevron)
+            .foregroundStyle(Color.brand.mutedForeground)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -42,17 +80,21 @@ struct HistoryRow: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 56, height: 56)
+                .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         } else {
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .fill(Color.brand.primaryMuted)
-                .frame(width: 56, height: 56)
+                .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
                 .overlay {
-                    Image(systemName: "photo")
+                    Image(systemName: "camera.fill")
                         .foregroundStyle(Color.brand.primaryText)
                 }
         }
+    }
+
+    private var rowMinHeight: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight
     }
 }
 

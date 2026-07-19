@@ -79,6 +79,39 @@ enum BrandTextStyle: CaseIterable, Sendable {
 
 }
 
+enum BrandSymbolStyle: Sendable {
+    case smallChevron
+    case chevron
+    case rowIcon
+    case controlIcon
+
+    var size: CGFloat {
+        switch self {
+        case .smallChevron:
+            11
+        case .chevron:
+            13
+        case .rowIcon:
+            15
+        case .controlIcon:
+            17
+        }
+    }
+
+    var weight: Font.Weight {
+        switch self {
+        case .smallChevron:
+            .bold
+        case .chevron, .rowIcon, .controlIcon:
+            .semibold
+        }
+    }
+
+    var font: Font {
+        .system(size: size, weight: weight)
+    }
+}
+
 extension Font {
     static let brandDisplay = BrandTextStyle.display.font()
     static let brandTitleXL = BrandTextStyle.titleXL.font()
@@ -94,6 +127,10 @@ extension Font {
 extension View {
     func brandFont(_ style: BrandTextStyle) -> some View {
         modifier(BrandFontModifier(style: style))
+    }
+
+    func brandSymbol(_ style: BrandSymbolStyle) -> some View {
+        font(style.font)
     }
 }
 

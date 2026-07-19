@@ -39,7 +39,7 @@ final class RemoteHistoryClientTests: XCTestCase {
               "suggested_price": 45,
               "image_thumbnail_base64": "AQID",
               "marketplace": "ebay",
-              "listing_text": "TITLE:\\nLamp"
+              "listing_text": "TITLE:\\nLamp\\n\\nDESCRIPTION:\\nLamp in good condition."
             }]
             """.utf8)
             return (response, data)
@@ -55,7 +55,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].suggestedPrice, Decimal(45))
         XCTAssertEqual(entries[0].imageThumbnail, Data([1, 2, 3]))
         XCTAssertEqual(entries[0].marketplace, .ebay)
-        XCTAssertEqual(entries[0].listingText, "TITLE:\nLamp")
+        XCTAssertEqual(entries[0].listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
     }
 
     func testFetchHistoryDeduplicatesRowsByIDKeepingNewestServerOrder() async throws {
@@ -81,7 +81,7 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "suggested_price": 45,
                 "image_thumbnail_base64": null,
                 "marketplace": "ebay",
-                "listing_text": "TITLE:\\nNewest lamp"
+                "listing_text": "TITLE:\\nNewest lamp\\n\\nDESCRIPTION:\\nNewest lamp in good condition."
               },
               {
                 "id": "\(duplicateID.uuidString)",
@@ -92,7 +92,7 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "suggested_price": 25,
                 "image_thumbnail_base64": null,
                 "marketplace": "craigslist",
-                "listing_text": "TITLE:\\nOlder lamp"
+                "listing_text": "TITLE:\\nOlder lamp\\n\\nDESCRIPTION:\\nOlder lamp in fair condition."
               },
               {
                 "id": "\(blankListingID.uuidString)",
@@ -114,7 +114,7 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "suggested_price": 30,
                 "image_thumbnail_base64": null,
                 "marketplace": "craigslist",
-                "listing_text": "TITLE:\\nChair"
+                "listing_text": "TITLE:\\nChair\\n\\nDESCRIPTION:\\nChair in fair condition."
               },
               {
                 "id": "\(blankNameID.uuidString)",
@@ -125,7 +125,7 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "suggested_price": 20,
                 "image_thumbnail_base64": null,
                 "marketplace": "ebay",
-                "listing_text": "TITLE:\\nBlank name"
+                "listing_text": "TITLE:\\nBlank name\\n\\nDESCRIPTION:\\nBlank name in good condition."
               }
             ]
             """.utf8)
@@ -158,7 +158,7 @@ final class RemoteHistoryClientTests: XCTestCase {
               "suggested_price": 55,
               "image_thumbnail_base64": null,
               "marketplace": "Facebook Marketplace",
-              "listing_text": "TITLE:\\nCoat"
+              "listing_text": "TITLE:\\nCoat\\n\\nDESCRIPTION:\\nCoat in like new condition."
             }]
             """.utf8)
             return (response, data)
@@ -185,7 +185,7 @@ final class RemoteHistoryClientTests: XCTestCase {
             suggestedPrice: Decimal(30),
             imageThumbnail: Data([4, 5, 6]),
             marketplace: .craigslist,
-            listingText: "TITLE:\nChair"
+            listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition."
         )
         let client = try makeClient { request in
             let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
@@ -208,7 +208,7 @@ final class RemoteHistoryClientTests: XCTestCase {
             XCTAssertEqual(row["suggested_price"] as? Int, 30)
             XCTAssertEqual(row["image_thumbnail_base64"] as? String, "BAUG")
             XCTAssertEqual(row["marketplace"] as? String, "craigslist")
-            XCTAssertEqual(row["listing_text"] as? String, "TITLE:\nChair")
+            XCTAssertEqual(row["listing_text"] as? String, "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition.")
 
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -220,7 +220,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
 
         try await client.upsertHistory([
-            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name"),
+            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name\n\nDESCRIPTION:\nBlank name in good condition."),
             entry,
             Self.sampleEntry(itemName: "Blank listing", listingText: "  \n\t  ")
         ], accessToken: "access-token")
@@ -290,7 +290,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
-    func testFetchHistoryNonSuccessStatusMapsToServerError() async throws {
+    func testFetchHistoryUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -303,9 +303,9 @@ final class RemoteHistoryClientTests: XCTestCase {
 
         do {
             _ = try await client.fetchHistory(accessToken: "access-token")
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(403))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 
@@ -359,7 +359,7 @@ final class RemoteHistoryClientTests: XCTestCase {
 
         try await client.upsertHistory([], accessToken: "access-token")
         try await client.upsertHistory([
-            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name"),
+            Self.sampleEntry(itemName: "  \n\t  ", listingText: "TITLE:\nBlank name\n\nDESCRIPTION:\nBlank name in good condition."),
             Self.sampleEntry(itemName: "Blank listing", listingText: "  \n\t  ")
         ], accessToken: "access-token")
     }
@@ -390,7 +390,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
-    func testUpsertHistoryNonSuccessStatusMapsToServerError() async throws {
+    func testUpsertHistoryUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let entry = Self.sampleEntry()
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
@@ -404,9 +404,9 @@ final class RemoteHistoryClientTests: XCTestCase {
 
         do {
             try await client.upsertHistory([entry], accessToken: "access-token")
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(403))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 
@@ -514,7 +514,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
-    func testDeleteHistoryNonSuccessStatusMapsToServerError() async throws {
+    func testDeleteHistoryUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -527,9 +527,9 @@ final class RemoteHistoryClientTests: XCTestCase {
 
         do {
             try await client.deleteHistory(id: UUID(), accessToken: "access-token")
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(403))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 
@@ -618,7 +618,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         }
     }
 
-    func testClearHistoryNonSuccessStatusMapsToServerError() async throws {
+    func testClearHistoryUnauthorizedStatusMapsToSessionExpiredError() async throws {
         let client = try makeClient { request in
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),
@@ -631,9 +631,9 @@ final class RemoteHistoryClientTests: XCTestCase {
 
         do {
             try await client.clearHistory(accessToken: "access-token")
-            XCTFail("Expected server error")
+            XCTFail("Expected session expired error")
         } catch {
-            XCTAssertEqual(error as? APIError, .server(403))
+            XCTAssertEqual(error as? APIError, .sessionExpired)
         }
     }
 
@@ -679,7 +679,7 @@ final class RemoteHistoryClientTests: XCTestCase {
 
     private static func sampleEntry(
         itemName: String = "Lamp",
-        listingText: String = "TITLE:\nLamp"
+        listingText: String = "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
     ) -> HistoryEntry {
         HistoryEntry(
             id: UUID(),

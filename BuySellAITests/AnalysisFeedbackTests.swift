@@ -7,11 +7,11 @@ final class AnalysisFeedbackTests: XCTestCase {
         XCTAssertEqual(AnalysisFeedback.failureNotificationType, .error)
     }
 
-    func testSnapResultStoreRoutesAnalysisCompletionThroughFeedbackHelper() throws {
+    func testSnapResultStoreRoutesTerminalAnalysisCompletionThroughFeedbackHelper() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(source.range(of: "AnalysisFeedback.performSuccess()"))
-        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "AnalysisFeedback.performFailure()").count - 1, 2)
+        XCTAssertEqual(source.components(separatedBy: "AnalysisFeedback.performSuccess()").count - 1, 1)
+        XCTAssertEqual(source.components(separatedBy: "AnalysisFeedback.performFailure()").count - 1, 1)
     }
 
     private func projectURL(_ path: String) -> URL {

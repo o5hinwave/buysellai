@@ -1,8 +1,20 @@
 import SwiftUI
 
+enum MarketplaceRowLayout {
+    static let iconSize: CGFloat = 44
+    static let payoutCircleSize: CGFloat = 56
+    static let accessibilityPayoutCircleSize: CGFloat = 64
+    static let payoutStackWidth: CGFloat = 66
+    static let deltaReservedHeight: CGFloat = 14
+    static let rowMinHeight: CGFloat = 88
+    static let accessibilityRowMinHeight: CGFloat = 128
+    static let fallbackRowMinHeight: CGFloat = 72
+    static let fallbackAccessibilityRowMinHeight: CGFloat = 112
+}
+
 struct MarketplaceIcon: View {
     let marketplace: Marketplace
-    var size: CGFloat = 44
+    var size: CGFloat = MarketplaceRowLayout.iconSize
 
     var body: some View {
         RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
@@ -24,51 +36,123 @@ struct MarketplaceRow: View {
     let estimate: MarketplaceEstimate
     let action: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         Button {
             MarketplaceSelectionFeedback.perform {
                 action()
             }
         } label: {
-            HStack(spacing: Spacing.md) {
-                MarketplaceIcon(marketplace: estimate.id)
-
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text(estimate.id.displayName)
-                        .brandFont(.bodyLg)
-                        .foregroundStyle(Color.brand.foreground)
-                        .lineLimit(1)
-
-                    Text(estimate.id.blurb.localized)
-                        .brandFont(.caption)
-                        .foregroundStyle(Color.brand.mutedForeground)
-                        .lineLimit(2)
-                }
-
-                Spacer(minLength: Spacing.sm)
-
-                VStack(spacing: 2) {
-                    Text(estimate.payout.currency())
-                        .brandFont(.caption)
-                        .foregroundStyle(Color.brand.primaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                        .frame(width: 56, height: 56)
-                        .background(Circle().stroke(Color.brand.primary, lineWidth: 1.5))
-
-                    Text(deltaText)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(estimate.deltaPct >= 0 ? Color.brand.success : Color.brand.destructive)
-                        .lineLimit(1)
-                }
-            }
-            .frame(minHeight: 72)
-            .contentShape(Rectangle())
+            rowContent
+                .padding(.vertical, Spacing.sm)
+                .frame(minHeight: rowMinHeight)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressButtonStyle())
         .accessibilityLabel(accessibilityLabel)
         .accessibilityIdentifier("MarketplaceRow.\(estimate.id.rawValue)")
         .accessibilitySortPriority(1)
+    }
+
+    @ViewBuilder
+    private var rowContent: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            accessibilityRowContent
+        } else {
+            regularRowContent
+        }
+    }
+
+    private var regularRowContent: some View {
+        HStack(spacing: Spacing.md) {
+            MarketplaceIcon(marketplace: estimate.id)
+
+            marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2)
+
+            Spacer(minLength: Spacing.sm)
+
+            VStack(spacing: Spacing.xxs) {
+                payoutCircle(size: MarketplaceRowLayout.payoutCircleSize)
+                regularDeltaLabel
+            }
+            .frame(width: MarketplaceRowLayout.payoutStackWidth)
+        }
+    }
+
+    private var accessibilityRowContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(alignment: .top, spacing: Spacing.md) {
+                MarketplaceIcon(marketplace: estimate.id)
+                marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3)
+                Spacer(minLength: 0)
+            }
+
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                payoutCircle(size: MarketplaceRowLayout.accessibilityPayoutCircleSize)
+                accessibilityDeltaLabel
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, MarketplaceRowLayout.iconSize + Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            Text(estimate.id.displayName)
+                .brandFont(.bodyLg)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(nameLineLimit)
+                .multilineTextAlignment(.leading)
+
+            Text(estimate.id.blurb.localized)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .lineLimit(blurbLineLimit)
+                .multilineTextAlignment(.leading)
+        }
+    }
+
+    private func payoutCircle(size: CGFloat) -> some View {
+        Text(estimate.payout.currency())
+            .brandFont(.caption)
+            .foregroundStyle(Color.brand.primaryText)
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .frame(width: size, height: size)
+            .background(Circle().stroke(Color.brand.primary, lineWidth: 1.5))
+    }
+
+    private var regularDeltaLabel: some View {
+        deltaLabel
+            .frame(height: MarketplaceRowLayout.deltaReservedHeight)
+    }
+
+    private var accessibilityDeltaLabel: some View {
+        deltaLabel
+            .padding(.horizontal, Spacing.sm)
+            .frame(minHeight: 44)
+            .background {
+                NativeMaterialRoundedBackground(
+                    cornerRadius: Radius.pill,
+                    tintOpacity: 0.7,
+                    strokeOpacity: 0.54
+                )
+            }
+    }
+
+    private var deltaLabel: some View {
+        Text(deltaText)
+            .brandFont(.overline)
+            .tracking(0.88)
+            .foregroundStyle(estimate.deltaPct >= 0 ? Color.brand.success : Color.brand.destructive)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+    }
+
+    private var rowMinHeight: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? MarketplaceRowLayout.accessibilityRowMinHeight : MarketplaceRowLayout.rowMinHeight
     }
 
     private var deltaText: String {
@@ -78,6 +162,93 @@ struct MarketplaceRow: View {
 
     private var accessibilityLabel: String {
         MarketplaceAccessibilityText.estimateLabel(for: estimate)
+    }
+}
+
+struct MarketplaceFallbackRow: View {
+    let marketplace: Marketplace
+    let action: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Button {
+            MarketplaceSelectionFeedback.perform {
+                action()
+            }
+        } label: {
+            rowContent
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.sm)
+                .frame(minHeight: rowMinHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressButtonStyle())
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Drafts a listing without a payout estimate".localized)
+        .accessibilityIdentifier("MarketplaceRow.\(marketplace.rawValue)")
+        .accessibilitySortPriority(1)
+    }
+
+    @ViewBuilder
+    private var rowContent: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            accessibilityRowContent
+        } else {
+            regularRowContent
+        }
+    }
+
+    private var regularRowContent: some View {
+        HStack(spacing: Spacing.md) {
+            MarketplaceIcon(marketplace: marketplace)
+            marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2)
+            Spacer(minLength: Spacing.sm)
+            chevron
+        }
+    }
+
+    private var accessibilityRowContent: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            MarketplaceIcon(marketplace: marketplace)
+            marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3)
+                .padding(.trailing, Spacing.lg)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottomTrailing) {
+            chevron
+        }
+    }
+
+    private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            Text(marketplace.displayName)
+                .brandFont(.bodyLg)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(nameLineLimit)
+                .multilineTextAlignment(.leading)
+
+            Text(marketplace.blurb.localized)
+                .brandFont(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .lineLimit(blurbLineLimit)
+                .multilineTextAlignment(.leading)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .brandSymbol(.chevron)
+            .foregroundStyle(Color.brand.mutedForeground)
+            .accessibilityHidden(true)
+    }
+
+    private var rowMinHeight: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? MarketplaceRowLayout.fallbackAccessibilityRowMinHeight : MarketplaceRowLayout.fallbackRowMinHeight
+    }
+
+    private var accessibilityLabel: String {
+        String.localizedFormat("%@, %@", marketplace.displayName, marketplace.blurb.localized)
     }
 }
 

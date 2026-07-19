@@ -5,6 +5,7 @@ struct MarketplacePickerSheet: View {
 
     @Environment(AppStore.self) private var appStore
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var estimates: [MarketplaceEstimate] = []
     @State private var didCompute = false
 
@@ -41,28 +42,44 @@ struct MarketplacePickerSheet: View {
 
                         if let best = estimates.first(where: { $0.badge == .best }),
                            let lowest = estimates.first(where: { $0.badge == .lowest }) {
-                            HStack(spacing: Spacing.sm) {
-                                SummaryButton(label: "Best", estimate: best) {
-                                    appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: best.id)
-                                }
-                                SummaryButton(label: "Lowest", estimate: lowest) {
-                                    appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: lowest.id)
-                                }
-                            }
+                            summaryActions(best: best, lowest: lowest)
                         }
                     }
                     .padding(Spacing.xl)
-                    .background(.regularMaterial)
+                    .nativeMaterialBar(tintOpacity: 0.78, showsTopDivider: false, showsBottomDivider: true)
                     .accessibilitySortPriority(3)
                 }
             }
         }
-        .background(Color.brand.background)
+        .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
+        .padding(.bottom, Spacing.xxl)
+        .background(Color.clear)
         .task {
             guard didCompute == false else { return }
             try? await Task.sleep(nanoseconds: 180_000_000)
             estimates = MarketplaceEstimator.estimates(for: context.item.priceEstimate)
             didCompute = true
+        }
+    }
+
+    @ViewBuilder
+    private func summaryActions(best: MarketplaceEstimate, lowest: MarketplaceEstimate) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: Spacing.sm) {
+                summaryButton(label: "Best", estimate: best)
+                summaryButton(label: "Lowest", estimate: lowest)
+            }
+        } else {
+            HStack(spacing: Spacing.sm) {
+                summaryButton(label: "Best", estimate: best)
+                summaryButton(label: "Lowest", estimate: lowest)
+            }
+        }
+    }
+
+    private func summaryButton(label: String, estimate: MarketplaceEstimate) -> some View {
+        SummaryButton(label: label, estimate: estimate) {
+            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: estimate.id)
         }
     }
 
@@ -82,6 +99,8 @@ struct MarketplacePickerSheet: View {
             }
         }
         .padding(.top, Spacing.md)
+        .accessibilityLabel("Computing marketplace payouts".localized)
+        .accessibilityAddTraits(.updatesFrequently)
         .accessibilitySortPriority(2)
     }
 
@@ -94,30 +113,9 @@ struct MarketplacePickerSheet: View {
                 .accessibilitySortPriority(2)
 
             ForEach(Marketplace.allCases) { marketplace in
-                Button {
-                    MarketplaceSelectionFeedback.perform {
-                        appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
-                    }
-                } label: {
-                    HStack(spacing: Spacing.md) {
-                        MarketplaceIcon(marketplace: marketplace)
-                        VStack(alignment: .leading, spacing: Spacing.xxs) {
-                            Text(marketplace.displayName)
-                                .brandFont(.bodyLg)
-                                .foregroundStyle(Color.brand.foreground)
-                            Text(marketplace.blurb.localized)
-                                .brandFont(.caption)
-                                .foregroundStyle(Color.brand.mutedForeground)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .frame(minHeight: 72)
+                MarketplaceFallbackRow(marketplace: marketplace) {
+                    appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String.localizedFormat("%@, %@", marketplace.displayName, marketplace.blurb.localized))
-                .accessibilityIdentifier("MarketplaceRow.\(marketplace.rawValue)")
-                .accessibilitySortPriority(1)
             }
         }
     }
@@ -127,7 +125,7 @@ private struct SummaryButton: View {
     let label: String
     let estimate: MarketplaceEstimate
     let action: () -> Void
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button {
@@ -140,7 +138,14 @@ private struct SummaryButton: View {
                     .foregroundStyle(label == "Best" ? Color.brand.success : Color.brand.mutedForeground)
                     .padding(.horizontal, Spacing.sm)
                     .padding(.vertical, 5)
-                    .background((label == "Best" ? Color.brand.success : Color.brand.secondary).opacity(0.14), in: Capsule())
+                    .background {
+                        NativeMaterialRoundedBackground(
+                            cornerRadius: Radius.pill,
+                            tint: label == "Best" ? Color.brand.success : Color.brand.surface,
+                            tintOpacity: label == "Best" ? 0.14 : 0.7,
+                            strokeOpacity: 0.48
+                        )
+                    }
 
                 HStack(spacing: Spacing.xs) {
                     MarketplaceIcon(marketplace: estimate.id, size: 32)
@@ -148,24 +153,27 @@ private struct SummaryButton: View {
                         Text(estimate.id.displayName)
                             .brandFont(.caption)
                             .foregroundStyle(Color.brand.foreground)
-                            .lineLimit(1)
+                            .lineLimit(summaryLineLimit)
+                            .minimumScaleFactor(0.82)
                         Text(estimate.payout.currency())
                             .brandFont(.bodyLg)
                             .foregroundStyle(Color.brand.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Spacing.md)
-            .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                    .stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1)
-            )
+            .nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(label, for: estimate))
         .accessibilityIdentifier("MarketplaceSummary.\(label.lowercased()).\(estimate.id.rawValue)")
         .accessibilitySortPriority(label == "Best" ? 2 : 1)
+    }
+
+    private var summaryLineLimit: Int {
+        dynamicTypeSize.isAccessibilitySize ? 2 : 1
     }
 }

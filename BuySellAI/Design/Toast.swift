@@ -30,7 +30,6 @@ enum ToastStyle: Equatable {
 
 struct ToastView: View {
     let toast: ToastMessage
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         HStack(spacing: Spacing.sm) {
@@ -43,8 +42,7 @@ struct ToastView: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .background(Color.brand.surfaceElevated, in: Capsule())
-        .overlay(Capsule().stroke(Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor), lineWidth: 1))
+        .nativeMaterialPill(tintOpacity: 0.78, strokeOpacity: 0.84)
         .modifier(AppShadow.hover())
         .padding(.horizontal, Spacing.lg)
         .accessibilityElement(children: .combine)

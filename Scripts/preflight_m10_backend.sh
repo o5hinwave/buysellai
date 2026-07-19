@@ -19,7 +19,7 @@ pending() {
 print_pending_and_exit() {
     printf 'M10 backend preflight pending:\n'
     printf ' - %s\n' "${pending_items[@]}"
-    printf 'Complete real Supabase config, deployed Edge Functions, and an analyze sample image, then rerun without ALLOW_MISSING_BACKEND=1.\n'
+    printf 'Complete real Supabase config, deployed schema migration, deployed Edge Functions including protected account functions, and an analyze sample image, then rerun without ALLOW_MISSING_BACKEND=1.\n'
     exit 0
 }
 
@@ -77,6 +77,7 @@ validate_listing_response() {
 
     python3 - "$response_file" <<'PY'
 import json
+import re
 import sys
 
 with open(sys.argv[1], "r", encoding="utf-8") as handle:
@@ -85,6 +86,24 @@ with open(sys.argv[1], "r", encoding="utf-8") as handle:
 listing = data.get("listing")
 if not isinstance(listing, str) or not listing.strip():
     raise SystemExit("listing is missing or blank")
+if "```" in listing:
+    raise SystemExit("listing contains markdown fences")
+preamble = listing.lstrip()[:96].lower().replace("\u2019", "'")
+if re.search(r"^here(?:'s| is)\s+(?:your\s+)?listing\s*[:\-]", preamble):
+    raise SystemExit("listing contains a generated preamble")
+title_match = re.search(r"^TITLE\s*:", listing, re.IGNORECASE | re.MULTILINE)
+if not title_match:
+    raise SystemExit("listing is missing TITLE")
+after_title = listing[title_match.end():]
+description_match = re.search(r"^DESCRIPTION\s*:", after_title, re.IGNORECASE | re.MULTILINE)
+if not description_match:
+    raise SystemExit("listing is missing DESCRIPTION")
+title_body = after_title[:description_match.start()].strip()
+description_body = after_title[description_match.end():].strip()
+if not title_body:
+    raise SystemExit("listing has empty TITLE")
+if not description_body:
+    raise SystemExit("listing has empty DESCRIPTION")
 
 print(len(listing.encode("utf-8")))
 PY
@@ -120,6 +139,111 @@ call_function() {
     fi
 
     printf '%s' "$body" > "$response_file"
+}
+
+call_rejected_function() {
+    local label="$1"
+    local url="$2"
+    local payload_file="$3"
+    local expected_status="${4:-400}"
+    local curl_output
+    local status
+
+    if ! curl_output="$(
+        curl -sS --show-error --max-time "$timeout_seconds" \
+            -X POST "$url" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $anon_key" \
+            --data-binary "@${payload_file}" \
+            -w '\n%{http_code}' \
+            2>&1
+    )"; then
+        fail "$label rejection probe failed"
+    fi
+
+    status="${curl_output##*$'\n'}"
+    if [[ "$status" == "$expected_status" ]]; then
+        return 0
+    fi
+    if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+        fail "$label accepted invalid payload; expected HTTP $expected_status"
+    fi
+    fail "$label returned HTTP $status, expected $expected_status"
+}
+
+probe_protected_function() {
+    local label="$1"
+    local url="$2"
+    local payload_file="$3"
+    local curl_output
+    local status
+
+    if ! curl_output="$(
+        curl -sS --show-error --max-time "$timeout_seconds" \
+            -X POST "$url" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $anon_key" \
+            --data-binary "@${payload_file}" \
+            -w '\n%{http_code}' \
+            2>&1
+    )"; then
+        fail "$label protected-function probe failed"
+    fi
+
+    status="${curl_output##*$'\n'}"
+
+    case "$status" in
+        401|403)
+            return 0
+            ;;
+        404)
+            fail "$label protected endpoint is not deployed"
+            ;;
+        2??)
+            fail "$label accepted an anonymous request; expected JWT protection"
+            ;;
+        *)
+            fail "$label protected-function probe returned HTTP $status, expected 401 or 403"
+            ;;
+    esac
+}
+
+probe_protected_table() {
+    local label="$1"
+    local url="$2"
+    local curl_output
+    local status
+
+    if ! curl_output="$(
+        curl -sS --show-error --max-time "$timeout_seconds" \
+            -X GET "$url" \
+            -H "Accept: application/json" \
+            -H "apikey: $anon_key" \
+            -H "Authorization: Bearer $anon_key" \
+            -w '\n%{http_code}' \
+            2>&1
+    )"; then
+        fail "$label protected-table probe failed"
+    fi
+
+    status="${curl_output##*$'\n'}"
+
+    case "$status" in
+        401|403)
+            return 0
+            ;;
+        404)
+            fail "$label protected table is not deployed"
+            ;;
+        2??)
+            fail "$label accepted an anonymous read; expected RLS/grant protection"
+            ;;
+        *)
+            fail "$label protected-table probe returned HTTP $status, expected 401 or 403"
+            ;;
+    esac
 }
 
 command -v curl >/dev/null 2>&1 || fail "curl is required"
@@ -165,10 +289,27 @@ fi
 [[ "$analyze_image_data_url" == data:image/jpeg\;base64,* ]] || fail "analyze sample must be a JPEG data URL"
 
 functions_base="${supabase_url}/functions/v1"
+rest_base="${supabase_url}/rest/v1"
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/buysell-backend-preflight.XXXXXX")"
 trap 'rm -rf "$work_dir"' EXIT
 
 printf '{"imageDataUrl":%s}\n' "$(json_string "$analyze_image_data_url")" > "$work_dir/analyze-payload.json"
+printf '{}\n' > "$work_dir/invalid-analyze-missing-image-payload.json"
+cat > "$work_dir/invalid-analyze-png-payload.json" <<'JSON'
+{
+  "imageDataUrl": "data:image/png;base64,AQID"
+}
+JSON
+cat > "$work_dir/invalid-analyze-base64-payload.json" <<'JSON'
+{
+  "imageDataUrl": "data:image/jpeg;base64,not-base64"
+}
+JSON
+cat > "$work_dir/invalid-analyze-jpeg-bytes-payload.json" <<'JSON'
+{
+  "imageDataUrl": "data:image/jpeg;base64,AQID"
+}
+JSON
 cat > "$work_dir/listing-payload.json" <<'JSON'
 {
   "item": {
@@ -181,9 +322,63 @@ cat > "$work_dir/listing-payload.json" <<'JSON'
   "platform": "ebay"
 }
 JSON
+cat > "$work_dir/invalid-listing-platform-payload.json" <<'JSON'
+{
+  "item": {
+    "name": "Vintage brass table lamp",
+    "category": "Home",
+    "condition": "good",
+    "originalPrice": 45,
+    "currentPrice": 45
+  },
+  "platform": "garage-sale"
+}
+JSON
+cat > "$work_dir/invalid-listing-category-payload.json" <<'JSON'
+{
+  "item": {
+    "name": "Vintage brass table lamp",
+    "category": "Pets",
+    "condition": "good",
+    "originalPrice": 45,
+    "currentPrice": 45
+  },
+  "platform": "ebay"
+}
+JSON
+cat > "$work_dir/invalid-listing-condition-payload.json" <<'JSON'
+{
+  "item": {
+    "name": "Vintage brass table lamp",
+    "category": "Home",
+    "condition": "broken",
+    "originalPrice": 45,
+    "currentPrice": 45
+  },
+  "platform": "ebay"
+}
+JSON
+cat > "$work_dir/store-apple-token-probe.json" <<'JSON'
+{
+  "authorization_code": "probe",
+  "apple_user_id": "probe"
+}
+JSON
+printf '{}\n' > "$work_dir/delete-account-probe.json"
 
 call_function "analyze-image" "${functions_base}/analyze-image" "$work_dir/analyze-payload.json" "$work_dir/analyze-response.json"
 call_function "generate-listing" "${functions_base}/generate-listing" "$work_dir/listing-payload.json" "$work_dir/listing-response.json"
+call_rejected_function "analyze-image missing image" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-missing-image-payload.json"
+call_rejected_function "analyze-image non-JPEG image" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-png-payload.json"
+call_rejected_function "analyze-image invalid base64" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-base64-payload.json"
+call_rejected_function "analyze-image non-JPEG bytes" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-jpeg-bytes-payload.json"
+call_rejected_function "generate-listing invalid platform" "${functions_base}/generate-listing" "$work_dir/invalid-listing-platform-payload.json"
+call_rejected_function "generate-listing invalid category" "${functions_base}/generate-listing" "$work_dir/invalid-listing-category-payload.json"
+call_rejected_function "generate-listing invalid condition" "${functions_base}/generate-listing" "$work_dir/invalid-listing-condition-payload.json"
+probe_protected_function "store-apple-token" "${functions_base}/store-apple-token" "$work_dir/store-apple-token-probe.json"
+probe_protected_function "delete-account" "${functions_base}/delete-account" "$work_dir/delete-account-probe.json"
+probe_protected_table "history" "${rest_base}/history?select=id&limit=1"
+probe_protected_table "apple_auth_tokens" "${rest_base}/apple_auth_tokens?select=user_id&limit=1"
 
 analyze_item="$(validate_analyze_response "$work_dir/analyze-response.json")" || fail "analyze-image response shape is invalid"
 listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" || fail "generate-listing response shape is invalid"
@@ -191,6 +386,12 @@ listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" |
 printf 'M10 backend preflight passed\n'
 printf 'config: %s\n' "$config_path"
 printf 'project: %s\n' "$supabase_url"
-printf 'functions: analyze-image generate-listing\n'
+printf 'schema: history apple_auth_tokens\n'
+printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
+printf 'protected functions: store-apple-token delete-account\n'
+printf 'protected tables: history apple_auth_tokens\n'
 printf 'analyze item: %s\n' "$analyze_item"
+printf 'analyze rejection contract: missing jpeg base64\n'
+printf 'listing contract: title-description-plain-text\n'
+printf 'listing rejection contract: platform category condition\n'
 printf 'listing bytes: %s\n' "$listing_bytes"

@@ -8,7 +8,12 @@ final class APIErrorTests: XCTestCase {
         XCTAssertEqual(APIError.rateLimited.localizedDescription, "Too many tries right now. Give it a minute.")
         XCTAssertEqual(APIError.server(500).localizedDescription, "BuySell is having trouble. Try again.")
         XCTAssertEqual(APIError.decoding.localizedDescription, "BuySell got an answer it couldn't read.")
-        XCTAssertEqual(APIError.notConfigured.localizedDescription, "Backend is not configured yet.")
+        XCTAssertEqual(APIError.notConfigured.localizedDescription, "BuySell isn't ready yet. Try again later.")
+        XCTAssertEqual(APIError.sessionExpired.localizedDescription, "Sign in again to continue.")
+        XCTAssertEqual(
+            APIError.accountAlreadyLinked.localizedDescription,
+            "That Apple account is already linked to another BuySell account."
+        )
         XCTAssertEqual(APIError.unknown.localizedDescription, "Something went wrong. Try again.")
     }
 
@@ -37,5 +42,22 @@ final class APIErrorTests: XCTestCase {
         XCTAssertEqual(APIError.mapTransport(URLError(.badURL)), .unknown)
         XCTAssertEqual(APIError.mapTransport(APIError.rateLimited), .rateLimited)
         XCTAssertEqual(APIError.mapTransport(NSError(domain: "Test", code: 1)), .unknown)
+    }
+
+    func testCancellationDetectionCoversTaskAndURLSessionCancellation() {
+        XCTAssertTrue(APIError.isCancellation(CancellationError()))
+        XCTAssertTrue(APIError.isCancellation(URLError(.cancelled)))
+        XCTAssertFalse(APIError.isCancellation(URLError(.timedOut)))
+        XCTAssertFalse(APIError.isCancellation(APIError.timeout))
+    }
+
+    func testRethrowCancellationPreservesSilentCancellationErrors() {
+        XCTAssertThrowsError(try APIError.rethrowCancellation(CancellationError())) { error in
+            XCTAssertTrue(error is CancellationError)
+        }
+        XCTAssertThrowsError(try APIError.rethrowCancellation(URLError(.cancelled))) { error in
+            XCTAssertTrue(error is CancellationError)
+        }
+        XCTAssertNoThrow(try APIError.rethrowCancellation(APIError.timeout))
     }
 }

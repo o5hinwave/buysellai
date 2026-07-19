@@ -4,10 +4,11 @@ set -euo pipefail
 allow_missing_device="${ALLOW_MISSING_DEVICE:-0}"
 device_identifier="${DEVICE_ID:-}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
+snapshot_root="${M10_REAL_DEVICE_SNAPSHOT_ROOT:-}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "${script_dir}/.." && pwd)"
-project_path="${repo_root}/BuySellAI.xcodeproj"
+source_root="$(cd "${script_dir}/.." && pwd)"
+work_root="$source_root"
 device_json="$(mktemp "${TMPDIR:-/tmp}/buysell-devices.XXXXXX")"
 built_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-real-device-entitlements.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
@@ -20,6 +21,52 @@ trap cleanup EXIT
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
+}
+
+prepare_snapshot() {
+    local target="$1"
+    local parent
+    local name
+    local -a entries
+
+    [[ -n "$target" ]] || return 0
+
+    parent="$(dirname "$target")"
+    name="$(basename "$target")"
+    mkdir -p "$parent"
+    parent="$(cd "$parent" && pwd -P)"
+    target="${parent}/${name}"
+
+    case "$target" in
+        /tmp/*|/private/tmp/*) ;;
+        *) fail "M10_REAL_DEVICE_SNAPSHOT_ROOT must be under /tmp" ;;
+    esac
+    [[ "$target" != "$source_root" ]] || fail "M10_REAL_DEVICE_SNAPSHOT_ROOT must not point at the source checkout"
+
+    rm -rf "$target"
+    mkdir -p "$target"
+
+    entries=(
+        "BuySellAI"
+        "BuySellAI.xcodeproj"
+        "BuySellAITests"
+        "BuySellAIUITests"
+        "Scripts"
+        "supabase"
+        "AppStoreAssets"
+        "M10_ACCEPTANCE.md"
+        "M10_APP_STORE_METADATA.md"
+        "M10_INSTRUMENTS.md"
+        "README.md"
+        ".gitignore"
+    )
+
+    for entry in "${entries[@]}"; do
+        rsync -a "${source_root}/${entry}" "$target/"
+    done
+
+    work_root="$target"
+    snapshot_root="$target"
 }
 
 setting() {
@@ -50,6 +97,9 @@ team_build_setting=""
 if [[ -n "$m10_development_team" ]]; then
     team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
 fi
+
+prepare_snapshot "$snapshot_root"
+project_path="${work_root}/BuySellAI.xcodeproj"
 
 is_ios_device() {
     local summary="$1"
@@ -109,6 +159,9 @@ fi
 if [[ -z "$device_identifier" ]]; then
     if [[ "$allow_missing_device" == "1" ]]; then
         printf 'M10 real-device preflight pending: no connected iPhone or iPad was found by devicectl\n'
+        if [[ -n "$snapshot_root" ]]; then
+            printf 'snapshot root: %s\n' "$snapshot_root"
+        fi
         printf 'Connect a trusted device with Developer Mode enabled, then rerun without ALLOW_MISSING_DEVICE=1.\n'
         exit 0
     fi
@@ -167,6 +220,9 @@ printf 'M10 real-device preflight passed\n'
 printf 'device: %s (%s)\n' "${device_name:-Connected device}" "$device_identifier"
 printf 'device name: %s\n' "${device_name:-Connected device}"
 printf 'device id: %s\n' "$device_identifier"
+if [[ -n "$snapshot_root" ]]; then
+    printf 'snapshot root: %s\n' "$snapshot_root"
+fi
 printf 'app: %s\n' "$built_app_path"
 printf 'bundle id: %s\n' "$built_bundle_id"
 printf 'sign in with apple: %s\n' "$built_sign_in_with_apple"

@@ -54,6 +54,28 @@ is_placeholder() {
     return 1
 }
 
+is_generic_evidence() {
+    local value="$1"
+    local normalized
+
+    normalized="$(tr '[:upper:]' '[:lower:]' <<< "$value")"
+    normalized="$(
+        sed -E '
+            s/^[[:space:]]+|[[:space:]]+$//g
+            s/[[:punct:]]+/ /g
+            s/[[:space:]]+/ /g
+            s/^[[:space:]]+|[[:space:]]+$//g
+        ' <<< "$normalized"
+    )"
+
+    case "$normalized" in
+        "pass"|"passed"|"tested"|"verified"|"done"|"works"|"ok"|"okay"|"all good"|"looks good"|"complete"|"completed")
+            return 0
+            ;;
+    esac
+    return 1
+}
+
 numeric_value() {
     awk '
         match($0, /[0-9]+([.][0-9]+)?/) {
@@ -340,6 +362,8 @@ for index in "${!required_ids[@]}"; do
 
     if is_placeholder "$evidence"; then
         pending_items+=("$id evidence is not recorded")
+    elif is_generic_evidence "$evidence"; then
+        pending_items+=("$id evidence is too generic; cite observed proof instead of a pass note")
     fi
 done
 

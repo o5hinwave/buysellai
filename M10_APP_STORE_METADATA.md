@@ -1,90 +1,87 @@
 # M10 App Store Metadata Evidence
 
-This file records the App Store Connect metadata that must be ready before final submission. It is separate from the signed binary checks: the archive can validate while the product page, app privacy answers, screenshots, support URL, account-owner legal confirmation, and review notes are still incomplete.
+This file records the App Store Connect product-page, privacy, accessibility, screenshot, review, and legal fields that must be complete before BuySell AI can be submitted. It intentionally keeps owner/legal-only fields pending until the App Store Connect account owner confirms them.
 
-Every required field below must be concrete before `Scripts/verify_m10_app_store_metadata.sh` can pass. Do not replace `TBD` with generic "passed" notes, and do not leave assumption/pending/confirm-before-submission wording in legal fields. Filled-in Support URL and Privacy Policy URL values must be public HTTPS pages reachable without authentication.
-
-## Required App Information
+## App Store Connect metadata
 
 | Field | Value |
 | --- | --- |
 | App name | BuySell AI |
 | Bundle ID | com.rhodes.buysellai |
+| Version number | 1.0 |
 | SKU | buysell-ai-ios |
 | Primary language | English (U.S.) |
 | Primary category | Shopping |
-| Secondary category | Lifestyle |
-| Age rating | 4+ (No objectionable content; camera/listing utility.) |
+| Subtitle | Sell anything in three taps |
 | Made for Kids | No |
-| DSA trader status | Not a trader (assumption: individual App Store account owner is not acting as a business for this app; confirm in App Store Connect before submission.) |
-| Account owner legal confirmation | Pending - App Store Connect account owner must confirm DSA trader status, copyright, age rating, and export compliance before final submission. |
-| License agreement | Apple Standard EULA |
-
-## Version Metadata
-
-| Field | Value |
-| --- | --- |
-| Version number | 1.0 |
-| Copyright | 2026 Rhodes |
-| Subtitle | Snap. Pick. Sell. |
-| Promotional text | Turn stuff into cash in three taps. |
-| Description | Snap a photo of anything you want to sell. BuySell AI identifies the item, estimates a fair price, ranks common marketplaces, and writes a copy-ready listing you can paste into the marketplace you choose. Sign-in is optional, and guest history stays on device. |
-| Keywords | resale,garage sale,marketplace,camera,listings,declutter |
+| License agreement | Apple's standard End User License Agreement |
+| Copyright | Pending - App Store Connect account owner must confirm the exact copyright holder before final submission. |
+| Content rights | Pending - App Store Connect account owner must confirm copyright and third-party content rights before submission. |
+| Age rating | Pending - proposed 4+ based on current app content, but the App Store Connect account owner must complete the age rating questionnaire before final submission. |
+| Export compliance | Pending - proposed answer: `ITSAppUsesNonExemptEncryption=false`; the app uses standard HTTPS to Supabase endpoints and the App Store Connect account owner must confirm export compliance before final submission. |
+| DSA trader status | Pending - App Store Connect account owner must confirm Digital Services Act trader status before submission. |
+| Account owner legal confirmation | Pending - App Store Connect account owner must confirm copyright, age rating, export compliance, DSA trader status, privacy answers, and review contact ownership before final submission. |
+| Keywords | sell,resale,marketplace,listing,camera,declutter,garage,used |
+| Promotional text | Snap a photo, pick a marketplace, and copy a ready-to-post listing. |
+| Description | BuySell AI helps people sell one thing quickly. Snap a photo, confirm the item and price, choose where to sell, then copy a polished listing for the marketplace you picked. |
+| App Review notes | BuySell supports guest use and Sign in with Apple. Launch the app, choose the guest path if prompted, grant Camera permission, tap Snap to sell, capture an item, confirm the result, choose a marketplace, and copy the listing. Supabase Edge Functions provide item analysis and listing generation when `Config.plist` points at the production Supabase project. |
 | Support URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/support |
-| Marketing URL | N/A |
 | Privacy Policy URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy |
-| Screenshots | iPhone screenshot evidence captured on iPhone 16 Pro simulator, iOS 18.6: `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png`. |
-| App Review notes | Reviewer path: launch BuySell AI, continue as a guest if prompted, grant camera access, capture a household item, choose a marketplace, review the generated listing, and copy the result. Sign in with Apple is optional for account history. Supabase Edge Functions provide item analysis and listing generation; no demo credentials are required for the guest flow. |
+| Accessibility URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/accessibility |
+| Terms URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/terms |
+| Marketing URL | https://buysell-ai-support.o5hinwavve.chatgpt.site |
 
-## Screenshot Evidence
+## Screenshots
 
 | Field | Value |
 | --- | --- |
-| Device | iPhone 16 Pro simulator |
-| iOS | 18.6 |
-| Dimensions | 1206 x 2622 PNG |
-| Files | `AppStoreAssets/Screenshots/iPhone-16-Pro/01-home.png`, `02-result.png`, `03-marketplaces.png`, `04-listing.png` |
-| Capture test | `BuySellAIUITests/BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured` |
-| Result bundle | `/tmp/buysell-submit-readiness-full.xcresult` |
-| Result | Passed as part of the retained full simulator suite `/tmp/buysell-submit-readiness-full.xcresult` with 338 tests and 0 failures on 2026-07-17; standalone screenshot bundle `/tmp/buysell-m10-screenshots.xcresult` is also retained. |
+| Screenshots | AppStoreAssets/Screenshots/iPhone-16-Pro-Max/01-home.png, AppStoreAssets/Screenshots/iPhone-16-Pro-Max/02-result.png, AppStoreAssets/Screenshots/iPhone-16-Pro-Max/03-marketplaces.png, AppStoreAssets/Screenshots/iPhone-16-Pro-Max/04-listing.png, AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/01-home.png, AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/02-result.png, AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/03-marketplaces.png, AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/04-listing.png |
+| Screenshot sets | iPhone 6.9, iPad 13 |
+| iPhone 6.9 screenshot directory | AppStoreAssets/Screenshots/iPhone-16-Pro-Max/ |
+| iPad 13 screenshot directory | AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/ |
+| Screenshot dimensions | iPhone 6.9 1320x2868; iPad 13 2064x2752 |
+| Screenshot files | 8 |
+| Screenshot quality | No blank or dark-strip artifacts; warm orange brand signal present. |
+| Screenshot brand signal | warm orange present |
+| iPhone 6.9 result bundle | /tmp/buysell-m10-screenshots-iphone-16-pro-max.xcresult |
+| iPad 13 result bundle | /tmp/buysell-m10-screenshots-ipad-pro-13.xcresult |
+| Screenshot result bundle | /tmp/buysell-submit-readiness-full.xcresult |
+| Screenshot capture test | BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured() |
 
-## App Privacy Answers
+## App Privacy Data Types
 
 | Field | Value |
 | --- | --- |
-| Privacy Policy URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy |
 | App privacy data types | Email Address, User ID, Photos or Videos, Other User Content |
+| Tracking | No tracking. No tracking domains are declared in `PrivacyInfo.xcprivacy`. |
+| Data use | App functionality only. Images are sent to Supabase Edge Functions for item analysis, and listing text/history are used to provide and sync the selling flow. |
+| Linked to user | User ID and synced history are linked only after optional sign-in. Guest usage remains local unless the person signs in. |
 | Data linked to user | Yes |
 | Data used for tracking | No |
 | Tracking domains | None |
 | Data use purpose | App Functionality |
-| User privacy choices URL | N/A |
-| Account deletion | Yes, Settings -> Danger zone -> Delete account calls the delete-account Edge Function. |
-| Export compliance | ITSAppUsesNonExemptEncryption=false; app uses only standard HTTPS/TLS. |
+| Account deletion | Delete account is available in Settings for signed-in accounts, with a typed confirmation before the backend delete-account function is called. |
+| Third-party advertising | None |
 
-## Support And Privacy Site Evidence
+## Accessibility Nutrition Labels
 
 | Field | Value |
 | --- | --- |
-| Sites project ID | appgprj_6a590c444ddc819199896a5205d985d8 |
-| Saved version | appgprj_6a590c444ddc819199896a5205d985d8~appgver_eba3c742747c8191ae3e04479bd74453 |
-| Version number | 3 |
-| Source commit | 2cbaf9521ecb2848d4ef9c321670dc8968055f34 |
-| Source path | AppStoreSite |
-| Local verification | `npm test`; `npm run lint` |
-| Deployment status | Sites deployment appgdep_6a592201306c81919134801e11be8f2c succeeded at https://buysell-ai-support.o5hinwavve.chatgpt.site; site access changed to public on 2026-07-16. |
-| Public App Store URL status | Verified 2026-07-16: unauthenticated `curl -L` requests return HTTP 200 for `/support`, `/privacy`, and `/terms`. |
+| Accessibility labels | iPhone and iPad Accessibility Nutrition Labels: VoiceOver, Larger Text, Dark Interface, Sufficient Contrast, Reduced Motion, and Differentiate Without Color are covered across Home, Camera, Snap Result, Marketplace Picker, Listing, Auth, Settings, and destructive actions. |
+| Accessibility common tasks | First launch, optional sign in, guest flow, snap with camera, review result, choose marketplace, copy listing, reopen history, delete account history, manage settings, and delete account. |
+| Accessibility evidence | VoiceOver, Dynamic Type, dark mode, contrast, Reduce Motion, Differentiate Without Color, Bold Text, Reduce Transparency, and 44-point tap-target guardrails are recorded in `M10_ACCEPTANCE.md` and simulator result bundles. |
+| Accessibility URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/accessibility |
+| Claimed features | VoiceOver, Larger Text, Reduced Motion, Bold Text, Reduce Transparency |
+| Common tasks | Launch, continue as guest, snap an item, confirm the result, choose a marketplace, copy listing text, reopen history, delete history, and manage settings. |
+| Exclusions | Voice Control is intentionally excluded until a real-device Voice Control pass is recorded. |
 
-## Commands
+## Verification
 
-Verify this file before final submission:
-
-```sh
-bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
-```
-
-Until the App Store Connect metadata, screenshots, URLs, and account-owner answers are complete, record the known blocker:
+Run the metadata verifier with pending mode while account-owner legal fields remain incomplete:
 
 ```sh
-ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
+ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md \
+  | tee /tmp/buysell-submit-readiness-app-store-metadata.log
 ```
+
+The verifier intentionally keeps metadata pending until the account owner confirms DSA trader status, copyright, age rating, export compliance, review contact ownership, privacy answers, and final App Store Connect legal fields.

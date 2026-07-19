@@ -26,7 +26,7 @@ final class AppStoreMigrationTests: XCTestCase {
                 suggestedPrice: Decimal(45),
                 imageThumbnail: Data([1, 2, 3]),
                 marketplace: .ebay,
-                listingText: "TITLE:\nLamp"
+                listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
             ),
             HistoryEntry(
                 id: secondID,
@@ -37,7 +37,7 @@ final class AppStoreMigrationTests: XCTestCase {
                 suggestedPrice: Decimal(30),
                 imageThumbnail: nil,
                 marketplace: .craigslist,
-                listingText: "TITLE:\nChair"
+                listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition."
             ),
             HistoryEntry(
                 id: blankListingID,
@@ -59,7 +59,7 @@ final class AppStoreMigrationTests: XCTestCase {
                 suggestedPrice: Decimal(10),
                 imageThumbnail: nil,
                 marketplace: .ebay,
-                listingText: "TITLE:\nBlank name"
+                listingText: "TITLE:\nBlank name\n\nDESCRIPTION:\nBlank name in good condition."
             )
         ]
         let context = try makeModelContext()
@@ -125,7 +125,7 @@ final class AppStoreMigrationTests: XCTestCase {
             suggestedPrice: Decimal(45),
             imageThumbnail: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nGuest lamp"
+            listingText: "TITLE:\nGuest lamp\n\nDESCRIPTION:\nGuest lamp in good condition."
         )
         let context = try makeModelContext()
         context.insert(HistoryEntryModel(entry: entry))
@@ -189,7 +189,7 @@ final class AppStoreMigrationTests: XCTestCase {
             suggestedPrice: Decimal(45),
             imageThumbnail: nil,
             marketplace: .ebay,
-            listingText: "TITLE:\nGuest lamp"
+            listingText: "TITLE:\nGuest lamp\n\nDESCRIPTION:\nGuest lamp in good condition."
         )
         let context = try makeModelContext()
         context.insert(HistoryEntryModel(entry: entry))
@@ -242,7 +242,7 @@ final class AppStoreMigrationTests: XCTestCase {
             suggestedPrice: Decimal(30),
             imageThumbnail: nil,
             marketplace: .craigslist,
-            listingText: "TITLE:\nGuest chair"
+            listingText: "TITLE:\nGuest chair\n\nDESCRIPTION:\nGuest chair in fair condition."
         )
         let context = try makeModelContext()
         context.insert(HistoryEntryModel(entry: entry))
@@ -287,6 +287,80 @@ final class AppStoreMigrationTests: XCTestCase {
         XCTAssertEqual(store.toast?.text, APIError.timeout.localizedDescription)
     }
 
+    func testSetSessionRefreshesBeforeMigratingGuestHistoryWhenOnlyRefreshTokenIsAvailable() async throws {
+        let entry = HistoryEntry(
+            id: try XCTUnwrap(UUID(uuidString: "34343434-3434-3434-3434-343434343434")),
+            createdAt: try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-07-18T18:00:00Z")),
+            itemName: "Guest book",
+            category: .books,
+            condition: .good,
+            suggestedPrice: Decimal(8),
+            imageThumbnail: Data([3, 4, 5]),
+            marketplace: .craigslist,
+            listingText: "TITLE:\nGuest book\n\nDESCRIPTION:\nGuest book in good condition."
+        )
+        let context = try makeModelContext()
+        context.insert(HistoryEntryModel(entry: entry))
+        try context.save()
+
+        var requestPaths: [String] = []
+        var upsertedAuthorization: String?
+        var fetchedAuthorization: String?
+        let store = try makeStoreWithAuthRefresh { request in
+            let url = try XCTUnwrap(request.url)
+            let method = request.httpMethod ?? ""
+            requestPaths.append(url.path)
+
+            switch (url.path, method) {
+            case ("/auth/v1/token", "POST"):
+                let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+                XCTAssertEqual(components.queryItems?.first(where: { $0.name == "grant_type" })?.value, "refresh_token")
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                XCTAssertEqual(json["refresh_token"] as? String, "refresh-only-token")
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+                return (
+                    response,
+                    Data(#"{"access_token":"fresh-access","refresh_token":"fresh-refresh","user":{"id":"user-123","email":"person@example.com"}}"#.utf8)
+                )
+            case ("/rest/v1/history", "POST"):
+                upsertedAuthorization = request.value(forHTTPHeaderField: "Authorization")
+                let body = try XCTUnwrap(Self.bodyData(from: request))
+                let rows = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [[String: Any]])
+                XCTAssertEqual(rows.compactMap { $0["id"] as? String }, [entry.id.uuidString])
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 204, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            case ("/rest/v1/history", "GET"):
+                fetchedAuthorization = request.value(forHTTPHeaderField: "Authorization")
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+                return (response, Self.remoteRows(for: [entry]))
+            default:
+                XCTFail("Unexpected request: \(method) \(url.path)")
+                let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil))
+                return (response, Data())
+            }
+        }
+        store.configure(modelContext: context)
+
+        let session = AuthSession(
+            userID: "user-123",
+            email: "person@example.com",
+            accessToken: nil,
+            refreshToken: "refresh-only-token"
+        )
+
+        await store.setSession(session)
+
+        XCTAssertEqual(requestPaths, ["/auth/v1/token", "/rest/v1/history", "/rest/v1/history"])
+        XCTAssertEqual(upsertedAuthorization, "Bearer fresh-access")
+        XCTAssertEqual(fetchedAuthorization, "Bearer fresh-access")
+        XCTAssertEqual(store.session?.accessToken, "fresh-access")
+        XCTAssertEqual(store.session?.refreshToken, "fresh-refresh")
+        XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertTrue(try context.fetch(FetchDescriptor<HistoryEntryModel>()).isEmpty)
+        XCTAssertEqual(store.toast?.text, "Signed in. Listings synced.")
+    }
+
     private func makeModelContext() throws -> ModelContext {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: HistoryEntryModel.self, configurations: configuration)
@@ -303,6 +377,29 @@ final class AppStoreMigrationTests: XCTestCase {
         let url = try XCTUnwrap(URL(string: "https://example.supabase.co"))
         let config = AppConfig(supabaseURL: url, anonKey: "anon-test-key")
         return RemoteHistoryClient(session: session, config: config)
+    }
+
+    private func makeStoreWithAuthRefresh(
+        handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)
+    ) throws -> AppStore {
+        AppStoreMigrationMockURLProtocol.handler = handler
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [AppStoreMigrationMockURLProtocol.self]
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 20
+        let session = URLSession(configuration: configuration)
+        let url = try XCTUnwrap(URL(string: "https://example.supabase.co"))
+        let config = AppConfig(supabaseURL: url, anonKey: "anon-test-key")
+        let remoteHistoryClient = RemoteHistoryClient(session: session, config: config)
+        let authClient = SupabaseAuthClient(session: session, config: config)
+        let suiteName = "AppStoreMigrationRefreshTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        return AppStore(
+            defaults: defaults,
+            remoteHistoryClient: remoteHistoryClient,
+            supabaseAuthClient: authClient
+        )
     }
 
     private static func remoteRows(for entries: [HistoryEntry]) -> Data {

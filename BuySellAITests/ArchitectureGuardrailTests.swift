@@ -80,7 +80,7 @@ final class ArchitectureGuardrailTests: XCTestCase {
         ]
 
         try assertNoMatches(patterns, in: appTextFiles())
-        try assertNoSellerReferencesExceptAllowedMarketplaceBlurbs()
+        try assertNoSellerReferences()
     }
 
     func testTutorialKeepsKeyboardNavigationSupport() throws {
@@ -93,7 +93,18 @@ final class ArchitectureGuardrailTests: XCTestCase {
     }
 
     func testAppSourcesDoNotForceUnwrap() throws {
-        try assertNoMatches([#"[A-Za-z0-9_\)\]]!"#], in: appSwiftFiles())
+        let patterns = [
+            #"[A-Za-z0-9_\)\]]!"#,
+            #"\btry\s*!"#,
+            #"\bas\s*!"#,
+            #"\bfatalError\s*\("#,
+            #"\bpreconditionFailure\s*\("#,
+            #"\bassertionFailure\s*\("#,
+            #"\bprecondition\s*\("#,
+            #"\bassert\s*\("#
+        ]
+
+        try assertNoMatches(patterns, in: appSwiftFiles())
     }
 
     func testSwiftUIColorUsageRoutesPureBlackAndWhiteThroughTokens() throws {
@@ -101,7 +112,15 @@ final class ArchitectureGuardrailTests: XCTestCase {
             #"\bColor\.black\b"#,
             #"\bColor\.white\b"#,
             #"\bColor\s*=\s*\.black\b"#,
-            #"\bColor\s*=\s*\.white\b"#
+            #"\bColor\s*=\s*\.white\b"#,
+            #"\.foregroundStyle\(\s*\.(black|white)\b"#,
+            #"\.foregroundColor\(\s*\.(black|white)\b"#,
+            #"\.background\(\s*\.(black|white)\b"#,
+            #"\.fill\(\s*\.(black|white)\b"#,
+            #"\.stroke\(\s*\.(black|white)\b"#,
+            #"\.tint\(\s*\.(black|white)\b"#,
+            #"\.shadow\(color:\s*\.(black|white)\b"#,
+            #"\bUIColor\.(black|white)\b"#
         ]
 
         try assertNoMatches(patterns, in: appSwiftFiles())
@@ -139,6 +158,54 @@ final class ArchitectureGuardrailTests: XCTestCase {
         }
     }
 
+    func testLaunchArgumentHooksAreDebugOnlyAndCentralized() throws {
+        let helperURL = projectURL("BuySellAI/App/LaunchArguments.swift")
+        let helper = try String(contentsOf: helperURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: helperURL.path))
+        XCTAssertNotNil(helper.range(of: "#if DEBUG"))
+        XCTAssertNotNil(helper.range(of: "ProcessInfo.processInfo.arguments.contains(argument)"))
+        XCTAssertNotNil(helper.range(of: "#else"))
+        XCTAssertNotNil(helper.range(of: "false"))
+        XCTAssertNotNil(helper.range(of: "static var isUITesting"))
+        XCTAssertNotNil(helper.range(of: "--ui-testing"))
+        XCTAssertNotNil(helper.range(of: "--reset-auth"))
+        XCTAssertNotNil(helper.range(of: "--seed-history"))
+
+        for sourceFile in try appSwiftFiles() where sourceFile.lastPathComponent != "LaunchArguments.swift" {
+            let text = try String(contentsOf: sourceFile, encoding: .utf8)
+            XCTAssertNil(
+                text.range(of: "ProcessInfo.processInfo.arguments.contains"),
+                "\(relativePath(sourceFile)) should route launch argument hooks through LaunchArguments"
+            )
+        }
+    }
+
+    func testLocalSourceTypecheckScriptCoversAppUnitAndUITestSources() throws {
+        let scriptURL = projectURL("Scripts/typecheck_local_sources.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertNotNil(script.range(of: "xcrun --sdk iphonesimulator --show-sdk-path"))
+        XCTAssertNotNil(script.range(of: "xcode-select -p"))
+        XCTAssertNotNil(script.range(of: "Platforms/iPhoneSimulator.platform/Developer"))
+        XCTAssertNotNil(script.range(of: "BUYSELL_TYPECHECK_MODULE_DIR"))
+        XCTAssertNotNil(script.range(of: "BUYSELL_TYPECHECK_MODULE_DIR must be absolute"))
+        XCTAssertNotNil(script.range(of: "BUYSELL_TYPECHECK_MODULE_DIR must be outside the repository"))
+        XCTAssertNotNil(script.range(of: "BUYSELL_TYPECHECK_TARGET"))
+        XCTAssertNotNil(script.range(of: "arm64-apple-ios17.0-simulator"))
+        XCTAssertNotNil(script.range(of: "rg --files BuySellAI -g '*.swift'"))
+        XCTAssertNotNil(script.range(of: "rg --files BuySellAITests -g '*.swift'"))
+        XCTAssertNotNil(script.range(of: "rg --files BuySellAIUITests -g '*.swift'"))
+        XCTAssertNotNil(script.range(of: "-emit-module"))
+        XCTAssertNotNil(script.range(of: "-module-name BuySellAI"))
+        XCTAssertNotNil(script.range(of: "-enable-testing"))
+        XCTAssertNotNil(script.range(of: "-F \"${simulator_developer_dir}/Library/Frameworks\""))
+        XCTAssertNotNil(script.range(of: "-I \"${simulator_developer_dir}/usr/lib\""))
+        XCTAssertNotNil(script.range(of: "BuySellAI local source typecheck passed"))
+        XCTAssertNotNil(script.range(of: "sources: app unit ui"))
+    }
+
     private func assertNoMatches(
         _ patterns: [String],
         in files: [URL],
@@ -158,22 +225,15 @@ final class ArchitectureGuardrailTests: XCTestCase {
         }
     }
 
-    private func assertNoSellerReferencesExceptAllowedMarketplaceBlurbs(
+    private func assertNoSellerReferences(
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
-        let allowedPhrases = [
-            "Fashion, no seller fees",
-            "Amazon seller — high reach, high fee"
-        ]
         for sourceFile in try appTextFiles() {
-            let sourceText = try String(contentsOf: sourceFile, encoding: .utf8)
-            let text = allowedPhrases.reduce(sourceText) { partial, phrase in
-                partial.replacingOccurrences(of: phrase, with: "")
-            }
+            let text = try String(contentsOf: sourceFile, encoding: .utf8)
             XCTAssertNil(
                 text.range(of: #"\b[Ss]eller\b"#, options: .regularExpression),
-                "\(relativePath(sourceFile)) contains a user-facing seller reference outside the allowed marketplace blurbs",
+                "\(relativePath(sourceFile)) contains a user-facing seller reference",
                 file: file,
                 line: line
             )

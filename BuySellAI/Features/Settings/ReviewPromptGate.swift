@@ -8,11 +8,11 @@ struct ReviewPromptGate {
         self.defaults = defaults
     }
 
-    func shouldRequestReview(for version: String) -> Bool {
-        guard defaults.string(forKey: key) != version else {
-            return false
-        }
+    func canRequestReview(for version: String) -> Bool {
+        defaults.string(forKey: key) != version
+    }
+
+    func markReviewRequested(for version: String) {
         defaults.set(version, forKey: key)
-        return true
     }
 }

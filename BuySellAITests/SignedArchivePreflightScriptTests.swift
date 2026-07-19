@@ -16,6 +16,12 @@ final class SignedArchivePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"setting DEVELOPMENT_TEAM"#))
         XCTAssertNotNil(script.range(of: "DEVELOPMENT_TEAM is unset"))
         XCTAssertNotNil(script.range(of: "M10_DEVELOPMENT_TEAM"))
+        XCTAssertNotNil(script.range(of: "M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT"))
+        XCTAssertNotNil(script.range(of: "prepare_snapshot"))
+        XCTAssertNotNil(script.range(of: #"M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT must be under /tmp"#))
+        XCTAssertNotNil(script.range(of: #"M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT must not point at the source checkout"#))
+        XCTAssertNotNil(script.range(of: #"rsync -a "${source_root}/${entry}" "$target/""#))
+        XCTAssertNotNil(script.range(of: #"project_path="${work_root}/BuySellAI.xcodeproj""#))
         XCTAssertNotNil(script.range(of: "team_build_setting"))
         XCTAssertNotNil(script.range(of: #"DEVELOPMENT_TEAM=${m10_development_team}"#))
         XCTAssertNotNil(script.range(of: "Set M10_DEVELOPMENT_TEAM"))
@@ -27,6 +33,7 @@ final class SignedArchivePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "bundle id:"))
+        XCTAssertNotNil(script.range(of: "snapshot root:"))
         XCTAssertNotNil(script.range(of: "release build:"))
     }
 
@@ -49,7 +56,11 @@ final class SignedArchivePreflightScriptTests: XCTestCase {
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
         XCTAssertNotNil(readme.range(of: "Scripts/preflight_m10_signed_archive.sh"))
+        XCTAssertNotNil(readme.range(of: "M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT=/tmp/buysell-m10-signed-worktree"))
+        XCTAssertNotNil(readme.range(of: "/tmp/buysell-submit-readiness-signed-preflight.log"))
         XCTAssertNotNil(m10.range(of: "Scripts/preflight_m10_signed_archive.sh"))
+        XCTAssertNotNil(m10.range(of: "M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT=/tmp/buysell-m10-signed-worktree"))
+        XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-signed-preflight.log"))
         XCTAssertNotNil(m10.range(of: "ALLOW_MISSING_TEAM=1"))
         XCTAssertNotNil(m10.range(of: "without `ALLOW_MISSING_TEAM=1`"))
     }

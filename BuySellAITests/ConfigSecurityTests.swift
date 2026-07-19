@@ -144,6 +144,18 @@ final class ConfigSecurityTests: XCTestCase {
         }
     }
 
+    func testRuntimeConfigLoadMapsMalformedPlistReadsToNotConfigured() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/App/Config.swift"), encoding: .utf8)
+        let loadRange = try XCTUnwrap(source.range(of: "static func load() throws -> AppConfig"))
+        let makeRange = try XCTUnwrap(source.range(of: "static func make(dictionary:", range: loadRange.upperBound..<source.endIndex))
+        let loadSource = String(source[loadRange.lowerBound..<makeRange.lowerBound])
+
+        XCTAssertNotNil(loadSource.range(of: "do {"))
+        XCTAssertNotNil(loadSource.range(of: "catch let error as APIError"))
+        XCTAssertNotNil(loadSource.range(of: "throw error"))
+        XCTAssertNotNil(loadSource.range(of: "catch {\n            throw APIError.notConfigured\n        }"))
+    }
+
     func testRuntimeConfigPlistIsGitIgnored() throws {
         let gitignore = try String(contentsOf: projectURL(".gitignore"), encoding: .utf8)
         let ignoredPaths = Set(
@@ -165,7 +177,7 @@ final class ConfigSecurityTests: XCTestCase {
                 .filter { $0.isEmpty == false && $0.hasPrefix("#") == false }
         )
 
-        for expectedPath in [".env", ".env.*", "!.env.example", "*.xcresult/", "*.xcarchive/", "*.ipa", "*.dSYM/"] {
+        for expectedPath in [".env", ".env.*", "!.env.example", "supabase/.temp/", "*.xcresult/", "*.xcarchive/", "*.ipa", "*.dSYM/"] {
             XCTAssertTrue(ignoredPaths.contains(expectedPath), "\(expectedPath) should stay ignored for local QA hygiene")
         }
     }
@@ -202,6 +214,35 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 secret scan passed"))
     }
 
+    func testSupabaseAppConfigSetupScriptWritesOnlyPublicConfigAndRejectsSecrets() throws {
+        let scriptURL = projectURL("Scripts/setup_supabase_config.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertNotNil(script.range(of: "BuySellAI/App/Config.plist"))
+        XCTAssertNotNil(script.range(of: "SUPABASE_URL"))
+        XCTAssertNotNil(script.range(of: "SUPABASE_ANON_KEY"))
+        XCTAssertNotNil(script.range(of: "SUPABASE_CONFIG_FROM_ENV"))
+        XCTAssertNotNil(script.range(of: "read_required_or_env \"Supabase project URL: \" supabase_url SUPABASE_URL"))
+        XCTAssertNotNil(script.range(of: "read_required_or_env \"Supabase anon key: \" anon_key SUPABASE_ANON_KEY"))
+        XCTAssertNotNil(script.range(of: "is required in environment when SUPABASE_CONFIG_FROM_ENV=1"))
+        XCTAssertNotNil(script.range(of: "project-ref.supabase.co"))
+        XCTAssertNotNil(script.range(of: "public-anon-key"))
+        XCTAssertNotNil(script.range(of: "provider-secret-shaped"))
+        XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: "SUPABASE_URL must be a root https://<project>.supabase.co URL"))
+        XCTAssertNotNil(script.range(of: #"PlistBuddy -c "Clear dict""#))
+        XCTAssertNotNil(script.range(of: #"PlistBuddy -c "Add :SUPABASE_URL string $normalized_url""#))
+        XCTAssertNotNil(script.range(of: #"PlistBuddy -c "Add :SUPABASE_ANON_KEY string $anon_key""#))
+        XCTAssertNotNil(script.range(of: "Supabase app config written"))
+        XCTAssertNotNil(script.range(of: "keys: SUPABASE_URL SUPABASE_ANON_KEY"))
+        XCTAssertNil(script.range(of: "GEMINI_API_KEY"))
+        XCTAssertNil(script.range(of: "SUPABASE_SERVICE_ROLE_KEY"))
+        XCTAssertNil(script.range(of: "APPLE_PRIVATE_KEY"))
+    }
+
     func testM10DocsUseRepeatableSecretScanScript() throws {
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
@@ -209,7 +250,10 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(readme.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(readme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
-        XCTAssertNotNil(readme.range(of: "supabase secrets set --env-file .env"))
+        XCTAssertNotNil(readme.range(of: "Scripts/setup_supabase_config.sh"))
+        XCTAssertNotNil(readme.range(of: "rejects copied placeholders and provider-secret-shaped values"))
+        XCTAssertNotNil(readme.range(of: "Scripts/setup_supabase_secrets.sh full"))
+        XCTAssertNotNil(readme.range(of: "0600 temporary env file outside the repository"))
         XCTAssertNotNil(readme.range(of: "Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands"))
         XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(m10.range(of: "M10 secret scan self-test passed"))
