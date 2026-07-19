@@ -12,51 +12,10 @@ enum BrandTextStyle: CaseIterable, Sendable {
     case button
 
     func font(legibilityWeight: LegibilityWeight? = nil) -> Font {
-        Font.custom(fontResourceName(legibilityWeight: legibilityWeight), size: size, relativeTo: relativeTo)
+        .system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))
     }
 
-    func fontResourceName(legibilityWeight: LegibilityWeight? = nil) -> String {
-        legibilityWeight == .bold ? boldTextFontResourceName : standardFontResourceName
-    }
-
-    private var standardFontResourceName: String {
-        switch self {
-        case .display:
-            "SpaceGrotesk-Bold"
-        case .titleXL, .titleLg, .title, .button:
-            "SpaceGrotesk-SemiBold"
-        case .bodyLg, .caption:
-            "Inter-Medium"
-        case .body:
-            "Inter-Regular"
-        case .overline:
-            "Inter-SemiBold"
-        }
-    }
-
-    private var boldTextFontResourceName: String {
-        switch self {
-        case .display, .titleXL, .titleLg, .title, .button:
-            "SpaceGrotesk-Bold"
-        case .bodyLg, .body, .caption, .overline:
-            "Inter-Bold"
-        }
-    }
-
-    private var size: CGFloat {
-        switch self {
-        case .display: 44
-        case .titleXL: 32
-        case .titleLg: 24
-        case .title: 20
-        case .bodyLg, .button: 17
-        case .body: 15
-        case .caption: 13
-        case .overline: 11
-        }
-    }
-
-    private var relativeTo: Font.TextStyle {
+    var textStyle: Font.TextStyle {
         switch self {
         case .display:
             .largeTitle
@@ -77,6 +36,32 @@ enum BrandTextStyle: CaseIterable, Sendable {
         }
     }
 
+    func weight(legibilityWeight: LegibilityWeight? = nil) -> Font.Weight {
+        if legibilityWeight == .bold {
+            return boldTextWeight
+        }
+        return standardWeight
+    }
+
+    private var standardWeight: Font.Weight {
+        switch self {
+        case .display:
+            .bold
+        case .titleXL, .titleLg, .title, .button, .bodyLg, .caption, .overline:
+            .semibold
+        case .body:
+            .regular
+        }
+    }
+
+    private var boldTextWeight: Font.Weight {
+        switch self {
+        case .display, .titleXL, .titleLg, .title, .button:
+            .bold
+        case .bodyLg, .body, .caption, .overline:
+            .semibold
+        }
+    }
 }
 
 enum BrandSymbolStyle: Sendable {

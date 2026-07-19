@@ -20,12 +20,12 @@
                 <subviews>
                   <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BuySell" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="wordmark-text">
                     <rect key="frame" x="0.0" y="0.0" width="156" height="56"/>
-                    <fontDescription key="fontDescription" name="SpaceGrotesk-Bold" family="Space Grotesk" pointSize="44"/>
+                    <fontDescription key="fontDescription" type="boldSystem" pointSize="44"/>
                     <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                   </label>
                   <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="wordmark-dot">
                     <rect key="frame" x="156" y="0.0" width="19" height="56"/>
-                    <fontDescription key="fontDescription" name="SpaceGrotesk-Bold" family="Space Grotesk" pointSize="44"/>
+                    <fontDescription key="fontDescription" type="boldSystem" pointSize="44"/>
                     <color key="textColor" red="1" green="0.47843137250000001" blue="0.14901960780000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                   </label>
                 </subviews>

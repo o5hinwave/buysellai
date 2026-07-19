@@ -307,22 +307,23 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertTrue(AppMotion.shouldReduceMotion(os: true, app: true))
     }
 
-    func testBrandTextStylesUseStaticFontFacesAndBoldTextVariants() {
-        XCTAssertEqual(BrandTextStyle.display.fontResourceName(), "SpaceGrotesk-Bold")
-        XCTAssertEqual(BrandTextStyle.titleXL.fontResourceName(), "SpaceGrotesk-SemiBold")
-        XCTAssertEqual(BrandTextStyle.titleLg.fontResourceName(), "SpaceGrotesk-SemiBold")
-        XCTAssertEqual(BrandTextStyle.title.fontResourceName(), "SpaceGrotesk-SemiBold")
-        XCTAssertEqual(BrandTextStyle.bodyLg.fontResourceName(), "Inter-Medium")
-        XCTAssertEqual(BrandTextStyle.body.fontResourceName(), "Inter-Regular")
-        XCTAssertEqual(BrandTextStyle.caption.fontResourceName(), "Inter-Medium")
-        XCTAssertEqual(BrandTextStyle.overline.fontResourceName(), "Inter-SemiBold")
-        XCTAssertEqual(BrandTextStyle.button.fontResourceName(), "SpaceGrotesk-SemiBold")
+    func testBrandTextStylesUseNativeSemanticDynamicTypeAndBoldTextWeights() {
+        XCTAssertEqual(BrandTextStyle.display.textStyle, .largeTitle)
+        XCTAssertEqual(BrandTextStyle.titleXL.textStyle, .title)
+        XCTAssertEqual(BrandTextStyle.titleLg.textStyle, .title2)
+        XCTAssertEqual(BrandTextStyle.title.textStyle, .title3)
+        XCTAssertEqual(BrandTextStyle.bodyLg.textStyle, .body)
+        XCTAssertEqual(BrandTextStyle.body.textStyle, .body)
+        XCTAssertEqual(BrandTextStyle.caption.textStyle, .caption)
+        XCTAssertEqual(BrandTextStyle.overline.textStyle, .caption2)
+        XCTAssertEqual(BrandTextStyle.button.textStyle, .headline)
 
-        for style in BrandTextStyle.allCases {
-            XCTAssertTrue(style.fontResourceName(legibilityWeight: .bold).hasSuffix("-Bold"))
-        }
-        XCTAssertEqual(BrandTextStyle.body.fontResourceName(legibilityWeight: .bold), "Inter-Bold")
-        XCTAssertEqual(BrandTextStyle.button.fontResourceName(legibilityWeight: .bold), "SpaceGrotesk-Bold")
+        XCTAssertEqual(BrandTextStyle.display.weight(), .bold)
+        XCTAssertEqual(BrandTextStyle.titleXL.weight(), .semibold)
+        XCTAssertEqual(BrandTextStyle.body.weight(), .regular)
+        XCTAssertEqual(BrandTextStyle.button.weight(), .semibold)
+        XCTAssertEqual(BrandTextStyle.body.weight(legibilityWeight: .bold), .semibold)
+        XCTAssertEqual(BrandTextStyle.button.weight(legibilityWeight: .bold), .bold)
     }
 
     func testSFSymbolSizingUsesSharedBrandSymbolStyles() throws {
@@ -355,32 +356,23 @@ final class DesignAccessibilityTests: XCTestCase {
         }
     }
 
-    func testBrandTextStylesResolveToRegisteredBundledFontFiles() throws {
+    func testBrandTextStylesResolveToNativeSystemTypographyWithoutRegisteredFonts() throws {
         let plistData = try Data(contentsOf: projectURL("BuySellAI/Info.plist"))
         let plist = try XCTUnwrap(
             try PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any]
         )
-        let appFonts = try XCTUnwrap(plist["UIAppFonts"] as? [String])
-        let registeredFontNames = Set(
-            appFonts.map { URL(fileURLWithPath: $0).deletingPathExtension().lastPathComponent }
-        )
+        let typography = try String(contentsOf: projectURL("BuySellAI/Design/Typography.swift"), encoding: .utf8)
 
+        XCTAssertNil(plist["UIAppFonts"])
+        XCTAssertNotNil(typography.range(of: ".system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))"))
+        XCTAssertNil(typography.range(of: "Font.custom("))
         for style in BrandTextStyle.allCases {
-            XCTAssertTrue(
-                registeredFontNames.contains(style.fontResourceName()),
-                "\(style) should use a registered standard font resource."
-            )
-            XCTAssertTrue(
-                registeredFontNames.contains(style.fontResourceName(legibilityWeight: .bold)),
-                "\(style) should use a registered Bold Text font resource."
-            )
-        }
-
-        for fontFile in appFonts {
-            let fontURL = projectURL("BuySellAI/Resources/Fonts/\(fontFile)")
-            let attributes = try FileManager.default.attributesOfItem(atPath: fontURL.path)
-            let byteCount = try XCTUnwrap(attributes[.size] as? NSNumber)
-            XCTAssertGreaterThan(byteCount.intValue, 10_000, "\(fontFile) should be a real bundled font file.")
+            switch style.textStyle {
+            case .largeTitle, .title, .title2, .title3, .body, .caption, .caption2, .headline:
+                break
+            default:
+                XCTFail("\(style) should resolve to a first-party semantic Dynamic Type role.")
+            }
         }
     }
 

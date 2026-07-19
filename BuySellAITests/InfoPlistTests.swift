@@ -82,30 +82,15 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertEqual(Set(deploymentTargets), ["17.0"])
     }
 
-    func testRegistersStaticBrandFontVariants() throws {
+    func testUsesSystemTypographyWithoutRuntimeFontRegistration() throws {
         let plist = try projectInfoPlist()
-        let appFonts = try XCTUnwrap(plist["UIAppFonts"] as? [String])
+        let typography = try String(contentsOf: projectURL("BuySellAI/Design/Typography.swift"), encoding: .utf8)
 
-        XCTAssertEqual(
-            appFonts,
-            [
-                "SpaceGrotesk-Regular.ttf",
-                "SpaceGrotesk-Medium.ttf",
-                "SpaceGrotesk-SemiBold.ttf",
-                "SpaceGrotesk-Bold.ttf",
-                "Inter-Regular.ttf",
-                "Inter-Medium.ttf",
-                "Inter-SemiBold.ttf",
-                "Inter-Bold.ttf"
-            ]
-        )
-
-        for font in appFonts {
-            XCTAssertTrue(
-                FileManager.default.fileExists(atPath: projectURL("BuySellAI/Resources/Fonts/\(font)").path),
-                "Missing registered font file \(font)"
-            )
-        }
+        XCTAssertNil(plist["UIAppFonts"])
+        XCTAssertNotNil(typography.range(of: ".system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))"))
+        XCTAssertNil(typography.range(of: "Font.custom("))
+        XCTAssertNil(typography.range(of: "SpaceGrotesk"))
+        XCTAssertNil(typography.range(of: "Inter-"))
     }
 
     func testLaunchScreenUsesFixedWhiteBrandWordmark() throws {
@@ -118,8 +103,8 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertNil(storyboard.range(of: "activityIndicatorView"))
         XCTAssertNotNil(storyboard.range(of: #"text="BuySell""#))
         XCTAssertNotNil(storyboard.range(of: #"text=".""#))
-        XCTAssertNil(storyboard.range(of: #"type="boldSystem""#))
-        XCTAssertEqual(storyboard.components(separatedBy: #"name="SpaceGrotesk-Bold" family="Space Grotesk" pointSize="44""#).count - 1, 2)
+        XCTAssertEqual(storyboard.components(separatedBy: #"type="boldSystem" pointSize="44""#).count - 1, 2)
+        XCTAssertNil(storyboard.range(of: "SpaceGrotesk"))
         XCTAssertNotNil(storyboard.range(of: #"red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB""#))
         XCTAssertNotNil(storyboard.range(of: #"red="0.07058823529" green="0.07058823529" blue="0.07058823529""#))
         XCTAssertNotNil(storyboard.range(of: #"red="1" green="0.47843137250000001" blue="0.14901960780000001""#))
