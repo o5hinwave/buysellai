@@ -5,13 +5,13 @@ struct MarketplacePickerSheet: View {
 
     @Environment(AppStore.self) private var appStore
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State private var estimates: [MarketplaceEstimate] = []
-    @State private var didCompute = false
+    @State private var computedEstimates: [MarketplaceEstimate]?
 
     var body: some View {
         NavigationStack {
             List {
-                if let best = estimates.first(where: { $0.badge == .best }),
+                if let estimates = computedEstimates,
+                   let best = estimates.first(where: { $0.badge == .best }),
                    let lowest = estimates.first(where: { $0.badge == .lowest }) {
                     Section {
                         summaryActions(best: best, lowest: lowest)
@@ -33,27 +33,26 @@ struct MarketplacePickerSheet: View {
         }
         .background(Color.clear)
         .task {
-            guard didCompute == false else { return }
+            guard computedEstimates == nil else { return }
             try? await Task.sleep(nanoseconds: 180_000_000)
-            estimates = MarketplaceEstimator.estimates(for: context.item.priceEstimate)
-            didCompute = true
+            computedEstimates = MarketplaceEstimator.estimates(for: context.item.priceEstimate)
         }
     }
 
     @ViewBuilder
     private var marketplaceContent: some View {
-        if didCompute {
-            if estimates.isEmpty {
+        if let computedEstimates {
+            if computedEstimates.isEmpty {
                 fallbackRows
             } else {
-                estimateRows
+                estimateRows(computedEstimates)
             }
         } else {
             skeletonRows
         }
     }
 
-    private var estimateRows: some View {
+    private func estimateRows(_ estimates: [MarketplaceEstimate]) -> some View {
         ForEach(estimates) { estimate in
             MarketplaceRow(estimate: estimate) {
                 appStore.presentListing(
