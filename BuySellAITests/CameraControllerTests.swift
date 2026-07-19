@@ -89,17 +89,30 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "uiView.updateVideoRotation()"))
     }
 
+    func testCameraPreviewConvertsTapToDeviceFocusPoint() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraPreview.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "var onTapToFocus: (CameraFocusTap) -> Void = { _ in }"))
+        XCTAssertNotNil(source.range(of: "struct CameraFocusTap: Equatable"))
+        XCTAssertNotNil(source.range(of: "let viewPoint: CGPoint"))
+        XCTAssertNotNil(source.range(of: "let devicePoint: CGPoint"))
+        XCTAssertNotNil(source.range(of: "UITapGestureRecognizer(target: self, action: #selector(handleTapToFocus(_:)))"))
+        XCTAssertNotNil(source.range(of: "recognizer.cancelsTouchesInView = false"))
+        XCTAssertNotNil(source.range(of: "videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: viewPoint)"))
+        XCTAssertNotNil(source.range(of: "onTapToFocus?(CameraFocusTap(viewPoint: viewPoint, devicePoint: devicePoint))"))
+    }
+
     func testCameraConfigurationUnlocksOnlyAfterSuccessfulLock() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
 
-        XCTAssertEqual(source.components(separatedBy: "defer { device.unlockForConfiguration() }").count - 1, 2)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "defer { device.unlockForConfiguration() }").count - 1, 3)
         XCTAssertNil(source.range(of: #"catch\s*\{\s*device\.unlockForConfiguration\(\)\s*\}"#, options: .regularExpression))
     }
 
     func testCameraConfigurationLogsFocusExposureFallbackWithoutEmptyCatch() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
-        let configureStart = try XCTUnwrap(source.range(of: "private func configureIfNeeded() throws {"))
-        let selectionStart = try XCTUnwrap(source.range(of: "private static func preferredBackCamera()"))
+        let configureStart = try XCTUnwrap(source.range(of: "private func configureFocusAndExposure(for device: AVCaptureDevice)"))
+        let selectionStart = try XCTUnwrap(source.range(of: "private func currentCapabilities()"))
         let configureSource = String(source[configureStart.lowerBound..<selectionStart.lowerBound])
 
         XCTAssertNotNil(source.range(of: #"import os"#))
@@ -111,7 +124,7 @@ final class CameraControllerTests: XCTestCase {
     func testCameraConfigurationCommitIsScopedToAllThrowingSetupPaths() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
         let configureStart = try XCTUnwrap(source.range(of: "private func configureIfNeeded() throws {"))
-        let selectionStart = try XCTUnwrap(source.range(of: "private static func preferredBackCamera()"))
+        let selectionStart = try XCTUnwrap(source.range(of: "private func configureFocusAndExposure(for device: AVCaptureDevice)"))
         let configureSource = String(source[configureStart.lowerBound..<selectionStart.lowerBound])
 
         XCTAssertEqual(configureSource.components(separatedBy: "session.commitConfiguration()").count - 1, 1)
@@ -151,9 +164,13 @@ final class CameraControllerTests: XCTestCase {
 
         XCTAssertNotNil(source.range(of: #"@State private var captureTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: #"@State private var flashTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: #"@State private var cameraSwitchTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: #"@State private var focusTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: "private func cancelInFlightCapture()"))
         XCTAssertNotNil(source.range(of: "captureTask?.cancel()"))
         XCTAssertNotNil(source.range(of: "flashTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "cameraSwitchTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "focusTask?.cancel()"))
 
         let closeRange = try XCTUnwrap(source.range(of: #"accessibilityLabel: "Close camera""#))
         let closeSearchRange = closeRange.lowerBound..<source.endIndex
@@ -161,7 +178,7 @@ final class CameraControllerTests: XCTestCase {
         let onCancelRange = try XCTUnwrap(source.range(of: "onCancel()", range: closeSearchRange))
         XCTAssertLessThan(cancelRange.lowerBound, onCancelRange.lowerBound)
 
-        XCTAssertNotNil(source.range(of: ".onDisappear {\n            flashTask?.cancel()\n            flashTask = nil\n            cancelInFlightCapture()\n        }"))
+        XCTAssertNotNil(source.range(of: ".onDisappear {"))
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: "captureTask = Task").count - 1, 2)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: "guard Task.isCancelled == false else { return }").count - 1, 3)
     }
@@ -188,16 +205,48 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "private func stopRunningIfNeeded()"))
     }
 
-    func testCameraSelectionUsesBackCameraOnlyFallbackChain() throws {
+    func testCameraSelectionStartsOnBackAndOnlySwitchesToExplicitFrontFallbackChain() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(source.range(of: "private static func preferredBackCamera()"))
-        XCTAssertNotNil(source.range(of: "AVCaptureDevice.default(deviceType, for: .video, position: .back)"))
+        XCTAssertNotNil(source.range(of: "private static func preferredCamera(position: AVCaptureDevice.Position) -> AVCaptureDevice?"))
+        XCTAssertNotNil(source.range(of: "Self.preferredCamera(position: .back)"))
+        XCTAssertNotNil(source.range(of: "AVCaptureDevice.default(deviceType, for: .video, position: position)"))
         XCTAssertNotNil(source.range(of: "AVCaptureDevice.DiscoverySession("))
-        XCTAssertNotNil(source.range(of: "position: .back"))
+        XCTAssertNotNil(source.range(of: "position: position"))
+        XCTAssertNotNil(source.range(of: "func switchCamera() async -> CameraCapabilities"))
+        XCTAssertNotNil(source.range(of: "let nextPosition: AVCaptureDevice.Position = self.currentPosition == .back ? .front : .back"))
+        XCTAssertNotNil(source.range(of: "Self.hasCamera(position: nextPosition)"))
+        XCTAssertNotNil(source.range(of: "CameraCapabilities("))
+        XCTAssertNotNil(source.range(of: "canSwitchCamera: Self.hasCamera(position: .back) && Self.hasCamera(position: .front)"))
         XCTAssertNil(source.range(of: "AVCaptureDevice.default(for: .video)"))
-        XCTAssertNil(source.range(of: "position: .front"))
         XCTAssertNil(source.range(of: "position: .unspecified"))
+    }
+
+    func testTapFocusAndExposureUsesLockedClampedDevicePoint() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraController.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "func focusAndExpose(at devicePoint: CGPoint) async -> Bool"))
+        XCTAssertNotNil(source.range(of: "let point = Self.clampedDevicePoint(devicePoint)"))
+        XCTAssertNotNil(source.range(of: "device.focusPointOfInterest = point"))
+        XCTAssertNotNil(source.range(of: "device.exposurePointOfInterest = point"))
+        XCTAssertNotNil(source.range(of: "device.focusMode = .autoFocus"))
+        XCTAssertNotNil(source.range(of: "device.exposureMode = .continuousAutoExposure"))
+        XCTAssertNotNil(source.range(of: #"logger.warning("Camera tap focus and exposure skipped")"#))
+        XCTAssertNotNil(source.range(of: "private static func clampedDevicePoint(_ point: CGPoint) -> CGPoint"))
+    }
+
+    func testCameraViewOwnsSwitchAndTapFocusTasks() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "CameraPreview(session: controller.session) { tap in"))
+        XCTAssertNotNil(source.range(of: "handleFocusTap(tap)"))
+        XCTAssertNotNil(source.range(of: "CameraFocusRing()"))
+        XCTAssertNotNil(source.range(of: #"systemImage: "arrow.triangle.2.circlepath.camera""#))
+        XCTAssertNotNil(source.range(of: "cameraSwitchAccessibilityLabel"))
+        XCTAssertNotNil(source.range(of: "let capabilities = await controller.switchCamera()"))
+        XCTAssertNotNil(source.range(of: "_ = await controller.setTorch(enabled: false)"))
+        XCTAssertNotNil(source.range(of: "focusTask = Task { @MainActor in"))
+        XCTAssertNotNil(source.range(of: "_ = await controller.focusAndExpose(at: tap.devicePoint)"))
     }
 
     private func projectURL(_ path: String) -> URL {

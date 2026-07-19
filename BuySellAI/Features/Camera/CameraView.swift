@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct CameraView: View {
@@ -12,18 +13,26 @@ struct CameraView: View {
     @State private var controller = CameraController()
     @State private var state: CameraStartResult?
     @State private var flashOn = false
-    @State private var isFlashAvailable = true
+    @State private var cameraCapabilities = CameraCapabilities.unavailable
     @State private var isCapturing = false
+    @State private var isSwitchingCamera = false
     @State private var bracketOpacity = 0.6
+    @State private var focusIndicator: CameraFocusIndicator?
     @State private var captureErrorToast: ToastMessage?
     @State private var captureTask: Task<Void, Never>?
     @State private var flashTask: Task<Void, Never>?
+    @State private var cameraSwitchTask: Task<Void, Never>?
+    @State private var focusTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
             switch state {
             case .ready:
-                CameraPreview(session: controller.session)
+                CameraPreview(session: controller.session) { tap in
+                    handleFocusTap(tap)
+                }
+                .accessibilityLabel("Camera preview".localized)
+                .accessibilityHint("Tap the item to set focus and exposure.".localized)
                     .ignoresSafeArea()
                     .overlay(cameraOverlay)
             case .denied:
@@ -56,21 +65,25 @@ struct CameraView: View {
                 return
             }
             if LaunchArguments.contains(LaunchArguments.uiTestingCameraReady) {
-                isFlashAvailable = true
+                cameraCapabilities = CameraCapabilities(position: .back, isTorchAvailable: true, canSwitchCamera: true)
                 state = .ready
                 return
             }
             let startResult = await controller.start()
             state = startResult
             if case .ready = startResult {
-                isFlashAvailable = await controller.isTorchAvailable()
+                cameraCapabilities = await controller.capabilities()
             } else {
-                isFlashAvailable = false
+                cameraCapabilities = .unavailable
             }
         }
         .onDisappear {
             flashTask?.cancel()
             flashTask = nil
+            cameraSwitchTask?.cancel()
+            cameraSwitchTask = nil
+            focusTask?.cancel()
+            focusTask = nil
             cancelInFlightCapture()
         }
     }
@@ -104,6 +117,19 @@ struct CameraView: View {
 
                         Spacer()
 
+                        if cameraCapabilities.canSwitchCamera {
+                            IconCircleButton(
+                                systemImage: "arrow.triangle.2.circlepath.camera",
+                                accessibilityLabel: cameraSwitchAccessibilityLabel,
+                                size: 40,
+                                material: true
+                            ) {
+                                switchCamera()
+                            }
+                            .disabled(isCapturing || isSwitchingCamera)
+                            .opacity(isSwitchingCamera ? 0.55 : 1)
+                        }
+
                         IconCircleButton(
                             systemImage: isFlashAvailable && flashOn ? "bolt.fill" : "bolt.slash",
                             accessibilityLabel: flashAccessibilityLabel,
@@ -122,6 +148,14 @@ struct CameraView: View {
                     Spacer()
 
                     cameraBottomControls(safeAreaBottom: proxy.safeAreaInsets.bottom)
+                }
+
+                if let focusIndicator {
+                    CameraFocusRing()
+                        .position(focusIndicator.point)
+                        .transition(focusIndicatorTransition)
+                        .animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: focusIndicator.id)
+                        .accessibilityHidden(true)
                 }
 
                 if isCapturing {
@@ -302,6 +336,18 @@ struct CameraView: View {
         return flashOn ? "Turn flash off" : "Turn flash on"
     }
 
+    private var isFlashAvailable: Bool {
+        cameraCapabilities.isTorchAvailable
+    }
+
+    private var cameraSwitchAccessibilityLabel: String {
+        cameraCapabilities.position == .back ? "Use front camera" : "Use back camera"
+    }
+
+    private var focusIndicatorTransition: AnyTransition {
+        shouldReduceMotion ? .opacity : .scale(scale: 1.18).combined(with: .opacity)
+    }
+
     private func toggleFlash() {
         guard isFlashAvailable else { return }
         let requestedState = !flashOn
@@ -312,9 +358,47 @@ struct CameraView: View {
             guard Task.isCancelled == false else { return }
             if applied == false {
                 flashOn = false
-                isFlashAvailable = false
+                cameraCapabilities = await controller.capabilities()
             }
             flashTask = nil
+        }
+    }
+
+    private func switchCamera() {
+        guard cameraCapabilities.canSwitchCamera, isCapturing == false, isSwitchingCamera == false else { return }
+        Haptics.impact(.light)
+        isSwitchingCamera = true
+        flashOn = false
+        flashTask?.cancel()
+        cameraSwitchTask?.cancel()
+        cameraSwitchTask = Task { @MainActor in
+            _ = await controller.setTorch(enabled: false)
+            let capabilities = await controller.switchCamera()
+            guard Task.isCancelled == false else { return }
+            cameraCapabilities = capabilities
+            isSwitchingCamera = false
+            cameraSwitchTask = nil
+        }
+    }
+
+    private func handleFocusTap(_ tap: CameraFocusTap) {
+        guard isCapturing == false, isSwitchingCamera == false else { return }
+        guard case .ready = state else { return }
+        Haptics.impact(.light)
+        let indicator = CameraFocusIndicator(point: tap.viewPoint)
+        focusIndicator = indicator
+        focusTask?.cancel()
+        focusTask = Task { @MainActor in
+            _ = await controller.focusAndExpose(at: tap.devicePoint)
+            guard Task.isCancelled == false else { return }
+            try? await Task.sleep(nanoseconds: 950_000_000)
+            guard Task.isCancelled == false else { return }
+            if focusIndicator?.id == indicator.id {
+                withAnimation(AppMotion.animation(reduceMotion: shouldReduceMotion)) {
+                    focusIndicator = nil
+                }
+            }
+            focusTask = nil
         }
     }
 
@@ -365,12 +449,32 @@ struct CameraView: View {
     private func cancelInFlightCapture() {
         captureTask?.cancel()
         captureTask = nil
+        focusTask?.cancel()
+        focusTask = nil
+        focusIndicator = nil
+        cameraSwitchTask?.cancel()
+        cameraSwitchTask = nil
+        isSwitchingCamera = false
         isCapturing = false
         controller.stop()
     }
 
     private var shouldReduceMotion: Bool {
         AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)
+    }
+}
+
+private struct CameraFocusIndicator: Equatable, Identifiable {
+    let id = UUID()
+    let point: CGPoint
+}
+
+private struct CameraFocusRing: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+            .stroke(Color.brand.primaryForeground, lineWidth: 2)
+            .frame(width: 72, height: 72)
+            .shadow(color: Color.brand.cameraBackdrop.opacity(0.42), radius: 6, y: 2)
     }
 }
 

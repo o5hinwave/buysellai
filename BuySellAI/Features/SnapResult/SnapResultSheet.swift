@@ -104,6 +104,7 @@ struct SnapResultSheet: View {
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
                     .controlSize(.large)
+                    .accessibilityLabel("Retry".localized)
                 }
             }
         }
@@ -229,6 +230,7 @@ struct SnapResultSheet: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
         .controlSize(.large)
+        .accessibilityLabel("Wrong item — retake".localized)
     }
 
     private var retryButton: some View {
@@ -242,6 +244,7 @@ struct SnapResultSheet: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
         .controlSize(.large)
+        .accessibilityLabel("Try again".localized)
     }
 
     @ViewBuilder
@@ -491,6 +494,7 @@ struct SnapResultSheet: View {
             .buttonBorderShape(.capsule)
             .controlSize(.large)
             .tint(Color.brand.primary)
+            .accessibilityLabel("Retake photo".localized)
             Button {
                 Haptics.impact(.light)
                 retryAnalysis()
@@ -501,6 +505,7 @@ struct SnapResultSheet: View {
             .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)
             .controlSize(.large)
+            .accessibilityLabel("Try again".localized)
         }
         .frame(maxWidth: .infinity, minHeight: 420)
         .task(id: message) {

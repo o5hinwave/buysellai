@@ -578,7 +578,7 @@ require_file_contains "$latest_design_log" "source liquid glass: compiler-gated 
 require_file_contains "$latest_design_log" "primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "home setup: native inset grouped task list with toolbar account and settings actions" "latest design SDK evidence log"
-require_file_contains "$latest_design_log" "camera setup: top and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "camera setup: native top controls, tap focus, camera switching, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "tutorial setup: native inset grouped guide with a system bottom bar" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "menu item icons: category and condition menus use SF Symbols with selected checkmarks" "latest design SDK evidence log"

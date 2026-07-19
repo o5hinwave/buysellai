@@ -72,6 +72,8 @@
 	<string>Camera couldn't start.</string>
 	<key>Camera isn't available on this device.</key>
 	<string>Camera isn't available on this device.</string>
+	<key>Camera preview</key>
+	<string>Camera preview</string>
 	<key>Cancel</key>
 	<string>Cancel</string>
 	<key>Captures the current view</key>
@@ -388,6 +390,8 @@
 	<string>TCGplayer</string>
 	<key>Take photo</key>
 	<string>Take photo</string>
+	<key>Tap the item to set focus and exposure.</key>
+	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>
 	<string>Terms</string>
 	<key>Thanks for rating BuySell.</key>
@@ -420,6 +424,10 @@
 	<string>Turn flash on</string>
 	<key>Type DELETE to confirm.</key>
 	<string>Type DELETE to confirm.</string>
+	<key>Use back camera</key>
+	<string>Use back camera</string>
+	<key>Use front camera</key>
+	<string>Use front camera</string>
 	<key>Use the ready listing wherever you sell.</key>
 	<string>Use the ready listing wherever you sell.</string>
 	<key>Used tech &amp; phones</key>

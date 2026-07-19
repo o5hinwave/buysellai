@@ -8,6 +8,14 @@ enum CameraStartResult {
     case failed
 }
 
+struct CameraCapabilities: Equatable {
+    let position: AVCaptureDevice.Position
+    let isTorchAvailable: Bool
+    let canSwitchCamera: Bool
+
+    static let unavailable = CameraCapabilities(position: .back, isTorchAvailable: false, canSwitchCamera: false)
+}
+
 final class CameraController: NSObject, @unchecked Sendable {
     let session = AVCaptureSession()
 
@@ -16,6 +24,8 @@ final class CameraController: NSObject, @unchecked Sendable {
     private let photoOutput = AVCapturePhotoOutput()
     private let logger = Logger(subsystem: "BuySellAI", category: "Camera")
     private var videoDevice: AVCaptureDevice?
+    private var videoInput: AVCaptureDeviceInput?
+    private var currentPosition: AVCaptureDevice.Position = .back
     private var configured = false
     private var photoDelegate: PhotoCaptureDelegate?
 
@@ -57,6 +67,14 @@ final class CameraController: NSObject, @unchecked Sendable {
         }
     }
 
+    func capabilities() async -> CameraCapabilities {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume(returning: self.currentCapabilities())
+            }
+        }
+    }
+
     func setTorch(enabled: Bool) async -> Bool {
         await withCheckedContinuation { continuation in
             queue.async {
@@ -71,6 +89,94 @@ final class CameraController: NSObject, @unchecked Sendable {
                     device.torchMode = enabled ? .on : .off
                     continuation.resume(returning: true)
                 } catch {
+                    continuation.resume(returning: false)
+                }
+            }
+        }
+    }
+
+    func switchCamera() async -> CameraCapabilities {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                let nextPosition: AVCaptureDevice.Position = self.currentPosition == .back ? .front : .back
+                guard
+                    self.configured,
+                    Self.hasCamera(position: nextPosition),
+                    let device = Self.preferredCamera(position: nextPosition)
+                else {
+                    continuation.resume(returning: self.currentCapabilities())
+                    return
+                }
+
+                do {
+                    let input = try AVCaptureDeviceInput(device: device)
+                    self.session.beginConfiguration()
+                    defer { self.session.commitConfiguration() }
+
+                    if let videoInput = self.videoInput {
+                        self.session.removeInput(videoInput)
+                    }
+
+                    guard self.session.canAddInput(input) else {
+                        if let videoInput = self.videoInput, self.session.canAddInput(videoInput) {
+                            self.session.addInput(videoInput)
+                        }
+                        continuation.resume(returning: self.currentCapabilities())
+                        return
+                    }
+
+                    self.session.addInput(input)
+                    self.videoInput = input
+                    self.videoDevice = device
+                    self.currentPosition = nextPosition
+                    self.configureFocusAndExposure(for: device)
+                    continuation.resume(returning: self.currentCapabilities())
+                } catch {
+                    self.logger.warning("Camera switch failed")
+                    continuation.resume(returning: self.currentCapabilities())
+                }
+            }
+        }
+    }
+
+    func focusAndExpose(at devicePoint: CGPoint) async -> Bool {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                guard let device = self.videoDevice else {
+                    continuation.resume(returning: false)
+                    return
+                }
+
+                do {
+                    try device.lockForConfiguration()
+                    defer { device.unlockForConfiguration() }
+
+                    let point = Self.clampedDevicePoint(devicePoint)
+                    var didApplyPoint = false
+
+                    if device.isFocusPointOfInterestSupported {
+                        device.focusPointOfInterest = point
+                        if device.isFocusModeSupported(.autoFocus) {
+                            device.focusMode = .autoFocus
+                        } else if device.isFocusModeSupported(.continuousAutoFocus) {
+                            device.focusMode = .continuousAutoFocus
+                        }
+                        didApplyPoint = true
+                    }
+
+                    if device.isExposurePointOfInterestSupported {
+                        device.exposurePointOfInterest = point
+                        if device.isExposureModeSupported(.continuousAutoExposure) {
+                            device.exposureMode = .continuousAutoExposure
+                        } else if device.isExposureModeSupported(.autoExpose) {
+                            device.exposureMode = .autoExpose
+                        }
+                        didApplyPoint = true
+                    }
+
+                    continuation.resume(returning: didApplyPoint)
+                } catch {
+                    self.logger.warning("Camera tap focus and exposure skipped")
                     continuation.resume(returning: false)
                 }
             }
@@ -174,7 +280,7 @@ final class CameraController: NSObject, @unchecked Sendable {
         defer { session.commitConfiguration() }
         session.sessionPreset = .photo
 
-        guard let device = Self.preferredBackCamera() else {
+        guard let device = Self.preferredCamera(position: .back) else {
             throw CameraError.noCamera
         }
 
@@ -186,6 +292,15 @@ final class CameraController: NSObject, @unchecked Sendable {
         session.addInput(input)
         session.addOutput(photoOutput)
 
+        configureFocusAndExposure(for: device)
+
+        videoInput = input
+        videoDevice = device
+        currentPosition = device.position
+        configured = true
+    }
+
+    private func configureFocusAndExposure(for device: AVCaptureDevice) {
         do {
             try device.lockForConfiguration()
             defer { device.unlockForConfiguration() }
@@ -198,12 +313,17 @@ final class CameraController: NSObject, @unchecked Sendable {
         } catch {
             logger.warning("Camera focus and exposure configuration skipped")
         }
-
-        videoDevice = device
-        configured = true
     }
 
-    private static func preferredBackCamera() -> AVCaptureDevice? {
+    private func currentCapabilities() -> CameraCapabilities {
+        CameraCapabilities(
+            position: currentPosition,
+            isTorchAvailable: videoDevice.map(Self.supportsTorch) ?? false,
+            canSwitchCamera: Self.hasCamera(position: .back) && Self.hasCamera(position: .front)
+        )
+    }
+
+    private static func preferredCamera(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         let deviceTypes: [AVCaptureDevice.DeviceType] = [
             .builtInWideAngleCamera,
             .builtInDualWideCamera,
@@ -214,7 +334,7 @@ final class CameraController: NSObject, @unchecked Sendable {
         ]
 
         for deviceType in deviceTypes {
-            if let device = AVCaptureDevice.default(deviceType, for: .video, position: .back) {
+            if let device = AVCaptureDevice.default(deviceType, for: .video, position: position) {
                 return device
             }
         }
@@ -222,8 +342,19 @@ final class CameraController: NSObject, @unchecked Sendable {
         return AVCaptureDevice.DiscoverySession(
             deviceTypes: deviceTypes,
             mediaType: .video,
-            position: .back
+            position: position
         ).devices.first
+    }
+
+    private static func hasCamera(position: AVCaptureDevice.Position) -> Bool {
+        preferredCamera(position: position) != nil
+    }
+
+    private static func clampedDevicePoint(_ point: CGPoint) -> CGPoint {
+        CGPoint(
+            x: min(max(point.x, 0), 1),
+            y: min(max(point.y, 0), 1)
+        )
     }
 }
 

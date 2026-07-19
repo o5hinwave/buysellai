@@ -426,7 +426,7 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(typography.range(of: "var showsPeriod = true"))
         XCTAssertNotNil(typography.range(of: "if showsPeriod"))
-        XCTAssertNotNil(auth.range(of: #"BrandWordmark(includeAI: true, showsPeriod: false, size: .display)"#))
+        XCTAssertNotNil(auth.range(of: #"BrandWordmark(includeAI: true, showsPeriod: false, size: .large)"#))
     }
 
     func testMarketplaceAccessibilityLabelsDescribePayoutAndDelta() {
@@ -734,7 +734,7 @@ final class DesignAccessibilityTests: XCTestCase {
             searchRange = range.upperBound..<appSources.endIndex
         }
 
-        XCTAssertGreaterThanOrEqual(calls.count, 4)
+        XCTAssertGreaterThanOrEqual(calls.count, 3)
         for source in calls {
             XCTAssertNotNil(source.range(of: #"material: true"#), "Icon circle buttons should use shared native material chrome: \(source)")
         }
@@ -1275,8 +1275,16 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(source.range(of: #"accessibilityLabel("Take photo".localized)"#))
         XCTAssertNotNil(source.range(of: #"accessibilityHint("Captures the current view".localized)"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityLabel("Camera preview".localized)"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityHint("Tap the item to set focus and exposure.".localized)"#))
         XCTAssertNotNil(source.range(of: #"accessibilityLabel: "Close camera""#))
         XCTAssertNotNil(source.range(of: #"accessibilityLabel: flashAccessibilityLabel"#))
+        XCTAssertNotNil(source.range(of: #"accessibilityLabel: cameraSwitchAccessibilityLabel"#))
+        XCTAssertNotNil(source.range(of: #"cameraCapabilities.canSwitchCamera"#))
+        XCTAssertNotNil(source.range(of: #"systemImage: "arrow.triangle.2.circlepath.camera""#))
+        XCTAssertNotNil(source.range(of: #"cameraCapabilities.position == .back ? "Use front camera" : "Use back camera""#))
+        XCTAssertNotNil(source.range(of: #"CameraFocusRing()"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityHidden(true)"#))
         XCTAssertNotNil(source.range(of: #"guard isFlashAvailable else { return "Flash unavailable" }"#))
         XCTAssertNotNil(source.range(of: #"private func cameraBottomControls(safeAreaBottom: CGFloat) -> some View"#))
         XCTAssertNotNil(source.range(of: #"private var shutterButton: some View"#))

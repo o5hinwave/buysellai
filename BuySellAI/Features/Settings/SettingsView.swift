@@ -247,7 +247,7 @@ private struct SettingsRowLabel: View {
     var body: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: systemImage)
-                .font(.body.weight(.regular))
+                .brandSymbol(.rowIcon)
                 .imageScale(.large)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(iconTint)
@@ -258,7 +258,7 @@ private struct SettingsRowLabel: View {
 
             if showsDisclosureIndicator {
                 Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
+                    .brandSymbol(.chevron)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .accessibilityHidden(true)
             }
