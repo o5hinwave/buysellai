@@ -102,9 +102,6 @@ enum AppShadow {
         ShadowModifier(color: color.opacity(0.08), radius: 40, y: 16)
     }
 
-    static func primaryGlow() -> some ViewModifier {
-        ShadowModifier(color: Color.brand.primary.opacity(0.35), radius: 30, y: 12)
-    }
 }
 
 private struct ShadowModifier: ViewModifier {

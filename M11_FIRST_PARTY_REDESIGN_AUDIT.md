@@ -21,7 +21,8 @@
 ## Redesign Findings
 
 - The functional IA already matches the desired one-task product model; adding tabs or dashboards would make the app less first-party for this use case.
-- The shared design primitives are centralized, but typography still follows the older Space Grotesk/Inter brand system rather than the newer mandate’s San Francisco/system Dynamic Type direction.
+- Shared typography now follows San Francisco semantic Dynamic Type roles; remaining redesign work should continue replacing older custom visual compositions screen by screen.
+- Home has moved from the earlier decorative hero/pill composition to a native grouped-list task hub with toolbar account/settings actions and a row-based primary snap action.
 - Native material and Liquid Glass fallbacks are centralized, but final SDK evidence remains pending until Xcode/iPhoneOS SDK 27+ is available.
 - The camera and critical flow have strong simulator coverage, but final camera quality cannot be accepted until a trusted physical device and Instruments traces are recorded.
 - Local loading, empty, offline, error, and success states are represented across tests and screens; backend production states remain pending without real Supabase config and deployed functions.
@@ -32,12 +33,14 @@
 - Keep the one-task information architecture: Home to Camera to Result to Marketplace to Listing, with optional Auth, Tutorial, Settings, and History recovery.
 - Move typography to native SF semantic roles (`largeTitle`, `title`, `title2`, `title3`, `body`, `caption`, `caption2`, `headline`) while preserving a small wordmark helper.
 - Keep the warm orange accent as a restrained functional brand signal, not a decorative color layer.
-- Continue using SF Symbols for functional iconography and custom imagery only for product identity moments such as the hero/icon.
+- Continue using SF Symbols for functional iconography and reserve custom imagery for product identity moments such as the app icon or launch treatment.
 - Use system sheets, semantic backgrounds, centralized material surfaces, and Reduce Motion-aware transitions.
 
 ## Redesign Sequence
 
 1. Migrate shared typography away from bundled static font faces and into native Dynamic Type system roles.
-2. Keep launch and SwiftUI splash visually aligned through system-bold wordmark styling and shared launch color tokens.
-3. Preserve the current native material layer and continue final SDK verification when the latest toolchain is available.
-4. Use real Supabase config/deploy evidence, signed archive/export evidence, physical-device acceptance, and Instruments traces to close the remaining M10 gates.
+2. Replace Home’s legacy hero/pill task hub with native grouped-list navigation and toolbar affordances.
+3. Keep launch and SwiftUI splash visually aligned through system-bold wordmark styling and shared launch color tokens.
+4. Continue redesigning flow sheets, onboarding, settings, and camera surfaces toward the same first-party visual system.
+5. Preserve the current native material layer and continue final SDK verification when the latest toolchain is available.
+6. Use real Supabase config/deploy evidence, signed archive/export evidence, physical-device acceptance, and Instruments traces to close the remaining M10 gates.

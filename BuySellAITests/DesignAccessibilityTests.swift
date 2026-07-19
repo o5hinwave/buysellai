@@ -165,12 +165,14 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(material.range(of: "NativeMaterialCircleBackground("))
         XCTAssertNotNil(buttons.range(of: ".nativeIconButtonBackground("))
         XCTAssertNotNil(material.range(of: "usesAccessibleStroke: usesAccessibleMaterialStroke"))
-        XCTAssertGreaterThanOrEqual(home.components(separatedBy: ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)").count - 1, 3)
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: ".toolbar {"))
+        XCTAssertNil(home.range(of: ".nativeLiquidGlassControlGroup"))
+        XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
         XCTAssertNotNil(camera.range(of: ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"))
         XCTAssertNotNil(auth.range(of: ".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"))
         XCTAssertGreaterThanOrEqual(auth.components(separatedBy: ".nativeLiquidGlassControlGroup(spacing: Spacing.md)").count - 1, 2)
         XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeStandardButtonBackground(").count - 1, 2)
-        XCTAssertNotNil(home.range(of: ".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl"))
         XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
@@ -232,7 +234,9 @@ final class DesignAccessibilityTests: XCTestCase {
             2
         )
         XCTAssertNil(listing.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"))
-        XCTAssertNotNil(home.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)"))
+        XCTAssertNotNil(home.range(of: "EmptyHistoryView()"))
+        XCTAssertNotNil(home.range(of: #"Image(systemName: "clock.arrow.circlepath")"#))
+        XCTAssertNil(home.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)"))
         XCTAssertNil(home.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))"))
 
         XCTAssertNotNil(marketplace.range(of: "tint: label == \"Best\" ? Color.brand.success : Color.brand.surface"))
@@ -470,7 +474,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(history.range(of: #".overlay(alignment: .bottomTrailing)"#))
         XCTAssertNotNil(history.range(of: #".frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)"#))
         XCTAssertNotNil(history.range(of: #"dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight"#))
-        XCTAssertNotNil(history.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.74, strokeOpacity: 0.66)"#))
+        XCTAssertNotNil(history.range(of: #".padding(.vertical, Spacing.xs)"#))
+        XCTAssertNil(history.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.74, strokeOpacity: 0.66)"#))
         XCTAssertNil(history.range(of: #".background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"#))
         XCTAssertNil(history.range(of: #"@Environment(\.accessibilityDifferentiateWithoutColor)"#))
     }
@@ -626,28 +631,33 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"store.phase == .idle && automaticCancellationRetryCount > 0"#))
     }
 
-    func testHomeDisplayHeadlineSupportsAccessibilityThreeWithoutSingleLineTruncation() throws {
+    func testHomePrimaryActionUsesNativeListRowInsteadOfDisplayHero() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(root.range(of: #".dynamicTypeLimit()"#))
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: #"Text("Snap · Pick · Sell".localized)"#))
         XCTAssertNotNil(home.range(of: #"Text("Sell anything in three taps.".localized)"#))
-        XCTAssertNotNil(home.range(of: #".lineLimit(3)"#))
-        XCTAssertNotNil(home.range(of: #".minimumScaleFactor(0.78)"#))
+        XCTAssertNotNil(home.range(of: "SnapActionRow()"))
+        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: #"Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)"#))
+        XCTAssertNil(home.range(of: ".brandFont(.display)"))
+        XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
     }
 
-    func testHomeHeaderSignInButtonKeepsMinimumTapTarget() throws {
+    func testHomeAccountActionUsesNativeToolbarPlacement() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
         let accountRange = try XCTUnwrap(home.range(of: "private var accountButton: some View"))
         let settingsRange = try XCTUnwrap(home.range(of: "private var settingsButton: some View", range: accountRange.upperBound..<home.endIndex))
         let accountSource = String(home[accountRange.lowerBound..<settingsRange.lowerBound])
 
-        XCTAssertNotNil(accountSource.range(of: #"let title = (appStore.session == nil ? "Sign in" : "Sign out").localized"#))
-        XCTAssertNotNil(accountSource.range(of: #"Text(title)"#))
-        XCTAssertNotNil(accountSource.range(of: #".frame(minHeight: 44)"#))
-        XCTAssertNotNil(accountSource.range(of: #".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"#))
-        XCTAssertNotNil(accountSource.range(of: #".nativeGlassButtonStyle(.standard)"#))
-        XCTAssertNotNil(accountSource.range(of: #".accessibilityLabel(title)"#))
+        XCTAssertNotNil(home.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
+        XCTAssertNotNil(accountSource.range(of: #"Text(accountButtonTitle.localized)"#))
+        XCTAssertNotNil(accountSource.range(of: #".accessibilityLabel(accountButtonTitle.localized)"#))
+        XCTAssertNotNil(accountSource.range(of: #"appStore.session == nil ? "Sign in" : "Sign out""#))
+        XCTAssertNil(accountSource.range(of: ".nativeStandardButtonBackground"))
+        XCTAssertNil(accountSource.range(of: ".nativeGlassButtonStyle"))
     }
 
     func testHomeAccountAndHistoryActionsUseSharedPressFeedbackAndHaptics() throws {
@@ -663,19 +673,18 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: "appStore.reopenListing(entry)\n                            } label:"))
     }
 
-    func testHomeSettingsGearUsesFortyPointVisualWithMinimumTapTarget() throws {
+    func testHomeSettingsActionUsesNativeToolbarGear() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
-        let gearRange = try XCTUnwrap(home.range(of: #"systemImage: "gearshape.fill""#))
-        let accountRange = try XCTUnwrap(home.range(of: "private func handleAccountButtonTap", range: gearRange.upperBound..<home.endIndex))
-        let gearSource = String(home[gearRange.lowerBound..<accountRange.lowerBound])
+        let settingsRange = try XCTUnwrap(home.range(of: "private var settingsButton: some View"))
+        let accountRange = try XCTUnwrap(home.range(of: "private func handleAccountButtonTap", range: settingsRange.upperBound..<home.endIndex))
+        let gearSource = String(home[settingsRange.lowerBound..<accountRange.lowerBound])
 
-        XCTAssertNotNil(gearSource.range(of: #"accessibilityLabel: "Settings""#))
-        XCTAssertNotNil(gearSource.range(of: #"size: 40"#))
-        XCTAssertNotNil(gearSource.range(of: #"material: true"#))
-        XCTAssertNotNil(gearSource.range(of: #"materialForeground: Color.brand.foreground"#))
-        XCTAssertNotNil(gearSource.range(of: #"materialStroke: Color.brand.border"#))
-        XCTAssertNotNil(gearSource.range(of: #"usesAccessibleMaterialStroke: true"#))
-        XCTAssertNotNil(gearSource.range(of: #".frame(width: 44, height: 44)"#))
+        XCTAssertNotNil(home.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
+        XCTAssertNotNil(gearSource.range(of: #"Image(systemName: "gearshape")"#))
+        XCTAssertNotNil(gearSource.range(of: #"appStore.presentSettings()"#))
+        XCTAssertNotNil(gearSource.range(of: #".accessibilityLabel("Settings".localized)"#))
+        XCTAssertNil(gearSource.range(of: "IconCircleButton("))
+        XCTAssertNil(gearSource.range(of: "material: true"))
     }
 
     func testIconCircleButtonCallSitesUseNativeMaterialChrome() throws {
@@ -702,46 +711,31 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(home.range(of: #".contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)"#))
         XCTAssertNil(home.range(of: #".safeAreaInset(edge: .bottom)"#))
-        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 56)"#))
+        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 132)"#))
     }
 
-    func testHomeRegularWidthLayoutDoesNotStretchAppStoreScreenshotContent() throws {
+    func testHomeUsesNativeGroupedListInsteadOfCustomWidthClamps() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(home.range(of: #"@Environment(\.horizontalSizeClass) private var horizontalSizeClass"#))
-        XCTAssertNotNil(home.range(of: #"horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad"#))
-        XCTAssertNotNil(home.range(of: #"usesRegularWidthLayout ? 680 : .infinity"#))
-        XCTAssertNotNil(home.range(of: #"usesRegularWidthLayout ? 760 : .infinity"#))
-        XCTAssertNotNil(home.range(of: #"maxFillWidth: heroContentMaxWidth"#))
-        XCTAssertNotNil(home.range(of: #"EmptyHistoryView(maxWidth: sectionContentMaxWidth)"#))
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: #".navigationTitle("BuySell".localized)"#))
+        XCTAssertNotNil(home.range(of: ".navigationBarTitleDisplayMode(.large)"))
+        XCTAssertNil(home.range(of: "horizontalSizeClass"))
+        XCTAssertNil(home.range(of: "UIDevice.current.userInterfaceIdiom"))
+        XCTAssertNil(home.range(of: "heroContentMaxWidth"))
+        XCTAssertNil(home.range(of: "sectionContentMaxWidth"))
     }
 
-    func testHomeHeroUsesBundledCustomVectorArtworkWithBrandPalette() throws {
+    func testHomeRemovesLegacyHeroArtworkForFirstPartyTaskHub() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
-        let contents = try String(
-            contentsOf: projectURL("BuySellAI/Resources/Assets.xcassets/SigmaHero.imageset/Contents.json"),
-            encoding: .utf8
-        )
-        let svg = try String(
-            contentsOf: projectURL("BuySellAI/Resources/Assets.xcassets/SigmaHero.imageset/SigmaHero.svg"),
-            encoding: .utf8
-        )
+        let heroContents = projectURL("BuySellAI/Resources/Assets.xcassets/SigmaHero.imageset/Contents.json")
+        let heroSVG = projectURL("BuySellAI/Resources/Assets.xcassets/SigmaHero.imageset/SigmaHero.svg")
 
-        XCTAssertNotNil(home.range(of: #"Image("SigmaHero")"#))
-        XCTAssertNotNil(contents.range(of: #""filename" : "SigmaHero.svg""#))
-        XCTAssertNotNil(svg.range(of: #"width="176" height="176" viewBox="0 0 176 176""#))
-        XCTAssertNotNil(svg.range(of: #"rx="48""#))
-        XCTAssertNotNil(svg.range(of: #"id="heroBackground""#))
-        XCTAssertNotNil(svg.range(of: #"id="topSheen""#))
-        XCTAssertNotNil(svg.range(of: #"id="innerStroke""#))
-        XCTAssertNotNil(svg.range(of: #"id="lensGlow""#))
-        XCTAssertNotNil(svg.range(of: #"#FF7A26"#))
-        XCTAssertNotNil(svg.range(of: #"#FF8D3A"#))
-        XCTAssertNotNil(svg.range(of: #"#FFB067"#))
-        XCTAssertNotNil(svg.range(of: #"stroke-linecap="round""#))
-        XCTAssertNil(svg.range(of: "systemName"))
-        XCTAssertNil(svg.range(of: "<text"))
-        XCTAssertGreaterThan(svg.count, 2_000)
+        XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
+        XCTAssertNil(home.range(of: "SigmaHero"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: heroContents.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: heroSVG.path))
+        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
     }
 
     func testAppIconUsesCameraFirstBrandArtworkWithoutTextTile() throws {
@@ -881,43 +875,34 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(marketplace.range(of: #".accessibilityAddTraits(.updatesFrequently)"#))
     }
 
-    func testPrimaryGlowIsScopedToHomeSnapButton() throws {
+    func testHomeRemovesDecorativePrimaryGlowAndUsesNativeTaskRow() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
         let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
-        let appSources = try appSwiftFiles()
-            .filter { $0.lastPathComponent != "HomeView.swift" }
-            .map { try String(contentsOf: $0, encoding: .utf8) }
-            .joined(separator: "\n")
 
-        XCTAssertNotNil(buttons.range(of: "var showsGlow = false"))
-        XCTAssertNotNil(designTokens.range(of: "static func primaryGlow() -> some ViewModifier"))
-        XCTAssertNotNil(designTokens.range(of: "ShadowModifier(color: Color.brand.primary.opacity(0.35), radius: 30, y: 12)"))
+        XCTAssertNil(buttons.range(of: "showsGlow"))
+        XCTAssertNil(buttons.range(of: "PrimaryGlowModifier"))
+        XCTAssertNil(designTokens.range(of: "static func primaryGlow()"))
+        XCTAssertNil(designTokens.range(of: "Color.brand.primary.opacity(0.35), radius: 30, y: 12"))
         XCTAssertNotNil(buttons.range(of: "var maxFillWidth: CGFloat?"))
         XCTAssertNotNil(buttons.range(of: "fillsWidth ? (maxFillWidth ?? .infinity) : nil"))
-        XCTAssertNotNil(buttons.range(of: "PrimaryGlowModifier(isEnabled: showsGlow)"))
-        XCTAssertNotNil(buttons.range(of: "content.modifier(AppShadow.primaryGlow())"))
-        XCTAssertNotNil(home.range(of: #"PrimaryPillButton("#))
-        XCTAssertNotNil(home.range(of: #"title: "Snap to sell","#))
-        XCTAssertNotNil(home.range(of: #"systemImage: "camera.fill","#))
-        XCTAssertNotNil(home.range(of: #"showsGlow: true"#))
-        XCTAssertNil(appSources.range(of: "showsGlow: true"))
+        XCTAssertNotNil(home.range(of: "SnapActionRow()"))
+        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
+        XCTAssertNil(home.range(of: #"PrimaryPillButton("#))
+        XCTAssertNil(home.range(of: #"systemImage: "camera.fill""#))
     }
 
-    func testHomeHeaderSeparatesControlsAtAccessibilityDynamicType() throws {
+    func testHomeUsesNativeToolbarInsteadOfCustomHeaderControls() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(home.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(home.range(of: "@ViewBuilder\n    private var header: some View"))
-        XCTAssertNotNil(home.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
-        XCTAssertNotNil(home.range(of: #"VStack(alignment: .leading, spacing: Spacing.sm)"#))
-        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)"#))
-        XCTAssertNotNil(home.range(of: #"private var brandLockup: some View"#))
+        XCTAssertNotNil(home.range(of: #".toolbar {"#))
+        XCTAssertNotNil(home.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
+        XCTAssertNotNil(home.range(of: #".navigationTitle("BuySell".localized)"#))
         XCTAssertNotNil(home.range(of: #"private var accountButton: some View"#))
         XCTAssertNotNil(home.range(of: #"private var settingsButton: some View"#))
-        XCTAssertNotNil(home.range(of: #".lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)"#))
-        XCTAssertNotNil(home.range(of: #".minimumScaleFactor(0.82)"#))
-        XCTAssertNotNil(home.range(of: #".frame(width: 44, height: 44)"#))
+        XCTAssertNil(home.range(of: "@ViewBuilder\n    private var header: some View"))
+        XCTAssertNil(home.range(of: #"private var brandLockup: some View"#))
+        XCTAssertNil(home.range(of: #".nativeLiquidGlassControlGroup(spacing: Spacing.sm)"#))
     }
 
     func testPresentedSheetsExposeVoiceOverSortPriorities() throws {
@@ -983,7 +968,6 @@ final class DesignAccessibilityTests: XCTestCase {
 
     func testSnapResultSecondaryActionsUseReadableHybridOnNarrowPhonesAndGridOnWideLayouts() throws {
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
-        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
         let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
 
         XCTAssertNotNil(snapResult.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
@@ -1000,7 +984,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(snapResult.range(of: #"(usesRegularWidthLayout || UIScreen.main.bounds.width >= 430)"#))
         XCTAssertNotNil(snapResult.range(of: #"&& dynamicTypeSize.isAccessibilitySize == false"#))
         XCTAssertNotNil(snapResult.range(of: "dynamicTypeSize.isAccessibilitySize\n            ? [GridItem(.flexible())]\n            : [GridItem(.flexible()), GridItem(.flexible())]"))
-        XCTAssertNotNil(readme.range(of: "narrow iPhone Snap Result action guardrails keep full `Change category` and `Change condition` labels visible"))
+        XCTAssertNotNil(snapResult.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)"#))
+        XCTAssertNotNil(snapResult.range(of: #"SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(m10.range(of: "Narrow-iPhone result actions keep quick retake/retry controls paired while rendering category and condition menu triggers as full-width material rows"))
     }
 

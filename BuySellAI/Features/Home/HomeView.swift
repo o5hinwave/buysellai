@@ -1,75 +1,41 @@
 import SwiftUI
-import UIKit
 
 struct HomeView: View {
     @Environment(AppStore.self) private var appStore
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var pendingDeletion: HistoryEntry?
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    VStack(spacing: Spacing.xl) {
-                        header
-
-                        VStack(spacing: Spacing.lg) {
-                            Image("SigmaHero")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 176, height: 176)
-                                .shadow(color: Color.brand.primary.opacity(0.35), radius: 30, x: 0, y: 12)
-                                .accessibilityHidden(true)
-
-                            VStack(spacing: Spacing.sm) {
-                                Text("Sell anything in three taps.".localized)
-                                    .brandFont(.display)
-                                    .foregroundStyle(Color.brand.foreground)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(3)
-                                    .minimumScaleFactor(0.78)
-
-                                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                                    .brandFont(.body)
-                                    .foregroundStyle(Color.brand.mutedForeground)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(3)
-                            }
-
-                            VStack(spacing: Spacing.sm) {
-                                PrimaryPillButton(
-                                    title: "Snap to sell",
-                                    systemImage: "camera.fill",
-                                    maxFillWidth: heroContentMaxWidth,
-                                    showsGlow: true
-                                ) {
-                                    appStore.startSnapFlow()
-                                }
-                                .accessibilityHint("Opens the camera".localized)
-
-                            SecondaryPillButton(title: "How it works", maxFillWidth: heroContentMaxWidth) {
-                                appStore.presentTutorial()
-                            }
-                        }
-                        .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
-                        .padding(.top, Spacing.xs)
+                    Button {
+                        startSnapFlow()
+                    } label: {
+                        SnapActionRow()
                     }
-                        .frame(maxWidth: heroContentMaxWidth)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, Spacing.xl)
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Snap to sell".localized)
+                    .accessibilityHint("Opens the camera".localized)
+
+                    Button {
+                        Haptics.impact(.light)
+                        appStore.presentTutorial()
+                    } label: {
+                        HomeSecondaryActionRow(title: "How it works", systemImage: "questionmark.circle")
                     }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.brand.background)
-                    .listRowInsets(EdgeInsets(top: Spacing.md, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("How it works".localized)
+                } header: {
+                    Text("Snap · Pick · Sell".localized)
+                } footer: {
+                    Text("Sell anything in three taps.".localized)
                 }
 
-                Section {
+                Section("Recent listings".localized) {
                     if appStore.history.isEmpty {
-                        EmptyHistoryView(maxWidth: sectionContentMaxWidth)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.brand.background)
-                            .listRowInsets(EdgeInsets(top: Spacing.sm, leading: Spacing.lg, bottom: Spacing.xl, trailing: Spacing.lg))
+                        EmptyHistoryView()
                     } else {
                         ForEach(appStore.history) { entry in
                             Button {
@@ -87,28 +53,23 @@ struct HomeView: View {
                                 .tint(Color.brand.destructive)
                                 .accessibilityLabel("Delete listing".localized)
                             }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.brand.background)
-                            .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.lg, bottom: Spacing.xs, trailing: Spacing.lg))
                             .accessibilityLabel(historyAccessibilityLabel(entry))
                         }
                     }
-                } header: {
-                    Text("Recent listings".localized)
-                        .brandFont(.overline)
-                        .foregroundStyle(Color.brand.mutedForeground)
-                        .textCase(.uppercase)
-                        .tracking(0.88)
-                        .padding(.horizontal, Spacing.lg)
-                        .padding(.top, Spacing.sm)
-                        .frame(maxWidth: sectionContentMaxWidth, alignment: .leading)
-                        .frame(maxWidth: .infinity)
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.brand.background)
+            .listStyle(.insetGrouped)
             .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
+            .navigationTitle("BuySell".localized)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    accountButton
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    settingsButton
+                }
+            }
             .refreshable {
                 await appStore.loadHistory()
             }
@@ -130,95 +91,32 @@ struct HomeView: View {
         }
     }
 
-    private var heroContentMaxWidth: CGFloat {
-        usesRegularWidthLayout ? 680 : .infinity
-    }
-
-    private var sectionContentMaxWidth: CGFloat {
-        usesRegularWidthLayout ? 760 : .infinity
-    }
-
-    private var usesRegularWidthLayout: Bool {
-        horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
-    }
-
-    @ViewBuilder
-    private var header: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    brandLockup
-
-                    HStack(spacing: Spacing.sm) {
-                        HStack(spacing: Spacing.sm) {
-                            accountButton
-                            settingsButton
-                        }
-                        .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
-                        Spacer(minLength: 0)
-                    }
-                }
-            } else {
-                HStack(spacing: Spacing.sm) {
-                    brandLockup
-
-                    Spacer(minLength: Spacing.md)
-
-                    HStack(spacing: Spacing.sm) {
-                        accountButton
-                        settingsButton
-                    }
-                    .nativeLiquidGlassControlGroup(spacing: Spacing.sm)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-    }
-
-    private var brandLockup: some View {
-        VStack(alignment: .leading, spacing: Spacing.xxs) {
-            BrandWordmark()
-            Text("Snap · Pick · Sell".localized)
-                .brandFont(.caption)
-                .foregroundStyle(Color.brand.mutedForeground)
-        }
+    private func startSnapFlow() {
+        Haptics.impact(.medium)
+        appStore.startSnapFlow()
     }
 
     private var accountButton: some View {
-        let title = (appStore.session == nil ? "Sign in" : "Sign out").localized
-
-        return Button {
+        Button {
             handleAccountButtonTap()
         } label: {
-            Text(title)
-                .brandFont(.caption)
-                .foregroundStyle(Color.brand.foreground)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.82)
-                .padding(.horizontal, Spacing.md)
-                .frame(minHeight: 44)
-                .nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)
+            Text(accountButtonTitle.localized)
         }
-        .buttonStyle(PressButtonStyle())
-        .tint(Color.brand.primary)
-        .nativeGlassButtonStyle(.standard)
-        .accessibilityLabel(title)
+        .accessibilityLabel(accountButtonTitle.localized)
+    }
+
+    private var accountButtonTitle: String {
+        appStore.session == nil ? "Sign in" : "Sign out"
     }
 
     private var settingsButton: some View {
-        IconCircleButton(
-            systemImage: "gearshape.fill",
-            accessibilityLabel: "Settings",
-            size: 40,
-            material: true,
-            materialForeground: Color.brand.foreground,
-            materialStroke: Color.brand.border,
-            usesAccessibleMaterialStroke: true
-        ) {
+        Button {
+            Haptics.impact(.light)
             appStore.presentSettings()
+        } label: {
+            Image(systemName: "gearshape")
         }
-        .frame(width: 44, height: 44)
+        .accessibilityLabel("Settings".localized)
     }
 
     private func handleAccountButtonTap() {
@@ -264,18 +162,82 @@ struct HomeView: View {
 }
 
 private struct EmptyHistoryView: View {
-    let maxWidth: CGFloat
+    var body: some View {
+        VStack(spacing: Spacing.sm) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            Text("Your past listings will show up here.".localized)
+                .brandFont(.body)
+                .foregroundStyle(.secondary)
+        }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: 132)
+            .accessibilityElement(children: .combine)
+    }
+}
+
+private struct SnapActionRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        Text("Your past listings will show up here.".localized)
-            .brandFont(.caption)
-            .foregroundStyle(Color.brand.mutedForeground)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .padding(.horizontal, Spacing.lg)
-            .nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)
-            .frame(maxWidth: maxWidth)
-            .frame(maxWidth: .infinity)
+        HStack(spacing: Spacing.md) {
+            Image(systemName: "camera.viewfinder")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryText)
+                .frame(width: 44, height: 44)
+                .background(Color.brand.primaryMuted, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text("Snap to sell".localized)
+                    .brandFont(.bodyLg)
+                    .foregroundStyle(.primary)
+
+                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
+                    .brandFont(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+            }
+            .layoutPriority(1)
+
+            Image(systemName: "chevron.right")
+                .brandSymbol(.chevron)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, Spacing.xs)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct HomeSecondaryActionRow: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryText)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+
+            Text(title.localized)
+                .brandFont(.body)
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .brandSymbol(.chevron)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 }
 

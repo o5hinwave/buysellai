@@ -12,9 +12,8 @@ struct HistoryRow: View {
 
     var body: some View {
         rowContent
-            .padding(Spacing.sm)
+            .padding(.vertical, Spacing.xs)
             .frame(minHeight: rowMinHeight)
-            .nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.74, strokeOpacity: 0.66)
     }
 
     @ViewBuilder

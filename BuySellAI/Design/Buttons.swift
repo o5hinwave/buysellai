@@ -8,7 +8,6 @@ struct PrimaryPillButton: View {
     var maxFillWidth: CGFloat?
     var accessibilityHint: String?
     var hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle? = .medium
-    var showsGlow = false
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -38,7 +37,6 @@ struct PrimaryPillButton: View {
             .frame(maxWidth: fillWidth, minHeight: 56)
             .padding(.horizontal, fillsWidth ? 0 : Spacing.xl)
             .nativePrimaryButtonBackground()
-            .modifier(PrimaryGlowModifier(isEnabled: showsGlow))
         }
         .buttonStyle(.plain)
         .tint(Color.brand.primary)
@@ -70,18 +68,6 @@ struct PrimaryPillButton: View {
 
     private var buttonOpacity: Double {
         ButtonStateOpacity.opacity(isEnabled: isEnabled, isPressed: isPressing)
-    }
-}
-
-private struct PrimaryGlowModifier: ViewModifier {
-    let isEnabled: Bool
-
-    func body(content: Content) -> some View {
-        if isEnabled {
-            content.modifier(AppShadow.primaryGlow())
-        } else {
-            content
-        }
     }
 }
 
