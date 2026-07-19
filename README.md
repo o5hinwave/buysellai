@@ -440,7 +440,7 @@ Track final signed-archive and real-device acceptance in `M10_ACCEPTANCE.md`. Th
 - M5 Listing: built. API contract, listing sheet, copy, haptics, toast.
 - M6 History: built. SwiftData guest persistence, Home list, delete, reopen listing.
 - M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
-- M8 Tutorial: built. Five-slide first-launch walkthrough with swipe, reduce-motion support, and SDK-safe material setup controls.
+- M8 Tutorial: built, then redesigned for M11. First launch now uses a compact native first-use guide with visible snap/pick/copy steps, toolbar skip, keyboard dismissal support, and an adaptive bottom Get Started action instead of a long carousel.
 - M9 Settings + polish: built. Theme, app-wide reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
 - M10 QA: partial. Simulator unit/UI coverage, source checks, no-sign archive/package-size checks, Supabase source guardrails, screenshot evidence, and local submit-readiness scripts have passed in retained evidence, but the full App Store gate remains pending external inputs. The current M11 redesign work updates those guardrails as screens move to the first-party system direction. Signed archive, App Store Connect export/validation, App Store Connect legal/account-owner confirmation, backend smoke preflight, latest-SDK proof, Instruments proof, and real-device acceptance remain blocked until an Apple development team, App Store Connect API-key credentials, confirmed metadata, deployed real Supabase config/functions, a latest design SDK toolchain, and trusted physical hardware are available.
 

@@ -9,7 +9,7 @@
 - Listing: generation loading, generated listing text, copy, regenerate, retake while keeping marketplace, success toast.
 - History: local SwiftData history, remote Supabase history for signed-in users, swipe/delete confirmation, reopen listing.
 - Auth: optional Sign in with Apple, email sign-in, guest escape, account/session persistence, local-to-remote migration.
-- Tutorial: first-launch walkthrough, swipe/keyboard navigation, Settings/Home re-entry, Reduce Motion behavior.
+- Tutorial: compact first-launch guide, keyboard dismissal support, Settings/Home re-entry, Reduce Motion-aware footer behavior.
 - Settings: account state, theme and Reduce Motion preferences, tutorial, clear history, review prompt gate, legal/support links, delete account.
 
 ## Current Navigation Structure
@@ -23,6 +23,7 @@
 - The functional IA already matches the desired one-task product model; adding tabs or dashboards would make the app less first-party for this use case.
 - Shared typography now follows San Francisco semantic Dynamic Type roles; remaining redesign work should continue replacing older custom visual compositions screen by screen.
 - Home has moved from the earlier decorative hero/pill composition to a native grouped-list task hub with toolbar account/settings actions and a row-based primary snap action.
+- Onboarding has moved from a long illustrated carousel to a compact native first-use guide that surfaces snap, pick, and copy steps immediately.
 - Native material and Liquid Glass fallbacks are centralized, but final SDK evidence remains pending until Xcode/iPhoneOS SDK 27+ is available.
 - The camera and critical flow have strong simulator coverage, but final camera quality cannot be accepted until a trusted physical device and Instruments traces are recorded.
 - Local loading, empty, offline, error, and success states are represented across tests and screens; backend production states remain pending without real Supabase config and deployed functions.
@@ -41,6 +42,7 @@
 1. Migrate shared typography away from bundled static font faces and into native Dynamic Type system roles.
 2. Replace Home’s legacy hero/pill task hub with native grouped-list navigation and toolbar affordances.
 3. Keep launch and SwiftUI splash visually aligned through system-bold wordmark styling and shared launch color tokens.
-4. Continue redesigning flow sheets, onboarding, settings, and camera surfaces toward the same first-party visual system.
-5. Preserve the current native material layer and continue final SDK verification when the latest toolchain is available.
-6. Use real Supabase config/deploy evidence, signed archive/export evidence, physical-device acceptance, and Instruments traces to close the remaining M10 gates.
+4. Replace the legacy onboarding carousel with a compact first-use guide that preserves first-launch and re-entry behavior.
+5. Continue redesigning flow sheets, settings, and camera surfaces toward the same first-party visual system.
+6. Preserve the current native material layer and continue final SDK verification when the latest toolchain is available.
+7. Use real Supabase config/deploy evidence, signed archive/export evidence, physical-device acceptance, and Instruments traces to close the remaining M10 gates.

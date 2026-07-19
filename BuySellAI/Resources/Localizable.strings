@@ -78,6 +78,8 @@
 	<string>Captures the current view</string>
 	<key>Capturing photo</key>
 	<string>Capturing photo</string>
+	<key>Capture one clear item.</key>
+	<string>Capture one clear item.</string>
 	<key>Category</key>
 	<string>Category</string>
 	<key>Chairish</key>
@@ -110,6 +112,8 @@
 	<string>Collectibles</string>
 	<key>Computing marketplace payouts</key>
 	<string>Computing marketplace payouts</string>
+	<key>Compare estimated payouts.</key>
+	<string>Compare estimated payouts.</string>
 	<key>Condition</key>
 	<string>Condition</string>
 	<key>Continue with Apple</key>
@@ -262,16 +266,14 @@
 	<string>Music</string>
 	<key>Music gear</key>
 	<string>Music gear</string>
-	<key>Name, category, condition, price — in seconds.</key>
-	<string>Name, category, condition, price — in seconds.</string>
 	<key>Neighborhood local sales</key>
 	<string>Neighborhood local sales</string>
 	<key>New</key>
 	<string>New</string>
-	<key>Next</key>
-	<string>Next</string>
 	<key>Nextdoor</key>
 	<string>Nextdoor</string>
+	<key>No account required.</key>
+	<string>No account required.</string>
 	<key>Not signed in</key>
 	<string>Not signed in</string>
 	<key>OfferUp</key>
@@ -294,8 +296,6 @@
 	<string>Pick where to sell</string>
 	<key>Pick where to sell.</key>
 	<string>Pick where to sell.</string>
-	<key>Point, tap, done. We handle the rest.</key>
-	<string>Point, tap, done. We handle the rest.</string>
 	<key>Poshmark</key>
 	<string>Poshmark</string>
 	<key>Price</key>
@@ -310,6 +310,8 @@
 	<string>Recent listings</string>
 	<key>Reduce Motion</key>
 	<string>Reduce Motion</string>
+	<key>Ready when you are.</key>
+	<string>Ready when you are.</string>
 	<key>Regenerate</key>
 	<string>Regenerate</string>
 	<key>Retake photo</key>
@@ -322,6 +324,8 @@
 	<string>Ruby Lane</string>
 	<key>Sell anything in three taps.</key>
 	<string>Sell anything in three taps.</string>
+	<key>Sell in three steps</key>
+	<string>Sell in three steps</string>
 	<key>Settings</key>
 	<string>Settings</string>
 	<key>Ship anything, casual buyers</key>
@@ -370,8 +374,6 @@
 	<string>Sports</string>
 	<key>Starting camera…</key>
 	<string>Starting camera…</string>
-	<key>Step %d of %d</key>
-	<string>Step %d of %d</string>
 	<key>Still working… tap Retry to try again.</key>
 	<string>Still working… tap Retry to try again.</string>
 	<key>StockX</key>
@@ -416,12 +418,10 @@
 	<string>Turn flash off</string>
 	<key>Turn flash on</key>
 	<string>Turn flash on</string>
-	<key>Turn stuff into cash in three taps.</key>
-	<string>Turn stuff into cash in three taps.</string>
-	<key>Tutorial progress</key>
-	<string>Tutorial progress</string>
 	<key>Type DELETE to confirm.</key>
 	<string>Type DELETE to confirm.</string>
+	<key>Use the ready listing wherever you sell.</key>
+	<string>Use the ready listing wherever you sell.</string>
 	<key>Used tech &amp; phones</key>
 	<string>Used tech &amp; phones</string>
 	<key>Version</key>
@@ -434,10 +434,6 @@
 	<string>Vintage furniture &amp; decor</string>
 	<key>Vinted</key>
 	<string>Vinted</string>
-	<key>We figure out what it is.</key>
-	<string>We figure out what it is.</string>
-	<key>We rank every marketplace by how much you'd get.</key>
-	<string>We rank every marketplace by how much you'd get.</string>
 	<key>Welcome to BuySell.</key>
 	<string>Welcome to BuySell.</string>
 	<key>Whatnot</key>
@@ -450,8 +446,6 @@
 	<string>Wrong item — retake</string>
 	<key>You're offline. Reconnect and try again.</key>
 	<string>You're offline. Reconnect and try again.</string>
-	<key>Your listing is written for you. Paste it in.</key>
-	<string>Your listing is written for you. Paste it in.</string>
 	<key>Your own storefront</key>
 	<string>Your own storefront</string>
 	<key>Your past listings will show up here.</key>
