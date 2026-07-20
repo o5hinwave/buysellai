@@ -343,6 +343,15 @@ Scripts/typecheck_local_sources.sh | tee /tmp/buysell-local-source-typecheck.log
 
 This emits a testable `BuySellAI` Swift module from all app sources, then typechecks the unit-test and UI-test Swift sources against the iPhone Simulator SDK and XCTest Swift overlay. Passing output includes `BuySellAI local source typecheck passed`, `target:`, `sdk:`, and `sources: app unit ui`; retain it as `/tmp/buysell-local-source-typecheck.log` for the combined gate. It is fast source-level evidence only; it does not replace the retained `.xcresult` bundles, no-sign archive, signed archive, real-device, Supabase backend, or App Store validation gates.
 
+Workspace materialization preflight for file-provider-backed checkouts:
+
+```sh
+bash Scripts/check_workspace_materialization.sh \
+  | tee /tmp/buysell-submit-readiness-workspace-materialization.log
+```
+
+This verifies Git metadata, app sources, tests, Supabase sources, support-site sources, retained screenshots, and M10 docs are locally readable before the heavier Xcode and readiness checks run. Passing output includes `M10 workspace materialization passed`; use `ALLOW_DATALLESS_WORKSPACE=1` only to record a visible pending blocker while cloud-only files download.
+
 Chunked M10 UI runner for isolating simulator UI failures or Xcode result-bundle hangs:
 
 ```sh

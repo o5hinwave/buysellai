@@ -277,6 +277,7 @@ bash Scripts/verify_m10_performance_evidence.sh \
 ```
 
 The performance evidence verifier checks the full-suite result, named simulator performance UI tests, the archived app-size budget, and carries forward the no-sign archive `bundle id:` and `release build:` markers. It does not replace the final physical-device timing checks in the real-device acceptance table.
+Retain the default verifier output at `/tmp/buysell-submit-readiness-performance.log`, or set `M10_PERFORMANCE_LOG` to the refreshed artifact path before running the combined gate.
 
 Run the M10 Instruments evidence verifier after profiling a signed Release build on a trusted physical device with Time Profiler and Allocations:
 
