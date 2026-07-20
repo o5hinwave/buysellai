@@ -173,13 +173,19 @@ struct AnalyzeResponse: Decodable, Sendable {
 
     func validatedForDisplay() throws -> AnalyzeResponse {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmedName.isEmpty == false, currentPrice > 0 else {
+        let trimmedCategory = category.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedCondition = condition.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedName.isEmpty == false,
+              Category.knownAPIValue(trimmedCategory) != nil,
+              Condition.knownAPIValue(trimmedCondition) != nil,
+              currentPrice > 0
+        else {
             throw APIError.decoding
         }
         return AnalyzeResponse(
             name: trimmedName,
-            category: category,
-            condition: condition,
+            category: trimmedCategory,
+            condition: trimmedCondition,
             currentPrice: currentPrice
         )
     }

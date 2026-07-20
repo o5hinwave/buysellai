@@ -16,6 +16,11 @@ final class ModelFormattingTests: XCTestCase {
         XCTAssertEqual(Category(apiValue: "Home"), .home)
         XCTAssertEqual(Category(apiValue: "home"), .home)
         XCTAssertEqual(Category(apiValue: "Collectibles"), .collectibles)
+        XCTAssertEqual(Category.knownAPIValue("Home"), .home)
+        XCTAssertEqual(Category.knownAPIValue("home"), .home)
+        XCTAssertEqual(Category.knownAPIValue("collectibles"), .collectibles)
+        XCTAssertNil(Category.knownAPIValue("Pets"))
+        XCTAssertEqual(Category(apiValue: "Pets"), .other)
     }
 
     func testConditionDisplayIsLocalizedButAPIValueStaysBackendStable() {
@@ -25,6 +30,10 @@ final class ModelFormattingTests: XCTestCase {
         XCTAssertEqual(Condition.good.apiValue, "good")
         XCTAssertEqual(Condition(apiValue: "Like New"), .likeNew)
         XCTAssertEqual(Condition(apiValue: "for_parts"), .forParts)
+        XCTAssertEqual(Condition.knownAPIValue("Like New"), .likeNew)
+        XCTAssertEqual(Condition.knownAPIValue("for_parts"), .forParts)
+        XCTAssertNil(Condition.knownAPIValue("broken"))
+        XCTAssertEqual(Condition(apiValue: "broken"), .good)
     }
 
     func testThemePreferenceDisplayIsLocalizedAndRawValuesStayPersistent() {

@@ -52,6 +52,14 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
         displayKey
     }
 
+    static func knownAPIValue(_ value: String) -> Category? {
+        let normalized = normalizedAPIValue(value)
+        return Category.allCases.first {
+            normalizedAPIValue($0.rawValue) == normalized ||
+            normalizedAPIValue($0.displayKey) == normalized
+        }
+    }
+
     private var displayKey: String {
         switch self {
         case .electronics: "Electronics"
@@ -75,19 +83,20 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
     }
 
     init(apiValue: String) {
-        let normalized = apiValue
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
-        self = Category.allCases.first {
-            $0.rawValue.replacingOccurrences(of: "_", with: "") == normalized ||
-            $0.displayKey.lowercased().replacingOccurrences(of: " ", with: "") == normalized
-        } ?? .other
+        self = Self.knownAPIValue(apiValue) ?? .other
     }
 
     func next() -> Category {
         Self.allCases.next(after: self)
+    }
+
+    private static func normalizedAPIValue(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "_", with: "")
     }
 }
 
@@ -106,6 +115,17 @@ enum Condition: String, Codable, CaseIterable, Sendable, Hashable {
         rawValue
     }
 
+    static func knownAPIValue(_ value: String) -> Condition? {
+        switch normalizedAPIValue(value) {
+        case "new": .new
+        case "likenew": .likeNew
+        case "good": .good
+        case "fair": .fair
+        case "forparts", "parts", "notworking": .forParts
+        default: nil
+        }
+    }
+
     private var displayKey: String {
         switch self {
         case .new: "New"
@@ -117,24 +137,20 @@ enum Condition: String, Codable, CaseIterable, Sendable, Hashable {
     }
 
     init(apiValue: String) {
-        let normalized = apiValue
+        self = Self.knownAPIValue(apiValue) ?? .good
+    }
+
+    func next() -> Condition {
+        Self.allCases.next(after: self)
+    }
+
+    private static func normalizedAPIValue(_ value: String) -> String {
+        value
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "-", with: "")
             .replacingOccurrences(of: "_", with: "")
-        switch normalized {
-        case "new": self = .new
-        case "likenew": self = .likeNew
-        case "good": self = .good
-        case "fair": self = .fair
-        case "forparts", "parts", "notworking": self = .forParts
-        default: self = .good
-        }
-    }
-
-    func next() -> Condition {
-        Self.allCases.next(after: self)
     }
 }
 

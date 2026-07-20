@@ -271,7 +271,11 @@ final class APIClientTests: XCTestCase {
         let invalidPayloads = [
             #"{"name":"Lamp","category":"Home"}"#,
             #"{"name":"  \n\t  ","category":"Home","condition":"good","currentPrice":12}"#,
-            #"{"name":"Lamp","category":"Home","condition":"good","currentPrice":0}"#
+            #"{"name":"Lamp","category":"Home","condition":"good","currentPrice":0}"#,
+            #"{"name":"Lamp","category":"","condition":"good","currentPrice":12}"#,
+            #"{"name":"Lamp","category":"Pets","condition":"good","currentPrice":12}"#,
+            #"{"name":"Lamp","category":"Home","condition":"","currentPrice":12}"#,
+            #"{"name":"Lamp","category":"Home","condition":"broken","currentPrice":12}"#
         ]
 
         for payload in invalidPayloads {
