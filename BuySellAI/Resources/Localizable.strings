@@ -96,6 +96,8 @@
 	<string>Changes the category</string>
 	<key>Changes the condition</key>
 	<string>Changes the condition</string>
+	<key>Choose Photo</key>
+	<string>Choose Photo</string>
 	<key>Clear all listing history? This can't be undone.</key>
 	<string>Clear all listing history? This can't be undone.</string>
 	<key>Clear history</key>
@@ -222,6 +224,8 @@
 	<string>Home</string>
 	<key>How it works</key>
 	<string>How it works</string>
+	<key>Imports a photo from your library.</key>
+	<string>Imports a photo from your library.</string>
 	<key>Item details</key>
 	<string>Item details</string>
 	<key>Item name</key>
@@ -294,6 +298,8 @@
 	<string>Other</string>
 	<key>Password</key>
 	<string>Password</string>
+	<key>Photo couldn't be imported.</key>
+	<string>Photo couldn't be imported.</string>
 	<key>Photo couldn't be captured.</key>
 	<string>Photo couldn't be captured.</string>
 	<key>Pick where to sell</key>
