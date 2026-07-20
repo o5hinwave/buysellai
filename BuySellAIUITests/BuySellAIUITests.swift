@@ -156,20 +156,29 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.isHittable)
     }
 
-    func testCompactTutorialGetStartedDismisses() {
+    func testFiveSlideTutorialNextGetStartedDismisses() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-tutorial"]
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Sell anything in three taps."].exists)
-        XCTAssertTrue(app.staticTexts["Snap a photo."].exists)
-        XCTAssertTrue(app.staticTexts["Capture one clear item."].exists)
-        XCTAssertTrue(app.staticTexts["Pick where to sell."].exists)
-        XCTAssertTrue(app.staticTexts["Compare estimated payouts."].exists)
-        XCTAssertTrue(app.staticTexts["Copy and paste."].exists)
-        XCTAssertTrue(app.staticTexts["Use the ready listing wherever you sell."].exists)
-        XCTAssertFalse(app.buttons["Next"].exists)
+        XCTAssertTrue(app.staticTexts["Turn stuff into cash in three taps."].exists)
+        XCTAssertTrue(app.buttons["Step 1"].exists)
+
+        let next = app.buttons["Next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 2))
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Point, tap, done. We handle the rest."].waitForExistence(timeout: 2))
+
+        next.tap()
+        XCTAssertTrue(app.staticTexts["We figure out what it is."].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Name, category, condition, price — in seconds."].exists)
+
+        next.tap()
+        XCTAssertTrue(app.staticTexts["We rank every marketplace by how much you'd get."].waitForExistence(timeout: 2))
+
+        next.tap()
+        XCTAssertTrue(app.staticTexts["Your listing is written for you. Paste it in."].waitForExistence(timeout: 2))
 
         let getStarted = app.buttons["Get started"]
         XCTAssertTrue(getStarted.waitForExistence(timeout: 2))
@@ -179,7 +188,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Welcome to BuySell."].exists)
     }
 
-    func testCompactTutorialDoesNotUseSwipeDrivenCarousel() {
+    func testFiveSlideTutorialSupportsSwipePaging() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset-tutorial"]
         app.launch()
@@ -191,9 +200,14 @@ final class BuySellAIUITests: XCTestCase {
         leftSwipeStart.press(forDuration: 0.05, thenDragTo: leftSwipeEnd)
 
         XCTAssertTrue(app.staticTexts["Snap a photo."].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Pick where to sell."].exists)
-        XCTAssertTrue(app.staticTexts["Copy and paste."].exists)
-        XCTAssertFalse(app.buttons["Next"].exists)
+        XCTAssertTrue(app.staticTexts["Point, tap, done. We handle the rest."].exists)
+        XCTAssertTrue(app.buttons["Next"].exists)
+
+        let rightSwipeStart = app.coordinate(withNormalizedOffset: CGVector(dx: 0.18, dy: 0.5))
+        let rightSwipeEnd = app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
+        rightSwipeStart.press(forDuration: 0.05, thenDragTo: rightSwipeEnd)
+
+        XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 2))
     }
 
     func testHomeHowItWorksReopensTutorial() {
@@ -206,8 +220,8 @@ final class BuySellAIUITests: XCTestCase {
         howItWorks.tap()
 
         XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Get started"].exists)
-        XCTAssertFalse(app.buttons["Next"].exists)
+        XCTAssertTrue(app.buttons["Next"].exists)
+        XCTAssertFalse(app.buttons["Get started"].exists)
         app.buttons["Skip"].tap()
 
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))
@@ -227,8 +241,8 @@ final class BuySellAIUITests: XCTestCase {
         howItWorks.tap()
 
         XCTAssertTrue(app.staticTexts["Welcome to BuySell."].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Get started"].exists)
-        XCTAssertFalse(app.buttons["Next"].exists)
+        XCTAssertTrue(app.buttons["Next"].exists)
+        XCTAssertFalse(app.buttons["Get started"].exists)
         app.buttons["Skip"].tap()
 
         XCTAssertTrue(app.buttons["Snap to sell"].waitForExistence(timeout: 5))

@@ -1400,60 +1400,56 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(toast.components(separatedBy: "shouldReduceMotion || phase").count - 1, 2)
     }
 
-    func testTutorialUsesCompactNativeStepRowsAndSystemSymbols() throws {
+    func testTutorialUsesFiveSlidePagerAndCustomIllustrations() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: "NavigationStack"))
-        XCTAssertNotNil(tutorial.range(of: "List {"))
-        XCTAssertNotNil(tutorial.range(of: #"Section("Sell in three steps".localized)"#))
-        XCTAssertNotNil(tutorial.range(of: "private struct OnboardingSummary"))
-        XCTAssertNotNil(tutorial.range(of: "private struct OnboardingStepRow"))
-        XCTAssertNotNil(tutorial.range(of: "private struct OnboardingStep: Identifiable"))
-        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #"Image(systemName: "#).count - 1, 1)
-        XCTAssertNotNil(tutorial.range(of: #"Image(systemName: "camera.viewfinder")"#))
-        XCTAssertNotNil(tutorial.range(of: #"Image(systemName: step.systemImage)"#))
-        XCTAssertNotNil(tutorial.range(of: #"systemImage: "camera""#))
-        XCTAssertNotNil(tutorial.range(of: #"systemImage: "list.bullet.rectangle""#))
-        XCTAssertNotNil(tutorial.range(of: #"systemImage: "doc.on.doc""#))
-        XCTAssertNil(tutorial.range(of: "private struct TutorialIllustration"))
-        XCTAssertNil(tutorial.range(of: "private struct SnapIllustration"))
-        XCTAssertNil(tutorial.range(of: "private struct AnalyzeIllustration"))
-        XCTAssertNil(tutorial.range(of: "private struct CopyIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct TutorialSlidePage"))
+        XCTAssertNotNil(tutorial.range(of: "private struct DotPager"))
+        XCTAssertNotNil(tutorial.range(of: "private struct TutorialIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct WelcomeIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct SnapIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct AnalyzeIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct PickIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private struct CopyIllustration"))
+        XCTAssertNotNil(tutorial.range(of: "private enum TutorialIllustrationKind"))
+        XCTAssertNotNil(tutorial.range(of: "private var slideSwipeGesture: some Gesture"))
+        XCTAssertNotNil(tutorial.range(of: "DragGesture(minimumDistance: 24)"))
+        XCTAssertNil(tutorial.range(of: "List {"))
+        XCTAssertNil(tutorial.range(of: "TabView"))
+        XCTAssertNil(tutorial.range(of: #"Image(systemName: "#))
     }
 
-    func testTutorialCopyHonorsCompactFirstUseRules() throws {
+    func testTutorialCopyHonorsFiveSlideRules() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: #".navigationTitle("Welcome to BuySell.".localized)"#))
-        XCTAssertNotNil(tutorial.range(of: #"Text("Sell anything in three taps.".localized)"#))
-        XCTAssertNotNil(tutorial.range(of: #"Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #"title: "Welcome to BuySell.""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Turn stuff into cash in three taps.""#))
         XCTAssertNotNil(tutorial.range(of: #"title: "Snap a photo.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Capture one clear item.""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Point, tap, done. We handle the rest.""#))
+        XCTAssertNotNil(tutorial.range(of: #"title: "We figure out what it is.""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Name, category, condition, price — in seconds.""#))
         XCTAssertNotNil(tutorial.range(of: #"title: "Pick where to sell.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Compare estimated payouts.""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "We rank every marketplace by how much you'd get.""#))
         XCTAssertNotNil(tutorial.range(of: #"title: "Copy and paste.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Use the ready listing wherever you sell.""#))
-        XCTAssertNil(tutorial.range(of: "TutorialSlide"))
-        XCTAssertNil(tutorial.range(of: "Turn stuff into cash in three taps."))
-        XCTAssertNil(tutorial.range(of: "Point, tap, done. We handle the rest."))
-        XCTAssertNil(tutorial.range(of: "We figure out what it is."))
-        XCTAssertNil(tutorial.range(of: "Name, category, condition, price — in seconds."))
-        XCTAssertNil(tutorial.range(of: "We rank every marketplace by how much you'd get."))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Your listing is written for you. Paste it in.""#))
+        XCTAssertEqual(tutorial.components(separatedBy: "TutorialSlide(").count - 1, 5)
         XCTAssertNil(tutorial.range(of: "Just paste it in."))
         XCTAssertNil(tutorial.range(of: "Simply paste it in."))
     }
 
-    func testTutorialRemovesCarouselProgressAndAdjustableSlideState() throws {
+    func testTutorialKeepsPagerProgressWithoutTabViewNavigation() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNil(tutorial.range(of: "TutorialSlidePage"))
-        XCTAssertNil(tutorial.range(of: "DotPager"))
+        XCTAssertNotNil(tutorial.range(of: "TutorialSlidePage(slide: slides[selectedIndex])"))
+        XCTAssertNotNil(tutorial.range(of: "DotPager(count: slides.count, selectedIndex: $selectedIndex)"))
+        XCTAssertNotNil(tutorial.range(of: "incrementSlide()"))
+        XCTAssertNotNil(tutorial.range(of: "decrementSlide()"))
+        XCTAssertNotNil(tutorial.range(of: "advanceOrFinish()"))
+        XCTAssertNotNil(tutorial.range(of: #""Next""#))
+        XCTAssertNotNil(tutorial.range(of: "Step %d"))
+        XCTAssertNotNil(tutorial.range(of: "Step %d of %d"))
         XCTAssertNil(tutorial.range(of: ".accessibilityAdjustableAction"))
-        XCTAssertNil(tutorial.range(of: "incrementSlide()"))
-        XCTAssertNil(tutorial.range(of: "decrementSlide()"))
-        XCTAssertNil(tutorial.range(of: "Tutorial progress"))
-        XCTAssertNil(tutorial.range(of: "Step %d of %d"))
-        XCTAssertNil(tutorial.range(of: #""Next""#))
+        XCTAssertNil(tutorial.range(of: "TabView"))
     }
 
     func testTutorialKeyboardFocusAndFooterAdaptForAccessibilityDynamicType() throws {
@@ -1464,44 +1460,47 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: #".focused($isKeyboardFocused)"#))
         XCTAssertNotNil(tutorial.range(of: #".task {"#))
         XCTAssertNotNil(tutorial.range(of: #"isKeyboardFocused = true"#))
-        XCTAssertNotNil(tutorial.range(of: #"private var footerAction: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #"private var footerControls: some View"#))
         XCTAssertNotNil(tutorial.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
-        XCTAssertNotNil(tutorial.range(of: #"VStack(alignment: .leading, spacing: Spacing.sm)"#))
-        XCTAssertNotNil(tutorial.range(of: #"private var getStartedButton: some View"#))
-        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil, minHeight: 44)"#))
+        XCTAssertNotNil(tutorial.range(of: #"VStack(spacing: Spacing.md)"#))
+        XCTAssertNotNil(tutorial.range(of: #"private var nextButton: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)"#))
         XCTAssertNotNil(tutorial.range(of: #".buttonStyle(.borderedProminent)"#))
         XCTAssertNotNil(tutorial.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNotNil(tutorial.range(of: #".controlSize(.large)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel(nextButtonTitle.localized)"#))
         XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.space)"#))
         XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.rightArrow)"#))
         XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.leftArrow)"#))
     }
 
-    func testTutorialUsesNativeToolbarAndBottomSafeAreaAction() throws {
+    func testTutorialUsesFullScreenControlsAndBottomPagerAction() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: #".toolbar {"#))
-        XCTAssertNotNil(tutorial.range(of: #"ToolbarItem(placement: .topBarLeading)"#))
-        XCTAssertNotNil(tutorial.range(of: #"Button("Skip".localized)"#))
-        XCTAssertNotNil(tutorial.range(of: #".safeAreaInset(edge: .bottom)"#))
-        XCTAssertNotNil(tutorial.range(of: #".background(.bar)"#))
-        XCTAssertNotNil(tutorial.range(of: #".listStyle(.insetGrouped)"#))
-        XCTAssertNotNil(tutorial.range(of: #".contentMargins(.bottom, Spacing.huge, for: .scrollContent)"#))
-        XCTAssertNotNil(tutorial.range(of: #".fixedSize(horizontal: true, vertical: false)"#))
+        XCTAssertNotNil(tutorial.range(of: #"private var headerControls: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #"private var footerControls: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #"TextActionButton(title: "Skip", minWidth: 64)"#))
+        XCTAssertNotNil(tutorial.range(of: #"DotPager(count: slides.count, selectedIndex: $selectedIndex)"#))
+        XCTAssertNotNil(tutorial.range(of: #"private var nextButton: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #".padding(.bottom, Spacing.lg)"#))
+        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 104 : 64)"#))
+        XCTAssertNil(tutorial.range(of: #".toolbar {"#))
+        XCTAssertNil(tutorial.range(of: #".safeAreaInset(edge: .bottom)"#))
+        XCTAssertNil(tutorial.range(of: #".listStyle(.insetGrouped)"#))
     }
 
-    func testTutorialSetupControlsAvoidLegacyCarouselChrome() throws {
+    func testTutorialReduceMotionUsesCrossfadeInsteadOfSlideMotion() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNil(tutorial.range(of: #"private var headerControls: some View"#))
-        XCTAssertNil(tutorial.range(of: #"private var footerSurface: some View"#))
-        XCTAssertNil(tutorial.range(of: #"private var slideSwipeGesture: some Gesture"#))
-        XCTAssertNil(tutorial.range(of: #".gesture(slideSwipeGesture)"#))
-        XCTAssertNil(tutorial.range(of: #"TextActionButton(title: "Skip", minWidth: 64)"#))
-        XCTAssertNil(tutorial.range(of: #".nativeMaterialBar(tintOpacity: 0.72"#))
-        XCTAssertNil(tutorial.range(of: "footerControls"))
+        XCTAssertNotNil(tutorial.range(of: #"guard shouldReduceMotion == false else {"#))
+        XCTAssertNotNil(tutorial.range(of: #"return .opacity"#))
+        XCTAssertNotNil(tutorial.range(of: #".asymmetric("#))
+        XCTAssertNotNil(tutorial.range(of: #".move(edge: insertionEdge).combined(with: .opacity)"#))
+        XCTAssertNotNil(tutorial.range(of: #".move(edge: removalEdge).combined(with: .opacity)"#))
+        XCTAssertNotNil(tutorial.range(of: #".gesture(slideSwipeGesture)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityValue("#))
         XCTAssertNotNil(tutorial.range(of: #".accessibilityElement(children: .contain)"#))
-        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #".accessibilityElement(children: .combine)"#).count - 1, 2)
+        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #".accessibilityElement(children: .contain)"#).count - 1, 3)
     }
 
     func testListingGeneratedTextRowMatchesPromptRequirements() throws {

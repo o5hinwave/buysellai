@@ -589,7 +589,7 @@ require_file_contains "$latest_design_log" "standard button glass: iOS 26+ stand
 require_file_contains "$latest_design_log" "home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars" "latest design SDK evidence log"
-require_file_contains "$latest_design_log" "tutorial setup: native inset grouped guide with a system bottom bar" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "menu item icons: category and condition menus use SF Symbols with selected checkmarks" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "system design: current presentation, no UIDesignRequiresCompatibility" "latest design SDK evidence log"

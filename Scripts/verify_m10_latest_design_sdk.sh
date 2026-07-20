@@ -155,8 +155,14 @@ require_snap_result_marker "private func conditionMenuItemIcon(for condition: Co
 require_snap_result_marker "systemImage: categoryMenuItemIcon(for: category)"
 require_snap_result_marker "systemImage: conditionMenuItemIcon(for: condition)"
 require_snap_result_marker 'Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)'
-require_tutorial_marker ".listStyle(.insetGrouped)"
-require_tutorial_marker ".background(.bar)"
+require_tutorial_marker "private struct TutorialSlidePage"
+require_tutorial_marker "private struct DotPager"
+require_tutorial_marker "private struct TutorialIllustration"
+require_tutorial_marker "private var slideSwipeGesture: some Gesture"
+require_tutorial_marker "guard shouldReduceMotion == false else"
+require_tutorial_marker "return .opacity"
+require_tutorial_marker 'TextActionButton(title: "Skip", minWidth: 64)'
+require_tutorial_marker 'isLastSlide ? "Get started" : "Next"'
 require_tutorial_marker ".buttonStyle(.borderedProminent)"
 
 if /usr/libexec/PlistBuddy -c "Print :UIDesignRequiresCompatibility" "$info_plist" >/dev/null 2>&1; then
@@ -191,7 +197,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
-        printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
+        printf 'tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls\n'
         printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
         printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
         printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
@@ -214,7 +220,7 @@ printf 'standard button glass: iOS 26+ standard glass with material fallbacks fo
 printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
 printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
-printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
+printf 'tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls\n'
 printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
 printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'

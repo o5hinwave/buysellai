@@ -157,7 +157,7 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions"))
         XCTAssertNotNil(script.range(of: "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+"))
         XCTAssertNotNil(script.range(of: "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars"))
-        XCTAssertNotNil(script.range(of: "tutorial setup: native inset grouped guide with a system bottom bar"))
+        XCTAssertNotNil(script.range(of: "tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls"))
         XCTAssertNotNil(script.range(of: "menu item icons: category and condition menus use SF Symbols with selected checkmarks"))
         XCTAssertNotNil(script.range(of: "system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback"))
         XCTAssertNotNil(script.range(of: "system design: current presentation, no UIDesignRequiresCompatibility"))
