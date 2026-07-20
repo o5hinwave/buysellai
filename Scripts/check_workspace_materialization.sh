@@ -30,6 +30,15 @@ path_has_dataless_flag() {
     ls -ldO "$path" 2>/dev/null | grep -q 'dataless'
 }
 
+materialize_if_dataless() {
+    local path="$1"
+
+    path_has_dataless_flag "$path" || return 0
+    [[ -f "$path" ]] || return 0
+
+    cat "$path" >/dev/null 2>&1 || return 0
+}
+
 check_not_dataless() {
     local path="$1"
     local label="$2"
@@ -38,6 +47,8 @@ check_not_dataless() {
         pending "$label is missing at $path"
         return
     fi
+
+    materialize_if_dataless "$path"
 
     if path_has_dataless_flag "$path"; then
         pending "$label is dataless and must be materialized before release verification: $path"
@@ -96,6 +107,8 @@ check_tree_not_dataless() {
     }
 
     while IFS= read -r -d '' path; do
+        materialize_if_dataless "$path"
+
         if path_has_dataless_flag "$path"; then
             count=$((count + 1))
             if (( shown < max_tree_examples )); then
