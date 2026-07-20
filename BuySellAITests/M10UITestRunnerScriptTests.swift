@@ -19,6 +19,7 @@ final class M10UITestRunnerScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_UI_MAX_ATTEMPTS"))
         XCTAssertNotNil(script.range(of: "M10_UI_SNAPSHOT_ROOT"))
         XCTAssertNotNil(script.range(of: "prepare_snapshot"))
+        XCTAssertNotNil(script.range(of: "M10_TODAY_FEATURE_NOMINATION.md"))
         XCTAssertNotNil(script.range(of: #"M10_UI_SNAPSHOT_ROOT must be under /tmp"#))
         XCTAssertNotNil(script.range(of: #"rsync -a "${entries[@]}" "$target/""#))
         XCTAssertNotNil(script.range(of: #"cd "$xcodebuild_workdir""#))

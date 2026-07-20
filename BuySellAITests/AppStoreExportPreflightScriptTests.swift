@@ -24,6 +24,7 @@ final class AppStoreExportPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "timed out after"))
         XCTAssertNotNil(script.range(of: "M10_APP_STORE_EXPORT_SNAPSHOT_ROOT"))
         XCTAssertNotNil(script.range(of: "prepare_snapshot"))
+        XCTAssertNotNil(script.range(of: "M10_TODAY_FEATURE_NOMINATION.md"))
         XCTAssertNotNil(script.range(of: #"M10_APP_STORE_EXPORT_SNAPSHOT_ROOT must be under /tmp"#))
         XCTAssertNotNil(script.range(of: #"M10_APP_STORE_EXPORT_SNAPSHOT_ROOT must not point at the source checkout"#))
         XCTAssertNotNil(script.range(of: #"rsync -a "${source_root}/${entry}" "$target/""#))

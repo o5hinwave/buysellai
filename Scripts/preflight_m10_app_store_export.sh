@@ -65,6 +65,7 @@ prepare_snapshot() {
         "AppStoreAssets"
         "M10_ACCEPTANCE.md"
         "M10_APP_STORE_METADATA.md"
+        "M10_TODAY_FEATURE_NOMINATION.md"
         "M10_INSTRUMENTS.md"
         "README.md"
         ".gitignore"

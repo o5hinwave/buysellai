@@ -14,6 +14,7 @@ final class RealDevicePreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_DEVICE"))
         XCTAssertNotNil(script.range(of: "M10_REAL_DEVICE_SNAPSHOT_ROOT"))
         XCTAssertNotNil(script.range(of: "prepare_snapshot"))
+        XCTAssertNotNil(script.range(of: "M10_TODAY_FEATURE_NOMINATION.md"))
         XCTAssertNotNil(script.range(of: #"M10_REAL_DEVICE_SNAPSHOT_ROOT must be under /tmp"#))
         XCTAssertNotNil(script.range(of: #"M10_REAL_DEVICE_SNAPSHOT_ROOT must not point at the source checkout"#))
         XCTAssertNotNil(script.range(of: #"rsync -a "${source_root}/${entry}" "$target/""#))
