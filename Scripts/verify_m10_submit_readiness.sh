@@ -9,7 +9,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 
 git_repo() {
-    perl -e 'alarm shift @ARGV; exec @ARGV' \
+    env LC_ALL=C LANG=C perl -e 'alarm shift @ARGV; exec @ARGV' \
         "$git_check_timeout_seconds" \
         git -c core.fsmonitor=false -C "$repo_root" "$@"
 }
