@@ -292,7 +292,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "ALLOW_PENDING_M10=1"))
         XCTAssertNotNil(m10.range(of: "Run the combined M10 submit-readiness gate without `ALLOW_PENDING_M10=1`"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-full.xcresult"))
-        XCTAssertNotNil(m10.range(of: "/tmp/buysell-full-unit-tests-9.xcresult"))
+        XCTAssertNotNil(m10.range(of: "/tmp/buysell-full-unit-tests.xcresult"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-local-source-typecheck.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-app-store-metadata.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-today-feature.log"))
