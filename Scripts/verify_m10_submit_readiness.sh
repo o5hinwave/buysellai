@@ -6,7 +6,12 @@ allow_pending="${ALLOW_PENDING_M10:-0}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
-head_epoch="$(git -C "$repo_root" log -1 --format=%ct 2>/dev/null || printf '0')"
+
+git_repo() {
+    git -c core.fsmonitor=false -C "$repo_root" "$@"
+}
+
+head_epoch="$(git_repo log -1 --format=%ct 2>/dev/null || printf '0')"
 
 full_result="${M10_FULL_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}"
 unit_result="${M10_UNIT_XCRESULT:-/tmp/buysell-full-unit-tests-9.xcresult}"
@@ -95,12 +100,12 @@ require_file_contains() {
 require_clean_release_worktree() {
     local status
 
-    if ! git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if ! git_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         pending "release source state could not be checked because this is not a git worktree"
         return
     fi
 
-    if ! status="$(git -C "$repo_root" status --porcelain --untracked-files=all 2>/dev/null)"; then
+    if ! status="$(git_repo status --porcelain --untracked-files=all 2>/dev/null)"; then
         pending "release source state could not be checked with git status"
         return
     fi

@@ -35,6 +35,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "require_metadata_matches_marker_value"))
         XCTAssertNotNil(script.range(of: "require_same_metadata_value"))
         XCTAssertNotNil(script.range(of: "require_clean_release_worktree"))
+        XCTAssertNotNil(script.range(of: "git_repo"))
+        XCTAssertNotNil(script.range(of: "core.fsmonitor=false"))
         XCTAssertNotNil(script.range(of: "require_fresh_artifact"))
         XCTAssertNotNil(script.range(of: "require_fresh_pass_log"))
         XCTAssertNotNil(script.range(of: "current HEAD commit"))
