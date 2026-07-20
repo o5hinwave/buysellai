@@ -17,7 +17,7 @@ git_repo() {
 head_epoch="$(git_repo log -1 --format=%ct 2>/dev/null || printf '0')"
 
 full_result="${M10_FULL_XCRESULT:-/tmp/buysell-submit-readiness-full.xcresult}"
-unit_result="${M10_UNIT_XCRESULT:-/tmp/buysell-full-unit-tests-9.xcresult}"
+unit_result="${M10_UNIT_XCRESULT:-/tmp/buysell-full-unit-tests.xcresult}"
 focused_result="${M10_FOCUSED_XCRESULT:-/tmp/buysell-submit-readiness-focused.xcresult}"
 source_typecheck_log="${M10_SOURCE_TYPECHECK_LOG:-/tmp/buysell-local-source-typecheck.log}"
 no_sign_archive="${M10_NOSIGN_ARCHIVE:-/tmp/buysell-submit-readiness-nosign.xcarchive}"
@@ -44,7 +44,7 @@ ui_evidence_log="${M10_UI_EVIDENCE_LOG:-/tmp/buysell-submit-readiness-ui.log}"
 performance_log="${M10_PERFORMANCE_LOG:-/tmp/buysell-submit-readiness-performance.log}"
 instruments_log="${M10_INSTRUMENTS_LOG:-/tmp/buysell-submit-readiness-instruments.log}"
 min_tests="${M10_MIN_TESTS:-503}"
-min_unit_tests="${M10_MIN_UNIT_TESTS:-470}"
+min_unit_tests="${M10_MIN_UNIT_TESTS:-473}"
 min_focused_tests="${M10_MIN_FOCUSED_TESTS:-79}"
 required_focused_tests=(
     "ArchivePackagingScriptTests/testLocalArchiveVerifierEnforcesPromptPackageGates()"

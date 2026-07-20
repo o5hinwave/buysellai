@@ -12,7 +12,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_FOCUSED_XCRESULT"))
         XCTAssertNotNil(script.range(of: "M10_SOURCE_TYPECHECK_LOG"))
         XCTAssertNotNil(script.range(of: "M10_MIN_TESTS:-503"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_UNIT_TESTS:-470"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_UNIT_TESTS:-473"))
         XCTAssertNotNil(script.range(of: "M10_MIN_FOCUSED_TESTS:-79"))
         XCTAssertNotNil(script.range(of: "M10_SIGNED_ARCHIVE"))
         XCTAssertNotNil(script.range(of: "M10_APP_STORE_ARCHIVE"))
