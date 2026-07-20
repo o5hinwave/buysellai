@@ -37,6 +37,8 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "require_clean_release_worktree"))
         XCTAssertNotNil(script.range(of: "git_repo"))
         XCTAssertNotNil(script.range(of: "core.fsmonitor=false"))
+        XCTAssertNotNil(script.range(of: "M10_GIT_CHECK_TIMEOUT"))
+        XCTAssertNotNil(script.range(of: "alarm shift @ARGV; exec @ARGV"))
         XCTAssertNotNil(script.range(of: "require_fresh_artifact"))
         XCTAssertNotNil(script.range(of: "require_fresh_pass_log"))
         XCTAssertNotNil(script.range(of: "current HEAD commit"))

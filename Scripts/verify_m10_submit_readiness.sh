@@ -3,12 +3,15 @@ set -euo pipefail
 
 acceptance_file="${1:-M10_ACCEPTANCE.md}"
 allow_pending="${ALLOW_PENDING_M10:-0}"
+git_check_timeout_seconds="${M10_GIT_CHECK_TIMEOUT:-20}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 
 git_repo() {
-    git -c core.fsmonitor=false -C "$repo_root" "$@"
+    perl -e 'alarm shift @ARGV; exec @ARGV' \
+        "$git_check_timeout_seconds" \
+        git -c core.fsmonitor=false -C "$repo_root" "$@"
 }
 
 head_epoch="$(git_repo log -1 --format=%ct 2>/dev/null || printf '0')"
