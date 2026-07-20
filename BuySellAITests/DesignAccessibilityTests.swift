@@ -1289,11 +1289,14 @@ final class DesignAccessibilityTests: XCTestCase {
         )
     }
 
-    func testCameraControlsExposeVoiceOverLabelsAndStayCameraOnly() throws {
+    func testCameraControlsExposeVoiceOverLabelsAndPhotoImportRecovery() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
+        XCTAssertNotNil(source.range(of: #"import PhotosUI"#))
         XCTAssertNotNil(source.range(of: #"accessibilityLabel("Take photo".localized)"#))
         XCTAssertNotNil(source.range(of: #"accessibilityHint("Captures the current view".localized)"#))
+        XCTAssertNotNil(source.range(of: #"accessibilityLabel("Choose Photo".localized)"#))
+        XCTAssertNotNil(source.range(of: #"accessibilityHint("Imports a photo from your library.".localized)"#))
         XCTAssertNotNil(source.range(of: #".accessibilityLabel("Camera preview".localized)"#))
         XCTAssertNotNil(source.range(of: #".accessibilityHint("Tap the item to set focus and exposure.".localized)"#))
         XCTAssertNotNil(source.range(of: #"accessibilityLabel: "Close camera""#))
@@ -1307,6 +1310,12 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"guard isFlashAvailable else { return "Flash unavailable" }"#))
         XCTAssertNotNil(source.range(of: #"private func cameraBottomControls(safeAreaBottom: CGFloat) -> some View"#))
         XCTAssertNotNil(source.range(of: #"private var shutterButton: some View"#))
+        XCTAssertNotNil(source.range(of: #"private var photoImportButton: some View"#))
+        XCTAssertNotNil(source.range(of: #"PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared())"#))
+        XCTAssertNotNil(source.range(of: #"private func photoFallbackButton(sortPriority: Double) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"private func importPhoto(_ item: PhotosPickerItem?)"#))
+        XCTAssertNotNil(source.range(of: #"ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)"#))
+        XCTAssertNotNil(source.range(of: #"Photo couldn't be imported."#))
         XCTAssertNotNil(source.range(of: #"private var cameraHintLabel: some View"#))
         XCTAssertNotNil(source.range(of: #".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"#))
         XCTAssertNotNil(source.range(of: #"private var cameraBottomPadding: CGFloat"#))
@@ -1315,7 +1324,6 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"usesRegularWidthLayout ? 420 : .infinity"#))
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: #".lineLimit(2)"#).count - 1, 1)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: #".minimumScaleFactor(0.82)"#).count - 1, 1)
-        XCTAssertNil(source.range(of: "PhotosPicker"))
         XCTAssertNil(source.range(of: "PHPickerViewController"))
         XCTAssertNil(source.range(of: "UIImagePickerController"))
     }
@@ -1340,13 +1348,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".minimumScaleFactor(0.82)").count - 1, 2)
     }
 
-    func testCameraOnlyPlaceholdersAvoidPhotoLibrarySymbol() throws {
+    func testCameraPlaceholdersKeepPhotoLibraryIconOnlyInImportControls() throws {
         let appSources = try appSwiftFiles()
             .map { try String(contentsOf: $0, encoding: .utf8) }
             .joined(separator: "\n")
+        let camera = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
         let history = try String(contentsOf: projectURL("BuySellAI/Features/History/HistoryRow.swift"), encoding: .utf8)
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
 
+        XCTAssertNotNil(camera.range(of: #"Image(systemName: "photo.on.rectangle")"#))
         XCTAssertNil(appSources.range(of: #"Image(systemName: "photo")"#))
         XCTAssertNotNil(history.range(of: #"Image(systemName: "camera.fill")"#))
         XCTAssertNotNil(snapResult.range(of: #"Image(systemName: "camera.fill")"#))

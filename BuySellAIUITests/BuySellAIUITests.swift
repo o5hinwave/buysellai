@@ -401,6 +401,7 @@ final class BuySellAIUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Camera access needed to snap items."].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Open Settings"].exists)
+        XCTAssertTrue(app.buttons["Choose Photo"].exists)
 
         let close = app.buttons["Close"]
         XCTAssertTrue(close.exists)
@@ -419,6 +420,7 @@ final class BuySellAIUITests: XCTestCase {
         snap.tap()
 
         XCTAssertTrue(app.buttons["Take photo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Choose Photo"].exists)
         XCTAssertTrue(app.buttons["Close camera"].exists)
         XCTAssertTrue(app.buttons["Turn flash on"].exists)
         XCTAssertTrue(app.staticTexts["Fit the whole item in the frame"].exists)

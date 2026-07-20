@@ -163,11 +163,13 @@ final class CameraControllerTests: XCTestCase {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(source.range(of: #"@State private var captureTask: Task<Void, Never>?"#))
+        XCTAssertNotNil(source.range(of: #"@State private var photoImportTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: #"@State private var flashTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: #"@State private var cameraSwitchTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: #"@State private var focusTask: Task<Void, Never>?"#))
         XCTAssertNotNil(source.range(of: "private func cancelInFlightCapture()"))
         XCTAssertNotNil(source.range(of: "captureTask?.cancel()"))
+        XCTAssertNotNil(source.range(of: "photoImportTask?.cancel()"))
         XCTAssertNotNil(source.range(of: "flashTask?.cancel()"))
         XCTAssertNotNil(source.range(of: "cameraSwitchTask?.cancel()"))
         XCTAssertNotNil(source.range(of: "focusTask?.cancel()"))
@@ -181,6 +183,27 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNotNil(source.range(of: ".onDisappear {"))
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: "captureTask = Task").count - 1, 2)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: "guard Task.isCancelled == false else { return }").count - 1, 3)
+    }
+
+    func testCameraPhotoImportUsesPhotosPickerAndNormalizesToJPEGBeforeFlow() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: "import PhotosUI"))
+        XCTAssertNotNil(source.range(of: "@State private var selectedPhotoItem: PhotosPickerItem?"))
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared())").count - 1, 2)
+        XCTAssertNotNil(source.range(of: #".onChange(of: selectedPhotoItem) { _, item in"#))
+        XCTAssertNotNil(source.range(of: "importPhoto(item)"))
+        XCTAssertNotNil(source.range(of: "private func importPhoto(_ item: PhotosPickerItem?)"))
+        XCTAssertNotNil(source.range(of: "try await item.loadTransferable(type: Data.self)"))
+        XCTAssertNotNil(source.range(of: "ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)"))
+        let importStart = try XCTUnwrap(source.range(of: "private func importPhoto(_ item: PhotosPickerItem?)"))
+        let cancelStart = try XCTUnwrap(source.range(of: "private func cancelInFlightCapture()"))
+        let importSource = String(source[importStart.lowerBound..<cancelStart.lowerBound])
+
+        XCTAssertNotNil(importSource.range(of: "controller.stop()"))
+        XCTAssertNotNil(importSource.range(of: "onCapture(downscaled)"))
+        XCTAssertNotNil(source.range(of: #"text: "Photo couldn't be imported.".localized"#))
+        XCTAssertNil(importSource.range(of: "onCapture(data)", options: .caseInsensitive))
     }
 
     func testCameraFlashToggleTaskIsOwnedAndCancelled() throws {

@@ -20,6 +20,10 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "CFBundleShortVersionString"))
         XCTAssertNotNil(script.range(of: "CFBundleVersion"))
         XCTAssertNotNil(script.range(of: "NSCameraUsageDescription"))
+        XCTAssertNotNil(script.range(of: "NSPhotoLibraryUsageDescription"))
+        XCTAssertNotNil(script.range(of: "photo library usage description mismatch"))
+        XCTAssertNotNil(script.range(of: "NSPhotoLibraryAddUsageDescription"))
+        XCTAssertNotNil(script.range(of: "photo import build should not request photo-library add permission"))
         XCTAssertNotNil(script.range(of: "com.rhodes.buysellai"))
         XCTAssertNotNil(script.range(of: "release build:"))
     }

@@ -199,6 +199,7 @@ release_build="$(plist_value CFBundleVersion "$info_plist")"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 [[ "$(plist_value NSCameraUsageDescription "$info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
+[[ "$(plist_value NSPhotoLibraryUsageDescription "$info_plist")" == "BuySell lets you choose existing item photos from your library." ]] || fail "photo library usage description mismatch"
 [[ "$(plist_value ITSAppUsesNonExemptEncryption "$info_plist")" == "false" ]] || fail "non-exempt encryption must be false"
 [[ "$(plist_value CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName "$info_plist")" == "AppIcon" ]] || fail "iPhone primary icon name must be AppIcon"
 [[ "$(plist_value CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 "$info_plist")" == "AppIcon60x60" ]] || fail "iPhone primary icon file must include AppIcon60x60"
@@ -210,12 +211,8 @@ if plist_key_exists UIDesignRequiresCompatibility "$info_plist"; then
     fail "archived app must not request iOS design compatibility mode"
 fi
 
-if plist_key_exists NSPhotoLibraryUsageDescription "$info_plist"; then
-    fail "camera-only build should not request photo-library read permission"
-fi
-
 if plist_key_exists NSPhotoLibraryAddUsageDescription "$info_plist"; then
-    fail "camera-only build should not request photo-library add permission"
+    fail "photo import build should not request photo-library add permission"
 fi
 
 bundled_font="$(

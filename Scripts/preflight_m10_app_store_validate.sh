@@ -42,6 +42,10 @@ plist_array_value() {
     "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
+plist_key_exists() {
+    "${plist_buddy}" -c "Print :$1" "$2" >/dev/null 2>&1
+}
+
 plist_raw_value() {
     plutil -extract "$1" raw -o - "$2"
 }
@@ -124,6 +128,10 @@ require_privacy_manifest_values "$ipa_privacy_manifest"
 ipa_bundle_id="$(plist_value CFBundleIdentifier "$ipa_info_plist")"
 [[ "$ipa_bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
 [[ "$(plist_value NSCameraUsageDescription "$ipa_info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
+[[ "$(plist_value NSPhotoLibraryUsageDescription "$ipa_info_plist")" == "BuySell lets you choose existing item photos from your library." ]] || fail "photo library usage description mismatch"
+if plist_key_exists NSPhotoLibraryAddUsageDescription "$ipa_info_plist"; then
+    fail "photo import build should not request photo-library add permission"
+fi
 release_version="$(plist_value CFBundleShortVersionString "$ipa_info_plist")"
 release_build="$(plist_value CFBundleVersion "$ipa_info_plist")"
 [[ -n "$release_version" ]] || fail "IPA Info.plist is missing CFBundleShortVersionString"

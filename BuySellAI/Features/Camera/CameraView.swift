@@ -1,4 +1,5 @@
 import AVFoundation
+import PhotosUI
 import SwiftUI
 
 struct CameraView: View {
@@ -16,12 +17,15 @@ struct CameraView: View {
     @State private var flashOn = false
     @State private var cameraCapabilities = CameraCapabilities.unavailable
     @State private var isCapturing = false
+    @State private var isImportingPhoto = false
     @State private var isSwitchingCamera = false
     @State private var didPauseSessionForScenePhase = false
     @State private var bracketOpacity = 0.6
     @State private var focusIndicator: CameraFocusIndicator?
     @State private var captureErrorToast: ToastMessage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var captureTask: Task<Void, Never>?
+    @State private var photoImportTask: Task<Void, Never>?
     @State private var flashTask: Task<Void, Never>?
     @State private var cameraSwitchTask: Task<Void, Never>?
     @State private var focusTask: Task<Void, Never>?
@@ -68,7 +72,12 @@ struct CameraView: View {
         .onChange(of: scenePhase) { _, newPhase in
             handleScenePhase(newPhase)
         }
+        .onChange(of: selectedPhotoItem) { _, item in
+            importPhoto(item)
+        }
         .onDisappear {
+            photoImportTask?.cancel()
+            photoImportTask = nil
             flashTask?.cancel()
             flashTask = nil
             cameraSwitchTask?.cancel()
@@ -165,7 +174,12 @@ struct CameraView: View {
     @ViewBuilder
     private func cameraBottomControls(safeAreaBottom: CGFloat) -> some View {
         VStack(spacing: Spacing.sm) {
-            shutterButton
+            HStack(spacing: Spacing.lg) {
+                photoImportButton
+                shutterButton
+                shutterBalanceSpacer
+            }
+            .frame(maxWidth: .infinity)
             cameraHintLabel
         }
         .frame(maxWidth: cameraBottomMaxWidth)
@@ -188,9 +202,48 @@ struct CameraView: View {
             }
         }
         .buttonStyle(PressButtonStyle())
-        .disabled(isCapturing)
+        .disabled(isCapturing || isImportingPhoto)
         .accessibilityLabel("Take photo".localized)
         .accessibilityHint("Captures the current view".localized)
+    }
+
+    private var photoImportButton: some View {
+        PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
+            ZStack {
+                if isImportingPhoto {
+                    ProgressView()
+                        .tint(Color.brand.primaryForeground)
+                        .frame(width: 56, height: 56)
+                        .nativeIconButtonBackground(
+                            material: true,
+                            materialStroke: Color.brand.primaryForeground,
+                            usesAccessibleMaterialStroke: false
+                        )
+                } else {
+                    Image(systemName: "photo.on.rectangle")
+                        .brandSymbol(.controlIcon)
+                        .foregroundStyle(Color.brand.primaryForeground)
+                        .frame(width: 56, height: 56)
+                        .nativeIconButtonBackground(
+                            material: true,
+                            materialStroke: Color.brand.primaryForeground,
+                            usesAccessibleMaterialStroke: false
+                        )
+                }
+            }
+            .frame(width: IconCircleButton.tapTargetSize(for: 56), height: IconCircleButton.tapTargetSize(for: 56))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressButtonStyle())
+        .disabled(isCapturing || isImportingPhoto)
+        .accessibilityLabel("Choose Photo".localized)
+        .accessibilityHint("Imports a photo from your library.".localized)
+    }
+
+    private var shutterBalanceSpacer: some View {
+        Color.clear
+            .frame(width: 56, height: 56)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -256,6 +309,8 @@ struct CameraView: View {
             }
             .accessibilitySortPriority(2)
 
+            photoFallbackButton(sortPriority: 1)
+
             SecondaryPillButton(
                 title: "Close",
                 fillsWidth: fallbackActionsFillWidth,
@@ -264,7 +319,7 @@ struct CameraView: View {
                 controller.stop()
                 onCancel()
             }
-            .accessibilitySortPriority(1)
+            .accessibilitySortPriority(0)
         }
     }
 
@@ -278,6 +333,8 @@ struct CameraView: View {
                 .minimumScaleFactor(0.82)
                 .accessibilitySortPriority(2)
 
+            photoFallbackButton(sortPriority: 1)
+
             SecondaryPillButton(
                 title: "Close",
                 fillsWidth: fallbackActionsFillWidth,
@@ -286,8 +343,22 @@ struct CameraView: View {
                 controller.stop()
                 onCancel()
             }
-            .accessibilitySortPriority(1)
+            .accessibilitySortPriority(0)
         }
+    }
+
+    private func photoFallbackButton(sortPriority: Double) -> some View {
+        PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
+            Label("Choose Photo".localized, systemImage: "photo.on.rectangle")
+                .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
+                .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .disabled(isImportingPhoto)
+        .accessibilityLabel("Choose Photo".localized)
+        .accessibilityHint("Imports a photo from your library.".localized)
+        .accessibilitySortPriority(sortPriority)
     }
 
     private func fallbackPanel<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
@@ -524,9 +595,44 @@ struct CameraView: View {
         }
     }
 
+    private func importPhoto(_ item: PhotosPickerItem?) {
+        guard let item else { return }
+        photoImportTask?.cancel()
+        isImportingPhoto = true
+        photoImportTask = Task { @MainActor in
+            defer {
+                selectedPhotoItem = nil
+                isImportingPhoto = false
+                photoImportTask = nil
+            }
+
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self),
+                      let downscaled = ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)
+                else {
+                    throw CameraError.captureFailed
+                }
+                guard Task.isCancelled == false else { return }
+                Haptics.notify(.success)
+                controller.stop()
+                onCapture(downscaled)
+            } catch {
+                guard Task.isCancelled == false else { return }
+                Haptics.notify(.error)
+                captureErrorToast = ToastMessage(
+                    text: "Photo couldn't be imported.".localized,
+                    style: .error
+                )
+            }
+        }
+    }
+
     private func cancelInFlightCapture() {
         captureTask?.cancel()
         captureTask = nil
+        photoImportTask?.cancel()
+        photoImportTask = nil
+        selectedPhotoItem = nil
         focusTask?.cancel()
         focusTask = nil
         focusIndicator = nil
@@ -536,6 +642,7 @@ struct CameraView: View {
         restartTask = nil
         isSwitchingCamera = false
         isCapturing = false
+        isImportingPhoto = false
         didPauseSessionForScenePhase = false
         controller.stop()
     }

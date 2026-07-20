@@ -51,27 +51,24 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "design compatibility mode"))
     }
 
-    func testPhotoLibraryPermissionIsAbsentForCameraOnlyBuild() throws {
+    func testPhotoLibraryImportUsesReadOnlyPhotosPickerMetadata() throws {
         let plist = try projectInfoPlist()
         let appSource = try appSwiftFiles()
             .map { try String(contentsOf: $0, encoding: .utf8) }
             .joined(separator: "\n")
-        let photoLibraryAPIPatterns = [
-            #"\bimport\s+PhotosUI\b"#,
-            #"\bimport\s+Photos\b"#,
-            #"\bPhotosPicker\b"#,
-            #"\bPHPickerViewController\b"#,
-            #"\bUIImagePickerController\b"#,
-            #"\bUIImageWriteToSavedPhotosAlbum\b"#,
-            #"\bPHPhotoLibrary\b"#
-        ]
 
-        XCTAssertNil(plist["NSPhotoLibraryUsageDescription"])
+        XCTAssertEqual(
+            plist["NSPhotoLibraryUsageDescription"] as? String,
+            "BuySell lets you choose existing item photos from your library."
+        )
         XCTAssertNil(plist["NSPhotoLibraryAddUsageDescription"])
-
-        for pattern in photoLibraryAPIPatterns {
-            XCTAssertNil(appSource.range(of: pattern, options: .regularExpression), "Camera-only app should not use \(pattern)")
-        }
+        XCTAssertNotNil(appSource.range(of: #"\bimport\s+PhotosUI\b"#, options: .regularExpression))
+        XCTAssertNotNil(appSource.range(of: #"\bPhotosPicker\b"#, options: .regularExpression))
+        XCTAssertNil(appSource.range(of: #"\bimport\s+Photos\b"#, options: .regularExpression))
+        XCTAssertNil(appSource.range(of: #"\bPHPickerViewController\b"#, options: .regularExpression))
+        XCTAssertNil(appSource.range(of: #"\bUIImagePickerController\b"#, options: .regularExpression))
+        XCTAssertNil(appSource.range(of: #"\bUIImageWriteToSavedPhotosAlbum\b"#, options: .regularExpression))
+        XCTAssertNil(appSource.range(of: #"\bPHPhotoLibrary\b"#, options: .regularExpression))
     }
 
     func testProjectTargetsIOSSeventeenMinimum() throws {

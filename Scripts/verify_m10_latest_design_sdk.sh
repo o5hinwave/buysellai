@@ -144,6 +144,8 @@ require_camera_marker "cameraCapabilities.canSwitchCamera"
 require_camera_marker "handleScenePhase"
 require_camera_marker "pauseCameraForScenePhase"
 require_camera_marker "restartCameraAfterInterruption"
+require_camera_marker "PhotosPicker(selection: \$selectedPhotoItem, matching: .images, photoLibrary: .shared())"
+require_camera_marker "private func importPhoto(_ item: PhotosPickerItem?)"
 require_auth_marker ".listStyle(.insetGrouped)"
 require_auth_marker "NavigationLink(value: AuthRoute.email)"
 require_auth_marker ".buttonStyle(.borderedProminent)"
@@ -187,7 +189,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
         printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
         printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
-        printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
+        printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
         printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
@@ -210,7 +212,7 @@ printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, G
 printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
 printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
 printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
-printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
+printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
 printf 'tutorial setup: native inset grouped guide with a system bottom bar\n'
 printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
