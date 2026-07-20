@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 mode="${1:-full}"
 config_path="${SUPABASE_CONFIG_PATH:-$repo_root/BuySellAI/App/Config.plist}"
 linked_ref_file="$repo_root/supabase/.temp/project-ref"
@@ -29,7 +29,7 @@ any secret values are requested.
 
 For CI, set SUPABASE_SECRETS_FROM_ENV=1 and provide the required secret
 environment variables. In full mode this includes APPLE_PRIVATE_KEY_PATH,
-which must point to a .p8 file outside the repository.
+which must point to a .p8 private-key file outside the repository.
 
 Set SUPABASE_PROJECT_REF=<project-ref> to choose the target project without
 requiring `supabase link`. If unset, the helper derives the ref from
@@ -197,6 +197,45 @@ require_secret_access() {
     fi
 }
 
+validate_apple_private_key_path() {
+    local raw_path="$1"
+    local absolute_path
+
+    [[ -n "$raw_path" ]] || fail "APPLE_PRIVATE_KEY_PATH is required"
+
+    case "$raw_path" in
+        *.p8)
+            ;;
+        *)
+            fail "APPLE_PRIVATE_KEY_PATH must point to a .p8 file outside the repository"
+            ;;
+    esac
+
+    absolute_path="$(
+        APPLE_PRIVATE_KEY_PATH_VALUE="$raw_path" python3 <<'PY'
+import os
+from pathlib import Path
+
+try:
+    print(Path(os.environ["APPLE_PRIVATE_KEY_PATH_VALUE"]).expanduser().resolve(strict=True))
+except OSError:
+    raise SystemExit(1)
+PY
+    )" || fail "Apple private key file is missing"
+
+    case "$absolute_path" in
+        "$repo_root"/*)
+            fail "APPLE_PRIVATE_KEY_PATH must not point inside the repository"
+            ;;
+    esac
+
+    if ! grep -Fq "BEGIN PRIVATE KEY" "$absolute_path" || ! grep -Fq "END PRIVATE KEY" "$absolute_path"; then
+        fail "APPLE_PRIVATE_KEY_PATH must point to a .p8 private-key file"
+    fi
+
+    APPLE_PRIVATE_KEY_PATH="$absolute_path"
+}
+
 case "$mode" in
     preflight|full|gemini-only)
         ;;
@@ -242,7 +281,7 @@ if [[ "$mode" == "full" ]]; then
     read_required_or_env "Apple Client ID / bundle ID: " APPLE_CLIENT_ID
     read_required_or_env "Apple private key .p8 path: " APPLE_PRIVATE_KEY_PATH
 
-    [[ -f "$APPLE_PRIVATE_KEY_PATH" ]] || fail "Apple private key file is missing"
+    validate_apple_private_key_path "$APPLE_PRIVATE_KEY_PATH"
     APPLE_PRIVATE_KEY="$(awk '{printf "%s\\n", $0}' "$APPLE_PRIVATE_KEY_PATH")"
     [[ -n "$APPLE_PRIVATE_KEY" ]] || fail "APPLE_PRIVATE_KEY is required"
 
