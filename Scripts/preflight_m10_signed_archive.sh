@@ -5,6 +5,7 @@ archive_path="${1:-/tmp/BuySellAI-signed.xcarchive}"
 allow_missing_team="${ALLOW_MISSING_TEAM:-0}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 snapshot_root="${M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT:-}"
+settings_timeout_seconds="${M10_XCODEBUILD_SETTINGS_TIMEOUT:-60}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_root="$(cd "${script_dir}/.." && pwd)"
@@ -13,10 +14,11 @@ app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
 signed_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-entitlements.XXXXXX")"
+build_settings_output="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-build-settings.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$signed_entitlements"
+    rm -f "$signed_entitlements" "$build_settings_output"
 }
 trap cleanup EXIT
 
@@ -91,23 +93,67 @@ plist_array_value() {
     "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
-team_build_setting=""
-if [[ -n "$m10_development_team" ]]; then
-    team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
-fi
+project_development_team_is_configured() {
+    local project_file="${project_path}/project.pbxproj"
 
-prepare_snapshot "$snapshot_root"
-project_path="${work_root}/BuySellAI.xcodeproj"
-entitlements_path="${work_root}/BuySellAI/BuySellAI.entitlements"
+    [[ -f "$project_file" ]] || fail "missing Xcode project file at $project_file"
+    grep -Eq 'DEVELOPMENT_TEAM = [A-Za-z0-9]+' "$project_file"
+}
 
-build_settings="$(
+print_missing_team_pending() {
+    printf 'M10 signed archive preflight pending: DEVELOPMENT_TEAM is unset\n'
+    if [[ -n "$snapshot_root" ]]; then
+        printf 'snapshot root: %s\n' "$snapshot_root"
+    fi
+    printf 'Set M10_DEVELOPMENT_TEAM or select an Apple development team in Xcode, then rerun without ALLOW_MISSING_TEAM=1 to produce a signed archive.\n'
+}
+
+show_release_build_settings() {
+    rm -f "$build_settings_output"
+
     xcodebuild -showBuildSettings \
         -project "$project_path" \
         -scheme BuySellAI \
         -configuration Release \
         ${team_build_setting:+"$team_build_setting"} \
-        2>/dev/null
-)"
+        > "$build_settings_output" 2>/dev/null &
+
+    local settings_pid=$!
+    local elapsed=0
+
+    while kill -0 "$settings_pid" 2>/dev/null; do
+        if [[ "$settings_timeout_seconds" -gt 0 && "$elapsed" -ge "$settings_timeout_seconds" ]]; then
+            kill -TERM "$settings_pid" 2>/dev/null || true
+            wait "$settings_pid" 2>/dev/null || true
+            fail "xcodebuild -showBuildSettings timed out after ${settings_timeout_seconds}s. Set M10_XCODEBUILD_SETTINGS_TIMEOUT to a larger value after confirming the checkout is fully local."
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    wait "$settings_pid" || fail "xcodebuild -showBuildSettings failed"
+    cat "$build_settings_output"
+}
+
+team_build_setting=""
+if [[ -n "$m10_development_team" ]]; then
+    team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
+fi
+
+[[ "$settings_timeout_seconds" =~ ^[0-9]+$ ]] || fail "M10_XCODEBUILD_SETTINGS_TIMEOUT must be a whole number"
+
+prepare_snapshot "$snapshot_root"
+project_path="${work_root}/BuySellAI.xcodeproj"
+entitlements_path="${work_root}/BuySellAI/BuySellAI.entitlements"
+
+if [[ -z "$m10_development_team" && "$allow_missing_team" == "1" ]] && ! project_development_team_is_configured; then
+    [[ -f "$entitlements_path" ]] || fail "missing BuySellAI.entitlements"
+    [[ "$(plist_array_value com.apple.developer.applesignin 0 "$entitlements_path")" == "Default" ]] || fail "Sign in with Apple entitlement is missing from source entitlements"
+    print_missing_team_pending
+    exit 0
+fi
+
+build_settings="$(show_release_build_settings)"
 
 [[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.rhodes.buysellai" ]] || fail "unexpected Release bundle identifier"
 [[ "$(setting CODE_SIGN_STYLE)" == "Automatic" ]] || fail "Release signing style must be Automatic"
@@ -118,11 +164,7 @@ build_settings="$(
 development_team="$(setting DEVELOPMENT_TEAM)"
 if [[ -z "$development_team" ]]; then
     if [[ "$allow_missing_team" == "1" ]]; then
-        printf 'M10 signed archive preflight pending: DEVELOPMENT_TEAM is unset\n'
-        if [[ -n "$snapshot_root" ]]; then
-            printf 'snapshot root: %s\n' "$snapshot_root"
-        fi
-        printf 'Set M10_DEVELOPMENT_TEAM or select an Apple development team in Xcode, then rerun without ALLOW_MISSING_TEAM=1 to produce a signed archive.\n'
+        print_missing_team_pending
         exit 0
     fi
     fail "DEVELOPMENT_TEAM is unset. Set M10_DEVELOPMENT_TEAM or select an Apple development team before producing the signed archive."

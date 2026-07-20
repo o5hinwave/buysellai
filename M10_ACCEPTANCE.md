@@ -105,7 +105,7 @@ bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export 
   | tee /tmp/buysell-submit-readiness-app-store-validation-preflight.log
 ```
 
-`M10_DEVELOPMENT_TEAM` lets the release preflights use a personal Apple Team ID without committing it to the Xcode project. Selecting the team in Xcode is also valid.
+`M10_DEVELOPMENT_TEAM` lets the release preflights use a personal Apple Team ID without committing it to the Xcode project. Selecting the team in Xcode is also valid. The signing, export, and real-device preflights bound the `xcodebuild -showBuildSettings` probe with `M10_XCODEBUILD_SETTINGS_TIMEOUT` (default `60` seconds); raise it only after confirming the checkout is fully local and Xcode is responsive.
 
 Until the Apple team, exported IPA, and App Store Connect API-key credentials are available, record the known blockers:
 

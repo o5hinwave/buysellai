@@ -5,16 +5,18 @@ allow_missing_device="${ALLOW_MISSING_DEVICE:-0}"
 device_identifier="${DEVICE_ID:-}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 snapshot_root="${M10_REAL_DEVICE_SNAPSHOT_ROOT:-}"
+settings_timeout_seconds="${M10_XCODEBUILD_SETTINGS_TIMEOUT:-60}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_root="$(cd "${script_dir}/.." && pwd)"
 work_root="$source_root"
 device_json="$(mktemp "${TMPDIR:-/tmp}/buysell-devices.XXXXXX")"
 built_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-real-device-entitlements.XXXXXX")"
+build_settings_output="$(mktemp "${TMPDIR:-/tmp}/buysell-real-device-build-settings.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$device_json" "$built_entitlements"
+    rm -f "$device_json" "$built_entitlements" "$build_settings_output"
 }
 trap cleanup EXIT
 
@@ -93,10 +95,47 @@ plist_array_value() {
     "${plist_buddy}" -c "Print :$1:$2" "$3"
 }
 
+project_development_team_is_configured() {
+    local project_file="${project_path}/project.pbxproj"
+
+    [[ -f "$project_file" ]] || fail "missing Xcode project file at $project_file"
+    grep -Eq 'DEVELOPMENT_TEAM = [A-Za-z0-9]+' "$project_file"
+}
+
+show_release_build_settings() {
+    rm -f "$build_settings_output"
+
+    xcodebuild -showBuildSettings \
+        -project "$project_path" \
+        -scheme BuySellAI \
+        -configuration Release \
+        -destination "id=${device_identifier}" \
+        ${team_build_setting:+"$team_build_setting"} \
+        > "$build_settings_output" 2>/dev/null &
+
+    local settings_pid=$!
+    local elapsed=0
+
+    while kill -0 "$settings_pid" 2>/dev/null; do
+        if [[ "$settings_timeout_seconds" -gt 0 && "$elapsed" -ge "$settings_timeout_seconds" ]]; then
+            kill -TERM "$settings_pid" 2>/dev/null || true
+            wait "$settings_pid" 2>/dev/null || true
+            fail "xcodebuild -showBuildSettings timed out after ${settings_timeout_seconds}s. Set M10_XCODEBUILD_SETTINGS_TIMEOUT to a larger value after confirming the checkout is fully local."
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    wait "$settings_pid" || fail "xcodebuild -showBuildSettings failed"
+    cat "$build_settings_output"
+}
+
 team_build_setting=""
 if [[ -n "$m10_development_team" ]]; then
     team_build_setting="DEVELOPMENT_TEAM=${m10_development_team}"
 fi
+
+[[ "$settings_timeout_seconds" =~ ^[0-9]+$ ]] || fail "M10_XCODEBUILD_SETTINGS_TIMEOUT must be a whole number"
 
 prepare_snapshot "$snapshot_root"
 project_path="${work_root}/BuySellAI.xcodeproj"
@@ -172,15 +211,11 @@ if [[ -n "${DEVICE_ID:-}" && -z "$device_name" ]]; then
     fail "DEVICE_ID was set but devicectl did not report a matching device"
 fi
 
-build_settings="$(
-    xcodebuild -showBuildSettings \
-        -project "$project_path" \
-        -scheme BuySellAI \
-        -configuration Release \
-        -destination "id=${device_identifier}" \
-        ${team_build_setting:+"$team_build_setting"} \
-        2>/dev/null
-)"
+if [[ -z "$m10_development_team" ]] && ! project_development_team_is_configured; then
+    fail "DEVELOPMENT_TEAM is unset. Set M10_DEVELOPMENT_TEAM or select an Apple development team before real-device preflight."
+fi
+
+build_settings="$(show_release_build_settings)"
 
 [[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.rhodes.buysellai" ]] || fail "unexpected Release bundle identifier"
 [[ "$(setting CODE_SIGN_STYLE)" == "Automatic" ]] || fail "Release signing style must be Automatic"

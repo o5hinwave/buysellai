@@ -268,7 +268,7 @@ The backend preflight reads only the public Supabase URL and anon key from `Conf
 ALLOW_MISSING_BACKEND=1 bash Scripts/preflight_m10_backend.sh
 ```
 
-`M10_DEVELOPMENT_TEAM` lets local release preflights use a personal Apple Team ID without committing it to the Xcode project. You can also select the team in Xcode instead.
+`M10_DEVELOPMENT_TEAM` lets local release preflights use a personal Apple Team ID without committing it to the Xcode project. You can also select the team in Xcode instead. The signing, export, and real-device preflights bound the `xcodebuild -showBuildSettings` probe with `M10_XCODEBUILD_SETTINGS_TIMEOUT` (default `60` seconds); raise it only after confirming the checkout is fully local and Xcode is responsive.
 
 Until the Apple team, exported IPA, and App Store Connect API-key credentials are available, record the known blockers:
 
