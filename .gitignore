@@ -1,0 +1,14 @@
+DerivedData/
+*.xcuserstate
+xcuserdata/
+BuySellAI/App/Config.plist
+.env
+.env.*
+!.env.example
+supabase/.temp/
+*.xcresult/
+*.xcarchive/
+*.ipa
+*.dSYM/
+*.DS_Store
+AppStoreSite/
