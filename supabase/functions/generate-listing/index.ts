@@ -68,8 +68,8 @@ serve(async (request) => {
       },
       {
         tools: usesCachedResearch ? [] : [
-          { googleSearch: {} },
-          { urlContext: {} },
+          { google_search: {} },
+          { url_context: {} },
         ],
         maxOutputTokens: 1_700,
       },
@@ -288,7 +288,8 @@ async function saveMarketplaceResearchCache(
   const usefulFindings = stringArray(result.usefulFindings, 8);
   const officialSources = stringArray(result.officialSources, 8);
   const searchedFor = stringArray(result.searchedFor, 3);
-  if (!researchSummary && usefulFindings.length === 0 && officialSources.length === 0) return;
+  const researchSummaryForCache = researchSummary ?? (usefulFindings.join(" ") || officialSources.join(" "));
+  if (!researchSummaryForCache) return;
 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1_000);
@@ -300,7 +301,7 @@ async function saveMarketplaceResearchCache(
     search_queries: searchedFor.length > 0 ? searchedFor : plan.searchQuestions,
     useful_findings: usefulFindings,
     official_sources: officialSources,
-    research_summary: researchSummary ?? usefulFindings.join(" "),
+    research_summary: researchSummaryForCache,
     model: Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-2.5-flash",
     updated_at: now.toISOString(),
     expires_at: expiresAt.toISOString(),
