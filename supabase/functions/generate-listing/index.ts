@@ -72,6 +72,7 @@ serve(async (request) => {
       },
       {
         tools: usesCachedResearch ? [] : [
+          { url_context: {} },
           { google_search: {} },
         ],
         maxOutputTokens: 4_096,
@@ -201,7 +202,7 @@ function listingSystemInstruction(
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
     usesCachedResearch
       ? "Use the saved marketplace research provided. Do not broaden beyond it."
-      : "Use Google Search only for the minimal research plan provided.",
+      : "Use Google Search and URL Context only for the minimal research plan provided.",
     "Prefer official marketplace guidance over stale assumptions.",
     "Do not use technical search-marketing acronyms in the listing or any returned field.",
     "Return usefulFindings, officialSources, and searchedFor only when the finding can help future listings.",

@@ -115,12 +115,13 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "geminiGroundingSearchQueriesKey"))
         XCTAssertNotNil(script.range(of: "geminiGroundingSourcesKey"))
         XCTAssertNotNil(script.range(of: "tools: usesCachedResearch ? [] : ["))
+        XCTAssertNotNil(script.range(of: "{ url_context: {} }"))
         XCTAssertNotNil(script.range(of: "{ google_search: {} }"))
         XCTAssertNotNil(script.range(of: "result[geminiGroundingSearchQueriesKey]"))
         XCTAssertNotNil(script.range(of: "result[geminiGroundingSourcesKey]"))
         XCTAssertNotNil(script.range(of: "Supabase function Deno check passed"))
         XCTAssertNotNil(script.range(of: "functions: analyze-image generate-listing store-apple-token delete-account"))
-        XCTAssertNotNil(script.range(of: "listing research tools: google_search gated-by-cache"))
+        XCTAssertNotNil(script.range(of: "listing research tools: google_search url_context gated-by-cache"))
         XCTAssertNotNil(script.range(of: "listing research cache: Gemini grounding saved"))
     }
 
