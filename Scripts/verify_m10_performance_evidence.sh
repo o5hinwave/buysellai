@@ -69,7 +69,7 @@ marker_value() {
 [[ -f "$archive_log" ]] || fail "missing no-sign archive verifier log at $archive_log"
 
 summary="$(xcrun xcresulttool get test-results summary --path "$result_path" --format json)"
-tests_json="$(xcrun xcresulttool get test-results tests --path "$result_path" --format json)"
+tests_json="$(xcrun xcresulttool get test-results tests --path "$result_path")"
 
 result="$(json_value result <<< "$summary")"
 count="$(json_value totalTestCount <<< "$summary")"
