@@ -11,7 +11,7 @@ final class M10UITestRunnerScriptTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: scriptURL.path))
-        XCTAssertGreaterThanOrEqual(expectedTests.count, 32)
+        XCTAssertGreaterThanOrEqual(expectedTests.count, 33)
         XCTAssertEqual(configuredTests, expectedTests)
         XCTAssertNotNil(script.range(of: "M10_UI_RESULT_ROOT"))
         XCTAssertNotNil(script.range(of: "M10_UI_CONTINUE_ON_FAILURE"))
@@ -69,7 +69,7 @@ final class M10UITestRunnerScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: scriptURL.path))
         XCTAssertNotNil(script.range(of: "M10_UI_RESULT_ROOT"))
         XCTAssertNotNil(script.range(of: "M10_UI_TEST_SOURCE"))
-        XCTAssertNotNil(script.range(of: "M10_MIN_UI_TESTS:-32"))
+        XCTAssertNotNil(script.range(of: "M10_MIN_UI_TESTS:-33"))
         XCTAssertNotNil(script.range(of: "BuySellAIUITests/BuySellAIUITests.swift"))
         XCTAssertNotNil(script.range(of: "M10 UI chunked tests passed"))
         XCTAssertNotNil(script.range(of: "M10 UI evidence passed"))

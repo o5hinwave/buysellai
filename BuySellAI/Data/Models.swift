@@ -340,7 +340,7 @@ struct SnapResultContext: Identifiable, Equatable {
 struct MarketplacePickerContext: Identifiable, Equatable {
     let id = UUID()
     let item: DetectedItem
-    let imageData: Data
+    let imageData: Data?
 }
 
 struct ListingContext: Identifiable, Equatable {

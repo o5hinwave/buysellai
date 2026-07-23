@@ -1618,20 +1618,24 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #".contentMargins(.bottom, bottomContentInset, for: .scrollContent)"#))
         XCTAssertNotNil(listing.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
         XCTAssertNotNil(listing.range(of: #"private var bottomContentInset: CGFloat"#))
-        XCTAssertNotNil(listing.range(of: #"dynamicTypeSize.isAccessibilitySize ? 240 : 164"#))
+        XCTAssertNotNil(listing.range(of: #"dynamicTypeSize.isAccessibilitySize ? 300 : 216"#))
         XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.borderedProminent)"))
         XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.bordered)"))
         XCTAssertNil(bottomSource.range(of: ".buttonBorderShape(.capsule)"))
         XCTAssertNotNil(bottomSource.range(of: ".controlSize(.large)"))
 
         let copyRange = try XCTUnwrap(bottomSource.range(of: #"Label("Copy listing".localized, systemImage: "doc.on.doc.fill")"#))
+        let marketplaceRange = try XCTUnwrap(bottomSource.range(of: #"secondaryActionButton(title: "Try another marketplace", systemImage: "arrow.left.arrow.right")"#))
         let retakeRange = try XCTUnwrap(bottomSource.range(of: #"secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate")"#))
         let regenerateButtonRange = try XCTUnwrap(bottomSource.range(of: #"secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise")"#))
         let footerRange = try XCTUnwrap(bottomSource.range(of: #"Text("Tip: paste, add photos, hit list. That's it.".localized)"#))
 
         XCTAssertLessThan(copyRange.lowerBound, retakeRange.lowerBound)
+        XCTAssertLessThan(copyRange.lowerBound, marketplaceRange.lowerBound)
+        XCTAssertLessThan(marketplaceRange.lowerBound, retakeRange.lowerBound)
         XCTAssertLessThan(retakeRange.lowerBound, regenerateButtonRange.lowerBound)
         XCTAssertLessThan(regenerateButtonRange.lowerBound, footerRange.lowerBound)
+        XCTAssertNotNil(listing.range(of: #"appStore.presentMarketplacePicker(item: context.item, imageData: context.imageData)"#))
     }
 
     func testListingClipboardTextIsContractValidatedBeforeCopying() throws {

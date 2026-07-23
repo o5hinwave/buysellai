@@ -3,7 +3,7 @@ set -euo pipefail
 
 result_root="${1:-${M10_UI_RESULT_ROOT:-/tmp/buysell-m10-ui-tests}}"
 ui_test_source="${M10_UI_TEST_SOURCE:-BuySellAIUITests/BuySellAIUITests.swift}"
-min_tests="${M10_MIN_UI_TESTS:-32}"
+min_tests="${M10_MIN_UI_TESTS:-33}"
 summary_log="${result_root}/summary.log"
 
 fail() {

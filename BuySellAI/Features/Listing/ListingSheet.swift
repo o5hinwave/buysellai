@@ -238,6 +238,11 @@ struct ListingSheet: View {
             .accessibilityLabel("Copy listing".localized)
             .accessibilitySortPriority(3)
 
+            secondaryActionButton(title: "Try another marketplace", systemImage: "arrow.left.arrow.right") {
+                chooseAnotherMarketplace()
+            }
+            .accessibilitySortPriority(2)
+
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: Spacing.sm) {
                     secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
@@ -305,6 +310,10 @@ struct ListingSheet: View {
         }
     }
 
+    private func chooseAnotherMarketplace() {
+        appStore.presentMarketplacePicker(item: context.item, imageData: context.imageData)
+    }
+
     private func retakePhoto() {
         appStore.retakePhoto(keeping: context.marketplace)
     }
@@ -344,7 +353,7 @@ struct ListingSheet: View {
     }
 
     private var bottomContentInset: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 240 : 164
+        dynamicTypeSize.isAccessibilitySize ? 300 : 216
     }
 
     private func skeletonLineWidth(for index: Int) -> CGFloat? {
