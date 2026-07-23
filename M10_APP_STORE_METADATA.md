@@ -7,7 +7,7 @@ This file records the App Store Connect product-page, privacy, accessibility, sc
 | Field | Value |
 | --- | --- |
 | App name | BuySell AI |
-| Bundle ID | com.rhodes.buysellai |
+| Bundle ID | com.despia.buysellai |
 | Version number | 1.0 |
 | SKU | buysell-ai-ios |
 | Primary language | English (U.S.) |

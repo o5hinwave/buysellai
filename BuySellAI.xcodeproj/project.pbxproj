@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7D8F10012D40B00100A00001 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F10022D40B00100A00001 /* Supabase */; };
 		7D3C4A952C3E11A700F10A01 /* BuySellAI.app in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D3C4A942C3E11A700F10A01 /* BuySellAI.app */; };
 /* End PBXBuildFile section */
 
@@ -71,6 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D8F10012D40B00100A00001 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,6 +133,7 @@
 			);
 			name = BuySellAI;
 			packageProductDependencies = (
+				7D8F10022D40B00100A00001 /* Supabase */,
 			);
 			productName = BuySellAI;
 			productReference = 7D3C4A942C3E11A700F10A01 /* BuySellAI.app */;
@@ -215,6 +218,9 @@
 			);
 			mainGroup = 7D3C4A802C3E11A700F10A01;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7D3C4A962C3E11A700F10A01 /* Products */;
 			projectDirPath = "";
@@ -413,7 +419,7 @@
 				CODE_SIGN_ENTITLEMENTS = BuySellAI/BuySellAI.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BuySellAI/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -422,7 +428,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -439,7 +445,7 @@
 				CODE_SIGN_ENTITLEMENTS = BuySellAI/BuySellAI.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BuySellAI/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -448,7 +454,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -464,7 +470,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -473,7 +479,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BuySellAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BuySellAI";
@@ -486,7 +492,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -495,7 +501,7 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BuySellAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BuySellAI";
@@ -507,11 +513,11 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = BuySellAI;
@@ -523,11 +529,11 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhodes.buysellai.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = BuySellAI;
@@ -574,6 +580,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.53.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7D8F10022D40B00100A00001 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7D3C4A812C3E11A700F10A01 /* Project object */;
 }

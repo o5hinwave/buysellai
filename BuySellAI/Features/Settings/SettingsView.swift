@@ -279,7 +279,7 @@ private struct SettingsRowLabel: View {
             Spacer(minLength: Spacing.sm)
         } else {
             Text(title.localized)
-                .brandFont(.body)
+                .font(.body)
                 .foregroundStyle(titleTint)
                 .lineLimit(2)
                 .minimumScaleFactor(0.86)
@@ -294,7 +294,7 @@ private struct SettingsRowLabel: View {
 
     private var titleText: some View {
         Text(title.localized)
-            .brandFont(.body)
+            .font(.body)
             .foregroundStyle(titleTint)
             .lineLimit(2)
             .minimumScaleFactor(0.86)
@@ -302,7 +302,7 @@ private struct SettingsRowLabel: View {
 
     private func valueText(_ value: String) -> some View {
         Text(value)
-            .brandFont(.caption)
+            .font(.caption)
             .foregroundStyle(Color.brand.mutedForeground)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
             .minimumScaleFactor(0.82)
@@ -334,13 +334,13 @@ private struct DeleteAccountView: View {
         List {
             Section {
                 Text("Type DELETE to confirm.".localized)
-                    .brandFont(.body)
+                    .font(.body)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .accessibilitySortPriority(3)
 
                 TextField("DELETE".localized, text: $confirmation)
                     .textInputAutocapitalization(.characters)
-                    .brandFont(.body)
+                    .font(.body)
                     .focused($isConfirmationFocused)
                     .focusedInputChrome(isFocused: isConfirmationFocused)
                     .accessibilityLabel("Delete confirmation".localized)
@@ -400,7 +400,6 @@ private struct DeleteAccountView: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .tint(Color.brand.destructive)
         .disabled(confirmation != "DELETE" || isDeletingAccount)

@@ -175,7 +175,7 @@ private struct EmptyHistoryView: View {
                 .accessibilityHidden(true)
 
             Text("Your past listings will show up here.".localized)
-                .brandFont(.body)
+                .font(.body)
                 .foregroundStyle(.secondary)
         }
             .multilineTextAlignment(.center)
@@ -198,11 +198,11 @@ private struct SnapActionRow: View {
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("Snap to sell".localized)
-                    .brandFont(.bodyLg)
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
 
                 Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                    .brandFont(.caption)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
             }
@@ -233,7 +233,7 @@ private struct HomeSecondaryActionRow: View {
                 .accessibilityHidden(true)
 
             Text(title.localized)
-                .brandFont(.body)
+                .font(.body)
                 .foregroundStyle(.primary)
 
             Spacer()

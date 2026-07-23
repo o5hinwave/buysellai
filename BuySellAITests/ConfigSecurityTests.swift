@@ -12,12 +12,12 @@ final class ConfigSecurityTests: XCTestCase {
     func testRuntimeConfigAcceptsHTTPSProjectSupabaseURLAndTrimsValues() throws {
         let config = try AppConfig.make(
             supabaseURLString: "  https://abcdefghijklmnopqrst.supabase.co  ",
-            anonKey: "  anon-test-key  "
+            anonKey: "  sb_publishable_" + String(repeating: "A", count: 30) + "  "
         )
 
         XCTAssertEqual(config.supabaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co")
         XCTAssertEqual(config.functionsBaseURL.absoluteString, "https://abcdefghijklmnopqrst.supabase.co/functions/v1")
-        XCTAssertEqual(config.anonKey, "anon-test-key")
+        XCTAssertEqual(config.anonKey, "sb_publishable_" + String(repeating: "A", count: 30))
     }
 
     func testRuntimeConfigAcceptsOnlyPublicSupabaseFields() throws {
@@ -57,7 +57,8 @@ final class ConfigSecurityTests: XCTestCase {
         let providerSecretLikeValues = [
             "AQ." + String(repeating: "A", count: 30),
             "AIza" + String(repeating: "A", count: 30),
-            "sk-" + String(repeating: "A", count: 30)
+            "sk-" + String(repeating: "A", count: 30),
+            "sb_secret_" + String(repeating: "A", count: 30)
         ]
 
         for secretLikeValue in providerSecretLikeValues {
@@ -75,6 +76,7 @@ final class ConfigSecurityTests: XCTestCase {
     func testRuntimeConfigRejectsProviderSecretShapedSupabaseURLs() throws {
         let providerSecretLikeURLs = [
             "https://sk-" + String(repeating: "A", count: 30) + ".supabase.co",
+            "https://sb_secret_" + String(repeating: "A", count: 30) + ".supabase.co",
             "https://abcdefghijklmnopqrst.supabase.co?token=AQ." + String(repeating: "A", count: 30),
             "https://AIza" + String(repeating: "A", count: 30) + "@abcdefghijklmnopqrst.supabase.co"
         ]
@@ -202,6 +204,7 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"sb_secret_[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: "scan_root()"))
         XCTAssertNotNil(script.range(of: "self_test()"))
         XCTAssertNotNil(script.range(of: "mktemp -d"))
@@ -228,10 +231,11 @@ final class ConfigSecurityTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "is required in environment when SUPABASE_CONFIG_FROM_ENV=1"))
         XCTAssertNotNil(script.range(of: "project-ref.supabase.co"))
         XCTAssertNotNil(script.range(of: "public-anon-key"))
-        XCTAssertNotNil(script.range(of: "provider-secret-shaped"))
+        XCTAssertNotNil(script.range(of: "provider/server-secret-shaped"))
         XCTAssertNotNil(script.range(of: #"AQ\.[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"AIza[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: #"sk-[0-9A-Za-z_-]{20,}"#))
+        XCTAssertNotNil(script.range(of: #"sb_secret_[0-9A-Za-z_-]{20,}"#))
         XCTAssertNotNil(script.range(of: "SUPABASE_URL must be a root https://<project>.supabase.co URL"))
         XCTAssertNotNil(script.range(of: #"PlistBuddy -c "Clear dict""#))
         XCTAssertNotNil(script.range(of: #"PlistBuddy -c "Add :SUPABASE_URL string $normalized_url""#))
@@ -249,24 +253,25 @@ final class ConfigSecurityTests: XCTestCase {
 
         XCTAssertNotNil(readme.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(readme.range(of: "M10 secret scan self-test passed"))
-        XCTAssertNotNil(readme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
+        XCTAssertNotNil(readme.range(of: "Rotate any provider or server-side key that was pasted into chat, logs, or git"))
         XCTAssertNotNil(readme.range(of: "Scripts/setup_supabase_config.sh"))
-        XCTAssertNotNil(readme.range(of: "rejects copied placeholders and provider-secret-shaped values"))
+        XCTAssertNotNil(readme.range(of: "rejects copied placeholders and provider/server-secret-shaped values"))
         XCTAssertNotNil(readme.range(of: "Scripts/setup_supabase_secrets.sh full"))
         XCTAssertNotNil(readme.range(of: "0600 temporary env file outside the repository"))
-        XCTAssertNotNil(readme.range(of: "Do not paste provider secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands"))
+        XCTAssertNotNil(readme.range(of: "Do not paste provider or server-side secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands"))
         XCTAssertNotNil(m10.range(of: "Scripts/scan_m10_secrets.sh"))
         XCTAssertNotNil(m10.range(of: "M10 secret scan self-test passed"))
         XCTAssertNotNil(m10.range(of: "The scan should print both `M10 secret scan self-test passed` and `M10 secret scan passed`."))
     }
 
-    func testBundledAppTextFilesDoNotContainAIProviderSecrets() throws {
+    func testBundledAppTextFilesDoNotContainProviderOrServerSecrets() throws {
         let appURL = projectURL("BuySellAI")
         let textExtensions: Set<String> = ["json", "plist", "storyboard", "strings", "swift"]
         let secretPatterns = [
             #"AIza[0-9A-Za-z_-]{20,}"#,
             #"AQ\.[0-9A-Za-z_-]{20,}"#,
-            #"sk-[0-9A-Za-z_-]{20,}"#
+            #"sk-[0-9A-Za-z_-]{20,}"#,
+            #"sb_secret_[0-9A-Za-z_-]{20,}"#
         ]
 
         let files = try textFiles(under: appURL, matching: textExtensions)

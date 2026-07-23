@@ -8,6 +8,8 @@ linked_ref_file="$repo_root/supabase/.temp/project-ref"
 secret_file=""
 project_ref=""
 
+export SUPABASE_TELEMETRY_DISABLED="${SUPABASE_TELEMETRY_DISABLED:-1}"
+
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
@@ -278,7 +280,7 @@ if [[ "$mode" == "full" ]]; then
     read_secret_or_env "Supabase service-role key: " SUPABASE_SERVICE_ROLE_KEY
     read_required_or_env "Apple Team ID: " APPLE_TEAM_ID
     read_required_or_env "Apple Key ID: " APPLE_KEY_ID
-    read_required_or_env "Apple Client ID / bundle ID: " APPLE_CLIENT_ID
+    read_required_or_env "Apple native client ID / bundle ID: " APPLE_CLIENT_ID
     read_required_or_env "Apple private key .p8 path: " APPLE_PRIVATE_KEY_PATH
 
     validate_apple_private_key_path "$APPLE_PRIVATE_KEY_PATH"

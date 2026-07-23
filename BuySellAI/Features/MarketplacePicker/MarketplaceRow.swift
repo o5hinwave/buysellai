@@ -22,7 +22,7 @@ struct MarketplaceIcon: View {
             .frame(width: size, height: size)
             .overlay {
                 Text(marketplace.shortMark)
-                    .brandFont(.caption)
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(marketplace.brandTint)
                     .minimumScaleFactor(0.65)
                     .lineLimit(1)
@@ -34,6 +34,7 @@ struct MarketplaceIcon: View {
 
 struct MarketplaceRow: View {
     let estimate: MarketplaceEstimate
+    let item: DetectedItem
     let action: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -101,13 +102,13 @@ struct MarketplaceRow: View {
     private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(estimate.id.displayName)
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .lineLimit(nameLineLimit)
                 .multilineTextAlignment(.leading)
 
             Text(estimate.id.blurb.localized)
-                .brandFont(.caption)
+                .font(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .lineLimit(blurbLineLimit)
                 .multilineTextAlignment(.leading)
@@ -116,7 +117,7 @@ struct MarketplaceRow: View {
 
     private func payoutCircle(size: CGFloat) -> some View {
         Text(estimate.payout.currency())
-            .brandFont(.caption)
+            .font(.caption.weight(.semibold))
             .foregroundStyle(Color.brand.primaryText)
             .lineLimit(1)
             .minimumScaleFactor(0.72)
@@ -144,8 +145,7 @@ struct MarketplaceRow: View {
 
     private var deltaLabel: some View {
         Text(deltaText)
-            .brandFont(.overline)
-            .tracking(0.88)
+            .font(.caption.weight(.semibold))
             .foregroundStyle(estimate.deltaPct >= 0 ? Color.brand.success : Color.brand.destructive)
             .lineLimit(1)
             .minimumScaleFactor(0.78)
@@ -161,7 +161,7 @@ struct MarketplaceRow: View {
     }
 
     private var accessibilityLabel: String {
-        MarketplaceAccessibilityText.estimateLabel(for: estimate)
+        MarketplaceAccessibilityText.estimateLabel(for: estimate, item: item)
     }
 }
 
@@ -223,13 +223,13 @@ struct MarketplaceFallbackRow: View {
     private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(marketplace.displayName)
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .lineLimit(nameLineLimit)
                 .multilineTextAlignment(.leading)
 
             Text(marketplace.blurb.localized)
-                .brandFont(.caption)
+                .font(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .lineLimit(blurbLineLimit)
                 .multilineTextAlignment(.leading)
@@ -253,17 +253,27 @@ struct MarketplaceFallbackRow: View {
 }
 
 enum MarketplaceAccessibilityText {
-    static func estimateLabel(for estimate: MarketplaceEstimate) -> String {
+    static func estimateLabel(for estimate: MarketplaceEstimate, item: DetectedItem? = nil) -> String {
         let dollars = Int(estimate.payout.doubleValue.rounded())
         let delta = Int(estimate.deltaPct.rounded())
+        let baseLabel: String
         guard delta != 0 else {
-            return String.localizedFormat("%@, estimated payout %d dollars, average payout", estimate.id.displayName, dollars)
+            baseLabel = String.localizedFormat("%@, estimated payout %d dollars, average payout", estimate.id.displayName, dollars)
+            return labelWithReason(baseLabel, estimate: estimate, item: item)
         }
         let direction = (delta > 0 ? "above" : "below").localized
-        return String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", estimate.id.displayName, dollars, abs(delta), direction)
+        baseLabel = String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", estimate.id.displayName, dollars, abs(delta), direction)
+        return labelWithReason(baseLabel, estimate: estimate, item: item)
     }
 
-    static func summaryLabel(_ label: String, for estimate: MarketplaceEstimate) -> String {
-        String.localizedFormat("%@, %@", label.localized, estimateLabel(for: estimate))
+    static func summaryLabel(_ label: String, for estimate: MarketplaceEstimate, item: DetectedItem? = nil) -> String {
+        String.localizedFormat("%@, %@", label.localized, estimateLabel(for: estimate, item: item))
+    }
+
+    private static func labelWithReason(_ label: String, estimate: MarketplaceEstimate, item: DetectedItem?) -> String {
+        guard let item else {
+            return label
+        }
+        return String.localizedFormat("%@, %@", label, estimate.id.recommendationReason(for: item))
     }
 }

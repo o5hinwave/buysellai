@@ -250,7 +250,7 @@ struct CameraView: View {
     private var cameraHintLabel: some View {
         if dynamicTypeSize.isAccessibilitySize {
             Text("Fit the whole item in the frame".localized)
-                .brandFont(.caption)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -260,7 +260,7 @@ struct CameraView: View {
                 .nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)
         } else {
             Text("Fit the whole item in the frame".localized)
-                .brandFont(.caption)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.primaryForeground)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -282,7 +282,7 @@ struct CameraView: View {
             ProgressView()
                 .tint(Color.brand.primaryForeground)
             Text("Starting camera…".localized)
-                .brandFont(.body)
+                .font(.body)
                 .foregroundStyle(Color.brand.primaryForeground)
         }
         .accessibilityElement(children: .combine)
@@ -291,34 +291,48 @@ struct CameraView: View {
     private var permissionDenied: some View {
         fallbackPanel {
             Text("Camera access needed to snap items.".localized)
-                .brandFont(.title)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .minimumScaleFactor(0.82)
                 .accessibilitySortPriority(3)
 
-            PrimaryPillButton(
-                title: "Open Settings",
-                systemImage: "gearshape.fill",
-                fillsWidth: fallbackActionsFillWidth,
-                maxFillWidth: fallbackActionMaxWidth
-            ) {
+            Button {
+                Haptics.impact(.medium)
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                 openURL(url)
+            } label: {
+                Label("Open Settings".localized, systemImage: "gearshape.fill")
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.82)
+                    .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
+                    .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(Color.brand.primary)
+            .accessibilityLabel("Open Settings".localized)
             .accessibilitySortPriority(2)
 
             photoFallbackButton(sortPriority: 1)
 
-            SecondaryPillButton(
-                title: "Close",
-                fillsWidth: fallbackActionsFillWidth,
-                maxFillWidth: fallbackActionMaxWidth
-            ) {
+            Button {
+                Haptics.impact(.light)
                 controller.stop()
                 onCancel()
+            } label: {
+                Text("Close".localized)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.82)
+                    .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
+                    .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
             }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .accessibilityLabel("Close".localized)
             .accessibilitySortPriority(0)
         }
     }
@@ -326,7 +340,7 @@ struct CameraView: View {
     private var cameraFailed: some View {
         fallbackPanel {
             Text("Camera couldn't start.".localized)
-                .brandFont(.title)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -335,14 +349,21 @@ struct CameraView: View {
 
             photoFallbackButton(sortPriority: 1)
 
-            SecondaryPillButton(
-                title: "Close",
-                fillsWidth: fallbackActionsFillWidth,
-                maxFillWidth: fallbackActionMaxWidth
-            ) {
+            Button {
+                Haptics.impact(.light)
                 controller.stop()
                 onCancel()
+            } label: {
+                Text("Close".localized)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.82)
+                    .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
+                    .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
             }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .accessibilityLabel("Close".localized)
             .accessibilitySortPriority(0)
         }
     }
@@ -350,6 +371,9 @@ struct CameraView: View {
     private func photoFallbackButton(sortPriority: Double) -> some View {
         PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
             Label("Choose Photo".localized, systemImage: "photo.on.rectangle")
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.82)
                 .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
                 .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
         }
@@ -554,6 +578,7 @@ struct CameraView: View {
     private func capture() {
         guard !isCapturing else { return }
         Haptics.impact(.medium)
+#if DEBUG
         if LaunchArguments.contains(LaunchArguments.uiTestingCameraSampleCapture) {
             isCapturing = true
             captureTask = Task {
@@ -572,6 +597,7 @@ struct CameraView: View {
             }
             return
         }
+#endif
 
         isCapturing = true
         captureTask = Task {

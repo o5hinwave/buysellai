@@ -88,8 +88,8 @@ final class LocalizationCoverageTests: XCTestCase {
         let patterns = [
             #""((?:\\.|[^"\\])*)"\.localized"#,
             #"String\.localizedFormat\("((?:\\.|[^"\\])*)""#,
-            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton|TextActionButton)\(\s*title:\s*"((?:\\.|[^"\\])*)""#,
-            #"\b(?:PrimaryPillButton|SecondaryPillButton|GhostButton|TextActionButton)\(\s*title:\s*[^,\n]*\?\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)""#,
+            #"\bTextActionButton\(\s*title:\s*"((?:\\.|[^"\\])*)""#,
+            #"\bTextActionButton\(\s*title:\s*[^,\n]*\?\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)""#,
             #"\bIconCircleButton\([\s\S]*?accessibilityLabel:\s*"((?:\\.|[^"\\])*)""#,
             #"accessibilityHint:\s*"((?:\\.|[^"\\])*)""#
         ]

@@ -4,7 +4,7 @@ set -euo pipefail
 config_path="${1:-${M10_CONFIG_PLIST:-BuySellAI/App/Config.plist}}"
 allow_missing="${ALLOW_MISSING_BACKEND:-0}"
 timeout_seconds="${M10_BACKEND_TIMEOUT:-30}"
-provider_secret_pattern='AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}'
+provider_secret_pattern='AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}'
 pending_items=()
 
 fail() {
@@ -19,6 +19,14 @@ pending() {
 print_pending_and_exit() {
     printf 'M10 backend preflight pending:\n'
     printf ' - %s\n' "${pending_items[@]}"
+    if [[ -n "${supabase_url:-}" ]]; then
+        printf 'config: %s\n' "$config_path"
+        printf 'project: %s\n' "$supabase_url"
+        printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
+        printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
+        printf 'protected functions: store-apple-token delete-account\n'
+        printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
+    fi
     printf 'Complete real Supabase config, deployed schema migration, deployed Edge Functions including protected account functions, and an analyze sample image, then rerun without ALLOW_MISSING_BACKEND=1.\n'
     exit 0
 }
@@ -27,6 +35,15 @@ pending_or_fail() {
     if [[ "$allow_missing" == "1" ]]; then
         pending "$*"
         return
+    fi
+
+    fail "$*"
+}
+
+external_or_fail() {
+    if [[ "$allow_missing" == "1" ]]; then
+        pending "$*"
+        print_pending_and_exit
     fi
 
     fail "$*"
@@ -128,14 +145,14 @@ call_function() {
             -w '\n%{http_code}' \
             2>&1
     )"; then
-        fail "$label request failed"
+        external_or_fail "$label request failed"
     fi
 
     status="${curl_output##*$'\n'}"
     body="${curl_output%$'\n'$status}"
 
     if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
-        fail "$label returned HTTP $status"
+        external_or_fail "$label returned HTTP $status"
     fi
 
     printf '%s' "$body" > "$response_file"
@@ -159,7 +176,7 @@ call_rejected_function() {
             -w '\n%{http_code}' \
             2>&1
     )"; then
-        fail "$label rejection probe failed"
+        external_or_fail "$label rejection probe failed"
     fi
 
     status="${curl_output##*$'\n'}"
@@ -169,7 +186,7 @@ call_rejected_function() {
     if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
         fail "$label accepted invalid payload; expected HTTP $expected_status"
     fi
-    fail "$label returned HTTP $status, expected $expected_status"
+    external_or_fail "$label returned HTTP $status, expected $expected_status"
 }
 
 probe_protected_function() {
@@ -189,7 +206,7 @@ probe_protected_function() {
             -w '\n%{http_code}' \
             2>&1
     )"; then
-        fail "$label protected-function probe failed"
+        external_or_fail "$label protected-function probe failed"
     fi
 
     status="${curl_output##*$'\n'}"
@@ -199,13 +216,13 @@ probe_protected_function() {
             return 0
             ;;
         404)
-            fail "$label protected endpoint is not deployed"
+            external_or_fail "$label protected endpoint is not deployed"
             ;;
         2??)
             fail "$label accepted an anonymous request; expected JWT protection"
             ;;
         *)
-            fail "$label protected-function probe returned HTTP $status, expected 401 or 403"
+            external_or_fail "$label protected-function probe returned HTTP $status, expected 401 or 403"
             ;;
     esac
 }
@@ -225,7 +242,7 @@ probe_protected_table() {
             -w '\n%{http_code}' \
             2>&1
     )"; then
-        fail "$label protected-table probe failed"
+        external_or_fail "$label protected-table probe failed"
     fi
 
     status="${curl_output##*$'\n'}"
@@ -235,13 +252,13 @@ probe_protected_table() {
             return 0
             ;;
         404)
-            fail "$label protected table is not deployed"
+            external_or_fail "$label protected table is not deployed"
             ;;
         2??)
             fail "$label accepted an anonymous read; expected RLS/grant protection"
             ;;
         *)
-            fail "$label protected-table probe returned HTTP $status, expected 401 or 403"
+            external_or_fail "$label protected-table probe returned HTTP $status, expected 401 or 403"
             ;;
     esac
 }
@@ -269,8 +286,8 @@ supabase_url="${supabase_url%/}"
 [[ "$supabase_url" =~ ^https://[a-z0-9-]+\.supabase\.co$ ]] || fail "SUPABASE_URL must be a root https://<project>.supabase.co URL"
 [[ "$supabase_url" == "https://project-ref.supabase.co" ]] && pending_or_fail "SUPABASE_URL still contains the Config.plist.example placeholder"
 [[ "$anon_key" == "public-anon-key" ]] && pending_or_fail "SUPABASE_ANON_KEY still contains the Config.plist.example placeholder"
-[[ "$anon_key" =~ $provider_secret_pattern ]] && fail "SUPABASE_ANON_KEY looks like an AI provider secret"
-[[ "$supabase_url" =~ $provider_secret_pattern ]] && fail "SUPABASE_URL contains a provider secret-shaped value"
+[[ "$anon_key" =~ $provider_secret_pattern ]] && fail "SUPABASE_ANON_KEY looks like a provider/server-secret-shaped value"
+[[ "$supabase_url" =~ $provider_secret_pattern ]] && fail "SUPABASE_URL contains a provider/server-secret-shaped value"
 
 if (( ${#pending_items[@]} > 0 )); then
     print_pending_and_exit
@@ -379,6 +396,7 @@ probe_protected_function "store-apple-token" "${functions_base}/store-apple-toke
 probe_protected_function "delete-account" "${functions_base}/delete-account" "$work_dir/delete-account-probe.json"
 probe_protected_table "history" "${rest_base}/history?select=id&limit=1"
 probe_protected_table "apple_auth_tokens" "${rest_base}/apple_auth_tokens?select=user_id&limit=1"
+probe_protected_table "marketplace_research_cache" "${rest_base}/marketplace_research_cache?select=cache_key&limit=1"
 
 analyze_item="$(validate_analyze_response "$work_dir/analyze-response.json")" || fail "analyze-image response shape is invalid"
 listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" || fail "generate-listing response shape is invalid"
@@ -386,10 +404,10 @@ listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" |
 printf 'M10 backend preflight passed\n'
 printf 'config: %s\n' "$config_path"
 printf 'project: %s\n' "$supabase_url"
-printf 'schema: history apple_auth_tokens\n'
+printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
 printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
 printf 'protected functions: store-apple-token delete-account\n'
-printf 'protected tables: history apple_auth_tokens\n'
+printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
 printf 'analyze item: %s\n' "$analyze_item"
 printf 'analyze rejection contract: missing jpeg base64\n'
 printf 'listing contract: title-description-plain-text\n'

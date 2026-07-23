@@ -8,7 +8,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             (.craigslist, "Craigslist", "Local, no fees, cash"),
             (.facebook, "Facebook", "Facebook Marketplace — free local reach"),
             (.poshmark, "Poshmark", "Fashion & closet items"),
-            (.mercari, "Mercari", "Ship anything, casual buyers"),
+            (.mercari, "Mercari", "Easy shipping for everyday items"),
             (.offerup, "OfferUp", "Local pickup, mobile-first"),
             (.depop, "Depop", "Vintage & Gen-Z fashion"),
             (.whatnot, "Whatnot", "Live-stream selling"),
@@ -122,6 +122,115 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertLessThan(craigslistIndex ?? .max, nextdoorIndex ?? .max)
     }
 
+    func testItemAwareEstimatorRecommendsBestMarketplaceForFiveSampleItems() {
+        let samples: [(DetectedItem, Marketplace)] = [
+            (
+                DetectedItem(
+                    name: "Fender Stratocaster Electric Guitar",
+                    category: .music,
+                    condition: .good,
+                    priceEstimate: Decimal(650)
+                ),
+                .reverb
+            ),
+            (
+                DetectedItem(
+                    name: "iPhone 14 Pro 128GB Unlocked",
+                    category: .electronics,
+                    condition: .good,
+                    priceEstimate: Decimal(420)
+                ),
+                .swappa
+            ),
+            (
+                DetectedItem(
+                    name: "Mid Century Walnut Coffee Table",
+                    category: .furniture,
+                    condition: .good,
+                    priceEstimate: Decimal(220)
+                ),
+                .craigslist
+            ),
+            (
+                DetectedItem(
+                    name: "Madewell Denim Jacket Women's Medium",
+                    category: .clothing,
+                    condition: .good,
+                    priceEstimate: Decimal(45)
+                ),
+                .poshmark
+            ),
+            (
+                DetectedItem(
+                    name: "Nike Dunk Low Panda Size 10",
+                    category: .shoes,
+                    condition: .new,
+                    priceEstimate: Decimal(120)
+                ),
+                .stockx
+            )
+        ]
+
+        for (item, expectedMarketplace) in samples {
+            let estimates = MarketplaceEstimator.estimates(for: item)
+            XCTAssertEqual(estimates.count, Marketplace.allCases.count)
+            XCTAssertEqual(estimates.first?.id, expectedMarketplace, item.name)
+            XCTAssertEqual(estimates.first?.badge, .best, item.name)
+            XCTAssertEqual(estimates.prefix(3).count, 3, item.name)
+        }
+    }
+
+    func testMarketplaceListingOptimizerKeepsTitlesInsideMarketplaceLimits() {
+        let item = DetectedItem(
+            name: "Vintage Mid Century Modern Walnut and Brass Adjustable Floor Lamp With Original Shade",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(180)
+        )
+
+        for marketplace in Marketplace.allCases {
+            let title = MarketplaceListingOptimizer.title(for: item, marketplace: marketplace)
+            XCTAssertLessThanOrEqual(
+                title.count,
+                marketplace.optimizationProfile.titleMaxCharacters,
+                "\(marketplace.displayName) title should respect its marketplace limit"
+            )
+            XCTAssertFalse(title.isEmpty)
+        }
+    }
+
+    func testMarketplaceRecommendationReasonsAvoidTechnicalOptimizationLanguage() {
+        let sampleItems = [
+            DetectedItem(name: "Handmade ceramic serving bowl", category: .home, condition: .good, priceEstimate: Decimal(42)),
+            DetectedItem(name: "Fender Stratocaster Electric Guitar", category: .music, condition: .good, priceEstimate: Decimal(650)),
+            DetectedItem(name: "iPhone 14 Pro 128GB Unlocked", category: .electronics, condition: .good, priceEstimate: Decimal(420)),
+            DetectedItem(name: "Mid Century Walnut Coffee Table", category: .furniture, condition: .good, priceEstimate: Decimal(220)),
+            DetectedItem(name: "Madewell Denim Jacket Women's Medium", category: .clothing, condition: .good, priceEstimate: Decimal(45)),
+            DetectedItem(name: "Nike Dunk Low Panda Size 10", category: .shoes, condition: .new, priceEstimate: Decimal(120))
+        ]
+
+        for marketplace in Marketplace.allCases {
+            assertPlainMarketplaceCopy(marketplace.blurb, context: "\(marketplace.displayName) blurb")
+            assertPlainMarketplaceCopy(
+                marketplace.optimizationProfile.searchFocus,
+                context: "\(marketplace.displayName) recommendation focus"
+            )
+            assertPlainMarketplaceCopy(
+                marketplace.optimizationProfile.photoGuidance,
+                context: "\(marketplace.displayName) photo guidance"
+            )
+            assertPlainMarketplaceCopy(
+                marketplace.optimizationProfile.featuredGuidance,
+                context: "\(marketplace.displayName) placement guidance"
+            )
+
+            for item in sampleItems {
+                let reason = marketplace.recommendationReason(for: item)
+                assertPlainMarketplaceCopy(reason, context: "\(marketplace.displayName) recommendation reason for \(item.category.display)")
+            }
+        }
+    }
+
     func testMarketplaceEstimateCodableRoundTripPreservesPayoutAndBadge() throws {
         let estimate = MarketplaceEstimate(
             id: .ebay,
@@ -166,6 +275,43 @@ final class MarketplaceEstimatorTests: XCTestCase {
         let data = try Data(contentsOf: projectURL("BuySellAI/Resources/Localizable.strings"))
         let propertyList = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
         return try XCTUnwrap(propertyList as? [String: String])
+    }
+
+    private func assertPlainMarketplaceCopy(
+        _ text: String,
+        context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let bannedPatterns = [
+            #"\bSEO\b"#,
+            #"\bbuyers?\b"#,
+            #"\bsearch\b"#,
+            #"\bkeywords?\b"#,
+            #"\bconversion\b"#,
+            #"\bpromot(e|ed|ing|ion|ions)\b"#,
+            #"\bboost(s|ed|ing)?\b"#,
+            #"\borganic\b"#,
+            #"\bwatchers?\b"#,
+            #"\bads?\b"#,
+            #"\badvertis(e|ed|ing|ement|ements)\b"#,
+            #"\bprice competitiveness\b"#,
+            #"\bexact product identity\b"#,
+            #"\balgorithmically ranked\b"#,
+            #"\bprompt engineered\b"#,
+            #"\bmarketplace arbitrage\b"#,
+            #"\bkeyword density\b"#,
+            #"\bconversion strategy\b"#
+        ]
+
+        for pattern in bannedPatterns {
+            XCTAssertNil(
+                text.range(of: pattern, options: [.regularExpression, .caseInsensitive]),
+                "\(context) should use plain marketplace language: \(text)",
+                file: file,
+                line: line
+            )
+        }
     }
 
     private func projectURL(_ path: String) -> URL {

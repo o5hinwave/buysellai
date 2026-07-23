@@ -136,6 +136,8 @@
 	<string>Copy and paste.</string>
 	<key>Copy listing</key>
 	<string>Copy listing</string>
+	<key>Copy the listing</key>
+	<string>Copy the listing</string>
 	<key>Current step</key>
 	<string>Current step</string>
 	<key>Couldn't clear history.</key>
@@ -188,6 +190,8 @@
 	<string>Estimated price</string>
 	<key>Etsy</key>
 	<string>Etsy</string>
+	<key>Easy shipping for everyday items</key>
+	<string>Easy shipping for everyday items</string>
 	<key>Expanded</key>
 	<string>Expanded</string>
 	<key>Facebook</key>
@@ -202,6 +206,8 @@
 	<string>Fashion, no listing fees</string>
 	<key>Fit the whole item in the frame</key>
 	<string>Fit the whole item in the frame</string>
+	<key>Fit the whole item in the frame.</key>
+	<string>Fit the whole item in the frame.</string>
 	<key>Flash unavailable</key>
 	<string>Flash unavailable</string>
 	<key>For parts</key>
@@ -256,6 +262,8 @@
 	<string>Listing draft</string>
 	<key>Listing for %@</key>
 	<string>Listing for %@</string>
+	<key>Listing</key>
+	<string>Listing</string>
 	<key>Live-stream selling</key>
 	<string>Live-stream selling</string>
 	<key>Local pickup, mobile-first</key>
@@ -268,6 +276,8 @@
 	<string>Lowest</string>
 	<key>Luxury pre-owned</key>
 	<string>Luxury pre-owned</string>
+	<key>Main photo</key>
+	<string>Main photo</string>
 	<key>Marketplace choices</key>
 	<string>Marketplace choices</string>
 	<key>Media</key>
@@ -308,6 +318,10 @@
 	<string>Other</string>
 	<key>Password</key>
 	<string>Password</string>
+	<key>Paste it into the marketplace when you are ready.</key>
+	<string>Paste it into the marketplace when you are ready.</string>
+	<key>Photo</key>
+	<string>Photo</string>
 	<key>Photo couldn't be imported.</key>
 	<string>Photo couldn't be imported.</string>
 	<key>Photo couldn't be captured.</key>
@@ -316,6 +330,8 @@
 	<string>Pick where to sell</string>
 	<key>Pick where to sell.</key>
 	<string>Pick where to sell.</string>
+	<key>Place</key>
+	<string>Place</string>
 	<key>Point, tap, done. We handle the rest.</key>
 	<string>Point, tap, done. We handle the rest.</string>
 	<key>Poshmark</key>
@@ -324,6 +340,8 @@
 	<string>Price</string>
 	<key>Privacy policy</key>
 	<string>Privacy policy</string>
+	<key>Quick tips</key>
+	<string>Quick tips</string>
 	<key>Rate BuySell</key>
 	<string>Rate BuySell</string>
 	<key>Rating isn't available right now.</key>
@@ -348,10 +366,10 @@
 	<string>Sell anything in three taps.</string>
 	<key>Sell in three steps</key>
 	<string>Sell in three steps</string>
+	<key>Second</key>
+	<string>Second</string>
 	<key>Settings</key>
 	<string>Settings</string>
-	<key>Ship anything, casual buyers</key>
-	<string>Ship anything, casual buyers</string>
 	<key>Shoes</key>
 	<string>Shoes</string>
 	<key>Shopify</key>
@@ -398,6 +416,8 @@
 	<string>Sports</string>
 	<key>Starting camera…</key>
 	<string>Starting camera…</string>
+	<key>Start selling</key>
+	<string>Start selling</string>
 	<key>Step %d</key>
 	<string>Step %d</string>
 	<key>Step %d of %d</key>
@@ -416,6 +436,10 @@
 	<string>TCGplayer</string>
 	<key>Take photo</key>
 	<string>Take photo</string>
+	<key>Take a clear photo</key>
+	<string>Take a clear photo</string>
+	<key>Take a photo. We suggest where to sell and write the listing.</key>
+	<string>Take a photo. We suggest where to sell and write the listing.</string>
 	<key>Tap the item to set focus and exposure.</key>
 	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>
@@ -430,12 +454,16 @@
 	<string>The RealReal</string>
 	<key>Theme</key>
 	<string>Theme</string>
+	<key>Third</key>
+	<string>Third</string>
 	<key>Tip: paste, add photos, hit list. That's it.</key>
 	<string>Tip: paste, add photos, hit list. That's it.</string>
 	<key>Too many tries right now. Give it a minute.</key>
 	<string>Too many tries right now. Give it a minute.</string>
 	<key>Tools</key>
 	<string>Tools</string>
+	<key>Top picks</key>
+	<string>Top picks</string>
 	<key>Toys</key>
 	<string>Toys</string>
 	<key>Tradesy</key>
@@ -474,8 +502,10 @@
 	<string>Welcome to BuySell.</string>
 	<key>We figure out what it is.</key>
 	<string>We figure out what it is.</string>
-	<key>We rank every marketplace by how much you'd get.</key>
-	<string>We rank every marketplace by how much you'd get.</string>
+	<key>We suggest the best place first.</key>
+	<string>We suggest the best place first.</string>
+	<key>What helps here</key>
+	<string>What helps here</string>
 	<key>Whatnot</key>
 	<string>Whatnot</string>
 	<key>Women's fashion (mobile)</key>

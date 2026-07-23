@@ -22,6 +22,7 @@ enum ImageTools {
         return rendered.jpegData(compressionQuality: compression)
     }
 
+#if DEBUG
     static func sampleJPEG() -> Data {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
@@ -131,4 +132,5 @@ enum ImageTools {
     private static var sampleGlowColor: UIColor {
         samplePrimaryColor.withAlphaComponent(0.28)
     }
+#endif
 }

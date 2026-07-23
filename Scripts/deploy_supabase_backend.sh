@@ -12,6 +12,8 @@ pending_items=()
 supabase_url=""
 project_ref=""
 
+export SUPABASE_TELEMETRY_DISABLED="${SUPABASE_TELEMETRY_DISABLED:-1}"
+
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
@@ -47,6 +49,14 @@ pending_or_fail() {
 print_pending_and_exit() {
     printf 'M10 Supabase deploy preflight pending:\n'
     printf ' - %s\n' "${pending_items[@]}"
+    if [[ -n "$supabase_url" && -n "$project_ref" ]]; then
+        printf 'config: %s\n' "${config_path#$repo_root/}"
+        printf 'project: %s\n' "$supabase_url"
+        printf 'project ref: %s\n' "$project_ref"
+        printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
+        printf 'constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache\n'
+        printf 'functions: %s\n' "${functions[*]}"
+    fi
     printf 'Complete app config, Supabase CLI login/link, server-side secrets, and then rerun without ALLOW_MISSING_SUPABASE_DEPLOY=1.\n'
     exit 0
 }
@@ -84,7 +94,7 @@ import os
 import re
 from urllib.parse import urlparse
 
-provider_secret = re.compile(r"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}")
+provider_secret = re.compile(r"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}")
 url_value = os.environ["SUPABASE_URL_VALUE"].strip()
 anon_key = os.environ["SUPABASE_ANON_KEY_VALUE"].strip()
 parsed = urlparse(url_value)
@@ -117,9 +127,9 @@ if anon_key == "public-anon-key":
 if not anon_key:
     raise SystemExit("SUPABASE_ANON_KEY is required")
 if provider_secret.search(url_value):
-    raise SystemExit("SUPABASE_URL contains a provider-secret-shaped value")
+    raise SystemExit("SUPABASE_URL contains a provider/server-secret-shaped value")
 if provider_secret.search(anon_key):
-    raise SystemExit("SUPABASE_ANON_KEY looks like a provider-secret-shaped value")
+    raise SystemExit("SUPABASE_ANON_KEY looks like a provider/server-secret-shaped value")
 
 print(f"https://{host}")
 print(parts[0])
@@ -138,6 +148,7 @@ require_source_files() {
         "$repo_root/supabase/migrations/20260717000100_create_remote_history_and_apple_auth_tokens.sql" \
         "$repo_root/supabase/migrations/20260718000100_harden_history_constraints.sql" \
         "$repo_root/supabase/migrations/20260718000200_harden_apple_auth_token_identity.sql" \
+        "$repo_root/supabase/migrations/20260722000100_create_marketplace_research_cache.sql" \
         "$repo_root/supabase/functions/analyze-image/index.ts" \
         "$repo_root/supabase/functions/generate-listing/index.ts" \
         "$repo_root/supabase/functions/store-apple-token/index.ts" \
@@ -273,7 +284,7 @@ fi
 printf 'config: %s\n' "${config_path#$repo_root/}"
 printf 'project: %s\n' "$supabase_url"
 printf 'project ref: %s\n' "$project_ref"
-printf 'schema: history apple_auth_tokens\n'
-printf 'constraints: history category condition marketplace listing apple-token-identity\n'
+printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
+printf 'constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache\n'
 printf 'functions: %s\n' "${functions[*]}"
 printf 'secrets: required names present\n'

@@ -44,13 +44,20 @@ final class ListingStore {
                 self.listingText = ""
                 self.phase = .failed(APIError.decoding.localizedDescription)
             }
-        } else if LaunchArguments.isUITesting,
-                  LaunchArguments.contains(LaunchArguments.uiTestingGenerateOffline) == false {
-            self.listingText = ListingFixtureText.sample(for: item)
-            self.phase = .success
         } else {
+#if DEBUG
+            if LaunchArguments.isUITesting,
+               LaunchArguments.contains(LaunchArguments.uiTestingGenerateOffline) == false {
+                self.listingText = ListingFixtureText.sample(for: item, marketplace: marketplace)
+                self.phase = .success
+            } else {
+                self.listingText = ""
+                self.phase = .idle
+            }
+#else
             self.listingText = ""
             self.phase = .idle
+#endif
         }
     }
 

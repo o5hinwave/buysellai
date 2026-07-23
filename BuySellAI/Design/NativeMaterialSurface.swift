@@ -73,47 +73,6 @@ private struct NativeLiquidGlassControlGroupModifier: ViewModifier {
     }
 }
 
-private struct NativePrimaryButtonBackgroundModifier: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            content
-        } else {
-            fallbackBody(content: content)
-        }
-        #else
-        fallbackBody(content: content)
-        #endif
-    }
-
-    private func fallbackBody(content: Content) -> some View {
-        content.background(Color.brand.primary, in: Capsule())
-    }
-}
-
-private struct NativeStandardButtonBackgroundModifier: ViewModifier {
-    let tintOpacity: Double
-    let strokeOpacity: Double
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            content
-        } else {
-            fallbackBody(content: content)
-        }
-        #else
-        fallbackBody(content: content)
-        #endif
-    }
-
-    private func fallbackBody(content: Content) -> some View {
-        content.nativeMaterialPill(tintOpacity: tintOpacity, strokeOpacity: strokeOpacity)
-    }
-}
-
 private struct NativeRoundedButtonBackgroundModifier: ViewModifier {
     let cornerRadius: CGFloat
     let tint: Color
@@ -590,20 +549,6 @@ extension View {
 
     func nativeGlassButtonStyle(_ prominence: NativeGlassButtonProminence = .standard) -> some View {
         modifier(NativeGlassButtonStyleModifier(prominence: prominence))
-    }
-
-    func nativePrimaryButtonBackground() -> some View {
-        modifier(NativePrimaryButtonBackgroundModifier())
-    }
-
-    func nativeStandardButtonBackground(
-        tintOpacity: Double = 0.66,
-        strokeOpacity: Double = 0.72
-    ) -> some View {
-        modifier(NativeStandardButtonBackgroundModifier(
-            tintOpacity: tintOpacity,
-            strokeOpacity: strokeOpacity
-        ))
     }
 
     func nativeRoundedButtonBackground(

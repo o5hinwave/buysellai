@@ -15,7 +15,7 @@ struct ChipButton: View {
             action()
         }) {
             Text(title.localized)
-                .brandFont(.caption)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(tint)
                 .lineLimit(1)
                 .padding(.horizontal, Spacing.md)

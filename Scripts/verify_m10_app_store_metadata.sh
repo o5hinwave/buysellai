@@ -338,9 +338,11 @@ require_screenshot_visual_quality() {
     local output
     local quality_input
     local sample_path
+    local sample_dir
 
     quality_input="$path"
     sample_path=""
+    sample_dir=""
 
     if ! command -v python3 >/dev/null 2>&1; then
         pending "$label screenshot asset $path requires python3 for visual quality checks"
@@ -348,11 +350,15 @@ require_screenshot_visual_quality() {
     fi
 
     if command -v sips >/dev/null 2>&1; then
-        sample_path="$(mktemp "${TMPDIR:-/tmp}/buysell-screenshot-quality.XXXXXX.png")"
+        if ! sample_dir="$(mktemp -d "${TMPDIR:-/tmp}/buysell-screenshot-quality.XXXXXX")"; then
+            pending "$label screenshot asset $path could not create a temporary visual quality sample"
+            return
+        fi
+        sample_path="$sample_dir/sample.png"
         if sips -Z "${M10_SCREENSHOT_QUALITY_MAX_EDGE:-420}" "$path" --out "$sample_path" >/dev/null 2>&1; then
             quality_input="$sample_path"
         else
-            rm -f "$sample_path"
+            rm -rf "$sample_dir"
             pending "$label screenshot asset $path could not be downsampled for visual quality check"
             return
         fi
@@ -497,12 +503,12 @@ if brand_orange_ratio < brand_orange_threshold:
 print("ok")
 PY
     )"; then
-        rm -f "$sample_path"
+        rm -rf "$sample_dir"
         pending "$label screenshot asset $path failed visual quality check: $output"
         return
     fi
 
-    rm -f "$sample_path"
+    rm -rf "$sample_dir"
 }
 
 require_screenshot_capture_result() {
@@ -614,7 +620,7 @@ for field in "${required_fields[@]}"; do
 done
 
 require_exact "App name" "BuySell AI"
-require_exact "Bundle ID" "com.rhodes.buysellai"
+require_exact "Bundle ID" "com.despia.buysellai"
 require_exact "Made for Kids" "No"
 require_exact "Data linked to user" "Yes"
 require_exact "Data used for tracking" "No"

@@ -53,8 +53,8 @@ struct AppConfig: Sendable {
             let supabaseURL = URL(string: "https://\(host)"),
             trimmedAnonKey.isEmpty == false,
             Self.isExamplePlaceholder(host: host, anonKey: trimmedAnonKey) == false,
-            Self.containsProviderSecretShape(trimmedURL) == false,
-            Self.containsProviderSecretShape(trimmedAnonKey) == false
+            Self.containsDisallowedSecretShape(trimmedURL) == false,
+            Self.containsDisallowedSecretShape(trimmedAnonKey) == false
         else {
             throw APIError.notConfigured
         }
@@ -63,9 +63,9 @@ struct AppConfig: Sendable {
 
     private static let allowedConfigKeys: Set<String> = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
 
-    private static func containsProviderSecretShape(_ value: String) -> Bool {
+    private static func containsDisallowedSecretShape(_ value: String) -> Bool {
         value.range(
-            of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}"#,
+            of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#,
             options: .regularExpression
         ) != nil
     }

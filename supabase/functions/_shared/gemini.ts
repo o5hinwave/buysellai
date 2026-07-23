@@ -10,14 +10,23 @@ type GeminiResponse = {
 };
 
 export type JsonSchema = Record<string, unknown>;
+export type GeminiTool = Record<string, Record<string, unknown>>;
+
+type GeminiRequestOptions = {
+  tools?: GeminiTool[];
+  model?: string;
+  temperature?: number;
+  maxOutputTokens?: number;
+};
 
 export async function generateJsonWithGemini(
   systemInstruction: string,
   parts: unknown[],
   responseSchema: JsonSchema,
+  options: GeminiRequestOptions = {},
 ): Promise<Record<string, unknown>> {
   const apiKey = requireEnv("GEMINI_API_KEY");
-  const model = Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-3.5-flash";
+  const model = options.model?.trim() || Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-2.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const timeoutMs = timeoutFromEnv("GEMINI_TIMEOUT_MS", 18_000);
 
@@ -35,8 +44,10 @@ export async function generateJsonWithGemini(
         role: "user",
         parts,
       }],
+      ...(options.tools?.length ? { tools: options.tools } : {}),
       generationConfig: {
-        temperature: 0.2,
+        temperature: options.temperature ?? 0.2,
+        ...(options.maxOutputTokens ? { maxOutputTokens: options.maxOutputTokens } : {}),
         responseMimeType: "application/json",
         responseSchema,
       },

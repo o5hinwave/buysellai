@@ -9,19 +9,19 @@ SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh prefli
 SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full
 ```
 
-The `preflight` mode resolves the target project and verifies Supabase CLI secret access before any secret values are requested. The `full` helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It resolves the target from `SUPABASE_PROJECT_REF`, `BuySellAI/App/Config.plist`, or the linked Supabase project before prompting for secrets, validates that the Apple private-key path resolves outside the repository and must be a `.p8` private-key file, writes a 0600 temporary env file outside the repository, calls `supabase secrets set --project-ref <project-ref> --env-file`, then removes the temp file on exit. Use `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Rotate any provider key that was pasted into chat, logs, or git before using it for production. Do not copy Gemini or service-role secrets into `BuySellAI/App/Config.plist`, source, tests, Xcode build settings, or long-lived shell history. The final M10 secret scan reads hidden files, so remove any temporary local secret files before collecting submit-readiness evidence.
+The `preflight` mode resolves the target project and verifies Supabase CLI secret access before any secret values are requested. The `full` helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It resolves the target from `SUPABASE_PROJECT_REF`, `BuySellAI/App/Config.plist`, or the linked Supabase project before prompting for secrets, validates that the Apple private-key path resolves outside the repository and must be a `.p8` private-key file, writes a 0600 temporary env file outside the repository, calls `supabase secrets set --project-ref <project-ref> --env-file`, then removes the temp file on exit. The Supabase release helpers default `SUPABASE_TELEMETRY_DISABLED=1` so CLI telemetry cannot make release checks flaky. Use `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Rotate any provider or server-side key that was pasted into chat, logs, or git before using it for production. Do not copy Gemini, Supabase `sb_secret_...`, JWT signing secrets, service-role secrets, or Apple private-key material into `BuySellAI/App/Config.plist`, source, tests, Xcode build settings, or long-lived shell history. The final M10 secret scan reads hidden files, so remove any temporary local secret files before collecting submit-readiness evidence.
 
 Optional backend tuning:
 
 ```sh
 # Optional: override the stable production default only after collecting fresh release evidence.
-supabase secrets set GEMINI_MODEL=gemini-3.5-flash
+supabase secrets set GEMINI_MODEL=gemini-2.5-flash
 supabase secrets set GEMINI_TIMEOUT_MS=18000
 supabase secrets set APPLE_TIMEOUT_MS=8000
 supabase secrets set SUPABASE_SERVICE_TIMEOUT_MS=8000
 ```
 
-The shared Gemini helper defaults to Google's stable `gemini-3.5-flash` model so final App Store evidence proves one exact model version. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
+The shared Gemini helper defaults to Google's stable `gemini-2.5-flash` model so final App Store evidence proves one exact model version while keeping listing research fast and low-cost. `generate-listing` creates a minimal search plan, reuses fresh `marketplace_research_cache` rows, and only enables live Google Search/URL context when saved research is missing or stale. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
 
 Apply the bundled schema migrations before deploying functions:
 
@@ -73,7 +73,7 @@ M10_ANALYZE_IMAGE_JPEG=/path/to/common-item.jpg \
 bash Scripts/preflight_m10_backend.sh BuySellAI/App/Config.plist
 ```
 
-The app config helper writes only the public `SUPABASE_URL` and `SUPABASE_ANON_KEY` values to `BuySellAI/App/Config.plist`, prompts for them or reads environment variables with the same names for noninteractive setup, supports `SUPABASE_CONFIG_FROM_ENV=1` for fail-fast CI/release setup, rejects copied placeholders and provider-secret-shaped values, and keeps the anon key out of terminal output.
+The app config helper writes only the public `SUPABASE_URL` and `SUPABASE_ANON_KEY` values to `BuySellAI/App/Config.plist`, prompts for them or reads environment variables with the same names for noninteractive setup, supports `SUPABASE_CONFIG_FROM_ENV=1` for fail-fast CI/release setup, accepts public anon or `sb_publishable_...` keys, rejects copied placeholders and provider/server-secret-shaped values including `sb_secret_...`, and keeps the key out of terminal output.
 
 Before deployment, type-check the local Edge Function sources from the repository root:
 

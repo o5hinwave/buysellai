@@ -15,36 +15,42 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(ChipButton.minimumTapTarget, 44)
     }
 
-    func testSecondaryAndGhostButtonsUseNativeGlassAwareFallbackChrome() throws {
-        let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
-        let secondaryRange = try XCTUnwrap(source.range(of: "struct SecondaryPillButton: View"))
-        let ghostRange = try XCTUnwrap(source.range(of: "struct GhostButton: View", range: secondaryRange.upperBound..<source.endIndex))
-        let secondarySource = String(source[secondaryRange.lowerBound..<ghostRange.lowerBound])
-        let textActionRange = try XCTUnwrap(source.range(of: "struct TextActionButton: View", range: ghostRange.upperBound..<source.endIndex))
-        let ghostSource = String(source[ghostRange.lowerBound..<textActionRange.lowerBound])
+    func testSharedActionPrimitivesUseSemanticNativeTypography() throws {
+        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let chips = try String(contentsOf: projectURL("BuySellAI/Design/Chips.swift"), encoding: .utf8)
+        let toast = try String(contentsOf: projectURL("BuySellAI/Design/Toast.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(secondarySource.range(of: ".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"))
-        XCTAssertNotNil(ghostSource.range(of: ".nativeStandardButtonBackground(tintOpacity: 0.64, strokeOpacity: 0.84)"))
-        XCTAssertNotNil(secondarySource.range(of: ".nativeGlassButtonStyle(.standard)"))
-        XCTAssertNotNil(ghostSource.range(of: ".nativeGlassButtonStyle(.standard)"))
-        XCTAssertNil(secondarySource.range(of: ".nativeMaterialPill("))
-        XCTAssertNil(ghostSource.range(of: ".nativeMaterialPill("))
-        XCTAssertNil(secondarySource.range(of: ".background(Color.brand.secondary, in: Capsule())"))
-        XCTAssertNil(ghostSource.range(of: ".background(Color.brand.surface, in: Capsule())"))
-        XCTAssertNil(ghostSource.range(of: "RoundedRectangle"))
+        XCTAssertEqual(buttons.components(separatedBy: ".font(.headline.weight(.semibold))").count - 1, 1)
+        XCTAssertNotNil(chips.range(of: ".font(.caption.weight(.semibold))"))
+        XCTAssertNotNil(toast.range(of: ".font(.caption.weight(.semibold))"))
+
+        for source in [buttons, chips, toast] {
+            XCTAssertNil(source.range(of: #".brandFont("#))
+            XCTAssertNil(source.range(of: #".font(.custom("#))
+        }
     }
 
-    func testGhostButtonsKeepStandardLabelsCompactAndAccessibilityLabelsReadable() throws {
+    func testObsoletePillButtonPrimitivesStayRemoved() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
-        let ghostRange = try XCTUnwrap(source.range(of: "struct GhostButton: View"))
-        let textActionRange = try XCTUnwrap(source.range(of: "struct TextActionButton: View", range: ghostRange.upperBound..<source.endIndex))
-        let ghostSource = String(source[ghostRange.lowerBound..<textActionRange.lowerBound])
 
-        XCTAssertNotNil(ghostSource.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(ghostSource.range(of: ".lineLimit(ghostLineLimit)"))
-        XCTAssertNotNil(ghostSource.range(of: ".minimumScaleFactor(ghostMinimumScaleFactor)"))
-        XCTAssertNotNil(ghostSource.range(of: "private var ghostLineLimit: Int {\n        2\n    }"))
-        XCTAssertNotNil(ghostSource.range(of: "dynamicTypeSize.isAccessibilitySize ? 0.82 : 0.8"))
+        XCTAssertNil(source.range(of: "struct PrimaryPillButton: View"))
+        XCTAssertNil(source.range(of: "struct SecondaryPillButton: View"))
+        XCTAssertNil(source.range(of: "struct GhostButton: View"))
+        XCTAssertNotNil(source.range(of: "struct TextActionButton: View"))
+        XCTAssertNotNil(source.range(of: "struct IconCircleButton: View"))
+    }
+
+    func testTextActionButtonKeepsCompactNativeTextAndAccessibilityLabel() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let textActionRange = try XCTUnwrap(source.range(of: "struct TextActionButton: View"))
+        let focusRange = try XCTUnwrap(source.range(of: "private struct FocusedInputChromeModifier", range: textActionRange.upperBound..<source.endIndex))
+        let textActionSource = String(source[textActionRange.lowerBound..<focusRange.lowerBound])
+
+        XCTAssertNotNil(textActionSource.range(of: ".font(.headline.weight(.semibold))"))
+        XCTAssertNotNil(textActionSource.range(of: ".lineLimit(2)"))
+        XCTAssertNotNil(textActionSource.range(of: ".minimumScaleFactor(0.82)"))
+        XCTAssertNotNil(textActionSource.range(of: ".frame(minWidth: minWidth, minHeight: minHeight)"))
+        XCTAssertNotNil(textActionSource.range(of: ".accessibilityLabel(Text(title.localized))"))
     }
 
     func testNativeMaterialSurfaceUsesCurrentSDKFallbacksAndCompilerGatedLiquidGlassHooks() throws {
@@ -72,15 +78,15 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "private struct NativeLiquidGlassControlGroupModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "func nativeLiquidGlassControlGroup(spacing: CGFloat = Spacing.sm)"))
         XCTAssertNotNil(source.range(of: "LiquidGlassSurfaceGroup(spacing: spacing)"))
-        XCTAssertNotNil(source.range(of: "private struct NativePrimaryButtonBackgroundModifier: ViewModifier"))
-        XCTAssertNotNil(source.range(of: "func nativePrimaryButtonBackground()"))
-        XCTAssertNotNil(source.range(of: "content.background(Color.brand.primary, in: Capsule())"))
-        XCTAssertNotNil(source.range(of: "private struct NativeStandardButtonBackgroundModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "private struct NativeRoundedButtonBackgroundModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "private struct NativeIconButtonBackgroundModifier: ViewModifier"))
-        XCTAssertNotNil(source.range(of: "func nativeStandardButtonBackground("))
         XCTAssertNotNil(source.range(of: "func nativeRoundedButtonBackground("))
         XCTAssertNotNil(source.range(of: "func nativeIconButtonBackground("))
+        XCTAssertNil(source.range(of: "private struct NativePrimaryButtonBackgroundModifier: ViewModifier"))
+        XCTAssertNil(source.range(of: "func nativePrimaryButtonBackground()"))
+        XCTAssertNil(source.range(of: "content.background(Color.brand.primary, in: Capsule())"))
+        XCTAssertNil(source.range(of: "private struct NativeStandardButtonBackgroundModifier: ViewModifier"))
+        XCTAssertNil(source.range(of: "func nativeStandardButtonBackground("))
         XCTAssertNotNil(source.range(of: "content.buttonStyle(.glass)"))
         XCTAssertNotNil(source.range(of: "content.buttonStyle(.glassProminent)"))
         XCTAssertNotNil(source.range(of: "bottomLeadingRadius: 0"))
@@ -104,7 +110,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(buttons.range(of: ".foregroundStyle(material ? materialForeground : Color.brand.foreground)"))
         XCTAssertNotNil(source.range(of: "usesAccessibleStroke: usesAccessibleMaterialStroke"))
         XCTAssertNotNil(buttons.range(of: ".nativeIconButtonBackground("))
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeStandardButtonBackground(").count - 1, 2)
+        XCTAssertNil(buttons.range(of: ".nativeStandardButtonBackground("))
         XCTAssertNotNil(source.range(of: "#if compiler(>=6.2)"))
         XCTAssertNotNil(source.range(of: "#available(iOS 26.0, *)"))
         XCTAssertNotNil(source.range(of: "GlassEffectContainer(spacing: spacing)"))
@@ -117,11 +123,11 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationDragIndicator(.visible)").count - 1, 2)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationCornerRadius(28)").count - 1, 2)
         XCTAssertEqual(source.components(separatedBy: ".presentationBackground(.regularMaterial)").count - 1, 1)
-        XCTAssertNotNil(buttons.range(of: ".nativePrimaryButtonBackground()"))
         XCTAssertNotNil(buttons.range(of: ".tint(Color.brand.primary)"))
         XCTAssertNil(buttons.range(of: ".background(Color.brand.primary, in: Capsule())"))
-        XCTAssertEqual(buttons.components(separatedBy: ".nativeGlassButtonStyle(.prominent)").count - 1, 1)
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeGlassButtonStyle(.standard)").count - 1, 4)
+        XCTAssertNil(buttons.range(of: ".nativePrimaryButtonBackground()"))
+        XCTAssertEqual(buttons.components(separatedBy: ".nativeGlassButtonStyle(.prominent)").count - 1, 0)
+        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeGlassButtonStyle(.standard)").count - 1, 2)
     }
 
     func testNativeMaterialReducedTransparencyRaisesTintOpacity() {
@@ -174,7 +180,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(auth.range(of: ".toolbar {"))
         XCTAssertNotNil(auth.range(of: ".background(.bar)"))
         XCTAssertNil(auth.range(of: ".nativeLiquidGlassControlGroup"))
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".nativeStandardButtonBackground(").count - 1, 2)
+        XCTAssertNil(buttons.range(of: ".nativeStandardButtonBackground("))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl"))
         XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
@@ -250,9 +256,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)"))
         XCTAssertNil(home.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))"))
 
-        XCTAssertNotNil(marketplace.range(of: ".buttonStyle(.bordered)"))
-        XCTAssertNotNil(marketplace.range(of: ".buttonBorderShape(.capsule)"))
-        XCTAssertNotNil(marketplace.range(of: ".tint(label == \"Best\" ? Color.brand.success : Color.brand.primary)"))
+        let summaryRange = try XCTUnwrap(marketplace.range(of: "private struct SummaryButton: View"))
+        let summarySource = String(marketplace[summaryRange.lowerBound..<marketplace.endIndex])
+        XCTAssertNotNil(summarySource.range(of: ".buttonStyle(PressButtonStyle())"))
+        XCTAssertNotNil(summarySource.range(of: #"Image(systemName: "chevron.right")"#))
+        XCTAssertNil(summarySource.range(of: ".buttonStyle(.bordered)"))
+        XCTAssertNil(summarySource.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNil(summarySource.range(of: ".tint(label == \"Best\" ? Color.brand.success : Color.brand.primary)"))
         XCTAssertNil(marketplace.range(of: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"))
         XCTAssertNil(marketplace.range(of: ".background((label == \"Best\" ? Color.brand.success : Color.brand.secondary).opacity(0.14), in: Capsule())"))
         XCTAssertNotNil(marketplaceRow.range(of: "tintOpacity: 0.7,\n                    strokeOpacity: 0.54"))
@@ -325,23 +335,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertTrue(AppMotion.shouldReduceMotion(os: true, app: true))
     }
 
-    func testBrandTextStylesUseNativeSemanticDynamicTypeAndBoldTextWeights() {
-        XCTAssertEqual(BrandTextStyle.display.textStyle, .largeTitle)
-        XCTAssertEqual(BrandTextStyle.titleXL.textStyle, .title)
-        XCTAssertEqual(BrandTextStyle.titleLg.textStyle, .title2)
-        XCTAssertEqual(BrandTextStyle.title.textStyle, .title3)
-        XCTAssertEqual(BrandTextStyle.bodyLg.textStyle, .body)
-        XCTAssertEqual(BrandTextStyle.body.textStyle, .body)
-        XCTAssertEqual(BrandTextStyle.caption.textStyle, .caption)
-        XCTAssertEqual(BrandTextStyle.overline.textStyle, .caption2)
-        XCTAssertEqual(BrandTextStyle.button.textStyle, .headline)
+    func testWordmarkSizesUseNativeSemanticDynamicTypeAndBoldTextWeights() {
+        XCTAssertEqual(WordmarkSize.regular.textStyle, .title3)
+        XCTAssertEqual(WordmarkSize.large.textStyle, .title)
+        XCTAssertEqual(WordmarkSize.display.textStyle, .largeTitle)
 
-        XCTAssertEqual(BrandTextStyle.display.weight(), .bold)
-        XCTAssertEqual(BrandTextStyle.titleXL.weight(), .semibold)
-        XCTAssertEqual(BrandTextStyle.body.weight(), .regular)
-        XCTAssertEqual(BrandTextStyle.button.weight(), .semibold)
-        XCTAssertEqual(BrandTextStyle.body.weight(legibilityWeight: .bold), .semibold)
-        XCTAssertEqual(BrandTextStyle.button.weight(legibilityWeight: .bold), .bold)
+        XCTAssertEqual(WordmarkSize.regular.weight(), .semibold)
+        XCTAssertEqual(WordmarkSize.large.weight(), .semibold)
+        XCTAssertEqual(WordmarkSize.display.weight(), .bold)
+        XCTAssertEqual(WordmarkSize.regular.weight(legibilityWeight: .bold), .bold)
+        XCTAssertEqual(WordmarkSize.large.weight(legibilityWeight: .bold), .bold)
     }
 
     func testSFSymbolSizingUsesSharedBrandSymbolStyles() throws {
@@ -374,7 +377,7 @@ final class DesignAccessibilityTests: XCTestCase {
         }
     }
 
-    func testBrandTextStylesResolveToNativeSystemTypographyWithoutRegisteredFonts() throws {
+    func testTypographyUsesNativeSystemTypographyWithoutRegisteredFonts() throws {
         let plistData = try Data(contentsOf: projectURL("BuySellAI/Info.plist"))
         let plist = try XCTUnwrap(
             try PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any]
@@ -383,7 +386,11 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNil(plist["UIAppFonts"])
         XCTAssertNotNil(typography.range(of: ".system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))"))
+        XCTAssertNotNil(typography.range(of: ".font(size.font(legibilityWeight: legibilityWeight))"))
+        XCTAssertNotNil(typography.range(of: #"@Environment(\.legibilityWeight) private var legibilityWeight"#))
         XCTAssertNil(typography.range(of: "Font.custom("))
+        XCTAssertNil(typography.range(of: "BrandTextStyle"))
+        XCTAssertNil(typography.range(of: "brandFont("))
         let fontsURL = projectURL("BuySellAI/Resources/Fonts")
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: fontsURL.path, isDirectory: &isDirectory) {
@@ -391,17 +398,9 @@ final class DesignAccessibilityTests: XCTestCase {
             let fontFiles = try FileManager.default.contentsOfDirectory(atPath: fontsURL.path)
             XCTAssertTrue(fontFiles.isEmpty, "Legacy custom fonts should not be shipped in the synchronized app target.")
         }
-        for style in BrandTextStyle.allCases {
-            switch style.textStyle {
-            case .largeTitle, .title, .title2, .title3, .body, .caption, .caption2, .headline:
-                break
-            default:
-                XCTFail("\(style) should resolve to a first-party semantic Dynamic Type role.")
-            }
-        }
     }
 
-    func testUserFacingTextUsesBrandTypographyInsteadOfRawSystemFonts() throws {
+    func testUserFacingTextUsesSemanticTypographyInsteadOfRawSystemFonts() throws {
         for file in try appSwiftFiles() {
             let source = try String(contentsOf: file, encoding: .utf8)
             let lines = source.components(separatedBy: .newlines)
@@ -421,7 +420,7 @@ final class DesignAccessibilityTests: XCTestCase {
                     context.contains("uiTest") ||
                     context.contains("SettingsStateProbe") ||
                     context.contains("ClipboardVerification"),
-                    "\(relativePath(file)):\(index + 1) should use brandFont for user-facing caption text."
+                    "\(relativePath(file)):\(index + 1) should use a semantic Dynamic Type role for user-facing caption text."
                 )
             }
         }
@@ -496,6 +495,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(history.range(of: #".frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)"#))
         XCTAssertNotNil(history.range(of: #"dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight"#))
         XCTAssertNotNil(history.range(of: #".padding(.vertical, Spacing.xs)"#))
+        XCTAssertNil(history.range(of: #".brandFont("#))
+        XCTAssertNotNil(history.range(of: #".font(.body.weight(.semibold))"#))
+        XCTAssertNotNil(history.range(of: #".font(.caption)"#))
         XCTAssertNil(history.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.74, strokeOpacity: 0.66)"#))
         XCTAssertNil(history.range(of: #".background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"#))
         XCTAssertNil(history.range(of: #"@Environment(\.accessibilityDifferentiateWithoutColor)"#))
@@ -513,10 +515,13 @@ final class DesignAccessibilityTests: XCTestCase {
     }
 
     func testButtonsAvoidEmptyAccessibilityHints() throws {
-        let source = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
+        let chips = try String(contentsOf: projectURL("BuySellAI/Design/Chips.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(source.range(of: "optionalAccessibilityHint(accessibilityHint)"))
-        XCTAssertNil(source.range(of: #"accessibilityHint\?\.\S+\s*\?\?\s*"""#, options: .regularExpression))
+        XCTAssertNotNil(buttons.range(of: "func optionalAccessibilityHint(_ hint: String?) -> some View"))
+        XCTAssertNotNil(chips.range(of: "optionalAccessibilityHint(accessibilityHint)"))
+        XCTAssertNil(buttons.range(of: #"accessibilityHint\?\.\S+\s*\?\?\s*"""#, options: .regularExpression))
+        XCTAssertNil(chips.range(of: #"accessibilityHint\?\.\S+\s*\?\?\s*"""#, options: .regularExpression))
     }
 
     func testTextActionButtonsUseSharedPressStyleAndHaptics() throws {
@@ -532,6 +537,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(auth.range(of: #"Text("Keep going without an account".localized)"#))
         XCTAssertNotNil(auth.range(of: #".buttonStyle(.bordered)"#))
         XCTAssertNotNil(auth.range(of: #".background(.bar)"#))
+        XCTAssertNil(auth.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(auth.range(of: #"TextActionButton(title: "Keep going without an account""#))
         XCTAssertNil(auth.range(of: #".nativeMaterialBar(tintOpacity: 0.78)"#))
     }
@@ -618,6 +624,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"notification: .announcement"#))
         XCTAssertNotNil(source.range(of: #"Label("Retry".localized, systemImage: "arrow.clockwise")"#))
         XCTAssertNotNil(source.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(source.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(source.range(of: #"SecondaryPillButton(title: "Retry""#))
     }
 
@@ -633,6 +640,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertLessThan(retakeRange.lowerBound, retryRange.lowerBound)
         XCTAssertNotNil(errorSource.range(of: #".buttonStyle(.borderedProminent)"#))
         XCTAssertNotNil(errorSource.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(errorSource.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(errorSource.range(of: #"PrimaryPillButton"#))
         XCTAssertNil(errorSource.range(of: #"SecondaryPillButton"#))
         XCTAssertNotNil(errorSource.range(of: #".task(id: message)"#))
@@ -650,9 +658,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #".navigationTitle("Item details".localized)"#))
         XCTAssertNotNil(source.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
         XCTAssertNotNil(source.range(of: #".safeAreaInset(edge: .bottom)"#))
+        XCTAssertNil(source.range(of: #".brandFont("#))
+        XCTAssertNotNil(source.range(of: #".font(.title3.weight(.semibold))"#))
+        XCTAssertNotNil(source.range(of: #".font(.title2.weight(.semibold))"#))
         XCTAssertNotNil(source.range(of: #"private func decisionBar(item: DetectedItem) -> some View"#))
         XCTAssertNotNil(source.range(of: #"Label("Looks right — pick where to sell".localized, systemImage: "checkmark.circle.fill")"#))
         XCTAssertNotNil(source.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNil(source.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(source.range(of: #"PrimaryPillButton(title: "Looks right — pick where to sell""#))
     }
 
@@ -683,6 +695,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: "SnapActionRow()"))
         XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
         XCTAssertNotNil(home.range(of: #"Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)"#))
+        XCTAssertNil(home.range(of: #".brandFont("#))
+        XCTAssertNotNil(home.range(of: #".font(.body.weight(.semibold))"#))
+        XCTAssertNotNil(home.range(of: #".font(.caption)"#))
         let snapActionRange = try XCTUnwrap(home.range(of: "private struct SnapActionRow: View"))
         let secondaryActionRange = try XCTUnwrap(home.range(of: "private struct HomeSecondaryActionRow: View", range: snapActionRange.upperBound..<home.endIndex))
         let snapActionSource = String(home[snapActionRange.lowerBound..<secondaryActionRange.lowerBound])
@@ -866,9 +881,21 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(row.range(of: #".frame(height: MarketplaceRowLayout.deltaReservedHeight)"#))
         XCTAssertNotNil(row.range(of: #".padding(.vertical, Spacing.sm)"#))
         XCTAssertNotNil(row.range(of: #".frame(minHeight: rowMinHeight)"#))
-        XCTAssertNotNil(row.range(of: #".brandFont(.overline)"#))
-        XCTAssertNotNil(row.range(of: #".tracking(0.88)"#))
+        XCTAssertNotNil(row.range(of: #".font(.caption.weight(.semibold))"#))
+        XCTAssertNil(rowSource.range(of: #".brandFont("#))
+        XCTAssertNil(row.range(of: #".tracking("#))
         XCTAssertNil(row.range(of: #".font(.system"#))
+    }
+
+    func testVisibleAppTextAvoidsCustomLetterSpacingAndForcedUppercase() throws {
+        let sourceFiles = try appSwiftFiles()
+
+        for file in sourceFiles {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            XCTAssertNil(source.range(of: #".tracking("#), "\(file.lastPathComponent) should use native letter spacing.")
+            XCTAssertNil(source.range(of: #".kerning("#), "\(file.lastPathComponent) should use native letter spacing.")
+            XCTAssertNil(source.range(of: #".textCase(.uppercase)"#), "\(file.lastPathComponent) should keep visible copy in its written case.")
+        }
     }
 
     func testMarketplaceRowsAdaptForAccessibilityDynamicTypeAndPressFeedback() throws {
@@ -919,17 +946,21 @@ final class DesignAccessibilityTests: XCTestCase {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
         XCTAssertNotNil(marketplace.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(best: MarketplaceEstimate, lowest: MarketplaceEstimate)"#))
-        XCTAssertNotNil(marketplace.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
-        XCTAssertNotNil(marketplace.range(of: #"VStack(spacing: Spacing.sm)"#))
-        XCTAssertNotNil(marketplace.range(of: #"HStack(spacing: Spacing.sm)"#))
-        XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: "Best", estimate: best)"#))
-        XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: "Lowest", estimate: lowest)"#))
-        XCTAssertNotNil(marketplace.range(of: #".buttonStyle(.bordered)"#))
-        XCTAssertNotNil(marketplace.range(of: #".buttonBorderShape(.capsule)"#))
-        XCTAssertNotNil(marketplace.range(of: #".controlSize(.large)"#))
+        XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(estimates: [MarketplaceEstimate]) -> some View"#))
+        XCTAssertNotNil(marketplace.range(of: #"ForEach(Array(estimates.enumerated()), id: \.element.id)"#))
+        XCTAssertNotNil(marketplace.range(of: #"HStack(alignment: .center, spacing: Spacing.sm)"#))
+        XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: summaryLabel(for: index), estimate: estimate)"#))
+        XCTAssertNotNil(marketplace.range(of: #"Image(systemName: "chevron.right")"#))
+        XCTAssertNotNil(marketplace.range(of: #".buttonStyle(PressButtonStyle())"#))
+        XCTAssertNil(marketplace.range(of: #"VStack(spacing: Spacing.sm)"#))
+        XCTAssertNil(marketplace.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(marketplace.range(of: #".buttonBorderShape(.capsule)"#))
+        XCTAssertNil(marketplace.range(of: #".controlSize(.large)"#))
         XCTAssertNotNil(marketplace.range(of: #".monospacedDigit()"#))
-        XCTAssertNotNil(marketplace.range(of: #".tint(label == "Best" ? Color.brand.success : Color.brand.primary)"#))
+        XCTAssertNil(marketplace.range(of: #".tint(label == "Best" ? Color.brand.success : Color.brand.primary)"#))
+        XCTAssertNil(marketplace.range(of: #".brandFont("#))
+        XCTAssertNotNil(marketplace.range(of: #".font(.caption.weight(.semibold))"#))
+        XCTAssertNotNil(marketplace.range(of: #".font(.body.weight(.semibold))"#))
         XCTAssertNil(marketplace.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"#))
         XCTAssertNil(marketplace.range(of: #"NativeMaterialRoundedBackground("#))
         XCTAssertNotNil(marketplace.range(of: #"private var summaryLineLimit: Int"#))
@@ -947,8 +978,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(buttons.range(of: "PrimaryGlowModifier"))
         XCTAssertNil(designTokens.range(of: "static func primaryGlow()"))
         XCTAssertNil(designTokens.range(of: "Color.brand.primary.opacity(0.35), radius: 30, y: 12"))
-        XCTAssertNotNil(buttons.range(of: "var maxFillWidth: CGFloat?"))
-        XCTAssertNotNil(buttons.range(of: "fillsWidth ? (maxFillWidth ?? .infinity) : nil"))
+        XCTAssertNotNil(buttons.range(of: "struct TextActionButton: View"))
+        XCTAssertNotNil(buttons.range(of: "struct PressButtonStyle: ButtonStyle"))
+        XCTAssertNotNil(buttons.range(of: ".nativeGlassButtonStyle(.standard)"))
         XCTAssertNotNil(home.range(of: "SnapActionRow()"))
         XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
         XCTAssertNil(home.range(of: #"PrimaryPillButton("#))
@@ -1019,7 +1051,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonStyle(.bordered)"#).count - 1, 2)
-        XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonBorderShape(.capsule)"#).count - 1, 2)
+        XCTAssertNil(menuSource.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".controlSize(.large)"#).count - 1, 2)
         XCTAssertEqual(menuSource.components(separatedBy: #".accessibilityValue(Text(selected.display.localized))"#).count - 1, 2)
         XCTAssertNotNil(menuSource.range(of: #".accessibilityHint("Opens category choices".localized)"#))
@@ -1077,6 +1109,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(authView.range(of: #"Label("Continue with Apple".localized, systemImage: "apple.logo")"#))
         XCTAssertNotNil(authView.range(of: #"NavigationLink(value: AuthRoute.email)"#))
         XCTAssertNotNil(authView.range(of: #"Label("Continue with Email".localized, systemImage: "envelope.fill")"#))
+        XCTAssertNil(authView.range(of: #".brandFont("#))
+        XCTAssertNotNil(authView.range(of: #".font(.body)"#))
         XCTAssertNil(authView.range(of: #"PrimaryPillButton(title: "Continue with Apple""#))
         XCTAssertNil(authView.range(of: #"SecondaryPillButton(title: "Continue with Email""#))
     }
@@ -1109,6 +1143,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(emailView.range(of: #"Label("Sign in".localized, systemImage: "arrow.right")"#))
         XCTAssertNotNil(emailView.range(of: ".buttonStyle(.borderedProminent)"))
         XCTAssertNotNil(emailView.range(of: ".background(.bar)"))
+        XCTAssertNil(authView.range(of: ".buttonBorderShape(.capsule)"))
         XCTAssertNil(authView.range(of: ".nativeLiquidGlassControlGroup"))
         XCTAssertNil(emailView.range(of: "PrimaryPillButton("))
         XCTAssertNil(emailView.range(of: ".nativeMaterialBar(tintOpacity: 0.78)"))
@@ -1188,6 +1223,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #"private var titleText: some View"#))
         XCTAssertNotNil(settings.range(of: #"private func valueText(_ value: String) -> some View"#))
         XCTAssertNotNil(settings.range(of: #".lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)"#))
+        XCTAssertNil(settings.range(of: #".brandFont("#))
+        XCTAssertNotNil(settings.range(of: #".font(.body)"#))
+        XCTAssertNotNil(settings.range(of: #".font(.caption)"#))
     }
 
     func testSettingsActionRowsUseSharedPressFeedbackAndHaptics() throws {
@@ -1234,7 +1272,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(deleteView.range(of: "Button(role: .destructive)"))
         XCTAssertNotNil(deleteView.range(of: #"Label(isDeletingAccount ? "Deleting…".localized : "Delete account".localized, systemImage: "person.crop.circle.badge.xmark")"#))
         XCTAssertNotNil(deleteView.range(of: ".buttonStyle(.borderedProminent)"))
-        XCTAssertNotNil(deleteView.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNil(deleteView.range(of: ".buttonBorderShape(.capsule)"))
         XCTAssertNotNil(deleteView.range(of: ".controlSize(.large)"))
         XCTAssertNotNil(deleteView.range(of: ".tint(Color.brand.destructive)"))
         XCTAssertNotNil(deleteView.range(of: ".background(.bar)"))
@@ -1317,6 +1355,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"ImageTools.jpegDataDownscaled(from: data, maxLongEdge: 1600, compression: 0.85)"#))
         XCTAssertNotNil(source.range(of: #"Photo couldn't be imported."#))
         XCTAssertNotNil(source.range(of: #"private var cameraHintLabel: some View"#))
+        XCTAssertNil(source.range(of: #".brandFont("#))
+        XCTAssertNotNil(source.range(of: #".font(.caption.weight(.semibold))"#))
+        XCTAssertNotNil(source.range(of: #".font(.body)"#))
+        XCTAssertNotNil(source.range(of: #".font(.title3.weight(.semibold))"#))
         XCTAssertNotNil(source.range(of: #".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"#))
         XCTAssertNotNil(source.range(of: #"private var cameraBottomPadding: CGFloat"#))
         XCTAssertNotNil(source.range(of: #"dynamicTypeSize.isAccessibilitySize ? Spacing.xxxl : Spacing.xxl"#))
@@ -1343,9 +1385,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "usesRegularWidthLayout ? 420 : .infinity"))
         XCTAssertNotNil(source.range(of: "private var fallbackActionsFillWidth: Bool"))
         XCTAssertNotNil(source.range(of: "dynamicTypeSize.isAccessibilitySize"))
-        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "fillsWidth: fallbackActionsFillWidth").count - 1, 3)
-        XCTAssertGreaterThanOrEqual(source.components(separatedBy: "maxFillWidth: fallbackActionMaxWidth").count - 1, 3)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)").count - 1, 3)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)").count - 1, 3)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".minimumScaleFactor(0.82)").count - 1, 2)
+        XCTAssertNotNil(source.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNotNil(source.range(of: #".buttonStyle(.bordered)"#))
+        XCTAssertNil(source.range(of: #"PrimaryPillButton("#))
+        XCTAssertNil(source.range(of: #"SecondaryPillButton("#))
     }
 
     func testCameraPlaceholdersKeepPhotoLibraryIconOnlyInImportControls() throws {
@@ -1374,19 +1420,18 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(root.range(of: #"withAnimation(AppMotion.screenAnimation(reduceMotion: shouldReduceMotion))"#))
         XCTAssertNotNil(designTokens.range(of: #"static let screen = Animation.easeOut(duration: 0.2)"#))
         XCTAssertNotNil(designTokens.range(of: "static func screenAnimation(reduceMotion: Bool) -> Animation"))
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 3)
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: #"@Environment(\.isEnabled) private var isEnabled"#).count - 1, 3)
+        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: "AppMotion.shouldReduceMotion").count - 1, 2)
+        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: #"@Environment(\.isEnabled) private var isEnabled"#).count - 1, 2)
         XCTAssertNotNil(buttons.range(of: "enum ButtonStateOpacity"))
         XCTAssertEqual(ButtonStateOpacity.opacity(isEnabled: true, isPressed: false), 1.0)
         XCTAssertEqual(ButtonStateOpacity.opacity(isEnabled: true, isPressed: true), 0.82)
         XCTAssertEqual(ButtonStateOpacity.opacity(isEnabled: false, isPressed: true), 0.48)
-        XCTAssertGreaterThanOrEqual(buttons.components(separatedBy: ".opacity(buttonOpacity)").count - 1, 2)
         XCTAssertNotNil(buttons.range(of: ".opacity(ButtonStateOpacity.opacity(isEnabled: isEnabled, isPressed: configuration.isPressed))"))
         XCTAssertNotNil(toast.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
         XCTAssertNotNil(camera.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
         XCTAssertNotNil(camera.range(of: ".task(id: shouldReduceMotion)"))
-        XCTAssertNotNil(tutorial.range(of: "AppMotion.shouldReduceMotion(os: reduceMotion, app: appReduceMotion)"))
-        XCTAssertNotNil(tutorial.range(of: ".animation(AppMotion.animation(reduceMotion: shouldReduceMotion), value: dynamicTypeSize.isAccessibilitySize)"))
+        XCTAssertNil(tutorial.range(of: "DragGesture(minimumDistance: 24)"))
+        XCTAssertNil(tutorial.range(of: ".symbolEffect("))
     }
 
     func testSkeletonShimmerFreezesUnderReduceMotion() throws {
@@ -1400,54 +1445,56 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(toast.components(separatedBy: "shouldReduceMotion || phase").count - 1, 2)
     }
 
-    func testTutorialUsesFiveSlidePagerAndCustomIllustrations() throws {
+    func testTutorialUsesConciseNativeGuide() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: "private struct TutorialSlidePage"))
-        XCTAssertNotNil(tutorial.range(of: "private struct DotPager"))
-        XCTAssertNotNil(tutorial.range(of: "private struct TutorialIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private struct WelcomeIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private struct SnapIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private struct AnalyzeIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private struct PickIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private struct CopyIllustration"))
-        XCTAssertNotNil(tutorial.range(of: "private enum TutorialIllustrationKind"))
-        XCTAssertNotNil(tutorial.range(of: "private var slideSwipeGesture: some Gesture"))
-        XCTAssertNotNil(tutorial.range(of: "DragGesture(minimumDistance: 24)"))
+        XCTAssertNotNil(tutorial.range(of: "private struct CompactGuideGraphic"))
+        XCTAssertNotNil(tutorial.range(of: "private struct GuideGlyph"))
+        XCTAssertNotNil(tutorial.range(of: "private struct TutorialStepRow"))
+        XCTAssertNotNil(tutorial.range(of: "private struct TutorialStep"))
+        XCTAssertNotNil(tutorial.range(of: "TutorialStep.steps"))
+        XCTAssertNotNil(tutorial.range(of: #"Image(systemName: systemName)"#))
+        XCTAssertNotNil(tutorial.range(of: #"Image(systemName: step.systemImage)"#))
+        XCTAssertNil(tutorial.range(of: #".brandFont("#))
+        XCTAssertNotNil(tutorial.range(of: #".font(.largeTitle.weight(.bold))"#))
+        XCTAssertNotNil(tutorial.range(of: #".font(.headline.weight(.semibold))"#))
         XCTAssertNil(tutorial.range(of: "List {"))
         XCTAssertNil(tutorial.range(of: "TabView"))
-        XCTAssertNil(tutorial.range(of: #"Image(systemName: "#))
+        XCTAssertNil(tutorial.range(of: "TutorialSlidePage"))
+        XCTAssertNil(tutorial.range(of: "DotPager"))
     }
 
-    func testTutorialCopyHonorsFiveSlideRules() throws {
+    func testTutorialCopyHonorsConciseGuideRules() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: #"title: "Welcome to BuySell.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Turn stuff into cash in three taps.""#))
-        XCTAssertNotNil(tutorial.range(of: #"title: "Snap a photo.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Point, tap, done. We handle the rest.""#))
-        XCTAssertNotNil(tutorial.range(of: #"title: "We figure out what it is.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Name, category, condition, price — in seconds.""#))
-        XCTAssertNotNil(tutorial.range(of: #"title: "Pick where to sell.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "We rank every marketplace by how much you'd get.""#))
-        XCTAssertNotNil(tutorial.range(of: #"title: "Copy and paste.""#))
-        XCTAssertNotNil(tutorial.range(of: #"detail: "Your listing is written for you. Paste it in.""#))
-        XCTAssertEqual(tutorial.components(separatedBy: "TutorialSlide(").count - 1, 5)
+        XCTAssertNotNil(tutorial.range(of: #"Text("Sell anything in three taps.".localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #"Text("Take a photo. We suggest where to sell and write the listing.".localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #"title: "Take a clear photo""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Fit the whole item in the frame.""#))
+        XCTAssertNotNil(tutorial.range(of: #"title: "Choose where to sell""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "We suggest the best place first.""#))
+        XCTAssertNotNil(tutorial.range(of: #"title: "Copy the listing""#))
+        XCTAssertNotNil(tutorial.range(of: #"detail: "Paste it into the marketplace when you are ready.""#))
+        XCTAssertNotNil(tutorial.range(of: #"Text("Start selling".localized)"#))
+        XCTAssertEqual(tutorial.components(separatedBy: "TutorialStep(").count - 1, 3)
+        XCTAssertNil(tutorial.range(of: "TutorialSlide("))
+        XCTAssertNil(tutorial.range(of: "Welcome to BuySell."))
+        XCTAssertNil(tutorial.range(of: "Turn stuff into cash in three taps."))
         XCTAssertNil(tutorial.range(of: "Just paste it in."))
         XCTAssertNil(tutorial.range(of: "Simply paste it in."))
     }
 
-    func testTutorialKeepsPagerProgressWithoutTabViewNavigation() throws {
+    func testTutorialKeepsSinglePrimaryActionWithoutPagerNavigation() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: "TutorialSlidePage(slide: slides[selectedIndex])"))
-        XCTAssertNotNil(tutorial.range(of: "DotPager(count: slides.count, selectedIndex: $selectedIndex)"))
-        XCTAssertNotNil(tutorial.range(of: "incrementSlide()"))
-        XCTAssertNotNil(tutorial.range(of: "decrementSlide()"))
-        XCTAssertNotNil(tutorial.range(of: "advanceOrFinish()"))
-        XCTAssertNotNil(tutorial.range(of: #""Next""#))
-        XCTAssertNotNil(tutorial.range(of: "Step %d"))
-        XCTAssertNotNil(tutorial.range(of: "Step %d of %d"))
+        XCTAssertNotNil(tutorial.range(of: #"TextActionButton(title: "Skip", minWidth: 64)"#))
+        XCTAssertNotNil(tutorial.range(of: #"Text("Start selling".localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel("Start selling".localized)"#))
+        XCTAssertNil(tutorial.range(of: #""Next""#))
+        XCTAssertNil(tutorial.range(of: #""Get started""#))
+        XCTAssertNil(tutorial.range(of: "Step %d"))
+        XCTAssertNil(tutorial.range(of: "Step %d of %d"))
         XCTAssertNil(tutorial.range(of: ".accessibilityAdjustableAction"))
         XCTAssertNil(tutorial.range(of: "TabView"))
     }
@@ -1461,46 +1508,48 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: #".task {"#))
         XCTAssertNotNil(tutorial.range(of: #"isKeyboardFocused = true"#))
         XCTAssertNotNil(tutorial.range(of: #"private var footerControls: some View"#))
-        XCTAssertNotNil(tutorial.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
-        XCTAssertNotNil(tutorial.range(of: #"VStack(spacing: Spacing.md)"#))
-        XCTAssertNotNil(tutorial.range(of: #"private var nextButton: some View"#))
-        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)"#))
+        XCTAssertNotNil(tutorial.range(of: #"dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.xl"#))
+        XCTAssertNotNil(tutorial.range(of: #"dynamicTypeSize.isAccessibilitySize ? 136 : 164"#))
+        XCTAssertNotNil(tutorial.range(of: #"VStack(spacing: contentSpacing)"#))
+        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: .infinity, minHeight: 44)"#))
         XCTAssertNotNil(tutorial.range(of: #".buttonStyle(.borderedProminent)"#))
-        XCTAssertNotNil(tutorial.range(of: #".buttonBorderShape(.capsule)"#))
+        XCTAssertNil(tutorial.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNotNil(tutorial.range(of: #".controlSize(.large)"#))
-        XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel(nextButtonTitle.localized)"#))
+        XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel("Start selling".localized)"#))
         XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.space)"#))
-        XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.rightArrow)"#))
-        XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.leftArrow)"#))
+        XCTAssertNil(tutorial.range(of: #".onKeyPress(.rightArrow)"#))
+        XCTAssertNil(tutorial.range(of: #".onKeyPress(.leftArrow)"#))
     }
 
-    func testTutorialUsesFullScreenControlsAndBottomPagerAction() throws {
+    func testTutorialUsesFullScreenControlsAndConciseGuideAction() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(tutorial.range(of: #"private var headerControls: some View"#))
         XCTAssertNotNil(tutorial.range(of: #"private var footerControls: some View"#))
         XCTAssertNotNil(tutorial.range(of: #"TextActionButton(title: "Skip", minWidth: 64)"#))
-        XCTAssertNotNil(tutorial.range(of: #"DotPager(count: slides.count, selectedIndex: $selectedIndex)"#))
-        XCTAssertNotNil(tutorial.range(of: #"private var nextButton: some View"#))
+        XCTAssertNotNil(tutorial.range(of: #"CompactGuideGraphic()"#))
+        XCTAssertNotNil(tutorial.range(of: #"TutorialStepRow(step: step)"#))
         XCTAssertNotNil(tutorial.range(of: #".padding(.bottom, Spacing.lg)"#))
-        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 104 : 64)"#))
+        XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: .infinity, minHeight: 44)"#))
+        XCTAssertNil(tutorial.range(of: #"DotPager("#))
+        XCTAssertNil(tutorial.range(of: #"private var nextButton: some View"#))
         XCTAssertNil(tutorial.range(of: #".toolbar {"#))
         XCTAssertNil(tutorial.range(of: #".safeAreaInset(edge: .bottom)"#))
         XCTAssertNil(tutorial.range(of: #".listStyle(.insetGrouped)"#))
     }
 
-    func testTutorialReduceMotionUsesCrossfadeInsteadOfSlideMotion() throws {
+    func testTutorialAvoidsCarouselMotion() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(tutorial.range(of: #"guard shouldReduceMotion == false else {"#))
-        XCTAssertNotNil(tutorial.range(of: #"return .opacity"#))
-        XCTAssertNotNil(tutorial.range(of: #".asymmetric("#))
-        XCTAssertNotNil(tutorial.range(of: #".move(edge: insertionEdge).combined(with: .opacity)"#))
-        XCTAssertNotNil(tutorial.range(of: #".move(edge: removalEdge).combined(with: .opacity)"#))
-        XCTAssertNotNil(tutorial.range(of: #".gesture(slideSwipeGesture)"#))
-        XCTAssertNotNil(tutorial.range(of: #".accessibilityValue("#))
+        XCTAssertNil(tutorial.range(of: #"DragGesture("#))
+        XCTAssertNil(tutorial.range(of: #".gesture("#))
+        XCTAssertNil(tutorial.range(of: #".asymmetric("#))
+        XCTAssertNil(tutorial.range(of: #".move(edge:"#))
+        XCTAssertNil(tutorial.range(of: #".symbolEffect("#))
+        XCTAssertNil(tutorial.range(of: #"TutorialSlidePage"#))
+        XCTAssertNil(tutorial.range(of: #"DotPager"#))
         XCTAssertNotNil(tutorial.range(of: #".accessibilityElement(children: .contain)"#))
-        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #".accessibilityElement(children: .contain)"#).count - 1, 3)
+        XCTAssertGreaterThanOrEqual(tutorial.components(separatedBy: #".accessibilityElement(children: .contain)"#).count - 1, 2)
     }
 
     func testListingGeneratedTextRowMatchesPromptRequirements() throws {
@@ -1513,7 +1562,8 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(listing.range(of: #"Section("Generated listing text".localized) {"#))
         XCTAssertNotNil(panelSource.range(of: "Text(store.listingText)"))
-        XCTAssertNotNil(panelSource.range(of: ".brandFont(.body)"))
+        XCTAssertNotNil(panelSource.range(of: ".font(.body)"))
+        XCTAssertNil(listing.range(of: #".brandFont("#))
         XCTAssertNotNil(panelSource.range(of: ".lineSpacing(4)"))
         XCTAssertNotNil(panelSource.range(of: ".textSelection(.enabled)"))
         XCTAssertNotNil(panelSource.range(of: ".padding(.vertical, Spacing.sm)"))
@@ -1524,6 +1574,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(errorSource.range(of: #".accessibilityIdentifier("Listing.ErrorMessage")"#))
         XCTAssertNotNil(errorSource.range(of: ".buttonStyle(.borderedProminent)"))
         XCTAssertNotNil(errorSource.range(of: ".buttonStyle(.bordered)"))
+        XCTAssertNil(errorSource.range(of: ".buttonBorderShape(.capsule)"))
         XCTAssertNotNil(errorSource.range(of: #".task(id: message)"#))
         XCTAssertNotNil(errorSource.range(of: #"appStore.showToast(message, style: .error)"#))
         XCTAssertNil(listing.range(of: #".onChange(of: store.phase)"#))
@@ -1570,7 +1621,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"dynamicTypeSize.isAccessibilitySize ? 240 : 164"#))
         XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.borderedProminent)"))
         XCTAssertNotNil(bottomSource.range(of: ".buttonStyle(.bordered)"))
-        XCTAssertNotNil(bottomSource.range(of: ".buttonBorderShape(.capsule)"))
+        XCTAssertNil(bottomSource.range(of: ".buttonBorderShape(.capsule)"))
         XCTAssertNotNil(bottomSource.range(of: ".controlSize(.large)"))
 
         let copyRange = try XCTUnwrap(bottomSource.range(of: #"Label("Copy listing".localized, systemImage: "doc.on.doc.fill")"#))

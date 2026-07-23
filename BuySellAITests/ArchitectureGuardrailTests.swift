@@ -42,14 +42,20 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoMatches(patterns, in: appSwiftFiles() + [projectURL("BuySellAI.xcodeproj/project.pbxproj")])
     }
 
-    func testNoThirdPartyPackageManifestsOrXcodePackageReferences() throws {
+    func testSwiftPackageReferencesAreLimitedToSupabaseSDK() throws {
         XCTAssertFalse(FileManager.default.fileExists(atPath: projectURL("Package.swift").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: projectURL("Package.resolved").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: projectURL("BuySellAI.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved").path))
 
         let project = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.pbxproj"), encoding: .utf8)
-        XCTAssertNil(project.range(of: "XCRemoteSwiftPackageReference"))
-        XCTAssertNil(project.range(of: "XCSwiftPackageProductDependency"))
+        XCTAssertEqual(project.components(separatedBy: "isa = XCRemoteSwiftPackageReference;").count - 1, 1)
+        XCTAssertEqual(project.components(separatedBy: "isa = XCSwiftPackageProductDependency;").count - 1, 1)
+        XCTAssertNotNil(project.range(of: #"repositoryURL = "https://github.com/supabase-community/supabase-swift";"#))
+        XCTAssertNotNil(project.range(of: "minimumVersion = 2.53.0;"))
+        XCTAssertNotNil(project.range(of: "productName = Supabase;"))
+        XCTAssertNotNil(project.range(of: "Supabase in Frameworks"))
+
+        let resolved = try String(contentsOf: projectURL("BuySellAI.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"), encoding: .utf8)
+        XCTAssertNotNil(resolved.range(of: #""identity" : "supabase-swift""#))
+        XCTAssertNotNil(resolved.range(of: #""version" : "2.53.0""#))
     }
 
     func testRemovedProductConceptsStayOutOfAppCopy() throws {
@@ -76,7 +82,13 @@ final class ArchitectureGuardrailTests: XCTestCase {
     func testAppCopyAvoidsForbiddenToneWords() throws {
         let patterns = [
             #"\b[Jj]ust\b"#,
-            #"\b[Ss]imply\b"#
+            #"\b[Ss]imply\b"#,
+            #"\bWe rank every marketplace\b"#,
+            #"\bAlgorithmically ranked\b"#,
+            #"\bPrompt engineered\b"#,
+            #"\bMarketplace arbitrage\b"#,
+            #"\bKeyword density\b"#,
+            #"\bConversion strategy\b"#
         ]
 
         try assertNoMatches(patterns, in: appTextFiles())
@@ -181,6 +193,23 @@ final class ArchitectureGuardrailTests: XCTestCase {
         }
     }
 
+    func testUITestFixtureSourcesAreDebugOnly() throws {
+        let imageTools = try String(contentsOf: projectURL("BuySellAI/Data/ImageTools.swift"), encoding: .utf8)
+        let models = try String(contentsOf: projectURL("BuySellAI/Data/Models.swift"), encoding: .utf8)
+        let apiClient = try String(contentsOf: projectURL("BuySellAI/Data/APIClient.swift"), encoding: .utf8)
+        let listingStore = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingStore.swift"), encoding: .utf8)
+        let appRouter = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+        let cameraView = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(imageTools.range(of: #"#if DEBUG\s+static func sampleJPEG\(\)"#, options: .regularExpression))
+        XCTAssertNotNil(models.range(of: #"#if DEBUG\s+enum ListingFixtureText"#, options: .regularExpression))
+        XCTAssertNotNil(apiClient.range(of: #"#if DEBUG\s+if isUITesting"#, options: .regularExpression))
+        XCTAssertNotNil(listingStore.range(of: #"#if DEBUG\s+if LaunchArguments\.isUITesting"#, options: .regularExpression))
+        XCTAssertNotNil(appRouter.range(of: #"#if DEBUG\s+let uiTestingCameraMode"#, options: .regularExpression))
+        XCTAssertNotNil(appRouter.range(of: #"#if DEBUG\s+private static var uiTestingHistoryEntry"#, options: .regularExpression))
+        XCTAssertNotNil(cameraView.range(of: #"#if DEBUG\s+if LaunchArguments\.contains\(LaunchArguments\.uiTestingCameraSampleCapture\)"#, options: .regularExpression))
+    }
+
     func testLocalSourceTypecheckScriptCoversAppUnitAndUITestSources() throws {
         let scriptURL = projectURL("Scripts/typecheck_local_sources.sh")
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
@@ -197,13 +226,17 @@ final class ArchitectureGuardrailTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "rg --files BuySellAI -g '*.swift'"))
         XCTAssertNotNil(script.range(of: "rg --files BuySellAITests -g '*.swift'"))
         XCTAssertNotNil(script.range(of: "rg --files BuySellAIUITests -g '*.swift'"))
+        XCTAssertNotNil(script.range(of: "swift_debug=("))
+        XCTAssertNotNil(script.range(of: "-D DEBUG"))
         XCTAssertNotNil(script.range(of: "-emit-module"))
+        XCTAssertNotNil(script.range(of: "-module-name BuySellAIRelease"))
         XCTAssertNotNil(script.range(of: "-module-name BuySellAI"))
         XCTAssertNotNil(script.range(of: "-enable-testing"))
         XCTAssertNotNil(script.range(of: "-F \"${simulator_developer_dir}/Library/Frameworks\""))
         XCTAssertNotNil(script.range(of: "-I \"${simulator_developer_dir}/usr/lib\""))
         XCTAssertNotNil(script.range(of: "BuySellAI local source typecheck passed"))
         XCTAssertNotNil(script.range(of: "sources: app unit ui"))
+        XCTAssertNotNil(script.range(of: "modes: release app debug app unit ui"))
     }
 
     private func assertNoMatches(

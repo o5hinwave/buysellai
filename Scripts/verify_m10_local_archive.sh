@@ -11,6 +11,7 @@ snapshot_root="${M10_LOCAL_ARCHIVE_SNAPSHOT_ROOT:-}"
 app_path="${archive_path}/Products/Applications/BuySellAI.app"
 info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
+app_executable="${app_path}/BuySellAI"
 app_icon_contents=""
 app_icon_source=""
 iphone_icon="${app_path}/AppIcon60x60@2x.png"
@@ -180,7 +181,7 @@ xcodebuild archive \
     CODE_SIGN_IDENTITY=""
 
 [[ -d "$app_path" ]] || fail "missing archived app at $app_path"
-[[ -x "${app_path}/BuySellAI" ]] || fail "missing archived executable"
+[[ -x "$app_executable" ]] || fail "missing archived executable"
 [[ -f "$info_plist" ]] || fail "missing archived Info.plist"
 [[ -f "$privacy_manifest" ]] || fail "missing PrivacyInfo.xcprivacy"
 require_png_dimensions "$iphone_icon" 120 120 "archived iPhone app icon"
@@ -194,7 +195,7 @@ app_size_kb="$(du -sk "$app_path" | awk '{print $1}')"
 [[ "$app_size_kb" -le "$max_app_size_kb" ]] || fail "app bundle is ${app_size_kb}KB, above ${max_app_size_kb}KB"
 
 bundle_id="$(plist_value CFBundleIdentifier "$info_plist")"
-[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected bundle identifier"
+[[ "$bundle_id" == "com.despia.buysellai" ]] || fail "unexpected bundle identifier"
 release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
 release_build="$(plist_value CFBundleVersion "$info_plist")"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
@@ -221,6 +222,11 @@ bundled_font="$(
 )"
 [[ -z "$bundled_font" ]] || fail "archived app must not bundle legacy custom font assets: $bundled_font"
 
+fixture_marker="$(
+    strings "$app_executable" | rg -n 'Vintage brass table lamp|Large history item|ListingFixtureText|sampleJPEG|Warm brass table lamp|uiTestingHistoryEntry|uiTestingHistoryEntries' | head -n 1 || true
+)"
+[[ -z "$fixture_marker" ]] || fail "archived Release executable contains UI-test fixture marker: $fixture_marker"
+
 printf 'M10 local archive check passed\n'
 printf 'archive: %s\n' "$archive_path"
 if [[ -n "$snapshot_root" ]]; then
@@ -231,4 +237,5 @@ printf 'release build: %s (%s)\n' "$release_version" "$release_build"
 printf 'app icon: AppIcon 1024x1024 source, 120x120 iPhone, 152x152 iPad\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
 printf 'custom fonts: none bundled\n'
+printf 'release fixtures: none bundled\n'
 printf 'app size: %sKB / %sKB\n' "$app_size_kb" "$max_app_size_kb"

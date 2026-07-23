@@ -128,7 +128,7 @@ final class ListingStoreTests: XCTestCase {
 
         XCTAssertNoThrow(try ListingTextContract.validatedGenerated(text))
         XCTAssertTrue(text.contains("TITLE:\nLamp - Good"))
-        XCTAssertTrue(text.contains("DESCRIPTION:\nLamp in good condition. Asking $45. See photos for details."))
+        XCTAssertTrue(text.contains("DESCRIPTION:\nLamp in good condition. Asking $45. Photos should show the full item, scale, close-ups, and any flaws."))
         XCTAssertFalse(text.localizedCaseInsensitiveContains("selling a"))
         XCTAssertFalse(text.localizedCaseInsensitiveContains("here's your listing"))
         XCTAssertFalse(text.localizedCaseInsensitiveContains("pickup or shipping depends"))

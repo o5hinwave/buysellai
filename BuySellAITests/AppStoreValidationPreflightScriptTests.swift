@@ -24,7 +24,7 @@ final class AppStoreValidationPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "photo library usage description mismatch"))
         XCTAssertNotNil(script.range(of: "NSPhotoLibraryAddUsageDescription"))
         XCTAssertNotNil(script.range(of: "photo import build should not request photo-library add permission"))
-        XCTAssertNotNil(script.range(of: "com.rhodes.buysellai"))
+        XCTAssertNotNil(script.range(of: "com.despia.buysellai"))
         XCTAssertNotNil(script.range(of: "release build:"))
     }
 

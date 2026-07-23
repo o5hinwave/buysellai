@@ -218,7 +218,7 @@ fi
 
 build_settings="$(show_release_build_settings)"
 
-[[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.rhodes.buysellai" ]] || fail "unexpected Release bundle identifier"
+[[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.despia.buysellai" ]] || fail "unexpected Release bundle identifier"
 [[ "$(setting CODE_SIGN_STYLE)" == "Automatic" ]] || fail "Release signing style must be Automatic"
 [[ "$(setting CODE_SIGN_ENTITLEMENTS)" == "BuySellAI/BuySellAI.entitlements" ]] || fail "Release build must use BuySellAI.entitlements"
 [[ -n "$(setting DEVELOPMENT_TEAM)" ]] || fail "DEVELOPMENT_TEAM is unset. Set M10_DEVELOPMENT_TEAM or select an Apple development team before real-device preflight."
@@ -244,7 +244,7 @@ plutil -lint "$built_info_plist" >/dev/null
 release_version="$(plist_value CFBundleShortVersionString "$built_info_plist")"
 release_build="$(plist_value CFBundleVersion "$built_info_plist")"
 built_bundle_id="$(plist_value CFBundleIdentifier "$built_info_plist")"
-[[ "$built_bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected real-device build bundle identifier"
+[[ "$built_bundle_id" == "com.despia.buysellai" ]] || fail "unexpected real-device build bundle identifier"
 [[ -n "$release_version" ]] || fail "built app Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "built app Info.plist is missing CFBundleVersion"
 

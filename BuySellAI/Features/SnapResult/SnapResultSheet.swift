@@ -85,12 +85,12 @@ struct SnapResultSheet: View {
             ProgressView()
                 .tint(Color.brand.primary)
             Text("Analyzing your photo…".localized)
-                .brandFont(.title)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
             if store.showStillWorking || (store.phase == .idle && automaticCancellationRetryCount > 0) {
                 VStack(spacing: Spacing.sm) {
                     Text("Still working… tap Retry to try again.".localized)
-                        .brandFont(.caption)
+                        .font(.caption)
                         .foregroundStyle(Color.brand.destructive)
                         .multilineTextAlignment(.center)
                         .accessibilityIdentifier("SnapResult.StillWorkingAlert")
@@ -102,7 +102,6 @@ struct SnapResultSheet: View {
                         Label("Retry".localized, systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
                     .controlSize(.large)
                     .accessibilityLabel("Retry".localized)
                 }
@@ -173,7 +172,6 @@ struct SnapResultSheet: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .tint(Color.brand.primary)
             .accessibilityLabel("Looks right — pick where to sell".localized)
@@ -228,7 +226,6 @@ struct SnapResultSheet: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .accessibilityLabel("Wrong item — retake".localized)
     }
@@ -242,7 +239,6 @@ struct SnapResultSheet: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .accessibilityLabel("Try again".localized)
     }
@@ -274,13 +270,13 @@ struct SnapResultSheet: View {
     private var priceEditor: some View {
         HStack(spacing: 0) {
             Text("~$")
-                .brandFont(.title)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.primaryText)
             TextField("Price".localized, text: Binding(
                 get: { store.priceText },
                 set: { store.priceText = $0 }
             ))
-                .brandFont(.title)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.primaryText)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.plain)
@@ -314,7 +310,6 @@ struct SnapResultSheet: View {
             SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
@@ -343,7 +338,6 @@ struct SnapResultSheet: View {
             SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
@@ -401,7 +395,7 @@ struct SnapResultSheet: View {
                 get: { store.nameText },
                 set: { store.nameText = $0 }
             ), axis: .vertical)
-                .brandFont(.titleLg)
+                .font(.title2.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .lineLimit(1...2)
                 .minimumScaleFactor(0.82)
@@ -427,7 +421,7 @@ struct SnapResultSheet: View {
                 focusedField = .name
             } label: {
                 Text(readableItemName)
-                    .brandFont(.titleLg)
+                    .font(.title2.weight(.semibold))
                     .foregroundStyle(Color.brand.foreground)
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
@@ -480,7 +474,7 @@ struct SnapResultSheet: View {
         VStack(spacing: Spacing.lg) {
             PhotoThumbnail(data: context.imageData, size: 156)
             Text(message)
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.destructive)
                 .multilineTextAlignment(.center)
             Button {
@@ -491,7 +485,6 @@ struct SnapResultSheet: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .tint(Color.brand.primary)
             .accessibilityLabel("Retake photo".localized)
@@ -503,7 +496,6 @@ struct SnapResultSheet: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .accessibilityLabel("Try again".localized)
         }
@@ -601,7 +593,7 @@ private struct SnapResultMenuLabel: View {
                 .foregroundStyle(Color.brand.mutedForeground)
                 .accessibilityHidden(true)
         }
-        .brandFont(.caption)
+        .font(.caption.weight(.semibold))
         .foregroundStyle(Color.brand.foreground)
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.xs)

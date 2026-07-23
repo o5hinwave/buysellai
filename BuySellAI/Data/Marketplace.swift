@@ -119,7 +119,7 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         case .poshmark:
             String(localized: "Fashion & closet items")
         case .mercari:
-            String(localized: "Ship anything, casual buyers")
+            String(localized: "Easy shipping for everyday items")
         case .offerup:
             String(localized: "Local pickup, mobile-first")
         case .depop:

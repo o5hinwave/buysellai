@@ -60,7 +60,7 @@ struct AuthView: View {
         VStack(spacing: Spacing.sm) {
             BrandWordmark(includeAI: true, showsPeriod: false, size: .large)
             Text("Sign in to sync your listings across devices.".localized)
-                .brandFont(.body)
+                .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -110,7 +110,6 @@ struct AuthView: View {
                 .frame(maxWidth: .infinity, minHeight: guestActionMinHeight)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .tint(Color.brand.primary)
         .disabled(store.isSigningIn)
@@ -261,7 +260,6 @@ private struct EmailSignInView: View {
                 .frame(maxWidth: .infinity, minHeight: signInActionMinHeight)
         }
         .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .tint(Color.brand.primary)
         .disabled(store.canSubmitEmail == false)

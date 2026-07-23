@@ -65,14 +65,12 @@ struct ListingSheet: View {
     private var headerTitle: some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(String.localizedFormat("Listing for %@", context.marketplace.displayName))
-                .brandFont(.overline)
-                .tracking(0.88)
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.mutedForeground)
-                .textCase(.uppercase)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .fixedSize(horizontal: false, vertical: true)
             Text(context.marketplace.displayName)
-                .brandFont(.titleLg)
+                .font(.title2.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .fixedSize(horizontal: false, vertical: true)
@@ -102,6 +100,18 @@ struct ListingSheet: View {
             Section("Generated listing text".localized) {
                 listingText
             }
+            Section("Quick tips".localized) {
+                marketplaceTipRow(
+                    title: "Main photo",
+                    systemImage: "photo",
+                    detail: context.marketplace.optimizationProfile.photoGuidance
+                )
+                marketplaceTipRow(
+                    title: "What helps here",
+                    systemImage: "sparkles",
+                    detail: context.marketplace.optimizationProfile.featuredGuidance
+                )
+            }
         case .failed(let message):
             Section {
                 error(message)
@@ -112,7 +122,7 @@ struct ListingSheet: View {
     private var loading: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Label("Writing your listing…".localized, systemImage: "pencil.and.outline")
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -130,7 +140,7 @@ struct ListingSheet: View {
 
     private var listingText: some View {
         Text(store.listingText)
-            .brandFont(.body)
+            .font(.body)
             .foregroundStyle(Color.brand.foreground)
             .lineSpacing(4)
             .textSelection(.enabled)
@@ -141,6 +151,24 @@ struct ListingSheet: View {
             .accessibilitySortPriority(3)
     }
 
+    private func marketplaceTipRow(title: String, systemImage: String, detail: String) -> some View {
+        LabeledContent {
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 5 : 3)
+                .fixedSize(horizontal: false, vertical: true)
+        } label: {
+            Label(title.localized, systemImage: systemImage)
+                .font(.body)
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .padding(.vertical, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+    }
+
     private func error(_ message: String) -> some View {
         VStack(spacing: Spacing.md) {
             Image(systemName: "exclamationmark.triangle")
@@ -149,7 +177,7 @@ struct ListingSheet: View {
                 .accessibilityHidden(true)
 
             Text(message)
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("Listing.ErrorMessage")
@@ -162,7 +190,6 @@ struct ListingSheet: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .tint(Color.brand.primary)
             .accessibilityLabel("Regenerate".localized)
@@ -175,7 +202,6 @@ struct ListingSheet: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .accessibilityLabel("Wrong item — retake".localized)
         }
@@ -206,7 +232,6 @@ struct ListingSheet: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
             .controlSize(.large)
             .tint(Color.brand.primary)
             .disabled(copyableListingText.isEmpty)
@@ -236,7 +261,7 @@ struct ListingSheet: View {
             }
 
             Text("Tip: paste, add photos, hit list. That's it.".localized)
-                .brandFont(.caption)
+                .font(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .multilineTextAlignment(.center)
                 .padding(.top, Spacing.xxs)
@@ -265,7 +290,6 @@ struct ListingSheet: View {
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
         .controlSize(.large)
         .accessibilityLabel(title.localized)
     }

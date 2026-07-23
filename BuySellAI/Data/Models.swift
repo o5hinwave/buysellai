@@ -269,22 +269,23 @@ enum ListingTextContract {
     }
 }
 
+#if DEBUG
 enum ListingFixtureText {
-    static func sample(for item: DetectedItem, currencyCode: String? = nil) -> String {
-        let itemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayName = itemName.isEmpty ? "Item" : itemName
-        let resolvedCurrencyCode = (currencyCode ?? item.currencyCode).trimmingCharacters(in: .whitespacesAndNewlines)
-        let price = item.priceEstimate.currency(code: resolvedCurrencyCode.isEmpty ? "USD" : resolvedCurrencyCode)
-
+    static func sample(
+        for item: DetectedItem,
+        marketplace: Marketplace = .ebay,
+        currencyCode: String? = nil
+    ) -> String {
         return """
         TITLE:
-        \(displayName) - \(item.condition.display)
+        \(MarketplaceListingOptimizer.title(for: item, marketplace: marketplace))
 
         DESCRIPTION:
-        \(displayName) in \(item.condition.display.lowercased()) condition. Asking \(price). See photos for details.
+        \(MarketplaceListingOptimizer.description(for: item, marketplace: marketplace, currencyCode: currencyCode))
         """
     }
 }
+#endif
 
 struct AuthSession: Codable, Identifiable, Sendable, Hashable {
     let userID: String

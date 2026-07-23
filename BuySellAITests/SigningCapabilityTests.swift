@@ -11,7 +11,7 @@ final class SigningCapabilityTests: XCTestCase {
 
     func testAppTargetBuildConfigurationsUseEntitlementsAndAutomaticSigning() throws {
         let project = try projectFile()
-        let appConfigurations = try buildConfigurations(forBundleID: "com.rhodes.buysellai", in: project)
+        let appConfigurations = try buildConfigurations(forBundleID: "com.despia.buysellai", in: project)
 
         XCTAssertEqual(Set(appConfigurations.keys), ["Debug", "Release"])
 
@@ -19,7 +19,8 @@ final class SigningCapabilityTests: XCTestCase {
             XCTAssertEqual(setting("CODE_SIGN_ENTITLEMENTS", in: configuration), "BuySellAI/BuySellAI.entitlements")
             XCTAssertEqual(setting("CODE_SIGN_STYLE", in: configuration), "Automatic")
             XCTAssertEqual(setting("INFOPLIST_FILE", in: configuration), "BuySellAI/Info.plist")
-            XCTAssertEqual(setting("PRODUCT_BUNDLE_IDENTIFIER", in: configuration), "com.rhodes.buysellai")
+            XCTAssertEqual(setting("PRODUCT_BUNDLE_IDENTIFIER", in: configuration), "com.despia.buysellai")
+            XCTAssertEqual(setting("DEVELOPMENT_TEAM", in: configuration), "ZVFG6KC7KA")
             XCTAssertEqual(setting("SUPPORTED_PLATFORMS", in: configuration), "iphoneos iphonesimulator")
             XCTAssertEqual(setting("TARGETED_DEVICE_FAMILY", in: configuration), "1,2")
         }
@@ -32,14 +33,16 @@ final class SigningCapabilityTests: XCTestCase {
         XCTAssertEqual(entitlementsReferences, 2)
     }
 
-    func testSignedSubmitGatesStayDocumentedWhileDevelopmentTeamIsUnset() throws {
+    func testSignedSubmitGatesDocumentApplePortalAndExternalEvidenceBlockers() throws {
         let project = try projectFile()
-        let appConfigurations = try buildConfigurations(forBundleID: "com.rhodes.buysellai", in: project)
+        let appConfigurations = try buildConfigurations(forBundleID: "com.despia.buysellai", in: project)
         let teamIDs = Set(appConfigurations.values.compactMap { setting("DEVELOPMENT_TEAM", in: $0) })
         let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
 
-        XCTAssertEqual(teamIDs, [""])
-        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, App Store Connect legal/account-owner confirmation, backend smoke preflight, and Instruments pass are blocked until an Apple development team, App Store Connect API-key credentials, confirmed account-owner/product-page metadata, deployed real Supabase config/functions, and trusted physical hardware are available"))
+        XCTAssertEqual(teamIDs, ["ZVFG6KC7KA"])
+        XCTAssertNotNil(readme.range(of: "Apple Developer account state: team `RHODES MCALLEN COONS COONS` (`ZVFG6KC7KA`) is selected in the Xcode project for Bundle ID `com.despia.buysellai`"))
+        XCTAssertNotNil(readme.range(of: "Sign in with Apple is still pending in Apple Developer because the App ID capability is not enabled, no Services ID exists, and no Sign in with Apple key has been created"))
+        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, App Store Connect legal/account-owner confirmation, backend smoke preflight, and Instruments pass are blocked until Apple portal Sign in with Apple setup, App Store Connect API-key credentials, confirmed account-owner/product-page metadata, deployed real Supabase config/functions, and trusted physical hardware are available"))
         XCTAssertNotNil(readme.range(of: "real-device acceptance pass remains blocked until the acceptance evidence table is recorded"))
     }
 

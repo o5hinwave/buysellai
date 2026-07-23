@@ -36,10 +36,12 @@ actor APIClient {
             throw APIError.offline
         }
 
+#if DEBUG
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
             return AnalyzeResponse(name: "Vintage brass table lamp", category: "Home", condition: "good", currentPrice: Decimal(45))
         }
+#endif
 
         let config = try loadConfig()
         let payload = AnalyzeRequest(imageDataUrl: "data:image/jpeg;base64,\(image.base64EncodedString())")
@@ -65,10 +67,12 @@ actor APIClient {
         let currencyCode = item.currencyCode.trimmingCharacters(in: .whitespacesAndNewlines)
         let displayCurrencyCode = currencyCode.isEmpty ? "USD" : currencyCode
 
+#if DEBUG
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
-            return ListingFixtureText.sample(for: item, currencyCode: displayCurrencyCode)
+            return ListingFixtureText.sample(for: item, marketplace: marketplace, currencyCode: displayCurrencyCode)
         }
+#endif
 
         let config = try loadConfig()
         let itemPayload = ListingItemPayload(

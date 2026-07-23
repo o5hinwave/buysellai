@@ -240,7 +240,7 @@ final class APIClientTests: XCTestCase {
 
         let listing = try await client.generateListing(item: Self.sampleItem, marketplace: .craigslist)
 
-        XCTAssertEqual(listing, ListingFixtureText.sample(for: Self.sampleItem, currencyCode: "USD"))
+        XCTAssertEqual(listing, ListingFixtureText.sample(for: Self.sampleItem, marketplace: .craigslist, currencyCode: "USD"))
         XCTAssertNoThrow(try ListingTextContract.validatedGenerated(listing))
         XCTAssertFalse(listing.localizedCaseInsensitiveContains("selling a"))
         XCTAssertFalse(listing.localizedCaseInsensitiveContains("pickup or shipping depends"))

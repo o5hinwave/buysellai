@@ -56,6 +56,11 @@ swift_common=(
     -enable-testing
 )
 
+swift_debug=(
+    "${swift_common[@]}"
+    -D DEBUG
+)
+
 xctest_imports=(
     -F "${simulator_developer_dir}/Library/Frameworks"
     -I "${simulator_developer_dir}/usr/lib"
@@ -63,19 +68,26 @@ xctest_imports=(
 )
 
 xcrun swiftc -emit-module \
-    -module-name BuySellAI \
-    -emit-module-path "${module_dir}/BuySellAI.swiftmodule" \
+    -module-name BuySellAIRelease \
+    -emit-module-path "${module_dir}/BuySellAIRelease.swiftmodule" \
     "${swift_common[@]}" \
     -parse-as-library \
     "${app_sources[@]}"
 
+xcrun swiftc -emit-module \
+    -module-name BuySellAI \
+    -emit-module-path "${module_dir}/BuySellAI.swiftmodule" \
+    "${swift_debug[@]}" \
+    -parse-as-library \
+    "${app_sources[@]}"
+
 xcrun swiftc -typecheck \
-    "${swift_common[@]}" \
+    "${swift_debug[@]}" \
     "${xctest_imports[@]}" \
     "${unit_test_sources[@]}"
 
 xcrun swiftc -typecheck \
-    "${swift_common[@]}" \
+    "${swift_debug[@]}" \
     "${xctest_imports[@]}" \
     "${ui_test_sources[@]}"
 
@@ -84,3 +96,4 @@ printf 'swift module: %s\n' "$module_dir"
 printf 'target: %s\n' "$target_triple"
 printf 'sdk: %s\n' "$sdk_path"
 printf 'sources: app unit ui\n'
+printf 'modes: release app debug app unit ui\n'

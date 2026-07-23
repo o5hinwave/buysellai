@@ -15,10 +15,11 @@ info_plist="${app_path}/Info.plist"
 privacy_manifest="${app_path}/PrivacyInfo.xcprivacy"
 signed_entitlements="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-entitlements.XXXXXX")"
 build_settings_output="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-build-settings.XXXXXX")"
+archive_output="$(mktemp "${TMPDIR:-/tmp}/buysell-signed-archive-output.XXXXXX")"
 plist_buddy="/usr/libexec/PlistBuddy"
 
 cleanup() {
-    rm -f "$signed_entitlements" "$build_settings_output"
+    rm -f "$signed_entitlements" "$build_settings_output" "$archive_output"
 }
 trap cleanup EXIT
 
@@ -109,6 +110,31 @@ print_missing_team_pending() {
     printf 'Set M10_DEVELOPMENT_TEAM or select an Apple development team in Xcode, then rerun without ALLOW_MISSING_TEAM=1 to produce a signed archive.\n'
 }
 
+print_missing_signing_credentials_pending() {
+    local release_version
+    local release_build
+
+    release_version="$(setting MARKETING_VERSION)"
+    release_build="$(setting CURRENT_PROJECT_VERSION)"
+
+    printf 'M10 signed archive preflight pending: Apple signing credentials are unavailable\n'
+    printf 'archive: %s\n' "$archive_path"
+    if [[ -n "$snapshot_root" ]]; then
+        printf 'snapshot root: %s\n' "$snapshot_root"
+    fi
+    printf 'bundle id: com.despia.buysellai\n'
+    printf 'sign in with apple: Default\n'
+    if [[ -n "$release_version" && -n "$release_build" ]]; then
+        printf 'release build: %s (%s)\n' "$release_version" "$release_build"
+    fi
+    printf 'reason: Xcode has no signed-in Apple account or provisioning profile for com.despia.buysellai\n'
+    printf 'Add the Apple account, enable Sign in with Apple for the App ID, create/download the profile, then rerun without ALLOW_MISSING_TEAM=1.\n'
+}
+
+archive_failed_for_missing_signing_credentials() {
+    grep -Eiq 'No Accounts|No profiles for|requires a provisioning profile|provisioning profile .* not found|No signing certificate' "$archive_output"
+}
+
 show_release_build_settings() {
     rm -f "$build_settings_output"
 
@@ -156,7 +182,7 @@ fi
 
 build_settings="$(show_release_build_settings)"
 
-[[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.rhodes.buysellai" ]] || fail "unexpected Release bundle identifier"
+[[ "$(setting PRODUCT_BUNDLE_IDENTIFIER)" == "com.despia.buysellai" ]] || fail "unexpected Release bundle identifier"
 [[ "$(setting CODE_SIGN_STYLE)" == "Automatic" ]] || fail "Release signing style must be Automatic"
 [[ "$(setting CODE_SIGN_ENTITLEMENTS)" == "BuySellAI/BuySellAI.entitlements" ]] || fail "Release build must use BuySellAI.entitlements"
 [[ -f "$entitlements_path" ]] || fail "missing BuySellAI.entitlements"
@@ -173,14 +199,22 @@ fi
 
 rm -rf "$archive_path"
 
-xcodebuild archive \
+if ! xcodebuild archive \
     -project "$project_path" \
     -scheme BuySellAI \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -archivePath "$archive_path" \
     -allowProvisioningUpdates \
-    ${team_build_setting:+"$team_build_setting"}
+    ${team_build_setting:+"$team_build_setting"} > "$archive_output" 2>&1; then
+    if [[ "$allow_missing_team" == "1" ]] && archive_failed_for_missing_signing_credentials; then
+        print_missing_signing_credentials_pending
+        exit 0
+    fi
+    cat "$archive_output"
+    fail "xcodebuild archive failed"
+fi
+cat "$archive_output"
 
 [[ -d "$app_path" ]] || fail "missing archived app at $app_path"
 [[ -x "${app_path}/BuySellAI" ]] || fail "missing archived executable"
@@ -193,7 +227,7 @@ plutil -lint "$privacy_manifest" >/dev/null
 release_version="$(plist_value CFBundleShortVersionString "$info_plist")"
 release_build="$(plist_value CFBundleVersion "$info_plist")"
 bundle_id="$(plist_value CFBundleIdentifier "$info_plist")"
-[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected archived bundle identifier"
+[[ "$bundle_id" == "com.despia.buysellai" ]] || fail "unexpected archived bundle identifier"
 [[ -n "$release_version" ]] || fail "archived Info.plist is missing CFBundleShortVersionString"
 [[ -n "$release_build" ]] || fail "archived Info.plist is missing CFBundleVersion"
 

@@ -15,7 +15,8 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/functions/_shared/http.ts",
             "supabase/migrations/20260717000100_create_remote_history_and_apple_auth_tokens.sql",
             "supabase/migrations/20260718000100_harden_history_constraints.sql",
-            "supabase/migrations/20260718000200_harden_apple_auth_token_identity.sql"
+            "supabase/migrations/20260718000200_harden_apple_auth_token_identity.sql",
+            "supabase/migrations/20260722000100_create_marketplace_research_cache.sql"
         ] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL(path).path), "\(path) should exist")
         }
@@ -87,6 +88,25 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(migration.range(of: "unique (apple_user_id)"))
     }
 
+    func testSupabaseMigrationCreatesServiceOnlyMarketplaceResearchCache() throws {
+        let migration = try read("supabase/migrations/20260722000100_create_marketplace_research_cache.sql")
+
+        XCTAssertNotNil(migration.range(of: "create table if not exists public.marketplace_research_cache"))
+        XCTAssertNotNil(migration.range(of: "cache_key text primary key"))
+        XCTAssertNotNil(migration.range(of: "search_queries text[] not null default '{}'"))
+        XCTAssertNotNil(migration.range(of: "useful_findings text[] not null default '{}'"))
+        XCTAssertNotNil(migration.range(of: "official_sources text[] not null default '{}'"))
+        XCTAssertNotNil(migration.range(of: "research_summary text not null"))
+        XCTAssertNotNil(migration.range(of: "expires_at timestamptz not null"))
+        XCTAssertNotNil(migration.range(of: "marketplace_research_expires_after_updated"))
+        XCTAssertNotNil(migration.range(of: "alter table public.marketplace_research_cache enable row level security"))
+        XCTAssertNotNil(migration.range(of: "alter table public.marketplace_research_cache force row level security"))
+        XCTAssertNotNil(migration.range(of: "revoke all on table public.marketplace_research_cache from anon"))
+        XCTAssertNotNil(migration.range(of: "revoke all on table public.marketplace_research_cache from authenticated"))
+        XCTAssertNotNil(migration.range(of: "grant all on table public.marketplace_research_cache to service_role"))
+        XCTAssertNil(migration.range(of: #"create policy .*marketplace_research_cache"#, options: .regularExpression))
+    }
+
     func testAnonymousAnalyzeAndGenerateFunctionsUseGeminiServerSideSecret() throws {
         let config = try read("supabase/config.toml")
         XCTAssertNotNil(config.range(of: #"\[functions\.analyze-image\]\s+verify_jwt = false"#, options: .regularExpression))
@@ -100,7 +120,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(gemini.range(of: ":generateContent"))
         XCTAssertNil(gemini.range(of: "?key="))
         XCTAssertNotNil(gemini.range(of: #""x-goog-api-key": apiKey"#))
-        XCTAssertNotNil(gemini.range(of: #"|| "gemini-3.5-flash""#))
+        XCTAssertNotNil(gemini.range(of: #"|| "gemini-2.5-flash""#))
         XCTAssertNil(gemini.range(of: "gemini-flash-latest"))
         XCTAssertNotNil(gemini.range(of: "GEMINI_MODEL"))
         XCTAssertNotNil(gemini.range(of: "response.text()"))
@@ -116,8 +136,13 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNil(gemini.range(of: "generation_config"))
         XCTAssertNotNil(gemini.range(of: "responseMimeType"))
         XCTAssertNotNil(gemini.range(of: "responseSchema"))
+        XCTAssertNotNil(gemini.range(of: "export type GeminiTool"))
+        XCTAssertNotNil(gemini.range(of: "type GeminiRequestOptions"))
+        XCTAssertNotNil(gemini.range(of: "options: GeminiRequestOptions = {}"))
+        XCTAssertNotNil(gemini.range(of: #"tools: options.tools"#))
+        XCTAssertNotNil(gemini.range(of: "maxOutputTokens"))
         XCTAssertNotNil(gemini.range(of: "application/json"))
-        XCTAssertNil(gemini.range(of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}"#, options: .regularExpression))
+        XCTAssertNil(gemini.range(of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#, options: .regularExpression))
     }
 
     func testAnalyzeFunctionPreservesNativeAnalyzeContract() throws {
@@ -154,18 +179,43 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"TITLE:\\n<title>\\n\\nDESCRIPTION:\\n<body>"#))
         XCTAssertNotNil(source.range(of: "listing"))
         XCTAssertNotNil(source.range(of: "plain text newlines"))
+        XCTAssertNotNil(source.range(of: "marketplaceProfiles"))
+        XCTAssertNotNil(source.range(of: "titleMaxCharacters"))
+        XCTAssertNotNil(source.range(of: "Keep TITLE at or below"))
+        XCTAssertNotNil(source.range(of: "Marketplace title formula"))
+        XCTAssertNotNil(source.range(of: "Marketplace search focus"))
+        XCTAssertNotNil(source.range(of: "Photo guidance to mention if helpful"))
+        XCTAssertNotNil(source.range(of: "Featured guidance to respect"))
+        XCTAssertNotNil(source.range(of: "createMarketplaceResearchPlan"))
+        XCTAssertNotNil(source.range(of: "fetchMarketplaceResearchCache"))
+        XCTAssertNotNil(source.range(of: "saveMarketplaceResearchCache"))
+        XCTAssertNotNil(source.range(of: "Use Google Search and URL context only for the minimal research plan provided"))
+        XCTAssertNotNil(source.range(of: "Prefer official marketplace guidance over stale assumptions"))
+        XCTAssertNotNil(source.range(of: "Saved marketplace research"))
+        XCTAssertNotNil(source.range(of: "searchQuestions: searchQuestions.slice(0, 3)"))
+        XCTAssertNotNil(source.range(of: "marketplace_research_cache"))
+        XCTAssertNotNil(source.range(of: "expires_at=gt."))
+        XCTAssertNotNil(source.range(of: "resolution=merge-duplicates,return=minimal"))
+        XCTAssertNotNil(source.range(of: "tools: usesCachedResearch ? [] : ["))
+        XCTAssertNotNil(source.range(of: "{ googleSearch: {} }"))
+        XCTAssertNotNil(source.range(of: "{ urlContext: {} }"))
+        XCTAssertNotNil(source.range(of: "usesCachedResearch ? []"))
+        XCTAssertNotNil(source.range(of: "maxOutputTokens: 1_700"))
         XCTAssertNotNil(source.range(of: "requireCleanListing"))
+        XCTAssertNil(source.range(of: #"\bSEO\b"#, options: [.regularExpression, .caseInsensitive]))
         XCTAssertNotNil(source.range(of: "Listing response was not plain text"))
         XCTAssertNotNil(source.range(of: #"/```/i.test(listing)"#))
         XCTAssertNil(source.range(of: #"/^```/i.test(listing) || /```$/i.test(listing)"#))
         XCTAssertNotNil(source.range(of: "Listing response included a preamble"))
         XCTAssertNotNil(source.range(of: "Listing response missing required sections"))
         XCTAssertNotNil(source.range(of: "Listing response missing section text"))
+        XCTAssertNotNil(source.range(of: "Listing response title too long"))
         XCTAssertNotNil(source.range(of: "const titleMatch"))
         XCTAssertNotNil(source.range(of: "const afterTitle"))
         XCTAssertNotNil(source.range(of: "const descriptionMatch"))
         XCTAssertNotNil(source.range(of: "const titleBody"))
         XCTAssertNotNil(source.range(of: "const descriptionBody"))
+        XCTAssertNotNil(source.range(of: "titleBody.length > titleMaxCharacters"))
         XCTAssertNotNil(source.range(of: #"^TITLE\s*:"#))
         XCTAssertNotNil(source.range(of: #"^DESCRIPTION\s*:"#))
     }
@@ -176,7 +226,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "const knownMarketplaceIds = ["))
         XCTAssertNotNil(source.range(of: "const knownMarketplaceIdSet = new Set<string>(knownMarketplaceIds)"))
         XCTAssertNotNil(source.range(of: "const platform = requireMarketplace(body.platform)"))
-        XCTAssertNotNil(source.range(of: "function requireMarketplace(value: unknown): string"))
+        XCTAssertNotNil(source.range(of: "function requireMarketplace(value: unknown): MarketplaceId"))
         XCTAssertNotNil(source.range(of: #"throw new HttpError("Unsupported platform", 400)"#))
         XCTAssertNil(source.range(of: #"const platform = asString(body.platform, "platform")"#))
 
@@ -333,9 +383,10 @@ final class BackendFunctionSourceTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "supabase functions deploy store-apple-token"))
             XCTAssertNotNil(text.range(of: "supabase functions deploy delete-account"))
             XCTAssertNotNil(text.range(of: "GEMINI_API_KEY"))
-            XCTAssertNotNil(text.range(of: "gemini-3.5-flash"))
+            XCTAssertNotNil(text.range(of: "gemini-2.5-flash"))
             XCTAssertNotNil(text.range(of: "stable"))
             XCTAssertNil(text.range(of: "gemini-flash-latest"))
+            XCTAssertNotNil(text.range(of: "marketplace_research_cache"))
             XCTAssertNotNil(text.range(of: "APPLE_CLIENT_ID"))
             XCTAssertNotNil(text.range(of: "server-side"))
         }
@@ -367,7 +418,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(backendReadme.range(of: "SUPABASE_SECRETS_FROM_ENV"))
         XCTAssertNotNil(backendReadme.range(of: "SUPABASE_PROJECT_REF"))
         XCTAssertNotNil(backendReadme.range(of: "CI secret environment variables"))
-        XCTAssertNotNil(backendReadme.range(of: "Rotate any provider key that was pasted into chat, logs, or git"))
+        XCTAssertNotNil(backendReadme.range(of: "Rotate any provider or server-side key that was pasted into chat, logs, or git"))
         XCTAssertNotNil(backendReadme.range(of: "The final M10 secret scan reads hidden files"))
     }
 
@@ -381,10 +432,10 @@ final class BackendFunctionSourceTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "Scripts/deploy_supabase_backend.sh deploy"))
             XCTAssertNotNil(text.range(of: "Scripts/preflight_m10_backend.sh"))
             XCTAssertNotNil(text.range(of: "M10_ANALYZE_IMAGE_JPEG"))
-            XCTAssertNotNil(text.range(of: "schema: history apple_auth_tokens"))
+            XCTAssertNotNil(text.range(of: "schema: history apple_auth_tokens marketplace_research_cache"))
             XCTAssertNotNil(text.range(of: "functions: analyze-image generate-listing store-apple-token delete-account"))
             XCTAssertNotNil(text.range(of: "protected functions: store-apple-token delete-account"))
-            XCTAssertNotNil(text.range(of: "protected tables: history apple_auth_tokens"))
+            XCTAssertNotNil(text.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache"))
             XCTAssertNotNil(text.range(of: "analyze rejection contract: missing jpeg base64"))
             XCTAssertNotNil(text.range(of: "listing contract:"))
             XCTAssertNotNil(text.range(of: "listing rejection contract: platform category condition"))
@@ -399,7 +450,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(backendReadme.range(of: "analyze rejection contract: missing jpeg base64"))
         XCTAssertNotNil(backendReadme.range(of: "listing rejection contract: platform category condition"))
         XCTAssertNotNil(readme.range(of: "create index history_user_created_at_idx"))
-        XCTAssertNotNil(readme.range(of: "constraints: history category condition marketplace listing apple-token-identity"))
+        XCTAssertNotNil(readme.range(of: "constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache"))
         XCTAssertNotNil(readme.range(of: "alter table public.history force row level security"))
         XCTAssertNotNil(readme.range(of: "using ((select auth.uid()) = user_id)"))
         XCTAssertNotNil(readme.range(of: "with check ((select auth.uid()) = user_id)"))
@@ -408,7 +459,7 @@ final class BackendFunctionSourceTests: XCTestCase {
     }
 
     func testSupabaseFunctionSourcesContainNoProviderSecretLiterals() throws {
-        let secretPattern = #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}"#
+        let secretPattern = #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#
         for file in try textFiles(under: projectURL("supabase")) {
             let text = try String(contentsOf: file, encoding: .utf8)
             XCTAssertNil(

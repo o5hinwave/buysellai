@@ -6,6 +6,8 @@ allow_missing_asc="${ALLOW_MISSING_ASC:-0}"
 api_key_id="${ASC_API_KEY_ID:-}"
 api_issuer_id="${ASC_API_ISSUER_ID:-}"
 private_keys_dir="${ASC_API_PRIVATE_KEYS_DIR:-${API_PRIVATE_KEYS_DIR:-}}"
+release_version="1.0"
+release_build="1"
 
 ipa_info_plist="$(mktemp "${TMPDIR:-/tmp}/buysell-ipa-info.XXXXXX")"
 ipa_privacy_manifest="$(mktemp "${TMPDIR:-/tmp}/buysell-ipa-privacy.XXXXXX")"
@@ -27,6 +29,10 @@ fail() {
 pending_or_fail() {
     if [[ "$allow_missing_asc" == "1" ]]; then
         printf 'M10 App Store validation preflight pending: %s\n' "$*"
+        printf 'ipa: pending App Store Connect export\n'
+        printf 'bundle id: com.despia.buysellai\n'
+        printf 'sign in with apple: Default\n'
+        printf 'release build: %s (%s)\n' "$release_version" "$release_build"
         printf 'Export an IPA and set ASC_API_KEY_ID, ASC_API_ISSUER_ID, and optionally ASC_API_PRIVATE_KEYS_DIR, then rerun without ALLOW_MISSING_ASC=1.\n'
         exit 0
     fi
@@ -126,7 +132,7 @@ plutil -lint "$ipa_privacy_manifest" >/dev/null
 require_privacy_manifest_values "$ipa_privacy_manifest"
 
 ipa_bundle_id="$(plist_value CFBundleIdentifier "$ipa_info_plist")"
-[[ "$ipa_bundle_id" == "com.rhodes.buysellai" ]] || fail "unexpected IPA bundle identifier"
+[[ "$ipa_bundle_id" == "com.despia.buysellai" ]] || fail "unexpected IPA bundle identifier"
 [[ "$(plist_value NSCameraUsageDescription "$ipa_info_plist")" == "BuySell uses your camera to snap photos of items you want to sell." ]] || fail "camera usage description mismatch"
 [[ "$(plist_value NSPhotoLibraryUsageDescription "$ipa_info_plist")" == "BuySell lets you choose existing item photos from your library." ]] || fail "photo library usage description mismatch"
 if plist_key_exists NSPhotoLibraryAddUsageDescription "$ipa_info_plist"; then

@@ -27,7 +27,7 @@ final class M10PerformanceEvidenceScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 local archive check passed"))
         XCTAssertNotNil(script.range(of: "marker_value"))
         XCTAssertNotNil(script.range(of: #"bundle_id="$(marker_value "bundle id:" "$archive_log")""#))
-        XCTAssertNotNil(script.range(of: #"[[ "$bundle_id" == "com.rhodes.buysellai" ]]"#))
+        XCTAssertNotNil(script.range(of: #"[[ "$bundle_id" == "com.despia.buysellai" ]]"#))
         XCTAssertNotNil(script.range(of: #"printf 'bundle id: %s\n' "$bundle_id""#))
         XCTAssertNotNil(script.range(of: "release build:"))
         XCTAssertNotNil(script.range(of: "app size:"))

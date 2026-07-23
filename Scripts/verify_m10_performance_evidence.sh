@@ -85,7 +85,7 @@ grep -Fq "M10 local archive check passed" "$archive_log" || fail "archive log do
 
 bundle_id="$(marker_value "bundle id:" "$archive_log")"
 release_build="$(marker_value "release build:" "$archive_log")"
-[[ "$bundle_id" == "com.rhodes.buysellai" ]] || fail "archive log does not include BuySell bundle id"
+[[ "$bundle_id" == "com.despia.buysellai" ]] || fail "archive log does not include BuySell bundle id"
 [[ -n "$release_build" ]] || fail "archive log does not include release build"
 
 app_size_kb="$(

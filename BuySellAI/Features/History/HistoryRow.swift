@@ -51,14 +51,14 @@ struct HistoryRow: View {
     private func historyCopy(itemLineLimit: Int, metaLineLimit: Int) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(entry.itemName)
-                .brandFont(.bodyLg)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .lineLimit(itemLineLimit)
                 .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.leading)
 
             Text(String.localizedFormat("%@ · %@", entry.marketplace.displayName, relativeDate(entry.createdAt)))
-                .brandFont(.caption)
+                .font(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .lineLimit(metaLineLimit)
                 .minimumScaleFactor(0.82)

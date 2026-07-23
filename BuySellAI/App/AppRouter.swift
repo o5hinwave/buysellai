@@ -201,14 +201,16 @@ final class AppStore {
     func startSnapFlow() {
         advanceFlowGeneration()
         pendingCapturedPhotoData = nil
+#if DEBUG
         let uiTestingCameraMode = LaunchArguments.contains(LaunchArguments.uiTestingCameraDenied) ||
             LaunchArguments.contains(LaunchArguments.uiTestingCameraReady)
         if LaunchArguments.isUITesting,
            uiTestingCameraMode == false {
             presentFlowSheet(.snapResult(SnapResultContext(imageData: ImageTools.sampleJPEG())))
-        } else {
-            isShowingCamera = true
+            return
         }
+#endif
+        isShowingCamera = true
     }
 
     func handleCapturedPhoto(_ data: Data) {
@@ -265,13 +267,16 @@ final class AppStore {
                 Task.isCancelled == false,
                 self.isCurrentFlowGeneration(generation)
             else { return }
+#if DEBUG
             if LaunchArguments.isUITesting {
                 self.presentFlowSheet(
                     .snapResult(SnapResultContext(imageData: ImageTools.sampleJPEG(), preferredMarketplace: marketplace))
                 )
-            } else {
-                self.isShowingCamera = true
+                self.flowTransitionTask = nil
+                return
             }
+#endif
+            self.isShowingCamera = true
             self.flowTransitionTask = nil
         }
     }
@@ -316,6 +321,7 @@ final class AppStore {
     func loadHistory() async {
         let refreshGeneration = historyMutationGeneration
 
+#if DEBUG
         if LaunchArguments.contains(LaunchArguments.uiTestingSlowHistoryLoad) {
             do {
                 try await Task.sleep(nanoseconds: 4_000_000_000)
@@ -335,6 +341,7 @@ final class AppStore {
             history = [Self.uiTestingHistoryEntry]
             return
         }
+#endif
 
         if hasRemoteSessionCredentials {
             do {
@@ -924,6 +931,7 @@ final class AppStore {
         }
     }
 
+#if DEBUG
     private static var uiTestingHistoryEntry: HistoryEntry {
         HistoryEntry(
             id: UUID(uuidString: "11111111-1111-1111-1111-111111111111") ?? UUID(),
@@ -959,6 +967,7 @@ final class AppStore {
             )
         }
     }
+#endif
 }
 
 private enum Keys {

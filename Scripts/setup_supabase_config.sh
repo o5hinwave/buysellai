@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 config_path="${CONFIG_PATH:-$repo_root/BuySellAI/App/Config.plist}"
-provider_secret_pattern='AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}'
+provider_secret_pattern='AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}'
 tmp_config=""
 
 fail() {
@@ -16,10 +16,10 @@ usage() {
 Usage:
   bash Scripts/setup_supabase_config.sh
 
-Prompts for the public Supabase project URL and anon key used by the iOS app,
+Prompts for the public Supabase project URL and public anon/publishable key used by the iOS app,
 then writes BuySellAI/App/Config.plist with only SUPABASE_URL and
-SUPABASE_ANON_KEY. Provider secrets belong in Supabase Edge Function secrets,
-not in the app bundle.
+SUPABASE_ANON_KEY. Provider and server-side Supabase secrets belong in
+Supabase Edge Function secrets, not in the app bundle.
 
 Set CONFIG_PATH=/path/to/Config.plist to write somewhere else.
 For CI, set SUPABASE_CONFIG_FROM_ENV=1 plus SUPABASE_URL and
@@ -75,7 +75,7 @@ import os
 import re
 from urllib.parse import urlparse
 
-provider_secret = re.compile(r"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}")
+provider_secret = re.compile(r"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}")
 url_value = os.environ["SUPABASE_URL_VALUE"].strip()
 anon_key = os.environ["SUPABASE_ANON_KEY_VALUE"].strip()
 
@@ -85,9 +85,9 @@ def fail(message):
 
 
 if provider_secret.search(url_value):
-    fail("SUPABASE_URL contains a provider-secret-shaped value")
+    fail("SUPABASE_URL contains a provider/server-secret-shaped value")
 if provider_secret.search(anon_key):
-    fail("SUPABASE_ANON_KEY looks like a provider-secret-shaped value")
+    fail("SUPABASE_ANON_KEY looks like a provider/server-secret-shaped value")
 if not anon_key:
     fail("SUPABASE_ANON_KEY is required")
 if anon_key == "public-anon-key":

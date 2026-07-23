@@ -47,6 +47,18 @@ require_buttons_marker() {
     grep -Fq "$marker" "$buttons_source" || fail "Buttons.swift is missing '$marker'"
 }
 
+reject_source_marker() {
+    local marker="$1"
+
+    ! grep -Fq "$marker" "$material_source" || fail "NativeMaterialSurface.swift should not contain obsolete '$marker'"
+}
+
+reject_buttons_marker() {
+    local marker="$1"
+
+    ! grep -Fq "$marker" "$buttons_source" || fail "Buttons.swift should not contain obsolete '$marker'"
+}
+
 require_chips_marker() {
     local marker="$1"
 
@@ -83,6 +95,12 @@ require_tutorial_marker() {
     grep -Fq "$marker" "$tutorial_source" || fail "HowItWorksView.swift is missing '$marker'"
 }
 
+reject_tutorial_marker() {
+    local marker="$1"
+
+    ! grep -Fq "$marker" "$tutorial_source" || fail "HowItWorksView.swift should not contain obsolete '$marker'"
+}
+
 [[ -f "$material_source" ]] || fail "missing NativeMaterialSurface.swift"
 [[ -f "$buttons_source" ]] || fail "missing Buttons.swift"
 [[ -f "$chips_source" ]] || fail "missing Chips.swift"
@@ -108,24 +126,27 @@ require_source_marker "fallbackPresentation"
 require_source_marker "NativeLiquidGlassControlGroupModifier"
 require_source_marker "nativeLiquidGlassControlGroup"
 require_source_marker "LiquidGlassSurfaceGroup(spacing: spacing)"
-require_source_marker "NativePrimaryButtonBackgroundModifier"
-require_source_marker "nativePrimaryButtonBackground"
-require_source_marker "content.background(Color.brand.primary, in: Capsule())"
-require_source_marker "NativeStandardButtonBackgroundModifier"
 require_source_marker "NativeRoundedButtonBackgroundModifier"
 require_source_marker "NativeIconButtonBackgroundModifier"
-require_source_marker "nativeStandardButtonBackground"
 require_source_marker "nativeRoundedButtonBackground"
 require_source_marker "nativeIconButtonBackground"
+reject_source_marker "NativePrimaryButtonBackgroundModifier"
+reject_source_marker "nativePrimaryButtonBackground"
+reject_source_marker "content.background(Color.brand.primary, in: Capsule())"
+reject_source_marker "NativeStandardButtonBackgroundModifier"
+reject_source_marker "nativeStandardButtonBackground"
 require_source_marker ".fill(.ultraThinMaterial)"
 require_source_marker ".fill(.regularMaterial)"
 require_source_marker "accessibilityReduceTransparency"
-require_buttons_marker ".nativePrimaryButtonBackground()"
 require_buttons_marker ".tint(Color.brand.primary)"
-require_buttons_marker ".nativeGlassButtonStyle(.prominent)"
-require_buttons_marker ".nativeStandardButtonBackground(tintOpacity: 0.7, strokeOpacity: 0.64)"
-require_buttons_marker ".nativeStandardButtonBackground(tintOpacity: 0.64, strokeOpacity: 0.84)"
 require_buttons_marker ".nativeIconButtonBackground("
+require_buttons_marker ".nativeGlassButtonStyle(.standard)"
+reject_buttons_marker ".nativePrimaryButtonBackground()"
+reject_buttons_marker ".nativeGlassButtonStyle(.prominent)"
+reject_buttons_marker ".nativeStandardButtonBackground("
+reject_buttons_marker "struct PrimaryPillButton"
+reject_buttons_marker "struct SecondaryPillButton"
+reject_buttons_marker "struct GhostButton"
 require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
 require_home_marker ".listStyle(.insetGrouped)"
@@ -155,15 +176,19 @@ require_snap_result_marker "private func conditionMenuItemIcon(for condition: Co
 require_snap_result_marker "systemImage: categoryMenuItemIcon(for: category)"
 require_snap_result_marker "systemImage: conditionMenuItemIcon(for: condition)"
 require_snap_result_marker 'Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)'
-require_tutorial_marker "private struct TutorialSlidePage"
-require_tutorial_marker "private struct DotPager"
-require_tutorial_marker "private struct TutorialIllustration"
-require_tutorial_marker "private var slideSwipeGesture: some Gesture"
-require_tutorial_marker "guard shouldReduceMotion == false else"
-require_tutorial_marker "return .opacity"
+require_tutorial_marker "private struct CompactGuideGraphic"
+require_tutorial_marker "private struct TutorialStepRow"
+require_tutorial_marker "TutorialStep.steps"
+require_tutorial_marker 'Text("Sell anything in three taps.".localized)'
+require_tutorial_marker 'Text("Start selling".localized)'
 require_tutorial_marker 'TextActionButton(title: "Skip", minWidth: 64)'
-require_tutorial_marker 'isLastSlide ? "Get started" : "Next"'
 require_tutorial_marker ".buttonStyle(.borderedProminent)"
+reject_tutorial_marker "TutorialSlidePage"
+reject_tutorial_marker "DotPager"
+reject_tutorial_marker "TutorialSlide("
+reject_tutorial_marker 'isLastSlide ? "Get started" : "Next"'
+reject_tutorial_marker "DragGesture(minimumDistance: 24)"
+reject_tutorial_marker ".symbolEffect("
 
 if /usr/libexec/PlistBuddy -c "Print :UIDesignRequiresCompatibility" "$info_plist" >/dev/null 2>&1; then
     fail "Info.plist must not request iOS design compatibility mode"
@@ -192,12 +217,12 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'liquid glass sdk: requires Xcode and iPhoneOS SDK %s or newer\n' "$min_sdk_major"
         printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
-        printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
-        printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
+        printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
+        printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
         printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
-        printf 'tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls\n'
+        printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
         printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
         printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
         printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
@@ -215,12 +240,12 @@ printf 'iphoneos sdk: %s\n' "$iphoneos_sdk_version"
 printf 'liquid glass sdk: Xcode and iPhoneOS SDK %s or newer\n' "$min_sdk_major"
 printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
 printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
-printf 'primary button glass: iOS 26+ prominent glass with orange tint, capsule fallback\n'
-printf 'standard button glass: iOS 26+ standard glass with material fallbacks for secondary, ghost, chip, icon, and remaining custom controls\n'
+printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
+printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
 printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
 printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
-printf 'tutorial setup: full-screen five-slide walkthrough with custom illustrations, swipe/keyboard paging, Reduce Motion crossfade, dot progress, and Next/Get Started controls\n'
+printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
 printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
 printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'

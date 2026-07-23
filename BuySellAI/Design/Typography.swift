@@ -1,69 +1,5 @@
 import SwiftUI
 
-enum BrandTextStyle: CaseIterable, Sendable {
-    case display
-    case titleXL
-    case titleLg
-    case title
-    case bodyLg
-    case body
-    case caption
-    case overline
-    case button
-
-    func font(legibilityWeight: LegibilityWeight? = nil) -> Font {
-        .system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))
-    }
-
-    var textStyle: Font.TextStyle {
-        switch self {
-        case .display:
-            .largeTitle
-        case .titleXL:
-            .title
-        case .titleLg:
-            .title2
-        case .title:
-            .title3
-        case .bodyLg, .body:
-            .body
-        case .caption:
-            .caption
-        case .overline:
-            .caption2
-        case .button:
-            .headline
-        }
-    }
-
-    func weight(legibilityWeight: LegibilityWeight? = nil) -> Font.Weight {
-        if legibilityWeight == .bold {
-            return boldTextWeight
-        }
-        return standardWeight
-    }
-
-    private var standardWeight: Font.Weight {
-        switch self {
-        case .display:
-            .bold
-        case .titleXL, .titleLg, .title, .button, .bodyLg, .caption, .overline:
-            .semibold
-        case .body:
-            .regular
-        }
-    }
-
-    private var boldTextWeight: Font.Weight {
-        switch self {
-        case .display, .titleXL, .titleLg, .title, .button:
-            .bold
-        case .bodyLg, .body, .caption, .overline:
-            .semibold
-        }
-    }
-}
-
 enum BrandSymbolStyle: Sendable {
     case smallChevron
     case chevron
@@ -97,34 +33,9 @@ enum BrandSymbolStyle: Sendable {
     }
 }
 
-extension Font {
-    static let brandDisplay = BrandTextStyle.display.font()
-    static let brandTitleXL = BrandTextStyle.titleXL.font()
-    static let brandTitleLg = BrandTextStyle.titleLg.font()
-    static let brandTitle = BrandTextStyle.title.font()
-    static let brandBodyLg = BrandTextStyle.bodyLg.font()
-    static let brandBody = BrandTextStyle.body.font()
-    static let brandCaption = BrandTextStyle.caption.font()
-    static let brandOverline = BrandTextStyle.overline.font()
-    static let brandButton = BrandTextStyle.button.font()
-}
-
 extension View {
-    func brandFont(_ style: BrandTextStyle) -> some View {
-        modifier(BrandFontModifier(style: style))
-    }
-
     func brandSymbol(_ style: BrandSymbolStyle) -> some View {
         font(style.font)
-    }
-}
-
-private struct BrandFontModifier: ViewModifier {
-    let style: BrandTextStyle
-    @Environment(\.legibilityWeight) private var legibilityWeight
-
-    func body(content: Content) -> some View {
-        content.font(style.font(legibilityWeight: legibilityWeight))
     }
 }
 
@@ -134,6 +45,7 @@ struct BrandWordmark: View {
     var size: WordmarkSize = .regular
     var foreground = Color.brand.foreground
     var periodColor = Color.brand.primaryText
+    @Environment(\.legibilityWeight) private var legibilityWeight
 
     var body: some View {
         HStack(spacing: 0) {
@@ -146,7 +58,7 @@ struct BrandWordmark: View {
                     .foregroundStyle(periodColor)
             }
         }
-        .brandFont(size.style)
+        .font(size.font(legibilityWeight: legibilityWeight))
         .accessibilityLabel((includeAI ? "BuySell AI" : "BuySell").localized)
     }
 }
@@ -156,11 +68,30 @@ enum WordmarkSize {
     case large
     case display
 
-    var style: BrandTextStyle {
+    func font(legibilityWeight: LegibilityWeight? = nil) -> Font {
+        .system(textStyle, design: .default, weight: weight(legibilityWeight: legibilityWeight))
+    }
+
+    var textStyle: Font.TextStyle {
         switch self {
-        case .regular: .title
-        case .large: .titleXL
-        case .display: .display
+        case .regular:
+            .title3
+        case .large:
+            .title
+        case .display:
+            .largeTitle
+        }
+    }
+
+    func weight(legibilityWeight: LegibilityWeight? = nil) -> Font.Weight {
+        if legibilityWeight == .bold {
+            return .bold
+        }
+        switch self {
+        case .regular, .large:
+            return .semibold
+        case .display:
+            return .bold
         }
     }
 }

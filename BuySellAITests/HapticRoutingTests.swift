@@ -35,7 +35,7 @@ final class HapticRoutingTests: XCTestCase {
 
         for menuSource in [categoryMenu, conditionMenu] {
             XCTAssertNotNil(menuSource.range(of: ".buttonStyle(.bordered)"))
-            XCTAssertNotNil(menuSource.range(of: ".buttonBorderShape(.capsule)"))
+            XCTAssertNil(menuSource.range(of: ".buttonBorderShape(.capsule)"))
             XCTAssertNotNil(menuSource.range(of: ".simultaneousGesture(TapGesture().onEnded {"))
             XCTAssertNotNil(menuSource.range(of: "Haptics.impact(.light)"))
         }
