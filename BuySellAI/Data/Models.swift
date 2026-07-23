@@ -224,6 +224,19 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
     var itemSpecifics: [String]?
     var tags: [String]?
 
+    var copyableListingText: String? {
+        guard let title = clean(title, maxLength: 120),
+              let description = clean(description, maxLength: 1_500)
+        else { return nil }
+        return """
+        TITLE:
+        \(title)
+
+        DESCRIPTION:
+        \(description)
+        """
+    }
+
     func sanitizedForDisplay() -> GeneratedListingDraft? {
         let sanitized = GeneratedListingDraft(
             title: clean(title, maxLength: 120),

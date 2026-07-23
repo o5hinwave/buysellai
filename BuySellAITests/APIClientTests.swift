@@ -147,7 +147,7 @@ final class APIClientTests: XCTestCase {
                 Data(
                     """
                     {
-                      "listing": "TITLE:\\nLamp\\n\\nDESCRIPTION:\\nWorks well.",
+                      "listing": "TITLE:\\nLamp\\n\\nDESCRIPTION:\\nWorks well.\\n\\nList at: $45\\nMain photo: Show the full lamp.",
                       "draft": {
                         "title": "  Lamp  ",
                         "description": "Works well.",
@@ -170,6 +170,8 @@ final class APIClientTests: XCTestCase {
         let payload = try await client.generateListingPayload(item: item, marketplace: .ebay)
 
         XCTAssertEqual(payload.listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
+        XCTAssertFalse(payload.listing.contains("List at:"))
+        XCTAssertFalse(payload.listing.contains("Main photo:"))
         XCTAssertEqual(payload.draft?.title, "Lamp")
         XCTAssertEqual(payload.draft?.listPrice, Decimal(45))
         XCTAssertEqual(payload.draft?.likelySalePrice, Decimal(40))

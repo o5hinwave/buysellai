@@ -56,7 +56,7 @@ supabase secrets set APPLE_TIMEOUT_MS=8000
 supabase secrets set SUPABASE_SERVICE_TIMEOUT_MS=8000
 ```
 
-`GEMINI_MODEL` defaults to Google's stable `gemini-2.5-flash` model so App Store evidence is repeatable while keeping listing research fast and low-cost. The `generate-listing` function plans at most three marketplace research questions, reuses fresh rows from `marketplace_research_cache`, and only enables live Google Search plus URL Context when saved research is missing or stale. Gemini returns structured draft fields, while BuySell code validates and formats the final copyable `TITLE`/`DESCRIPTION` listing text. Override the model only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
+`GEMINI_MODEL` defaults to Google's stable `gemini-2.5-flash` model so App Store evidence is repeatable while keeping listing research fast and low-cost. The `generate-listing` function plans at most three marketplace research questions, reuses fresh rows from `marketplace_research_cache`, and only enables live Google Search plus URL Context when saved research is missing or stale. Gemini returns structured draft fields, while BuySell code validates and formats the final copyable `TITLE`/`DESCRIPTION` listing text without appending price-plan or photo-guidance metadata. Override the model only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
 
 Apply the bundled Supabase schema migration from `supabase/migrations/` before deploying functions:
 
