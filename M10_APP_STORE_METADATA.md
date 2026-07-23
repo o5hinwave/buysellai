@@ -15,12 +15,12 @@ This file records the App Store Connect product-page, privacy, accessibility, sc
 | Subtitle | Sell anything in three taps |
 | Made for Kids | No |
 | License agreement | Apple's standard End User License Agreement |
-| Copyright | Pending - App Store Connect account owner must confirm the exact copyright holder before final submission. |
-| Content rights | Pending - App Store Connect account owner must confirm copyright and third-party content rights before submission. |
-| Age rating | Pending - proposed 4+ based on current app content, but the App Store Connect account owner must complete the age rating questionnaire before final submission. |
-| Export compliance | Pending - proposed answer: `ITSAppUsesNonExemptEncryption=false`; the app uses standard HTTPS to Supabase endpoints and the App Store Connect account owner must confirm export compliance before final submission. |
+| Copyright | © 2026 RHODES MCALLEN COONS COONS |
+| Content rights | The app ships original UI, copy, screenshots, icon assets, and support-site text from this repository; users provide their own item photos and listing content. |
+| Age rating | 4+ - current app content has no public feed, unrestricted web browsing, gambling, medical guidance, mature content, user-to-user checkout, or regulated-goods sale flow; camera and photo access are used only to prepare item listings. |
+| Export compliance | `ITSAppUsesNonExemptEncryption=false`; current app code uses standard HTTPS/URLSession to Supabase and Apple endpoints, Keychain storage, and SHA-256 nonce hashing for Sign in with Apple, with no custom non-exempt encryption implementation present. |
 | DSA trader status | Pending - App Store Connect account owner must confirm Digital Services Act trader status before submission. |
-| Account owner legal confirmation | Pending - App Store Connect account owner must confirm copyright, age rating, export compliance, DSA trader status, privacy answers, and review contact ownership before final submission. |
+| Account owner legal confirmation | Pending - App Store Connect account owner must enter the final submission confirmation covering DSA trader status, privacy answers, review contact ownership, and the recorded copyright, age rating, and export compliance fields. |
 | Keywords | sell,resale,marketplace,listing,camera,declutter,garage,used |
 | Promotional text | Snap a photo, pick a marketplace, and copy a ready-to-post listing. |
 | Description | BuySell AI helps people sell one thing quickly. Snap a photo, confirm the item and price, choose where to sell, then copy a polished listing for the marketplace you picked. |
@@ -84,4 +84,4 @@ ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_S
   | tee /tmp/buysell-submit-readiness-app-store-metadata.log
 ```
 
-The verifier intentionally keeps metadata pending until the account owner confirms DSA trader status, copyright, age rating, export compliance, review contact ownership, privacy answers, and final App Store Connect legal fields.
+The verifier intentionally keeps metadata pending until the account owner confirms DSA trader status, review contact ownership, privacy answers, and final App Store Connect legal fields.
