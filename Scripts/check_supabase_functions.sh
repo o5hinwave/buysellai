@@ -60,10 +60,6 @@ require_source_contains \
     "minimal Google Search tool"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
-    "{ url_context: {} }" \
-    "minimal URL context tool"
-require_source_contains \
-    "supabase/functions/generate-listing/index.ts" \
     "result[geminiGroundingSearchQueriesKey]" \
     "saved Gemini grounding queries"
 require_source_contains \
@@ -73,5 +69,5 @@ require_source_contains \
 
 printf 'Supabase function Deno check passed\n'
 printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
-printf 'listing research tools: google_search url_context gated-by-cache\n'
+printf 'listing research tools: google_search gated-by-cache\n'
 printf 'listing research cache: Gemini grounding saved\n'

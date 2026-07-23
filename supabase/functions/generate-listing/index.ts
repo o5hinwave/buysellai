@@ -73,9 +73,8 @@ serve(async (request) => {
       {
         tools: usesCachedResearch ? [] : [
           { google_search: {} },
-          { url_context: {} },
         ],
-        maxOutputTokens: 1_700,
+        maxOutputTokens: 4_096,
       },
     );
 
@@ -194,13 +193,15 @@ function listingSystemInstruction(
 ): string {
   return [
     "You write concise copy-paste resale listings for BuySell AI.",
-    "Return one JSON object only.",
+    "Return one valid JSON object only, with no markdown fences.",
+    "The JSON object must include a string field named listing.",
+    "Do not return TITLE or DESCRIPTION as top-level JSON keys.",
     "The listing value must preserve plain text newlines.",
     "Use this exact section format: TITLE:\\n<title>\\n\\nDESCRIPTION:\\n<body>.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
     usesCachedResearch
       ? "Use the saved marketplace research provided. Do not broaden beyond it."
-      : "Use Google Search and URL context only for the minimal research plan provided.",
+      : "Use Google Search only for the minimal research plan provided.",
     "Prefer official marketplace guidance over stale assumptions.",
     "Do not use technical search-marketing acronyms in the listing or any returned field.",
     "Return usefulFindings, officialSources, and searchedFor only when the finding can help future listings.",

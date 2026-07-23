@@ -43,6 +43,7 @@ export async function generateJsonWithGemini(
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const timeoutMs = timeoutFromEnv("GEMINI_TIMEOUT_MS", 18_000);
+  const usesTools = (options.tools?.length ?? 0) > 0;
 
   const response = await fetchWithTimeout(url, {
     method: "POST",
@@ -64,8 +65,12 @@ export async function generateJsonWithGemini(
         ...(options.maxOutputTokens
           ? { maxOutputTokens: options.maxOutputTokens }
           : {}),
-        responseMimeType: "application/json",
-        responseSchema,
+        ...(!usesTools
+          ? {
+            responseMimeType: "application/json",
+            responseSchema,
+          }
+          : {}),
       },
     }),
   }, {
