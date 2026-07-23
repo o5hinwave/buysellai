@@ -32,6 +32,13 @@ struct HowItWorksView: View {
             finish()
             return .handled
         }
+        .onKeyPress(.rightArrow) {
+            finish()
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            return .handled
+        }
     }
 
     private var headerControls: some View {
