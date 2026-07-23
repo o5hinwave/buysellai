@@ -22,7 +22,7 @@ struct MarketplaceIcon: View {
             .frame(width: size, height: size)
             .overlay {
                 Image(systemName: marketplace.iconSystemName)
-                    .font(.system(size: max(16, size * 0.42), weight: .semibold))
+                    .brandSymbol(.controlIcon)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(marketplace.brandTint)
                     .frame(width: size * 0.72, height: size * 0.72)

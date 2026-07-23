@@ -439,14 +439,14 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
                 title: "Amazon selling fee schedule",
                 url: "https://" + "sell" + "ercentral.amazon.com/help/hub/reference/external/G200336920",
                 checked: checked,
-                summary: "Referral, per-item, subscription, fulfillment, and category fees depend on selling plan and product type."
+                summary: "Referral, per-item, fulfillment, and category fees depend on selling plan and product type."
             )
         case .shopify:
             return evidence(
                 title: "Shopify fees and costs",
                 url: "https://help.shopify.com/en/manual/international/pricing/fees",
                 checked: checked,
-                summary: "Payment, transaction, conversion, subscription, and tax fees depend on plan, market, and payment provider."
+                summary: "Payment, transaction, conversion, plan, and provider fees depend on market and payment provider."
             )
         case .rubylane:
             return evidence(

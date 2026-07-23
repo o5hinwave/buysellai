@@ -190,7 +190,7 @@ struct ListingSheet: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             Label(recommendationLabel.localized, systemImage: "checkmark.seal")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.brand.primary)
+                .foregroundStyle(Color.brand.primaryText)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(String.localizedFormat("Ready for %@", context.marketplace.displayName))
