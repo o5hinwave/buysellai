@@ -94,6 +94,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(store.history.count, 1)
         XCTAssertEqual(reloadedEntry.id, immediateEntry.id)
         XCTAssertEqual(reloadedEntry.itemName, "Lamp")
+        XCTAssertEqual(store.historySyncState, .idle)
         try assertThumbnailIsCappedAtListingSize(reloadedEntry.imageThumbnail)
     }
 

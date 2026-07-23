@@ -5,6 +5,7 @@ enum BrandSymbolStyle: Sendable {
     case chevron
     case rowIcon
     case controlIcon
+    case heroIcon
 
     var size: CGFloat {
         switch self {
@@ -16,6 +17,8 @@ enum BrandSymbolStyle: Sendable {
             15
         case .controlIcon:
             17
+        case .heroIcon:
+            44
         }
     }
 
@@ -23,7 +26,7 @@ enum BrandSymbolStyle: Sendable {
         switch self {
         case .smallChevron:
             .bold
-        case .chevron, .rowIcon, .controlIcon:
+        case .chevron, .rowIcon, .controlIcon, .heroIcon:
             .semibold
         }
     }

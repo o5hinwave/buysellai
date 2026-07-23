@@ -6,6 +6,7 @@ allow_missing_team="${ALLOW_MISSING_TEAM:-0}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 snapshot_root="${M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT:-}"
 settings_timeout_seconds="${M10_XCODEBUILD_SETTINGS_TIMEOUT:-60}"
+snapshot_copy_timeout_seconds="${M10_SNAPSHOT_COPY_TIMEOUT:-20}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_root="$(cd "${script_dir}/.." && pwd)"
@@ -26,6 +27,41 @@ trap cleanup EXIT
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
+}
+
+copy_snapshot_entry() {
+    local entry="$1"
+    local target="$2"
+    local source="${source_root}/${entry}"
+
+    if LC_ALL=C LANG=C perl -e '
+        my $timeout = shift @ARGV;
+        my $pid = fork();
+        die "fork failed\n" unless defined $pid;
+        if ($pid == 0) {
+            exec @ARGV or die "exec failed\n";
+        }
+        local $SIG{ALRM} = sub {
+            kill "TERM", $pid;
+            sleep 1;
+            kill "KILL", $pid;
+            exit 124;
+        };
+        alarm $timeout;
+        waitpid($pid, 0);
+        exit($? == -1 ? 1 : ($? >> 8));
+    ' \
+        "$snapshot_copy_timeout_seconds" \
+        rsync -a "$source" "$target/" 2>/dev/null; then
+        return 0
+    fi
+
+    rm -rf "${target}/${entry}"
+    if command -v ditto >/dev/null 2>&1; then
+        ditto "$source" "${target}/${entry}" || fail "could not copy $entry into snapshot"
+    else
+        cp -R "$source" "$target/" || fail "could not copy $entry into snapshot"
+    fi
 }
 
 prepare_snapshot() {
@@ -67,8 +103,10 @@ prepare_snapshot() {
         ".gitignore"
     )
 
+    [[ "$snapshot_copy_timeout_seconds" =~ ^[0-9]+$ ]] || fail "M10_SNAPSHOT_COPY_TIMEOUT must be a whole number"
+
     for entry in "${entries[@]}"; do
-        rsync -a "${source_root}/${entry}" "$target/"
+        copy_snapshot_entry "$entry" "$target"
     done
 
     work_root="$target"

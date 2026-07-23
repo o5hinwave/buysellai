@@ -471,7 +471,7 @@ const marketplaceProfiles: Record<MarketplaceId, MarketplaceListingProfile> = {
   goat: {
     titleMaxCharacters: 80,
     titleFormula: "exact sneaker name + colorway + size + condition",
-    searchFocus: "Exact sneaker identity, size, condition, defects, and seller approval readiness.",
+    searchFocus: "Exact sneaker identity, size, condition, defects, and account approval readiness.",
     photoGuidance: "Photograph box, labels, soles, uppers, and every defect clearly.",
     featuredGuidance: "Use GOAT pricing and offer mechanics after approval; avoid vague item names.",
   },

@@ -59,19 +59,20 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(source.range(of: "NativeMaterialSurfaceAccessibility"))
         XCTAssertNotNil(source.range(of: "resolvedTintOpacity("))
-        XCTAssertGreaterThanOrEqual(source.components(separatedBy: #"@Environment(\.accessibilityReduceTransparency) private var reduceTransparency"#).count - 1, 6)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: #"@Environment(\.accessibilityReduceTransparency) private var reduceTransparency"#).count - 1, 5)
         XCTAssertNotNil(source.range(of: "reducedTransparencyMinimum: 0.88"))
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: "reducedTransparencyMinimum: 0.94").count - 1, 3)
         XCTAssertNotNil(source.range(of: "reducedTransparencyMinimum: 0.96"))
-        XCTAssertNotNil(source.range(of: "reducedTransparencyMinimum: 0.97"))
         XCTAssertNotNil(source.range(of: "NativeMaterialCircleBackground"))
         XCTAssertNotNil(source.range(of: "struct NativeMaterialRoundedBackground: View"))
-        XCTAssertNotNil(source.range(of: "private struct NativeMaterialSheetModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "private struct NativeSystemSheetPresentationModifier: ViewModifier"))
+        XCTAssertNotNil(source.range(of: "private struct NativeSystemFlowSheetPresentationModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "private struct NativeMaterialPillModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "func nativeMaterialPill("))
-        XCTAssertNotNil(source.range(of: "func nativeMaterialSheet("))
         XCTAssertNotNil(source.range(of: "func nativeSystemSheetPresentationChrome()"))
+        XCTAssertNotNil(source.range(of: "func nativeSystemFlowSheetPresentationChrome("))
+        XCTAssertNotNil(source.range(of: "let detents: Set<PresentationDetent>"))
+        XCTAssertNotNil(source.range(of: ".presentationDetents(detents)"))
         XCTAssertNotNil(source.range(of: "enum NativeGlassButtonProminence"))
         XCTAssertNotNil(source.range(of: "private struct NativeGlassButtonStyleModifier: ViewModifier"))
         XCTAssertNotNil(source.range(of: "func nativeGlassButtonStyle(_ prominence: NativeGlassButtonProminence = .standard)"))
@@ -87,13 +88,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(source.range(of: "content.background(Color.brand.primary, in: Capsule())"))
         XCTAssertNil(source.range(of: "private struct NativeStandardButtonBackgroundModifier: ViewModifier"))
         XCTAssertNil(source.range(of: "func nativeStandardButtonBackground("))
+        XCTAssertNil(source.range(of: "private struct NativeMaterialSheetModifier: ViewModifier"))
+        XCTAssertNil(source.range(of: "func nativeMaterialSheet("))
+        XCTAssertNil(source.range(of: "reducedTransparencyMinimum: 0.97"))
+        XCTAssertNil(source.range(of: "bottomLeadingRadius: 0"))
+        XCTAssertNil(source.range(of: "bottomTrailingRadius: 0"))
+        XCTAssertNil(source.range(of: "shape.fill(Color.brand.background.opacity(resolvedTintOpacity))"))
         XCTAssertNotNil(source.range(of: "content.buttonStyle(.glass)"))
         XCTAssertNotNil(source.range(of: "content.buttonStyle(.glassProminent)"))
-        XCTAssertNotNil(source.range(of: "bottomLeadingRadius: 0"))
-        XCTAssertNotNil(source.range(of: "bottomTrailingRadius: 0"))
         XCTAssertNotNil(source.range(of: "var tint = Color.brand.surface"))
         XCTAssertNotNil(source.range(of: "shape.fill(tint.opacity(resolvedTintOpacity))"))
-        XCTAssertNotNil(source.range(of: "shape.fill(Color.brand.background.opacity(resolvedTintOpacity))"))
         XCTAssertNotNil(source.range(of: "strokeColor ?? Color.brand.border"))
         XCTAssertNotNil(source.range(of: "let shape = Capsule(style: .continuous)"))
         XCTAssertNotNil(source.range(of: "var strokeColor = Color.brand.primaryForeground"))
@@ -122,7 +126,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationDetents([.large])").count - 1, 2)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationDragIndicator(.visible)").count - 1, 2)
         XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationCornerRadius(28)").count - 1, 2)
-        XCTAssertEqual(source.components(separatedBy: ".presentationBackground(.regularMaterial)").count - 1, 1)
+        XCTAssertGreaterThanOrEqual(source.components(separatedBy: ".presentationBackground(.regularMaterial)").count - 1, 2)
         XCTAssertNotNil(buttons.range(of: ".tint(Color.brand.primary)"))
         XCTAssertNil(buttons.range(of: ".background(Color.brand.primary, in: Capsule())"))
         XCTAssertNil(buttons.range(of: ".nativePrimaryButtonBackground()"))
@@ -171,7 +175,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(material.range(of: "NativeMaterialCircleBackground("))
         XCTAssertNotNil(buttons.range(of: ".nativeIconButtonBackground("))
         XCTAssertNotNil(material.range(of: "usesAccessibleStroke: usesAccessibleMaterialStroke"))
-        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
         XCTAssertNotNil(home.range(of: ".toolbar {"))
         XCTAssertNil(home.range(of: ".nativeLiquidGlassControlGroup"))
         XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
@@ -183,12 +187,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(buttons.range(of: ".nativeStandardButtonBackground("))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)"))
         XCTAssertNotNil(camera.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl"))
-        XCTAssertNotNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
+        XCTAssertNotNil(root.range(of: #".sheet(isPresented: flowSheetBinding)"#))
+        XCTAssertNotNil(root.range(of: ".nativeSystemFlowSheetPresentationChrome("))
+        XCTAssertNotNil(root.range(of: "detents: flowSheetDetents"))
+        XCTAssertNil(root.range(of: "@State private var flowSheetDetent"))
+        XCTAssertNil(root.range(of: "private struct FlowSheetOverlay"))
+        XCTAssertNil(root.range(of: ".nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)"))
         XCTAssertNil(root.range(of: ".background(Color.brand.background)\n        .clipShape(UnevenRoundedRectangle("))
         XCTAssertNotNil(picker.range(of: "NavigationStack {"))
         XCTAssertNotNil(picker.range(of: "List {"))
         XCTAssertNotNil(picker.range(of: ".listStyle(.insetGrouped)"))
-        XCTAssertNotNil(picker.range(of: #".navigationTitle("Pick where to sell".localized)"#))
+        XCTAssertNotNil(picker.range(of: #".navigationTitle("Best place to sell".localized)"#))
         XCTAssertNil(picker.range(of: "ScrollView {"))
         XCTAssertNil(picker.range(of: "LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders])"))
         XCTAssertNil(picker.range(of: ".nativeMaterialBar(tintOpacity: 0.78, showsTopDivider: false, showsBottomDivider: true)"))
@@ -212,9 +221,9 @@ final class DesignAccessibilityTests: XCTestCase {
 
         let authSheetRange = try XCTUnwrap(root.range(of: #".sheet(isPresented: $store.isShowingAuth)"#))
         let settingsSheetRange = try XCTUnwrap(root.range(of: #".sheet(isPresented: $store.isShowingSettings)"#))
-        let overlayRange = try XCTUnwrap(root.range(of: #".overlay {"#, range: settingsSheetRange.upperBound..<root.endIndex))
+        let flowSheetRange = try XCTUnwrap(root.range(of: #".sheet(isPresented: flowSheetBinding)"#, range: settingsSheetRange.upperBound..<root.endIndex))
         let authSheet = String(root[authSheetRange.lowerBound..<settingsSheetRange.lowerBound])
-        let settingsSheet = String(root[settingsSheetRange.lowerBound..<overlayRange.lowerBound])
+        let settingsSheet = String(root[settingsSheetRange.lowerBound..<flowSheetRange.lowerBound])
 
         XCTAssertNotNil(authSheet.range(of: "AuthView()"))
         XCTAssertNotNil(authSheet.range(of: ".nativeSystemSheetPresentationChrome()"))
@@ -252,7 +261,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(listing.range(of: ".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.78, strokeOpacity: 0.62)"))
         XCTAssertNil(listing.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))"))
         XCTAssertNotNil(home.range(of: "EmptyHistoryView()"))
-        XCTAssertNotNil(home.range(of: #"Image(systemName: "clock.arrow.circlepath")"#))
+        XCTAssertNotNil(home.range(of: #"Label("No saved listings yet".localized, systemImage: "clock.arrow.circlepath")"#))
         XCTAssertNil(home.range(of: ".nativeMaterialPanel(cornerRadius: Radius.xl, tintOpacity: 0.78, strokeOpacity: 0.58)"))
         XCTAssertNil(home.range(of: ".background(Color.brand.secondary, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))"))
 
@@ -352,6 +361,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(BrandSymbolStyle.chevron.size, 13)
         XCTAssertEqual(BrandSymbolStyle.rowIcon.size, 15)
         XCTAssertEqual(BrandSymbolStyle.controlIcon.size, 17)
+        XCTAssertEqual(BrandSymbolStyle.heroIcon.size, 44)
 
         let typography = try String(contentsOf: projectURL("BuySellAI/Design/Typography.swift"), encoding: .utf8)
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
@@ -367,6 +377,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: ".brandSymbol(.rowIcon)"))
         XCTAssertNotNil(marketplace.range(of: ".brandSymbol(.chevron)"))
         XCTAssertNotNil(snapResult.range(of: ".brandSymbol(.smallChevron)"))
+        XCTAssertNotNil(try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8).range(of: ".brandSymbol(.heroIcon)"))
 
         for file in try appSwiftFiles() {
             let source = try String(contentsOf: file, encoding: .utf8)
@@ -444,14 +455,26 @@ final class DesignAccessibilityTests: XCTestCase {
 
         let above = MarketplaceEstimate(id: .craigslist, payout: Decimal(45), deltaPct: 12.4, badge: .best)
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best chance", for: above),
-            "Best chance, Craigslist, estimated payout 45 dollars, 12 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: above),
+            "Best chance to sell, Craigslist, estimated payout 45 dollars, 12 percent above average"
         )
 
         let average = MarketplaceEstimate(id: .facebook, payout: Decimal(43), deltaPct: 0.2, badge: .none)
         XCTAssertEqual(
             MarketplaceAccessibilityText.estimateLabel(for: average),
             "Facebook, estimated payout 43 dollars, average payout"
+        )
+
+        let strongFit = MarketplaceEstimate(
+            id: .reverb,
+            payout: Decimal(560),
+            deltaPct: 6,
+            badge: .best,
+            fitScore: 91
+        )
+        XCTAssertEqual(
+            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: strongFit),
+            "Best chance to sell, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
         )
     }
 
@@ -653,6 +676,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"NavigationStack {"#))
         XCTAssertNotNil(source.range(of: #"List {"#))
         XCTAssertNotNil(source.range(of: #".listStyle(.insetGrouped)"#))
+        XCTAssertNotNil(source.range(of: #".listSectionSpacing(.compact)"#))
         XCTAssertNotNil(source.range(of: #".scrollContentBackground(.hidden)"#))
         XCTAssertNotNil(source.range(of: #".contentMargins(.bottom, listBottomContentInset, for: .scrollContent)"#))
         XCTAssertNotNil(source.range(of: #".navigationTitle("Item details".localized)"#))
@@ -663,9 +687,35 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #".font(.title2.weight(.semibold))"#))
         XCTAssertNotNil(source.range(of: #"private func decisionBar(item: DetectedItem) -> some View"#))
         XCTAssertNotNil(source.range(of: #"Label("Looks right — pick where to sell".localized, systemImage: "checkmark.circle.fill")"#))
+        XCTAssertNotNil(source.range(of: #"Section("What we found".localized) {"#))
+        XCTAssertNotNil(source.range(of: #"private func analysisDetailRows(_ details: AnalyzeIntelligence) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"ForEach(Array(details.itemFacts.prefix(3).enumerated()), id: \.offset)"#))
+        XCTAssertNotNil(source.range(of: #"private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"private func analysisGuidanceRow(_ guidance: String) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"Image(systemName: "text.magnifyingglass")"#))
+        XCTAssertNotNil(source.range(of: #"Text("Could help".localized)"#))
+        XCTAssertNotNil(source.range(of: #"Image(systemName: "lightbulb")"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityLabel(String.localizedFormat("%@, %@", fact.label, fact.value))"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityLabel(String.localizedFormat("%@, %@", "Could help".localized, guidance))"#))
         XCTAssertNotNil(source.range(of: #".buttonStyle(.borderedProminent)"#))
         XCTAssertNil(source.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(source.range(of: #"PrimaryPillButton(title: "Looks right — pick where to sell""#))
+
+        let secondaryRange = try XCTUnwrap(source.range(of: #"secondaryActions(item: item)"#))
+        let detailSectionRange = try XCTUnwrap(source.range(of: #"Section("What we found".localized) {"#, range: secondaryRange.upperBound..<source.endIndex))
+        XCTAssertLessThan(secondaryRange.lowerBound, detailSectionRange.lowerBound)
+    }
+
+    func testSnapResultStoresStructuredAnalyzeDetailsForReviewRows() throws {
+        let store = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"), encoding: .utf8)
+        let sheet = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(store.range(of: #"var analysisDetails: AnalyzeIntelligence?"#))
+        XCTAssertNotNil(store.range(of: #"analysisDetails = nil"#))
+        XCTAssertNotNil(store.range(of: #"analysisDetails = response.analysis"#))
+        XCTAssertNotNil(sheet.range(of: #"if let details = store.analysisDetails"#))
+        XCTAssertNotNil(sheet.range(of: #"Section("What we found".localized) {"#))
+        XCTAssertNotNil(sheet.range(of: #"analysisDetailRows(details)"#))
     }
 
     func testSnapResultVisibleCancellationRetriesOnceAndKeepsManualRetry() throws {
@@ -684,28 +734,41 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"store.phase == .idle && automaticCancellationRetryCount > 0"#))
     }
 
-    func testHomePrimaryActionUsesNativeListRowInsteadOfDisplayHero() throws {
+    func testHomePrimaryActionUsesFirstPartyHeroCommandSurface() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(root.range(of: #".dynamicTypeLimit()"#))
-        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
+        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
+        XCTAssertNotNil(home.range(of: "private struct HomeHeroSection: View"))
+        XCTAssertNotNil(home.range(of: "private struct HomeHeroVisual: View"))
+        XCTAssertNotNil(home.range(of: "private struct HomePromiseStrip: View"))
         XCTAssertNotNil(home.range(of: #"Text("Snap · Pick · Sell".localized)"#))
         XCTAssertNotNil(home.range(of: #"Text("Sell anything in three taps.".localized)"#))
-        XCTAssertNotNil(home.range(of: "SnapActionRow()"))
-        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
         XCTAssertNotNil(home.range(of: #"Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)"#))
+        XCTAssertLessThan(
+            try XCTUnwrap(home.range(of: "HomePromiseStrip()")).lowerBound,
+            try XCTUnwrap(home.range(of: "primaryAction")).lowerBound
+        )
+        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNotNil(home.range(of: #".accessibilityHint("Opens the camera".localized)"#))
+        XCTAssertNotNil(home.range(of: #".accessibilityLabel("Step 1, take a photo. Step 2, pick a place. Step 3, copy the listing.".localized)"#))
+        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "1", title: "Take photo", systemImage: "camera")"#))
+        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "2", title: "Pick place", systemImage: "mappin.and.ellipse")"#))
+        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "3", title: "Copy listing", systemImage: "doc.on.clipboard")"#))
+        XCTAssertNotNil(home.range(of: #"Section("Saved listings".localized) {"#))
+        XCTAssertNotNil(home.range(of: #"Label("No saved listings yet".localized, systemImage: "clock.arrow.circlepath")"#))
+        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 116)"#))
+        XCTAssertNil(home.range(of: #"Section("Recent listings".localized) {"#))
+        XCTAssertNil(home.range(of: #"Copy a listing and it will appear here."#))
         XCTAssertNil(home.range(of: #".brandFont("#))
-        XCTAssertNotNil(home.range(of: #".font(.body.weight(.semibold))"#))
-        XCTAssertNotNil(home.range(of: #".font(.caption)"#))
-        let snapActionRange = try XCTUnwrap(home.range(of: "private struct SnapActionRow: View"))
-        let secondaryActionRange = try XCTUnwrap(home.range(of: "private struct HomeSecondaryActionRow: View", range: snapActionRange.upperBound..<home.endIndex))
-        let snapActionSource = String(home[snapActionRange.lowerBound..<secondaryActionRange.lowerBound])
-        XCTAssertNotNil(snapActionSource.range(of: "Spacer(minLength: Spacing.sm)"))
-        XCTAssertNotNil(snapActionSource.range(of: ".contentShape(Rectangle())"))
-        XCTAssertNotNil(snapActionSource.range(of: ".foregroundStyle(Color.brand.primaryForeground)"))
-        XCTAssertNotNil(snapActionSource.range(of: ".frame(width: 56, height: 56)"))
-        XCTAssertNotNil(snapActionSource.range(of: ".background(Color.brand.primary, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))"))
+        XCTAssertNotNil(home.range(of: #".font(.headline.weight(.semibold))"#))
+        XCTAssertNotNil(home.range(of: #".font(.largeTitle.weight(.bold))"#))
+        XCTAssertNotNil(home.range(of: #".font(.caption.weight(.semibold))"#))
+        XCTAssertNil(home.range(of: "SnapActionRow()"))
+        XCTAssertNil(home.range(of: "private struct SnapActionRow: View"))
         XCTAssertNil(home.range(of: ".brandFont(.display)"))
         XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
     }
@@ -735,6 +798,31 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: ".buttonStyle(PressButtonStyle())"))
         XCTAssertNotNil(home.range(of: "appStore.reopenListing(entry)"))
         XCTAssertNil(home.range(of: "appStore.reopenListing(entry)\n                            } label:"))
+    }
+
+    func testHomeHistoryLoadingAndSyncFailureStatesAreDesignedRows() throws {
+        let appStore = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(appStore.range(of: "enum HistorySyncState: Equatable, Sendable"))
+        XCTAssertNotNil(appStore.range(of: "var historySyncState: HistorySyncState = .idle"))
+        XCTAssertNotNil(appStore.range(of: "historySyncState = .loading"))
+        XCTAssertNotNil(appStore.range(of: "historySyncState = .failed(message)"))
+        XCTAssertNotNil(home.range(of: "private var historySectionContent: some View"))
+        XCTAssertNotNil(home.range(of: "private var isInitialHistoryLoading: Bool"))
+        XCTAssertNotNil(home.range(of: "private var historySyncFailureMessage: String?"))
+        XCTAssertNotNil(home.range(of: "HistoryLoadingView()"))
+        XCTAssertNotNil(home.range(of: "HistorySyncFailureRow(message: historySyncFailureMessage)"))
+        XCTAssertNotNil(home.range(of: "private struct HistoryLoadingView: View"))
+        XCTAssertNotNil(home.range(of: "SkeletonLine(height: 56, width: 56)"))
+        XCTAssertNotNil(home.range(of: #".accessibilityLabel("Loading recent listings".localized)"#))
+        XCTAssertNotNil(home.range(of: #".accessibilityAddTraits(.updatesFrequently)"#))
+        XCTAssertNotNil(home.range(of: #"private struct HistorySyncFailureRow: View"#))
+        XCTAssertNotNil(home.range(of: #"Image(systemName: "arrow.clockwise.circle")"#))
+        XCTAssertNotNil(home.range(of: #"Text("Couldn't update listings".localized)"#))
+        XCTAssertNotNil(home.range(of: #"Text("Try again".localized)"#))
+        XCTAssertNotNil(home.range(of: #".accessibilityHint("Checks for your latest saved listings".localized)"#))
+        XCTAssertNotNil(home.range(of: "Task {\n            await appStore.loadHistory()\n        }"))
     }
 
     func testHomeSettingsActionUsesNativeToolbarGear() throws {
@@ -775,13 +863,14 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(home.range(of: #".contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)"#))
         XCTAssertNil(home.range(of: #".safeAreaInset(edge: .bottom)"#))
-        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 132)"#))
+        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 116)"#))
     }
 
-    func testHomeUsesNativeGroupedListInsteadOfCustomWidthClamps() throws {
+    func testHomeUsesNativePlainListHistoryWithHeroInsteadOfCustomWidthClamps() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
+        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
         XCTAssertNotNil(home.range(of: #".navigationTitle("BuySell.".localized)"#))
         XCTAssertNotNil(home.range(of: ".navigationBarTitleDisplayMode(.inline)"))
         XCTAssertNotNil(home.range(of: "ToolbarItem(placement: .principal)"))
@@ -801,7 +890,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: "SigmaHero"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: heroContents.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: heroSVG.path))
-        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
     }
 
     func testAppIconUsesCameraFirstBrandArtworkWithoutTextTile() throws {
@@ -855,11 +944,11 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(marketplace.range(of: #"NavigationStack {"#))
         XCTAssertNotNil(marketplace.range(of: #"List {"#))
-        XCTAssertNotNil(marketplace.range(of: #"Section("Marketplace choices".localized) {"#))
+        XCTAssertNotNil(marketplace.range(of: #"Section("All places".localized) {"#))
         XCTAssertNotNil(marketplace.range(of: #".listStyle(.insetGrouped)"#))
         XCTAssertNotNil(marketplace.range(of: #".scrollContentBackground(.hidden)"#))
         XCTAssertNotNil(marketplace.range(of: #".contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)"#))
-        XCTAssertNotNil(marketplace.range(of: #".navigationTitle("Pick where to sell".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #".navigationTitle("Best place to sell".localized)"#))
         XCTAssertNotNil(marketplace.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
         XCTAssertNil(marketplace.range(of: #".padding(.bottom, Spacing.xxl)"#))
         XCTAssertNil(marketplace.range(of: #"pinnedViews: [.sectionHeaders]"#))
@@ -907,8 +996,12 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(row.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
         XCTAssertNotNil(row.range(of: #"private var regularRowContent: some View"#))
         XCTAssertNotNil(row.range(of: #"private var accessibilityRowContent: some View"#))
-        XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2)"#))
-        XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3)"#))
+        XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2, fitLineLimit: 1)"#))
+        XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3, fitLineLimit: 2)"#))
+        XCTAssertNotNil(row.range(of: #"if let fitSummary = estimate.fitSummary"#))
+        XCTAssertNotNil(row.range(of: #"Text(fitSummary.localized)"#))
+        XCTAssertNotNil(row.range(of: #".font(.caption2.weight(.semibold))"#))
+        XCTAssertNotNil(row.range(of: #"estimate.fitScore >= 82 ? Color.brand.success : Color.brand.mutedForeground"#))
         XCTAssertNotNil(row.range(of: #"payoutCircle(size: MarketplaceRowLayout.accessibilityPayoutCircleSize)"#))
         XCTAssertNotNil(row.range(of: #".padding(.leading, MarketplaceRowLayout.iconSize + Spacing.md)"#))
         XCTAssertNotNil(row.range(of: #".frame(minHeight: 44)"#))
@@ -928,6 +1021,7 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertEqual(MarketplaceRowLayout.fallbackRowMinHeight, 72)
         XCTAssertEqual(MarketplaceRowLayout.fallbackAccessibilityRowMinHeight, 112)
+        XCTAssertNotNil(picker.range(of: "ForEach(Marketplace.activeRecommendationCases)"))
         XCTAssertNotNil(picker.range(of: "MarketplaceFallbackRow(marketplace: marketplace)"))
         XCTAssertNotNil(fallback.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(fallback.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
@@ -942,14 +1036,37 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(picker.range(of: #".frame(minHeight: 72)"#))
     }
 
+    func testMarketplaceIconsUseNativeSymbolsInsteadOfShortTextMarks() throws {
+        let marketplace = try String(contentsOf: projectURL("BuySellAI/Data/Marketplace.swift"), encoding: .utf8)
+        let row = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplaceRow.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(marketplace.range(of: "var iconSystemName: String"))
+        XCTAssertNotNil(row.range(of: #"Image(systemName: marketplace.iconSystemName)"#))
+        XCTAssertNotNil(row.range(of: #".symbolRenderingMode(.hierarchical)"#))
+        XCTAssertNotNil(row.range(of: #".stroke(marketplace.brandTint.opacity(0.22), lineWidth: 1)"#))
+        XCTAssertNil(marketplace.range(of: "var shortMark"))
+        XCTAssertNil(marketplace.range(of: "displayName.prefix(1)"))
+        XCTAssertNil(row.range(of: "Text(marketplace.shortMark)"))
+    }
+
     func testMarketplaceSummaryActionsAdaptForAccessibilityDynamicTypeAndNativeButtons() throws {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
         XCTAssertNotNil(marketplace.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(picks: [MarketplaceSummaryPick]) -> some View"#))
-        XCTAssertNotNil(marketplace.range(of: #"summaryActions(picks: MarketplaceSummaryPlanner.picks(from: estimates))"#))
+        XCTAssertNotNil(marketplace.range(of: #"recommendationSections(picks: MarketplaceSummaryPlanner.picks(from: estimates))"#))
+        XCTAssertNotNil(marketplace.range(of: #"private func recommendationSections(picks: [MarketplaceSummaryPick]) -> some View"#))
+        XCTAssertNotNil(marketplace.range(of: #"Section("Best place to sell".localized) {"#))
+        XCTAssertNotNil(marketplace.range(of: #"recommendedButton(pick: recommendedPick)"#))
+        XCTAssertNotNil(marketplace.range(of: #"private struct RecommendedMarketplaceButton: View"#))
+        XCTAssertNotNil(marketplace.range(of: #"Text("We found the best place to sell this".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel(MarketplaceAccessibilityText.summaryLabel("Best chance", for: pick.estimate, item: item))"#))
+        XCTAssertNotNil(marketplace.range(of: #".accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")"#))
+        XCTAssertNotNil(marketplace.range(of: #"Section("Compare".localized) {"#))
+        XCTAssertNotNil(marketplace.range(of: #"let otherPicks = Array(picks.dropFirst())"#))
         XCTAssertNotNil(marketplace.range(of: #"HStack(alignment: .center, spacing: Spacing.sm)"#))
-        XCTAssertNotNil(marketplace.range(of: #"summaryButton(pick: pick)"#))
+        XCTAssertNotNil(marketplace.range(of: #"summaryButton(pick: pick, isRecommended: false)"#))
+        XCTAssertNil(marketplace.range(of: #"summaryButton(pick: recommendedPick, isRecommended: true)"#))
         XCTAssertNotNil(marketplace.range(of: #"Image(systemName: "chevron.right")"#))
         XCTAssertNotNil(marketplace.range(of: #".buttonStyle(PressButtonStyle())"#))
         XCTAssertNil(marketplace.range(of: #"VStack(spacing: Spacing.sm)"#))
@@ -964,13 +1081,16 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(marketplace.range(of: #".font(.body.weight(.semibold))"#))
         XCTAssertNil(marketplace.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"#))
         XCTAssertNil(marketplace.range(of: #"NativeMaterialRoundedBackground("#))
+        XCTAssertNotNil(marketplace.range(of: #"Text("Take-home".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #"if let fitSummary = pick.estimate.fitSummary"#))
+        XCTAssertNotNil(marketplace.range(of: #".font(.caption2.weight(.semibold))"#))
         XCTAssertNotNil(marketplace.range(of: #"private var summaryLineLimit: Int"#))
         XCTAssertNotNil(marketplace.range(of: #"dynamicTypeSize.isAccessibilitySize ? 2 : 1"#))
-        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel("Computing marketplace payouts".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel("Checking places to sell".localized)"#))
         XCTAssertNotNil(marketplace.range(of: #".accessibilityAddTraits(.updatesFrequently)"#))
     }
 
-    func testHomeRemovesDecorativePrimaryGlowAndUsesNativeTaskRow() throws {
+    func testHomeRemovesDecorativePrimaryGlowAndUsesHeroCommandSurface() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
         let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
@@ -982,8 +1102,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(buttons.range(of: "struct TextActionButton: View"))
         XCTAssertNotNil(buttons.range(of: "struct PressButtonStyle: ButtonStyle"))
         XCTAssertNotNil(buttons.range(of: ".nativeGlassButtonStyle(.standard)"))
-        XCTAssertNotNil(home.range(of: "SnapActionRow()"))
-        XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
+        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
         XCTAssertNil(home.range(of: #"PrimaryPillButton("#))
         XCTAssertNil(home.range(of: #"systemImage: "camera.fill""#))
     }
@@ -1459,15 +1579,39 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(tutorial.range(of: #".brandFont("#))
         XCTAssertNotNil(tutorial.range(of: #".font(.largeTitle.weight(.bold))"#))
         XCTAssertNotNil(tutorial.range(of: #".font(.headline.weight(.semibold))"#))
+        XCTAssertNotNil(tutorial.range(of: #"Text("Snap · Pick · Sell".localized)"#))
         XCTAssertNil(tutorial.range(of: "List {"))
         XCTAssertNil(tutorial.range(of: "TabView"))
         XCTAssertNil(tutorial.range(of: "TutorialSlidePage"))
         XCTAssertNil(tutorial.range(of: "DotPager"))
     }
 
+    func testTutorialGraphicEchoesHomeHeroVisualLanguage() throws {
+        let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
+        let graphicRange = try XCTUnwrap(tutorial.range(of: "private struct CompactGuideGraphic"))
+        let guideGlyphRange = try XCTUnwrap(tutorial.range(of: "private struct GuideGlyph", range: graphicRange.upperBound..<tutorial.endIndex))
+        let graphicSource = String(tutorial[graphicRange.lowerBound..<guideGlyphRange.lowerBound])
+
+        XCTAssertNotNil(graphicSource.range(of: #"RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)"#))
+        XCTAssertNotNil(graphicSource.range(of: #".fill(Color.brand.primaryMuted)"#))
+        XCTAssertNotNil(graphicSource.range(of: #".stroke(Color.brand.border.opacity(0.72), lineWidth: 1)"#))
+        XCTAssertNotNil(graphicSource.range(of: #"Image(systemName: "camera.viewfinder")"#))
+        XCTAssertNotNil(graphicSource.range(of: #".brandSymbol(.heroIcon)"#))
+        XCTAssertNotNil(graphicSource.range(of: #"Image(systemName: "sparkles")"#))
+        XCTAssertNotNil(graphicSource.range(of: #"Image(systemName: "doc.on.clipboard")"#))
+        XCTAssertNotNil(graphicSource.range(of: #"Image(systemName: "tag")"#))
+        XCTAssertNotNil(graphicSource.range(of: #"Image(systemName: "checkmark.circle")"#))
+        XCTAssertNotNil(graphicSource.range(of: #".foregroundStyle(Color.brand.primaryText.opacity(0.72))"#))
+        XCTAssertNotNil(graphicSource.range(of: #".aspectRatio(1, contentMode: .fit)"#))
+        XCTAssertNil(graphicSource.range(of: #"GuideGlyph("#))
+        XCTAssertNil(graphicSource.range(of: #"Connector()"#))
+        XCTAssertNil(graphicSource.range(of: #"sparkles.rectangle.stack"#))
+    }
+
     func testTutorialCopyHonorsConciseGuideRules() throws {
         let tutorial = try String(contentsOf: projectURL("BuySellAI/Features/Tutorial/HowItWorksView.swift"), encoding: .utf8)
 
+        XCTAssertNotNil(tutorial.range(of: #"Text("Snap · Pick · Sell".localized)"#))
         XCTAssertNotNil(tutorial.range(of: #"Text("Sell anything in three taps.".localized)"#))
         XCTAssertNotNil(tutorial.range(of: #"Text("Take a photo. We suggest where to sell and write the listing.".localized)"#))
         XCTAssertNotNil(tutorial.range(of: #"title: "Take a clear photo""#))
@@ -1510,8 +1654,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: #"isKeyboardFocused = true"#))
         XCTAssertNotNil(tutorial.range(of: #"private var footerControls: some View"#))
         XCTAssertNotNil(tutorial.range(of: #"dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.xl"#))
-        XCTAssertNotNil(tutorial.range(of: #"dynamicTypeSize.isAccessibilitySize ? 136 : 164"#))
+        XCTAssertNotNil(tutorial.range(of: #"dynamicTypeSize.isAccessibilitySize ? 116 : 132"#))
         XCTAssertNotNil(tutorial.range(of: #"VStack(spacing: contentSpacing)"#))
+        XCTAssertNotNil(tutorial.range(of: #".frame(minHeight: geometry.size.height, alignment: .top)"#))
+        XCTAssertNil(tutorial.range(of: #".frame(minHeight: geometry.size.height, alignment: .center)"#))
         XCTAssertNotNil(tutorial.range(of: #".frame(maxWidth: .infinity, minHeight: 44)"#))
         XCTAssertNotNil(tutorial.range(of: #".buttonStyle(.borderedProminent)"#))
         XCTAssertNil(tutorial.range(of: #".buttonBorderShape(.capsule)"#))
@@ -1581,6 +1727,57 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(listing.range(of: #".onChange(of: store.phase)"#))
     }
 
+    func testListingStructuredDraftGuidanceUsesNativeTipRows() throws {
+        let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let quickTipsRange = try XCTUnwrap(listing.range(of: #"Section("Quick tips".localized) {"#))
+        let failedRange = try XCTUnwrap(listing.range(of: "case .failed(let message):", range: quickTipsRange.upperBound..<listing.endIndex))
+        let quickTipsSource = String(listing[quickTipsRange.lowerBound..<failedRange.lowerBound])
+
+        XCTAssertNotNil(quickTipsSource.range(of: #"marketplaceTipRow("#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"title: "Details to include""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: "list.bullet.rectangle""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"detail: itemSpecifics"#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics)"#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"title: "When posting""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: "checklist""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"detail: postingNotes"#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"if let postingNotes = joinedDraftValues(store.draft?.postingNotes)"#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"title: "Tags""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: "tag""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"detail: tags"#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"if let tags = joinedDraftValues(store.draft?.tags)"#))
+        XCTAssertNotNil(listing.range(of: #"private func joinedDraftValues(_ values: [String]?) -> String?"#))
+        XCTAssertNotNil(listing.range(of: #".map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }"#))
+        XCTAssertNotNil(listing.range(of: #".filter { $0.isEmpty == false }"#))
+        XCTAssertNotNil(listing.range(of: #"return cleanValues.joined(separator: ", ")"#))
+    }
+
+    func testListingLeadsWithGeneratedTextBeforeMarketplaceDetails() throws {
+        let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let successRange = try XCTUnwrap(listing.range(of: "case .success:"))
+        let listingTextRange = try XCTUnwrap(listing.range(of: #"Section("Generated listing text".localized) {"#, range: successRange.upperBound..<listing.endIndex))
+        let recommendationRange = try XCTUnwrap(listing.range(of: "listingRecommendationSummary", range: listingTextRange.upperBound..<listing.endIndex))
+        let priceRange = try XCTUnwrap(listing.range(of: #"Section("Price plan".localized) {"#, range: recommendationRange.upperBound..<listing.endIndex))
+
+        XCTAssertLessThan(listingTextRange.lowerBound, recommendationRange.lowerBound)
+        XCTAssertLessThan(recommendationRange.lowerBound, priceRange.lowerBound)
+        XCTAssertNotNil(listing.range(of: #"private var listingRecommendationSummary: some View"#))
+        XCTAssertNotNil(listing.range(of: #"Text(String.localizedFormat("Ready for %@", context.marketplace.displayName))"#))
+        XCTAssertNotNil(listing.range(of: #"Label(recommendationLabel.localized, systemImage: "checkmark.seal")"#))
+        XCTAssertNotNil(listing.range(of: #"Text(recommendationReason)"#))
+        XCTAssertNotNil(listing.range(of: #"Text("Take-home".localized)"#))
+        XCTAssertNotNil(listing.range(of: #"pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)"#))
+        XCTAssertNotNil(listing.range(of: #"private var selectedRecommendationKind: MarketplaceSummaryKind"#))
+        XCTAssertNotNil(listing.range(of: #"MarketplaceSummaryPlanner"#))
+        XCTAssertNotNil(listing.range(of: #"MarketplaceEstimator.estimates(for: context.item.priceEstimate)"#))
+        XCTAssertNotNil(listing.range(of: #"case .mostMoneyBack:"#))
+        XCTAssertNotNil(listing.range(of: #""Most money back""#))
+        XCTAssertNotNil(listing.range(of: #""Good place to sell""#))
+        XCTAssertNotNil(listing.range(of: #"context.marketplace.recommendationReason(for: context.item)"#))
+        XCTAssertNotNil(listing.range(of: #".accessibilityIdentifier("Listing.RecommendationSummary")"#))
+        XCTAssertNotNil(listing.range(of: #".accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))"#))
+    }
+
     func testListingUsesNativeNavigationListAndToolbarClose() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
 
@@ -1588,7 +1785,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"NavigationStack {"#))
         XCTAssertNotNil(listing.range(of: #"List {"#))
         XCTAssertNotNil(listing.range(of: #".listStyle(.insetGrouped)"#))
-        XCTAssertNotNil(listing.range(of: #".navigationTitle("Listing draft".localized)"#))
+        XCTAssertNotNil(listing.range(of: #".navigationTitle("Ready to copy".localized)"#))
         XCTAssertNotNil(listing.range(of: #".navigationBarTitleDisplayMode(.inline)"#))
         XCTAssertNotNil(listing.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
         XCTAssertNotNil(listing.range(of: #"private var header: some View"#))
@@ -1647,6 +1844,9 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(copySource.range(of: "ListingTextContract.validatedGenerated(store.listingText)"))
         XCTAssertNil(copySource.range(of: "store.listingText.trimmingCharacters"))
+        XCTAssertNil(copySource.range(of: "store.draft?.itemSpecifics"))
+        XCTAssertNil(copySource.range(of: "store.draft?.postingNotes"))
+        XCTAssertNil(copySource.range(of: "store.draft?.tags"))
     }
 
     private func projectURL(_ path: String) -> URL {

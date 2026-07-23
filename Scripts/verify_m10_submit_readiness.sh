@@ -587,7 +587,7 @@ require_file_contains "$latest_design_log" "source: BuySellAI/Design/NativeMater
 require_file_contains "$latest_design_log" "source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls" "latest design SDK evidence log"
-require_file_contains "$latest_design_log" "home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions" "latest design SDK evidence log"
+require_file_contains "$latest_design_log" "home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars" "latest design SDK evidence log"
 require_file_contains "$latest_design_log" "tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager" "latest design SDK evidence log"
@@ -764,7 +764,7 @@ if (( ${#pending_items[@]} > 0 )); then
     if [[ "$allow_pending" == "1" ]]; then
         printf 'M10 submit readiness pending:\n'
         printf ' - %s\n' "${pending_items[@]}"
-        printf 'Complete every latest-design SDK, signed archive, App Store, Supabase deploy, backend, real-device, and evidence item, then rerun without ALLOW_PENDING_M10=1.\n'
+        printf 'Complete the listed pending items, then rerun without ALLOW_PENDING_M10=1.\n'
         exit 0
     fi
 

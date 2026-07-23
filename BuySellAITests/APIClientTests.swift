@@ -63,6 +63,40 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.currentPrice, Decimal(9))
     }
 
+    func testAnalyzeReturnsSanitizedListingIntelligenceHints() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "name": "Ceramic mug",
+                  "category": "Home",
+                  "condition": "good",
+                  "currentPrice": 9,
+                  "analysis": {
+                    "itemFacts": [
+                      { "label": " Material ", "value": " Ceramic ", "confidence": 1.4 },
+                      { "label": " ", "value": "Ignored", "confidence": 0.7 }
+                    ],
+                    "missingFacts": [" maker ", ""],
+                    "photoPrompt": " Show the bottom mark. "
+                  }
+                }
+                """.utf8
+            ))
+        }
+
+        let response = try await client.analyze(image: Data([1, 2, 3]))
+
+        XCTAssertEqual(response.analysis?.itemFacts, [
+            AnalyzeItemFact(label: "Material", value: "Ceramic", confidence: 1)
+        ])
+        XCTAssertEqual(response.analysis?.missingFacts, ["maker"])
+        XCTAssertEqual(response.analysis?.photoPrompt, "Show the bottom mark.")
+        XCTAssertEqual(response.analysis?.displayHint, "Show the bottom mark.")
+    }
+
     func testAnalyzeGuestRequestOmitsAuthorizationHeader() async throws {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/analyze-image")

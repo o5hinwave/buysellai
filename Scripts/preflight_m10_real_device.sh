@@ -6,6 +6,7 @@ device_identifier="${DEVICE_ID:-}"
 m10_development_team="${M10_DEVELOPMENT_TEAM:-}"
 snapshot_root="${M10_REAL_DEVICE_SNAPSHOT_ROOT:-}"
 settings_timeout_seconds="${M10_XCODEBUILD_SETTINGS_TIMEOUT:-60}"
+snapshot_copy_timeout_seconds="${M10_SNAPSHOT_COPY_TIMEOUT:-20}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_root="$(cd "${script_dir}/.." && pwd)"
@@ -23,6 +24,41 @@ trap cleanup EXIT
 fail() {
     printf 'error: %s\n' "$*" >&2
     exit 1
+}
+
+copy_snapshot_entry() {
+    local entry="$1"
+    local target="$2"
+    local source="${source_root}/${entry}"
+
+    if LC_ALL=C LANG=C perl -e '
+        my $timeout = shift @ARGV;
+        my $pid = fork();
+        die "fork failed\n" unless defined $pid;
+        if ($pid == 0) {
+            exec @ARGV or die "exec failed\n";
+        }
+        local $SIG{ALRM} = sub {
+            kill "TERM", $pid;
+            sleep 1;
+            kill "KILL", $pid;
+            exit 124;
+        };
+        alarm $timeout;
+        waitpid($pid, 0);
+        exit($? == -1 ? 1 : ($? >> 8));
+    ' \
+        "$snapshot_copy_timeout_seconds" \
+        rsync -a "$source" "$target/" 2>/dev/null; then
+        return 0
+    fi
+
+    rm -rf "${target}/${entry}"
+    if command -v ditto >/dev/null 2>&1; then
+        ditto "$source" "${target}/${entry}" || fail "could not copy $entry into snapshot"
+    else
+        cp -R "$source" "$target/" || fail "could not copy $entry into snapshot"
+    fi
 }
 
 prepare_snapshot() {
@@ -64,8 +100,10 @@ prepare_snapshot() {
         ".gitignore"
     )
 
+    [[ "$snapshot_copy_timeout_seconds" =~ ^[0-9]+$ ]] || fail "M10_SNAPSHOT_COPY_TIMEOUT must be a whole number"
+
     for entry in "${entries[@]}"; do
-        rsync -a "${source_root}/${entry}" "$target/"
+        copy_snapshot_entry "$entry" "$target"
     done
 
     work_root="$target"
@@ -101,6 +139,68 @@ project_development_team_is_configured() {
 
     [[ -f "$project_file" ]] || fail "missing Xcode project file at $project_file"
     grep -Eq 'DEVELOPMENT_TEAM = [A-Za-z0-9]+' "$project_file"
+}
+
+source_project_setting() {
+    local key="$1"
+    local project_file="${project_path}/project.pbxproj"
+
+    [[ -f "$project_file" ]] || return 0
+    awk -F' = ' -v key="$key" '
+        $1 ~ "^[[:space:]]*" key "$" {
+            value = $2
+            sub(/;$/, "", value)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+            print value
+            exit
+        }
+    ' "$project_file"
+}
+
+source_bundle_identifier() {
+    local bundle_id
+    local project_file="${project_path}/project.pbxproj"
+
+    bundle_id="$(source_project_setting PRODUCT_BUNDLE_IDENTIFIER)"
+    if [[ "$bundle_id" == *.tests || "$bundle_id" == *.uitests ]]; then
+        bundle_id=""
+    fi
+    if [[ -z "$bundle_id" && -f "$project_file" ]]; then
+        bundle_id="$(awk -F' = ' '
+            $1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ && $2 ~ /^com\.despia\.buysellai;$/ {
+                print "com.despia.buysellai"
+                exit
+            }
+        ' "$project_file")"
+    fi
+    printf '%s\n' "$bundle_id"
+}
+
+source_sign_in_with_apple() {
+    [[ -f "$entitlements_path" ]] || return 0
+    plist_array_value com.apple.developer.applesignin 0 "$entitlements_path" 2>/dev/null || true
+}
+
+print_source_release_markers() {
+    local source_bundle_id
+    local source_sign_in
+    local source_version
+    local source_build
+
+    source_bundle_id="$(source_bundle_identifier)"
+    source_sign_in="$(source_sign_in_with_apple)"
+    source_version="$(source_project_setting MARKETING_VERSION)"
+    source_build="$(source_project_setting CURRENT_PROJECT_VERSION)"
+
+    if [[ -n "$source_bundle_id" ]]; then
+        printf 'bundle id: %s\n' "$source_bundle_id"
+    fi
+    if [[ -n "$source_sign_in" ]]; then
+        printf 'sign in with apple: %s\n' "$source_sign_in"
+    fi
+    if [[ -n "$source_version" && -n "$source_build" ]]; then
+        printf 'release build: %s (%s)\n' "$source_version" "$source_build"
+    fi
 }
 
 show_release_build_settings() {
@@ -140,6 +240,7 @@ fi
 
 prepare_snapshot "$snapshot_root"
 project_path="${work_root}/BuySellAI.xcodeproj"
+entitlements_path="${work_root}/BuySellAI/BuySellAI.entitlements"
 
 is_ios_device() {
     local summary="$1"
@@ -202,6 +303,7 @@ if [[ -z "$device_identifier" ]]; then
         if [[ -n "$snapshot_root" ]]; then
             printf 'snapshot root: %s\n' "$snapshot_root"
         fi
+        print_source_release_markers
         printf 'Connect a trusted device with Developer Mode enabled, then rerun without ALLOW_MISSING_DEVICE=1.\n'
         exit 0
     fi

@@ -110,7 +110,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle"))
         XCTAssertNotNil(script.range(of: "obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers"))
         XCTAssertNotNil(script.range(of: "active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls"))
-        XCTAssertNotNil(script.range(of: "home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions"))
+        XCTAssertNotNil(script.range(of: "home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions"))
         XCTAssertNotNil(script.range(of: "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+"))
         XCTAssertNotNil(script.range(of: "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars"))
         XCTAssertNotNil(script.range(of: "tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager"))
@@ -288,7 +288,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 submit readiness incomplete"))
         XCTAssertNotNil(script.range(of: "M10 submit readiness passed"))
         XCTAssertNotNil(script.range(of: "source state: clean worktree at current HEAD"))
-        XCTAssertNotNil(script.range(of: "Complete every latest-design SDK, signed archive, App Store, Supabase deploy, backend, real-device, and evidence item"))
+        XCTAssertNotNil(script.range(of: "Complete the listed pending items, then rerun without ALLOW_PENDING_M10=1"))
     }
 
     func testAcceptanceDocsAndReadmeRouteThroughCombinedSubmitReadinessGate() throws {

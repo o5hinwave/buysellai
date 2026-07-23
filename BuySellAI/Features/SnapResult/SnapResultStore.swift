@@ -18,6 +18,8 @@ final class SnapResultStore {
     var item: DetectedItem?
     var nameText = ""
     var priceText = ""
+    var analysisDetails: AnalyzeIntelligence?
+    var analysisGuidance: String?
     var showStillWorking = false
 
     private let analyzeHandler: AnalyzeHandler
@@ -49,6 +51,8 @@ final class SnapResultStore {
         phase = .loading
         showStillWorking = false
         item = nil
+        analysisDetails = nil
+        analysisGuidance = nil
 
         stillWorkingTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: stillWorkingDelayNanoseconds)
@@ -74,6 +78,8 @@ final class SnapResultStore {
             item = detected
             nameText = detected.name
             priceText = NSDecimalNumber(decimal: detected.priceEstimate).stringValue
+            analysisDetails = response.analysis
+            analysisGuidance = response.analysis?.displayHint
             phase = .success
             AnalysisFeedback.performSuccess()
         } catch let error where APIError.isCancellation(error) {
@@ -85,6 +91,8 @@ final class SnapResultStore {
             guard generation == analysisGeneration else { return }
             cancelStillWorkingTask()
             phase = .failed(APIError.userMessage(for: error))
+            analysisDetails = nil
+            analysisGuidance = nil
             AnalysisFeedback.performFailure()
         }
     }

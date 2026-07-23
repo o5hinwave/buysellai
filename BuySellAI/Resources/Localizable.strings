@@ -40,6 +40,8 @@
 	<string>Analyzing your photo…</string>
 	<key>Antiques &amp; fine art</key>
 	<string>Antiques &amp; fine art</string>
+	<key>All places</key>
+	<string>All places</string>
 	<key>App</key>
 	<string>App</string>
 	<key>Appearance</key>
@@ -56,6 +58,10 @@
 	<string>Best</string>
 	<key>Best chance</key>
 	<string>Best chance</string>
+	<key>Best chance to sell</key>
+	<string>Best chance to sell</string>
+	<key>Best place to sell</key>
+	<string>Best place to sell</string>
 	<key>Bonanza</key>
 	<string>Bonanza</string>
 	<key>Books</key>
@@ -102,6 +108,12 @@
 	<string>Changes the category</string>
 	<key>Changes the condition</key>
 	<string>Changes the condition</string>
+	<key>Checks for your latest saved listings</key>
+	<string>Checks for your latest saved listings</string>
+	<key>Checking places to sell</key>
+	<string>Checking places to sell</string>
+	<key>Check %@ if you know it.</key>
+	<string>Check %@ if you know it.</string>
 	<key>Choose Photo</key>
 	<string>Choose Photo</string>
 	<key>Clear all listing history? This can't be undone.</key>
@@ -126,6 +138,8 @@
 	<string>Computing marketplace payouts</string>
 	<key>Compare estimated payouts.</key>
 	<string>Compare estimated payouts.</string>
+	<key>Compare</key>
+	<string>Compare</string>
 	<key>Condition</key>
 	<string>Condition</string>
 	<key>Continue with Apple</key>
@@ -134,8 +148,12 @@
 	<string>Continue with Email</string>
 	<key>Copied — paste it into %@</key>
 	<string>Copied — paste it into %@</string>
+	<key>Could help</key>
+	<string>Could help</string>
 	<key>Copy and paste.</key>
 	<string>Copy and paste.</string>
+	<key>Copy a listing and it will appear here.</key>
+	<string>Copy a listing and it will appear here.</string>
 	<key>Copy listing</key>
 	<string>Copy listing</string>
 	<key>Copy the listing</key>
@@ -150,6 +168,8 @@
 	<string>Couldn't delete this listing.</string>
 	<key>Couldn't load recent listings.</key>
 	<string>Couldn't load recent listings.</string>
+	<key>Couldn't update listings</key>
+	<string>Couldn't update listings</string>
 	<key>Couldn't save this listing.</key>
 	<string>Couldn't save this listing.</string>
 	<key>Craigslist</key>
@@ -170,6 +190,8 @@
 	<string>Delete listing</string>
 	<key>Delete this listing? This can't be undone.</key>
 	<string>Delete this listing? This can't be undone.</string>
+	<key>Details to include</key>
+	<string>Details to include</string>
 	<key>Deleting…</key>
 	<string>Deleting…</string>
 	<key>Depop</key>
@@ -186,8 +208,6 @@
 	<string>Electronics</string>
 	<key>Email</key>
 	<string>Email</string>
-	<key>Escape closes the sheet.</key>
-	<string>Escape closes the sheet.</string>
 	<key>Estimated price</key>
 	<string>Estimated price</string>
 	<key>Etsy</key>
@@ -196,8 +216,6 @@
 	<string>Easy shipping for everyday items</string>
 	<key>Expected sale</key>
 	<string>Expected sale</string>
-	<key>Expanded</key>
-	<string>Expanded</string>
 	<key>Facebook</key>
 	<string>Facebook</string>
 	<key>Facebook Marketplace — free local reach</key>
@@ -228,12 +246,12 @@
 	<string>Get started</string>
 	<key>Good fit</key>
 	<string>Good fit</string>
+	<key>Good place to sell</key>
+	<string>Good place to sell</string>
 	<key>Good</key>
 	<string>Good</string>
 	<key>Grailed</key>
 	<string>Grailed</string>
-	<key>Half height</key>
-	<string>Half height</string>
 	<key>Handmade, vintage, craft</key>
 	<string>Handmade, vintage, craft</string>
 	<key>History cleared.</key>
@@ -282,6 +300,8 @@
 	<string>Local, no fees, cash</string>
 	<key>Looks right — pick where to sell</key>
 	<string>Looks right — pick where to sell</string>
+	<key>Loading recent listings</key>
+	<string>Loading recent listings</string>
 	<key>Lowest</key>
 	<string>Lowest</string>
 	<key>Luxury pre-owned</key>
@@ -298,6 +318,8 @@
 	<string>Mercari</string>
 	<key>Most money back</key>
 	<string>Most money back</string>
+	<key>More work</key>
+	<string>More work</string>
 	<key>Music</key>
 	<string>Music</string>
 	<key>Music gear</key>
@@ -314,6 +336,8 @@
 	<string>Nextdoor</string>
 	<key>No account required.</key>
 	<string>No account required.</string>
+	<key>No saved listings yet</key>
+	<string>No saved listings yet</string>
 	<key>Not signed in</key>
 	<string>Not signed in</string>
 	<key>OfferUp</key>
@@ -328,6 +352,8 @@
 	<string>Opens the camera</string>
 	<key>Other</key>
 	<string>Other</string>
+	<key>Other good choices</key>
+	<string>Other good choices</string>
 	<key>Password</key>
 	<string>Password</string>
 	<key>Paste it into the marketplace when you are ready.</key>
@@ -344,6 +370,8 @@
 	<string>Pick where to sell</string>
 	<key>Pick where to sell.</key>
 	<string>Pick where to sell.</string>
+	<key>Pick place</key>
+	<string>Pick place</string>
 	<key>Place</key>
 	<string>Place</string>
 	<key>Point, tap, done. We handle the rest.</key>
@@ -366,6 +394,10 @@
 	<string>Recent listings</string>
 	<key>Reduce Motion</key>
 	<string>Reduce Motion</string>
+	<key>Ready for %@</key>
+	<string>Ready for %@</string>
+	<key>Ready to copy</key>
+	<string>Ready to copy</string>
 	<key>Ready when you are.</key>
 	<string>Ready when you are.</string>
 	<key>Regenerate</key>
@@ -382,6 +414,8 @@
 	<string>Sell anything in three taps.</string>
 	<key>Sell in three steps</key>
 	<string>Sell in three steps</string>
+	<key>Saved listings</key>
+	<string>Saved listings</string>
 	<key>Second</key>
 	<string>Second</string>
 	<key>Settings</key>
@@ -392,6 +426,8 @@
 	<string>Shopify</string>
 	<key>Shows this step</key>
 	<string>Shows this step</string>
+	<key>Shows the first-use guide.</key>
+	<string>Shows the first-use guide.</string>
 	<key>Sign in</key>
 	<string>Sign in</string>
 	<key>Sign in again to continue.</key>
@@ -440,26 +476,34 @@
 	<string>Step %d</string>
 	<key>Step %d of %d</key>
 	<string>Step %d of %d</string>
+	<key>Step 1, take a photo. Step 2, pick a place. Step 3, copy the listing.</key>
+	<string>Step 1, take a photo. Step 2, pick a place. Step 3, copy the listing.</string>
 	<key>Still working… tap Retry to try again.</key>
 	<string>Still working… tap Retry to try again.</string>
 	<key>StockX</key>
 	<string>StockX</string>
+	<key>Strong fit</key>
+	<string>Strong fit</string>
 	<key>Swappa</key>
 	<string>Swappa</string>
-	<key>Swipe up or down to resize. Escape closes the sheet.</key>
-	<string>Swipe up or down to resize. Escape closes the sheet.</string>
 	<key>System</key>
 	<string>System</string>
+	<key>Tags</key>
+	<string>Tags</string>
 	<key>TCGplayer</key>
 	<string>TCGplayer</string>
 	<key>Take-home estimate</key>
 	<string>Take-home estimate</string>
+	<key>Take-home</key>
+	<string>Take-home</string>
 	<key>Take photo</key>
 	<string>Take photo</string>
 	<key>Take a clear photo</key>
 	<string>Take a clear photo</string>
 	<key>Take a photo. We suggest where to sell and write the listing.</key>
 	<string>Take a photo. We suggest where to sell and write the listing.</string>
+	<key>Take a photo. Pick a place. Copy the listing.</key>
+	<string>Take a photo. Pick a place. Copy the listing.</string>
 	<key>Tap the item to set focus and exposure.</key>
 	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>
@@ -482,8 +526,6 @@
 	<string>Too many tries right now. Give it a minute.</string>
 	<key>Tools</key>
 	<string>Tools</string>
-	<key>Top picks</key>
-	<string>Top picks</string>
 	<key>Toys</key>
 	<string>Toys</string>
 	<key>Tradesy</key>
@@ -512,6 +554,8 @@
 	<string>Version</string>
 	<key>Vestiaire</key>
 	<string>Vestiaire</string>
+	<key>We found the best place to sell this</key>
+	<string>We found the best place to sell this</string>
 	<key>Vintage &amp; Gen-Z fashion</key>
 	<string>Vintage &amp; Gen-Z fashion</string>
 	<key>Vintage furniture &amp; decor</key>
@@ -526,12 +570,18 @@
 	<string>We suggest the best place first.</string>
 	<key>What helps here</key>
 	<string>What helps here</string>
+	<key>What we found</key>
+	<string>What we found</string>
+	<key>When posting</key>
+	<string>When posting</string>
 	<key>What you may keep</key>
 	<string>What you may keep</string>
 	<key>Whatnot</key>
 	<string>Whatnot</string>
 	<key>Women's fashion (mobile)</key>
 	<string>Women's fashion (mobile)</string>
+	<key>Worth a look</key>
+	<string>Worth a look</string>
 	<key>Writing your listing…</key>
 	<string>Writing your listing…</string>
 	<key>Wrong item — retake</key>

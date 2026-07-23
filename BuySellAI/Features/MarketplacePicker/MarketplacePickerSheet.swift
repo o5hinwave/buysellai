@@ -10,13 +10,10 @@ struct MarketplacePickerSheet: View {
         NavigationStack {
             List {
                 if let estimates = computedEstimates, estimates.isEmpty == false {
-                    Section("Top picks".localized) {
-                        summaryActions(picks: MarketplaceSummaryPlanner.picks(from: estimates))
-                    }
-                    .accessibilitySortPriority(3)
+                    recommendationSections(picks: MarketplaceSummaryPlanner.picks(from: estimates))
                 }
 
-                Section("Marketplace choices".localized) {
+                Section("All places".localized) {
                     marketplaceContent
                 }
                 .accessibilitySortPriority(2)
@@ -24,7 +21,7 @@ struct MarketplacePickerSheet: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
-            .navigationTitle("Pick where to sell".localized)
+            .navigationTitle("Best place to sell".localized)
             .navigationBarTitleDisplayMode(.inline)
             .background(Color.clear)
         }
@@ -63,12 +60,36 @@ struct MarketplacePickerSheet: View {
 
     private func summaryActions(picks: [MarketplaceSummaryPick]) -> some View {
         ForEach(picks) { pick in
-            summaryButton(pick: pick)
+            summaryButton(pick: pick, isRecommended: false)
         }
     }
 
-    private func summaryButton(pick: MarketplaceSummaryPick) -> some View {
-        SummaryButton(pick: pick, item: context.item) {
+    @ViewBuilder
+    private func recommendationSections(picks: [MarketplaceSummaryPick]) -> some View {
+        if let recommendedPick = picks.first {
+            Section("Best place to sell".localized) {
+                recommendedButton(pick: recommendedPick)
+            }
+            .accessibilitySortPriority(3)
+        }
+
+        let otherPicks = Array(picks.dropFirst())
+        if otherPicks.isEmpty == false {
+            Section("Compare".localized) {
+                summaryActions(picks: otherPicks)
+            }
+            .accessibilitySortPriority(2.5)
+        }
+    }
+
+    private func summaryButton(pick: MarketplaceSummaryPick, isRecommended: Bool) -> some View {
+        SummaryButton(pick: pick, item: context.item, isRecommended: isRecommended) {
+            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id)
+        }
+    }
+
+    private func recommendedButton(pick: MarketplaceSummaryPick) -> some View {
+        RecommendedMarketplaceButton(pick: pick, item: context.item) {
             appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id)
         }
     }
@@ -88,7 +109,7 @@ struct MarketplacePickerSheet: View {
             }
         }
         .padding(.vertical, Spacing.sm)
-        .accessibilityLabel("Computing marketplace payouts".localized)
+        .accessibilityLabel("Checking places to sell".localized)
         .accessibilityAddTraits(.updatesFrequently)
         .accessibilitySortPriority(2)
     }
@@ -101,7 +122,7 @@ struct MarketplacePickerSheet: View {
             .padding(.vertical, Spacing.sm)
             .accessibilitySortPriority(2)
 
-        ForEach(Marketplace.allCases) { marketplace in
+        ForEach(Marketplace.activeRecommendationCases) { marketplace in
             MarketplaceFallbackRow(marketplace: marketplace) {
                 appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
             }
@@ -109,9 +130,122 @@ struct MarketplacePickerSheet: View {
     }
 }
 
+private struct RecommendedMarketplaceButton: View {
+    let pick: MarketplaceSummaryPick
+    let item: DetectedItem
+    let action: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Button {
+            MarketplaceSelectionFeedback.perform(action)
+        } label: {
+            content
+            .padding(.vertical, Spacing.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressButtonStyle())
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel("Best chance", for: pick.estimate, item: item))
+        .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
+        .accessibilitySortPriority(2)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    MarketplaceIcon(marketplace: pick.estimate.id, size: 48)
+                    titleCopy
+                    Spacer(minLength: 0)
+                    chevron
+                }
+
+                reasonCopy
+
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    chanceLabel
+                    takeHome(alignment: .leading)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    MarketplaceIcon(marketplace: pick.estimate.id, size: 48)
+                    titleCopy
+                    Spacer(minLength: Spacing.sm)
+                    takeHome(alignment: .trailing)
+                    chevron
+                }
+
+                reasonCopy
+                chanceLabel
+            }
+        }
+    }
+
+    private var titleCopy: some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            Text("We found the best place to sell this".localized)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.success)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(pick.estimate.id.displayName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+                .minimumScaleFactor(0.82)
+        }
+    }
+
+    private var reasonCopy: some View {
+        Text(pick.estimate.id.recommendationReason(for: item))
+            .font(.callout)
+            .foregroundStyle(Color.brand.foregroundSecondary)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
+            .multilineTextAlignment(.leading)
+    }
+
+    private var chanceLabel: some View {
+        Label(pick.kind.label.localized, systemImage: "checkmark.seal")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.brand.success)
+            .lineLimit(2)
+            .minimumScaleFactor(0.82)
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .brandSymbol(.chevron)
+            .foregroundStyle(Color.brand.mutedForeground)
+            .accessibilityHidden(true)
+    }
+
+    private func takeHome(alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: Spacing.xxs) {
+            Text("Take-home".localized)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.brand.mutedForeground)
+                .lineLimit(1)
+
+            Text(pick.estimate.payout.currency())
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+    }
+}
+
 private struct SummaryButton: View {
     let pick: MarketplaceSummaryPick
     let item: DetectedItem
+    let isRecommended: Bool
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -125,13 +259,21 @@ private struct SummaryButton: View {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(pick.kind.label.localized)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(pick.kind == .bestChance ? Color.brand.success : Color.brand.mutedForeground)
+                        .foregroundStyle(isRecommended ? Color.brand.success : Color.brand.mutedForeground)
                         .lineLimit(1)
                     Text(pick.estimate.id.displayName)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brand.foreground)
                         .lineLimit(summaryLineLimit)
                         .minimumScaleFactor(0.82)
+
+                    if let fitSummary = pick.estimate.fitSummary {
+                        Text(fitSummary.localized)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(isRecommended ? Color.brand.success : Color.brand.mutedForeground)
+                            .lineLimit(1)
+                    }
+
                     Text(pick.estimate.id.recommendationReason(for: item))
                         .font(.caption)
                         .foregroundStyle(Color.brand.mutedForeground)
@@ -142,6 +284,11 @@ private struct SummaryButton: View {
                 Spacer(minLength: Spacing.sm)
 
                 VStack(alignment: .trailing, spacing: Spacing.xxs) {
+                    Text("Take-home".localized)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.brand.mutedForeground)
+                        .lineLimit(1)
+
                     Text(pick.estimate.payout.currency())
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brand.foreground)
@@ -162,7 +309,7 @@ private struct SummaryButton: View {
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))
         .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
-        .accessibilitySortPriority(pick.kind == .bestChance ? 2 : 1)
+        .accessibilitySortPriority(isRecommended ? 2 : 1)
     }
 
     private var summaryLineLimit: Int {

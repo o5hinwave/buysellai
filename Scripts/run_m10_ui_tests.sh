@@ -11,6 +11,7 @@ max_attempts="${M10_UI_MAX_ATTEMPTS:-2}"
 source_root="$(pwd -P)"
 snapshot_root="${M10_UI_SNAPSHOT_ROOT:-}"
 xcodebuild_workdir="$source_root"
+snapshot_copy_timeout_seconds="${M10_SNAPSHOT_COPY_TIMEOUT:-20}"
 
 tests=(
     "BuySellAIUITests/BuySellAIUITests/testTutorialCanBeSkippedAndHappyPathCopiesListingWithUITestHooks"
@@ -61,6 +62,41 @@ fail() {
     exit 1
 }
 
+copy_snapshot_entry() {
+    local entry="$1"
+    local target="$2"
+    local source="${source_root}/${entry}"
+
+    if LC_ALL=C LANG=C perl -e '
+        my $timeout = shift @ARGV;
+        my $pid = fork();
+        die "fork failed\n" unless defined $pid;
+        if ($pid == 0) {
+            exec @ARGV or die "exec failed\n";
+        }
+        local $SIG{ALRM} = sub {
+            kill "TERM", $pid;
+            sleep 1;
+            kill "KILL", $pid;
+            exit 124;
+        };
+        alarm $timeout;
+        waitpid($pid, 0);
+        exit($? == -1 ? 1 : ($? >> 8));
+    ' \
+        "$snapshot_copy_timeout_seconds" \
+        rsync -a "$source" "$target/" 2>/dev/null; then
+        return 0
+    fi
+
+    rm -rf "${target}/${entry}"
+    if command -v ditto >/dev/null 2>&1; then
+        ditto "$source" "${target}/${entry}" || fail "could not copy $entry into snapshot"
+    else
+        cp -R "$source" "$target/" || fail "could not copy $entry into snapshot"
+    fi
+}
+
 prepare_snapshot() {
     local target="$1"
     local parent
@@ -100,7 +136,11 @@ prepare_snapshot() {
         ".gitignore"
     )
 
-    rsync -a "${entries[@]}" "$target/"
+    [[ "$snapshot_copy_timeout_seconds" =~ ^[0-9]+$ ]] || fail "M10_SNAPSHOT_COPY_TIMEOUT must be a whole number"
+
+    for entry in "${entries[@]}"; do
+        copy_snapshot_entry "$entry" "$target"
+    done
     xcodebuild_workdir="$target"
     snapshot_root="$target"
 }

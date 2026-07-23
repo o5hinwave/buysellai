@@ -57,12 +57,15 @@ struct HowItWorksView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: contentSpacing) {
-                    Spacer(minLength: Spacing.md)
-
                     CompactGuideGraphic()
                         .frame(width: graphicWidth(in: geometry), height: graphicHeight)
 
                     VStack(spacing: Spacing.md) {
+                        Text("Snap · Pick · Sell".localized)
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(Color.brand.primaryText)
+                            .multilineTextAlignment(.center)
+
                         Text("Sell anything in three taps.".localized)
                             .font(.largeTitle.weight(.bold))
                             .foregroundStyle(Color.brand.foreground)
@@ -87,11 +90,9 @@ struct HowItWorksView: View {
                     }
                     .frame(maxWidth: 520)
                     .accessibilityElement(children: .contain)
-
-                    Spacer(minLength: Spacing.md)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: geometry.size.height)
+                .frame(minHeight: geometry.size.height, alignment: .top)
                 .padding(.vertical, Spacing.lg)
             }
             .scrollIndicators(.hidden)
@@ -122,15 +123,15 @@ struct HowItWorksView: View {
     }
 
     private var contentSpacing: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.xxl
+        dynamicTypeSize.isAccessibilitySize ? Spacing.md : Spacing.lg
     }
 
     private var graphicHeight: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 136 : 164
+        dynamicTypeSize.isAccessibilitySize ? 116 : 132
     }
 
     private func graphicWidth(in geometry: GeometryProxy) -> CGFloat {
-        min(420, max(260, geometry.size.width * 0.84))
+        min(360, max(220, geometry.size.width * 0.72))
     }
 
     private func finish() {
@@ -140,25 +141,41 @@ struct HowItWorksView: View {
 
 private struct CompactGuideGraphic: View {
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            GuideGlyph(systemName: "camera.viewfinder", label: "Photo")
-            Connector()
-            GuideGlyph(systemName: "sparkles.rectangle.stack", label: "Place")
-            Connector()
-            GuideGlyph(systemName: "doc.on.clipboard", label: "Listing")
+        ZStack {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(Color.brand.primaryMuted)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color.brand.border.opacity(0.72), lineWidth: 1)
+                }
+                .modifier(AppShadow.raised())
+
+            Image(systemName: "camera.viewfinder")
+                .brandSymbol(.heroIcon)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+
+            VStack {
+                HStack {
+                    Image(systemName: "sparkles")
+                    Spacer()
+                    Image(systemName: "doc.on.clipboard")
+                }
+                Spacer()
+                HStack {
+                    Image(systemName: "tag")
+                    Spacer()
+                    Image(systemName: "checkmark.circle")
+                }
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.brand.primaryText.opacity(0.72))
+            .padding(Spacing.md)
+            .accessibilityHidden(true)
         }
-        .padding(.horizontal, Spacing.xl)
-        .padding(.vertical, Spacing.lg)
+        .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                .fill(Color.brand.surfaceElevated)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                .strokeBorder(Color.brand.border, lineWidth: 1)
-        )
-        .modifier(AppShadow.raised())
         .accessibilityHidden(true)
     }
 }

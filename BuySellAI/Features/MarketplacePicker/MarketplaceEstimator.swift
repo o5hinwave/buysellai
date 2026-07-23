@@ -33,7 +33,7 @@ enum MarketplaceEstimator {
         let highestPayout = payouts.max() ?? Decimal(1)
         let lowestPayout = payouts.min() ?? Decimal(1)
         let payoutRange = max(highestPayout.doubleValue - lowestPayout.doubleValue, 1)
-        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.allCases.enumerated().map { index, marketplace in
+        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.activeRecommendationCases.enumerated().map { index, marketplace in
             (marketplace, index)
         })
 
@@ -47,6 +47,7 @@ enum MarketplaceEstimator {
                     lowestPayout: lowestPayout,
                     payoutRange: payoutRange
                 )
+                copy.fitScore = fitScore(from: components.total)
                 return (copy, components.total)
             }
             .sorted { lhs, rhs in
@@ -95,12 +96,16 @@ enum MarketplaceEstimator {
         )
     }
 
+    private static func fitScore(from total: Double) -> Int {
+        min(max(Int(total.rounded()), 1), 100)
+    }
+
     private static func sortedPayoutEstimates(for base: Decimal) -> [MarketplaceEstimate] {
         let positiveBase = base < Decimal(1) ? Decimal(1) : base
-        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.allCases.enumerated().map { index, marketplace in
+        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.activeRecommendationCases.enumerated().map { index, marketplace in
             (marketplace, index)
         })
-        let rawEstimates = Marketplace.allCases.map { marketplace -> (Marketplace, Decimal) in
+        let rawEstimates = Marketplace.activeRecommendationCases.map { marketplace -> (Marketplace, Decimal) in
             let payout = (positiveBase * marketplace.feeMultiplier - marketplace.fixedDeduction).rounded(scale: 0)
             return (marketplace, payout < Decimal(1) ? Decimal(1) : payout)
         }
@@ -143,7 +148,7 @@ enum MarketplaceSummaryKind: String, Sendable, Hashable {
     var label: String {
         switch self {
         case .bestChance:
-            "Best chance"
+            "Best chance to sell"
         case .mostMoneyBack:
             "Most money back"
         case .goodFit:
@@ -201,6 +206,6 @@ enum MarketplaceSummaryPlanner {
     }
 
     private static func catalogIndex(_ marketplace: Marketplace) -> Int {
-        Marketplace.allCases.firstIndex(of: marketplace) ?? Int.max
+        Marketplace.activeRecommendationCases.firstIndex(of: marketplace) ?? Int.max
     }
 }

@@ -122,6 +122,9 @@ require_source_marker ".regular.tint"
 require_source_marker ".interactive()"
 require_source_marker "nativeSystemSheetPresentationChrome"
 require_source_marker "NativeSystemSheetPresentationModifier"
+require_source_marker "nativeSystemFlowSheetPresentationChrome"
+require_source_marker "NativeSystemFlowSheetPresentationModifier"
+require_source_marker ".presentationDetents(detents)"
 require_source_marker "fallbackPresentation"
 require_source_marker "NativeLiquidGlassControlGroupModifier"
 require_source_marker "nativeLiquidGlassControlGroup"
@@ -135,6 +138,8 @@ reject_source_marker "nativePrimaryButtonBackground"
 reject_source_marker "content.background(Color.brand.primary, in: Capsule())"
 reject_source_marker "NativeStandardButtonBackgroundModifier"
 reject_source_marker "nativeStandardButtonBackground"
+reject_source_marker "NativeMaterialSheetModifier"
+reject_source_marker "nativeMaterialSheet("
 require_source_marker ".fill(.ultraThinMaterial)"
 require_source_marker ".fill(.regularMaterial)"
 require_source_marker "accessibilityReduceTransparency"
@@ -149,8 +154,8 @@ reject_buttons_marker "struct SecondaryPillButton"
 reject_buttons_marker "struct GhostButton"
 require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
-require_home_marker ".listStyle(.insetGrouped)"
-require_home_marker "SnapActionRow()"
+require_home_marker ".listStyle(.plain)"
+require_home_marker "HomeHeroSection("
 require_home_marker ".toolbar {"
 require_home_marker 'ToolbarItem(placement: .principal)'
 require_home_marker "BrandWordmark(size: .regular)"
@@ -219,7 +224,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
         printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
         printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
-        printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
+        printf 'home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
@@ -242,7 +247,7 @@ printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
 printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
 printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
 printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
-printf 'home setup: native inset grouped task list with branded toolbar wordmark, account, and settings actions\n'
+printf 'home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions\n'
 printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
 printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'

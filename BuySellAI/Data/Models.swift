@@ -159,6 +159,59 @@ struct MarketplaceEstimate: Codable, Identifiable, Hashable, Sendable {
     let payout: Decimal
     let deltaPct: Double
     var badge: EstimateBadge
+    var fitScore: Int
+
+    init(
+        id: Marketplace,
+        payout: Decimal,
+        deltaPct: Double,
+        badge: EstimateBadge,
+        fitScore: Int = 0
+    ) {
+        self.id = id
+        self.payout = payout
+        self.deltaPct = deltaPct
+        self.badge = badge
+        self.fitScore = Self.clampedFitScore(fitScore)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Marketplace.self, forKey: .id)
+        payout = try container.decode(Decimal.self, forKey: .payout)
+        deltaPct = try container.decode(Double.self, forKey: .deltaPct)
+        badge = try container.decode(EstimateBadge.self, forKey: .badge)
+        fitScore = Self.clampedFitScore(try container.decodeIfPresent(Int.self, forKey: .fitScore) ?? 0)
+    }
+
+    var fitSummary: String? {
+        guard fitScore > 0 else {
+            return nil
+        }
+
+        switch fitScore {
+        case 82...100:
+            return "Strong fit"
+        case 64..<82:
+            return "Good fit"
+        case 46..<64:
+            return "Worth a look"
+        default:
+            return "More work"
+        }
+    }
+
+    private static func clampedFitScore(_ value: Int) -> Int {
+        min(max(value, 0), 100)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case payout
+        case deltaPct
+        case badge
+        case fitScore
+    }
 }
 
 enum EstimateBadge: String, Codable, Sendable {

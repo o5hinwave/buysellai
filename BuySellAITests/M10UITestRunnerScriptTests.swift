@@ -21,7 +21,10 @@ final class M10UITestRunnerScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "prepare_snapshot"))
         XCTAssertNotNil(script.range(of: "M10_TODAY_FEATURE_NOMINATION.md"))
         XCTAssertNotNil(script.range(of: #"M10_UI_SNAPSHOT_ROOT must be under /tmp"#))
-        XCTAssertNotNil(script.range(of: #"rsync -a "${entries[@]}" "$target/""#))
+        XCTAssertNotNil(script.range(of: "M10_SNAPSHOT_COPY_TIMEOUT"))
+        XCTAssertNotNil(script.range(of: "copy_snapshot_entry"))
+        XCTAssertNotNil(script.range(of: #"rsync -a "$source" "$target/""#))
+        XCTAssertNotNil(script.range(of: #"ditto "$source" "${target}/${entry}""#))
         XCTAssertNotNil(script.range(of: #"cd "$xcodebuild_workdir""#))
         XCTAssertNotNil(script.range(of: "xcodebuild workdir: $xcodebuild_workdir"))
         XCTAssertNotNil(script.range(of: "snapshot root: $snapshot_root"))
@@ -59,6 +62,8 @@ final class M10UITestRunnerScriptTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "M10_UI_SNAPSHOT_ROOT=/tmp/buysell-m10-ui-worktree"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-submit-readiness-ui.log"))
         XCTAssertNotNil(m10.range(of: "/tmp/buysell-m10-ui-tests/summary.log"))
+        XCTAssertNotNil(readme.range(of: "M10_SNAPSHOT_COPY_TIMEOUT"))
+        XCTAssertNotNil(m10.range(of: "M10_SNAPSHOT_COPY_TIMEOUT"))
     }
 
     func testUIEvidenceVerifierChecksChunkedResultBundles() throws {

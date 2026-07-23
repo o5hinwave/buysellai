@@ -32,7 +32,7 @@ struct ListingSheet: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, bottomContentInset, for: .scrollContent)
-            .navigationTitle("Listing draft".localized)
+            .navigationTitle("Ready to copy".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -97,6 +97,12 @@ struct ListingSheet: View {
                 loading
             }
         case .success:
+            Section("Generated listing text".localized) {
+                listingText
+            }
+            Section {
+                listingRecommendationSummary
+            }
             Section("Price plan".localized) {
                 listingPriceRow(
                     title: "List at",
@@ -113,9 +119,6 @@ struct ListingSheet: View {
                     value: pricePlan.takeHomeEstimate,
                     detail: "What you may keep"
                 )
-            }
-            Section("Generated listing text".localized) {
-                listingText
             }
             Section("Quick tips".localized) {
                 marketplaceTipRow(
@@ -135,6 +138,27 @@ struct ListingSheet: View {
                     systemImage: "sparkles",
                     detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
                 )
+                if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
+                    marketplaceTipRow(
+                        title: "Details to include",
+                        systemImage: "list.bullet.rectangle",
+                        detail: itemSpecifics
+                    )
+                }
+                if let postingNotes = joinedDraftValues(store.draft?.postingNotes) {
+                    marketplaceTipRow(
+                        title: "When posting",
+                        systemImage: "checklist",
+                        detail: postingNotes
+                    )
+                }
+                if let tags = joinedDraftValues(store.draft?.tags) {
+                    marketplaceTipRow(
+                        title: "Tags",
+                        systemImage: "tag",
+                        detail: tags
+                    )
+                }
             }
         case .failed(let message):
             Section {
@@ -160,6 +184,84 @@ struct ListingSheet: View {
         .accessibilityLabel("Writing your listing…".localized)
         .accessibilityAddTraits(.updatesFrequently)
         .accessibilitySortPriority(3)
+    }
+
+    private var listingRecommendationSummary: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Label(recommendationLabel.localized, systemImage: "checkmark.seal")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.primary)
+
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(String.localizedFormat("Ready for %@", context.marketplace.displayName))
+                    .font(.headline)
+                    .foregroundStyle(Color.brand.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(recommendationReason)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Divider()
+
+            recommendationTakeHome
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@, %@", recommendationLabel.localized, String.localizedFormat("Ready for %@", context.marketplace.displayName), recommendationReason))
+        .accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))
+        .accessibilityIdentifier("Listing.RecommendationSummary")
+        .accessibilitySortPriority(3)
+    }
+
+    @ViewBuilder
+    private var recommendationTakeHome: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text("Take-home".localized)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                Text(pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode))
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.brand.foreground)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Take-home".localized)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foreground)
+                Spacer(minLength: Spacing.md)
+                Text(pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode))
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.brand.foreground)
+            }
+        }
+    }
+
+    private var recommendationLabel: String {
+        switch selectedRecommendationKind {
+        case .bestChance:
+            "Best chance to sell"
+        case .mostMoneyBack:
+            "Most money back"
+        case .goodFit, .second, .third:
+            "Good place to sell"
+        }
+    }
+
+    private var recommendationReason: String {
+        store.draft?.fitReason ?? context.marketplace.recommendationReason(for: context.item)
+    }
+
+    private var selectedRecommendationKind: MarketplaceSummaryKind {
+        MarketplaceSummaryPlanner
+            .picks(from: MarketplaceEstimator.estimates(for: context.item.priceEstimate))
+            .first { $0.estimate.id == context.marketplace }?
+            .kind ?? .bestChance
     }
 
     private var listingText: some View {
@@ -212,6 +314,14 @@ struct ListingSheet: View {
         .padding(.vertical, Spacing.xxs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+    }
+
+    private func joinedDraftValues(_ values: [String]?) -> String? {
+        let cleanValues = values?
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.isEmpty == false } ?? []
+        guard cleanValues.isEmpty == false else { return nil }
+        return cleanValues.joined(separator: ", ")
     }
 
     private func error(_ message: String) -> some View {

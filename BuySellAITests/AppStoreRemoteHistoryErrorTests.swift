@@ -60,6 +60,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         XCTAssertTrue(request.url?.absoluteString.contains("order=created_at.desc") == true)
         XCTAssertEqual(store.history.map(\.id), [firstID, secondID])
         XCTAssertEqual(store.history[0].imageThumbnail, Data([1, 2, 3]))
+        XCTAssertEqual(store.historySyncState, .idle)
         XCTAssertNil(store.toast)
     }
 
@@ -72,6 +73,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await store.loadHistory()
 
         XCTAssertEqual(store.toast?.text, APIError.timeout.localizedDescription)
+        XCTAssertEqual(store.historySyncState, .failed(APIError.timeout.localizedDescription))
     }
 
     func testSignedInLoadHistoryWithUnusableTokenShowsSessionExpiredToast() async throws {
@@ -87,6 +89,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
 
         XCTAssertEqual(store.history.map(\.id), [entry.id])
         XCTAssertEqual(store.toast?.text, APIError.sessionExpired.localizedDescription)
+        XCTAssertEqual(store.historySyncState, .failed(APIError.sessionExpired.localizedDescription))
     }
 
     func testSignedInCancelledLoadHistoryLeavesCurrentRowsAndDoesNotToast() async throws {
@@ -100,6 +103,7 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
         await store.loadHistory()
 
         XCTAssertEqual(store.history.map(\.id), [entry.id])
+        XCTAssertEqual(store.historySyncState, .idle)
         XCTAssertNil(store.toast)
     }
 
@@ -154,15 +158,18 @@ final class AppStoreRemoteHistoryErrorTests: XCTestCase {
 
         let loadTask = Task { await store.loadHistory() }
         await fulfillment(of: [fetchStarted], timeout: 1)
+        XCTAssertEqual(store.historySyncState, .loading)
 
         store.saveListing(item: lamp, imageData: nil, marketplace: .ebay, listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
+        XCTAssertEqual(store.historySyncState, .idle)
 
         releaseFetch.signal()
         await fulfillment(of: [postReturned], timeout: 1)
         await loadTask.value
 
         XCTAssertEqual(store.history.map(\.itemName), ["Lamp"])
+        XCTAssertEqual(store.historySyncState, .idle)
         XCTAssertFalse(store.history.contains { $0.id == staleRemoteEntry.id })
     }
 

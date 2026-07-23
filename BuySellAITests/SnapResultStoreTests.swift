@@ -186,6 +186,34 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "1")
     }
 
+    func testAnalyzeStoresOnePlainGuidanceHintWhenAvailable() async {
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in
+                AnalyzeResponse(
+                    name: "Lamp",
+                    category: "Home",
+                    condition: "good",
+                    currentPrice: Decimal(45),
+                    analysis: AnalyzeIntelligence(
+                        itemFacts: [AnalyzeItemFact(label: "Material", value: "Brass", confidence: 0.8)],
+                        missingFacts: ["maker"],
+                        photoPrompt: "Show the maker mark."
+                    )
+                )
+            }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.analysisDetails?.itemFacts.first?.label, "Material")
+        XCTAssertEqual(store.analysisDetails?.itemFacts.first?.value, "Brass")
+        XCTAssertEqual(store.analysisDetails?.itemFacts.first?.confidence, 0.8)
+        XCTAssertEqual(store.analysisDetails?.missingFacts, ["maker"])
+        XCTAssertEqual(store.analysisGuidance, "Show the maker mark.")
+    }
+
     func testStaleStillWorkingHintDoesNotLeakIntoRetriedAnalysis() async {
         var attempts = 0
         let store = SnapResultStore(
@@ -311,6 +339,7 @@ final class SnapResultStoreTests: XCTestCase {
 
         XCTAssertEqual(invalidStore.phase, .failed(APIError.decoding.localizedDescription))
         XCTAssertNil(invalidStore.item)
+        XCTAssertNil(invalidStore.analysisDetails)
 
         let freeStore = SnapResultStore(
             imageData: Data(),
@@ -323,6 +352,7 @@ final class SnapResultStoreTests: XCTestCase {
 
         XCTAssertEqual(freeStore.phase, .failed(APIError.decoding.localizedDescription))
         XCTAssertNil(freeStore.item)
+        XCTAssertNil(freeStore.analysisDetails)
     }
 
     func testAnalyzeUnknownErrorDoesNotExposeRawDescription() async {

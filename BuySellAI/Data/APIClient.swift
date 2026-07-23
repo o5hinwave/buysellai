@@ -39,7 +39,19 @@ actor APIClient {
 #if DEBUG
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
-            return AnalyzeResponse(name: "Vintage brass table lamp", category: "Home", condition: "good", currentPrice: Decimal(45))
+            return AnalyzeResponse(
+                name: "Vintage brass table lamp",
+                category: "Home",
+                condition: "good",
+                currentPrice: Decimal(45),
+                analysis: AnalyzeIntelligence(
+                    itemFacts: [
+                        AnalyzeItemFact(label: "Material", value: "Brass", confidence: 0.82)
+                    ],
+                    missingFacts: ["maker mark"],
+                    photoPrompt: "Show the maker mark if there is one."
+                )
+            )
         }
 #endif
 
@@ -189,6 +201,21 @@ struct AnalyzeResponse: Decodable, Sendable {
     let category: String
     let condition: String
     let currentPrice: Decimal
+    let analysis: AnalyzeIntelligence?
+
+    init(
+        name: String,
+        category: String,
+        condition: String,
+        currentPrice: Decimal,
+        analysis: AnalyzeIntelligence? = nil
+    ) {
+        self.name = name
+        self.category = category
+        self.condition = condition
+        self.currentPrice = currentPrice
+        self.analysis = analysis
+    }
 
     func validatedForDisplay() throws -> AnalyzeResponse {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -205,8 +232,65 @@ struct AnalyzeResponse: Decodable, Sendable {
             name: trimmedName,
             category: trimmedCategory,
             condition: trimmedCondition,
-            currentPrice: currentPrice
+            currentPrice: currentPrice,
+            analysis: analysis?.sanitizedForDisplay()
         )
+    }
+}
+
+struct AnalyzeItemFact: Codable, Equatable, Sendable {
+    let label: String
+    let value: String
+    let confidence: Double
+
+    func sanitizedForDisplay() -> AnalyzeItemFact? {
+        let cleanLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanLabel.isEmpty == false, cleanValue.isEmpty == false else {
+            return nil
+        }
+        return AnalyzeItemFact(
+            label: String(cleanLabel.prefix(40)),
+            value: String(cleanValue.prefix(80)),
+            confidence: min(max(confidence, 0), 1)
+        )
+    }
+}
+
+struct AnalyzeIntelligence: Codable, Equatable, Sendable {
+    let itemFacts: [AnalyzeItemFact]
+    let missingFacts: [String]
+    let photoPrompt: String?
+
+    func sanitizedForDisplay() -> AnalyzeIntelligence? {
+        let cleanFacts = itemFacts.compactMap { $0.sanitizedForDisplay() }.prefix(8)
+        let cleanMissingFacts = missingFacts
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.isEmpty == false }
+            .map { String($0.prefix(80)) }
+            .prefix(5)
+        let trimmedPrompt = photoPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let cleanPrompt = trimmedPrompt.isEmpty ? nil : String(trimmedPrompt.prefix(120))
+
+        guard cleanFacts.isEmpty == false || cleanMissingFacts.isEmpty == false || cleanPrompt != nil else {
+            return nil
+        }
+
+        return AnalyzeIntelligence(
+            itemFacts: Array(cleanFacts),
+            missingFacts: Array(cleanMissingFacts),
+            photoPrompt: cleanPrompt
+        )
+    }
+
+    var displayHint: String? {
+        if let prompt = photoPrompt?.trimmingCharacters(in: .whitespacesAndNewlines), prompt.isEmpty == false {
+            return prompt
+        }
+        guard let firstMissing = missingFacts.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+              firstMissing.isEmpty == false
+        else { return nil }
+        return String.localizedFormat("Check %@ if you know it.".localized, firstMissing)
     }
 }
 

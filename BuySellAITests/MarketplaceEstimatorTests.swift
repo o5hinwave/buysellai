@@ -35,6 +35,9 @@ final class MarketplaceEstimatorTests: XCTestCase {
 
         XCTAssertEqual(Marketplace.allCases, expected.map(\.0))
         XCTAssertEqual(Marketplace.allCases.count, 27)
+        XCTAssertEqual(Marketplace.activeRecommendationCases.count, 25)
+        XCTAssertFalse(Marketplace.activeRecommendationCases.contains(.kidizen))
+        XCTAssertFalse(Marketplace.activeRecommendationCases.contains(.tradesy))
 
         for (marketplace, displayName, blurb) in expected {
             XCTAssertEqual(marketplace.displayName, displayName)
@@ -44,6 +47,74 @@ final class MarketplaceEstimatorTests: XCTestCase {
                 "\(displayName) blurb should not call the user a seller."
             )
         }
+    }
+
+    func testMarketplacePlaybookEvidenceCoversCurrentFeeSourcesAndActiveTargets() {
+        for marketplace in Marketplace.allCases {
+            let evidence = marketplace.playbookEvidence
+            XCTAssertFalse(evidence.feeModelSourceTitle.isEmpty, marketplace.displayName)
+            XCTAssertFalse(evidence.feeModelSummary.isEmpty, marketplace.displayName)
+            XCTAssertEqual(evidence.feeModelLastChecked, "2026-07-23", marketplace.displayName)
+            XCTAssertEqual(URL(string: evidence.feeModelSourceURL)?.scheme, "https", marketplace.displayName)
+            if [.kidizen, .tradesy].contains(marketplace) {
+                XCTAssertEqual(evidence.sourceKind, .retiredMarketplace, marketplace.displayName)
+            } else {
+                XCTAssertNotEqual(evidence.sourceKind, .retiredMarketplace, marketplace.displayName)
+                XCTAssertTrue(evidence.isActiveRecommendationTarget, marketplace.displayName)
+            }
+        }
+    }
+
+    func testMarketplaceCatalogProvidesNativeSystemIconSymbols() {
+        let expectedSymbols: [Marketplace: String] = [
+            .ebay: "cart",
+            .craigslist: "mappin.and.ellipse",
+            .facebook: "person.2",
+            .poshmark: "tshirt",
+            .mercari: "shippingbox",
+            .offerup: "mappin.and.ellipse",
+            .depop: "tshirt",
+            .whatnot: "play.rectangle",
+            .grailed: "tshirt",
+            .reverb: "music.note",
+            .etsy: "paintpalette",
+            .stockx: "checkmark.seal",
+            .goat: "checkmark.seal",
+            .kidizen: "tshirt",
+            .vinted: "tshirt",
+            .vestiaire: "handbag",
+            .therealreal: "handbag",
+            .swappa: "iphone",
+            .tradesy: "handbag",
+            .chairish: "house",
+            .bonanza: "cart",
+            .curtsy: "tshirt",
+            .nextdoor: "mappin.and.ellipse",
+            .amazon: "cart",
+            .shopify: "cart",
+            .rubylane: "sparkles",
+            .tcgplayer: "rectangle.stack"
+        ]
+
+        XCTAssertEqual(Set(expectedSymbols.keys), Set(Marketplace.allCases))
+
+        for marketplace in Marketplace.allCases {
+            XCTAssertEqual(marketplace.iconSystemName, expectedSymbols[marketplace], marketplace.displayName)
+            XCTAssertFalse(marketplace.iconSystemName.isEmpty, marketplace.displayName)
+        }
+    }
+
+    func testRetiredMarketplacesRemainDecodableButDoNotAppearInRecommendations() {
+        XCTAssertEqual(Marketplace(apiValue: "Kidizen"), .kidizen)
+        XCTAssertEqual(Marketplace(apiValue: "Tradesy"), .tradesy)
+        XCTAssertFalse(Marketplace.kidizen.playbookEvidence.isActiveRecommendationTarget)
+        XCTAssertFalse(Marketplace.tradesy.playbookEvidence.isActiveRecommendationTarget)
+        XCTAssertEqual(Marketplace.kidizen.playbookEvidence.sourceKind, .retiredMarketplace)
+        XCTAssertEqual(Marketplace.tradesy.playbookEvidence.sourceKind, .retiredMarketplace)
+
+        let estimates = MarketplaceEstimator.estimates(for: Decimal(40))
+        XCTAssertFalse(estimates.contains { $0.id == .kidizen })
+        XCTAssertFalse(estimates.contains { $0.id == .tradesy })
     }
 
     func testMarketplaceCatalogCopyHasLocalizationEntries() throws {
@@ -109,7 +180,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
     func testEstimatorReturnsEveryMarketplaceWithBestAndLowestBadges() {
         let estimates = MarketplaceEstimator.estimates(for: Decimal(100))
 
-        XCTAssertEqual(estimates.count, Marketplace.allCases.count)
+        XCTAssertEqual(estimates.count, Marketplace.activeRecommendationCases.count)
         XCTAssertEqual(estimates.first?.badge, .best)
         XCTAssertEqual(estimates.first?.id, .craigslist)
         XCTAssertEqual(estimates.last?.badge, .lowest)
@@ -173,10 +244,34 @@ final class MarketplaceEstimatorTests: XCTestCase {
 
         for (item, expectedMarketplace) in samples {
             let estimates = MarketplaceEstimator.estimates(for: item)
-            XCTAssertEqual(estimates.count, Marketplace.allCases.count)
+            XCTAssertEqual(estimates.count, Marketplace.activeRecommendationCases.count)
             XCTAssertEqual(estimates.first?.id, expectedMarketplace, item.name)
             XCTAssertEqual(estimates.first?.badge, .best, item.name)
             XCTAssertEqual(estimates.prefix(3).count, 3, item.name)
+        }
+    }
+
+    func testItemAwareEstimatorCarriesPlainBoundedFitScores() {
+        let guitar = DetectedItem(
+            name: "Fender Stratocaster Electric Guitar",
+            category: .music,
+            condition: .good,
+            priceEstimate: Decimal(650)
+        )
+
+        let estimates = MarketplaceEstimator.estimates(for: guitar)
+        let baseOnlyEstimates = MarketplaceEstimator.estimates(for: guitar.priceEstimate)
+
+        XCTAssertTrue(estimates.allSatisfy { (1...100).contains($0.fitScore) })
+        XCTAssertTrue(baseOnlyEstimates.allSatisfy { $0.fitScore == 0 })
+        XCTAssertEqual(estimates.first?.id, .reverb)
+        XCTAssertEqual(estimates.first?.fitSummary, "Strong fit")
+        XCTAssertEqual(estimates.first?.fitScore, estimates.map(\.fitScore).max())
+
+        for estimate in estimates {
+            if let fitSummary = estimate.fitSummary {
+                assertPlainMarketplaceCopy(fitSummary, context: "\(estimate.id.displayName) fit summary")
+            }
         }
     }
 
@@ -259,6 +354,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
         ] {
             XCTAssertEqual(localizedStrings[kind.label], kind.label)
         }
+
+        for fitSummary in [
+            "Strong fit",
+            "Good fit",
+            "Worth a look",
+            "More work"
+        ] {
+            XCTAssertEqual(localizedStrings[fitSummary], fitSummary)
+        }
     }
 
     func testMarketplaceListingOptimizerKeepsTitlesInsideMarketplaceLimits() {
@@ -317,13 +421,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
             id: .ebay,
             payout: Decimal(86),
             deltaPct: -4.25,
-            badge: .none
+            badge: .none,
+            fitScore: 72
         )
 
         let data = try JSONEncoder().encode(estimate)
         let decoded = try JSONDecoder().decode(MarketplaceEstimate.self, from: data)
 
         XCTAssertEqual(decoded, estimate)
+        XCTAssertEqual(decoded.fitSummary, "Good fit")
     }
 
     func testFeeMathForKnownMarketplaces() {

@@ -21,12 +21,15 @@ struct MarketplaceIcon: View {
             .fill(marketplace.brandTint.opacity(0.14))
             .frame(width: size, height: size)
             .overlay {
-                Text(marketplace.shortMark)
-                    .font(.caption.weight(.semibold))
+                Image(systemName: marketplace.iconSystemName)
+                    .font(.system(size: max(16, size * 0.42), weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(marketplace.brandTint)
-                    .minimumScaleFactor(0.65)
-                    .lineLimit(1)
-                    .padding(.horizontal, 4)
+                    .frame(width: size * 0.72, height: size * 0.72)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(marketplace.brandTint.opacity(0.22), lineWidth: 1)
             }
             .accessibilityHidden(true)
     }
@@ -69,7 +72,7 @@ struct MarketplaceRow: View {
         HStack(spacing: Spacing.md) {
             MarketplaceIcon(marketplace: estimate.id)
 
-            marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2)
+            marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2, fitLineLimit: 1)
 
             Spacer(minLength: Spacing.sm)
 
@@ -85,7 +88,7 @@ struct MarketplaceRow: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(alignment: .top, spacing: Spacing.md) {
                 MarketplaceIcon(marketplace: estimate.id)
-                marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3)
+                marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3, fitLineLimit: 2)
                 Spacer(minLength: 0)
             }
 
@@ -99,7 +102,7 @@ struct MarketplaceRow: View {
         }
     }
 
-    private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int) -> some View {
+    private func marketplaceCopy(nameLineLimit: Int, blurbLineLimit: Int, fitLineLimit: Int) -> some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(estimate.id.displayName)
                 .font(.body.weight(.semibold))
@@ -112,6 +115,14 @@ struct MarketplaceRow: View {
                 .foregroundStyle(Color.brand.mutedForeground)
                 .lineLimit(blurbLineLimit)
                 .multilineTextAlignment(.leading)
+
+            if let fitSummary = estimate.fitSummary {
+                Text(fitSummary.localized)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(fitColor)
+                    .lineLimit(fitLineLimit)
+                    .multilineTextAlignment(.leading)
+            }
         }
     }
 
@@ -158,6 +169,10 @@ struct MarketplaceRow: View {
     private var deltaText: String {
         let rounded = Int(estimate.deltaPct.rounded())
         return rounded >= 0 ? "+\(rounded)%" : "\(rounded)%"
+    }
+
+    private var fitColor: Color {
+        estimate.fitScore >= 82 ? Color.brand.success : Color.brand.mutedForeground
     }
 
     private var accessibilityLabel: String {
@@ -256,13 +271,14 @@ enum MarketplaceAccessibilityText {
     static func estimateLabel(for estimate: MarketplaceEstimate, item: DetectedItem? = nil) -> String {
         let dollars = Int(estimate.payout.doubleValue.rounded())
         let delta = Int(estimate.deltaPct.rounded())
+        let nameAndFit = nameAndFitLabel(for: estimate)
         let baseLabel: String
         guard delta != 0 else {
-            baseLabel = String.localizedFormat("%@, estimated payout %d dollars, average payout", estimate.id.displayName, dollars)
+            baseLabel = String.localizedFormat("%@, estimated payout %d dollars, average payout", nameAndFit, dollars)
             return labelWithReason(baseLabel, estimate: estimate, item: item)
         }
         let direction = (delta > 0 ? "above" : "below").localized
-        baseLabel = String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", estimate.id.displayName, dollars, abs(delta), direction)
+        baseLabel = String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", nameAndFit, dollars, abs(delta), direction)
         return labelWithReason(baseLabel, estimate: estimate, item: item)
     }
 
@@ -275,5 +291,12 @@ enum MarketplaceAccessibilityText {
             return label
         }
         return String.localizedFormat("%@, %@", label, estimate.id.recommendationReason(for: item))
+    }
+
+    private static func nameAndFitLabel(for estimate: MarketplaceEstimate) -> String {
+        guard let fitSummary = estimate.fitSummary else {
+            return estimate.id.displayName
+        }
+        return String.localizedFormat("%@, %@", estimate.id.displayName, fitSummary.localized.lowercased())
     }
 }

@@ -443,75 +443,6 @@ private struct NativeMaterialBarModifier: ViewModifier {
     }
 }
 
-private struct NativeMaterialSheetModifier: ViewModifier {
-    let cornerRadius: CGFloat
-    let tintOpacity: Double
-    let strokeOpacity: Double
-
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        let shape = UnevenRoundedRectangle(
-            topLeadingRadius: cornerRadius,
-            bottomLeadingRadius: 0,
-            bottomTrailingRadius: 0,
-            topTrailingRadius: cornerRadius,
-            style: .continuous
-        )
-
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            content
-                .background {
-                    shape.fill(Color.brand.background.opacity(resolvedTintOpacity))
-                }
-                .glassEffect(.regular.tint(Color.brand.background.opacity(resolvedTintOpacity)), in: shape)
-                .clipShape(shape)
-                .overlay {
-                    shape.stroke(
-                        Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor)
-                            .opacity(strokeOpacity),
-                        lineWidth: 1
-                    )
-                }
-        } else {
-            fallbackBody(content: content, shape: shape)
-        }
-        #else
-        fallbackBody(content: content, shape: shape)
-        #endif
-    }
-
-    private func fallbackBody(content: Content, shape: UnevenRoundedRectangle) -> some View {
-        content
-            .background {
-                shape
-                    .fill(.regularMaterial)
-                    .overlay {
-                        shape.fill(Color.brand.background.opacity(resolvedTintOpacity))
-                    }
-            }
-            .clipShape(shape)
-            .overlay {
-                shape.stroke(
-                    Color.brand.accessibilityBorder(differentiateWithoutColor: differentiateWithoutColor)
-                        .opacity(strokeOpacity),
-                    lineWidth: 1
-                )
-            }
-    }
-
-    private var resolvedTintOpacity: Double {
-        NativeMaterialSurfaceAccessibility.resolvedTintOpacity(
-            base: tintOpacity,
-            reduceTransparency: reduceTransparency,
-            reducedTransparencyMinimum: 0.97
-        )
-    }
-}
-
 private struct NativeSystemSheetPresentationModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
@@ -536,6 +467,38 @@ private struct NativeSystemSheetPresentationModifier: ViewModifier {
     private func fallbackPresentation(_ content: Content) -> some View {
         content
             .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(28)
+            .presentationBackground(.regularMaterial)
+    }
+}
+
+private struct NativeSystemFlowSheetPresentationModifier: ViewModifier {
+    let detents: Set<PresentationDetent>
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            nativePresentation(content)
+        } else {
+            fallbackPresentation(content)
+        }
+        #else
+        fallbackPresentation(content)
+        #endif
+    }
+
+    private func nativePresentation(_ content: Content) -> some View {
+        content
+            .presentationDetents(detents)
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(28)
+    }
+
+    private func fallbackPresentation(_ content: Content) -> some View {
+        content
+            .presentationDetents(detents)
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(28)
             .presentationBackground(.regularMaterial)
@@ -611,19 +574,11 @@ extension View {
         ))
     }
 
-    func nativeMaterialSheet(
-        cornerRadius: CGFloat = 28,
-        tintOpacity: Double = 0.88,
-        strokeOpacity: Double = 0.68
-    ) -> some View {
-        modifier(NativeMaterialSheetModifier(
-            cornerRadius: cornerRadius,
-            tintOpacity: tintOpacity,
-            strokeOpacity: strokeOpacity
-        ))
-    }
-
     func nativeSystemSheetPresentationChrome() -> some View {
         modifier(NativeSystemSheetPresentationModifier())
+    }
+
+    func nativeSystemFlowSheetPresentationChrome(detents: Set<PresentationDetent>) -> some View {
+        modifier(NativeSystemFlowSheetPresentationModifier(detents: detents))
     }
 }

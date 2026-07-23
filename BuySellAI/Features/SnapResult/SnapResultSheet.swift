@@ -39,6 +39,7 @@ struct SnapResultSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .listSectionSpacing(.compact)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, listBottomContentInset, for: .scrollContent)
             .navigationTitle("Item details".localized)
@@ -161,6 +162,70 @@ struct SnapResultSheet: View {
             secondaryActions(item: item)
                 .accessibilitySortPriority(2)
         }
+
+        if let details = store.analysisDetails {
+            Section("What we found".localized) {
+                analysisDetailRows(details)
+            }
+            .accessibilitySortPriority(3)
+        }
+    }
+
+    @ViewBuilder
+    private func analysisDetailRows(_ details: AnalyzeIntelligence) -> some View {
+        ForEach(Array(details.itemFacts.prefix(3).enumerated()), id: \.offset) { _, fact in
+            analysisFactRow(fact)
+        }
+
+        if let guidance = details.displayHint {
+            analysisGuidanceRow(guidance)
+        }
+    }
+
+    private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+            Image(systemName: "text.magnifyingglass")
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text(fact.label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .lineLimit(1)
+
+                Text(fact.value)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@", fact.label, fact.value))
+    }
+
+    private func analysisGuidanceRow(_ guidance: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text("Could help".localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .lineLimit(1)
+
+                Text(guidance)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } icon: {
+            Image(systemName: "lightbulb")
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@", "Could help".localized, guidance))
     }
 
     private func decisionBar(item: DetectedItem) -> some View {
@@ -182,7 +247,10 @@ struct SnapResultSheet: View {
         .padding(.bottom, Spacing.sm)
         .frame(maxWidth: sheetContentMaxWidth)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background {
+            Color.brand.background
+                .ignoresSafeArea()
+        }
     }
 
     private func proceedWithItem(_ fallbackItem: DetectedItem) {

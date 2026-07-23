@@ -11,11 +11,18 @@ enum FlowSheetContext: Equatable {
     case listing(ListingContext)
 }
 
+enum HistorySyncState: Equatable, Sendable {
+    case idle
+    case loading
+    case failed(String)
+}
+
 @MainActor
 @Observable
 final class AppStore {
     var session: AuthSession?
     var history: [HistoryEntry] = []
+    var historySyncState: HistorySyncState = .idle
     var theme: ThemePreference {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
     }
@@ -320,12 +327,15 @@ final class AppStore {
 
     func loadHistory() async {
         let refreshGeneration = historyMutationGeneration
+        historySyncState = .loading
 
 #if DEBUG
         if LaunchArguments.contains(LaunchArguments.uiTestingSlowHistoryLoad) {
             do {
                 try await Task.sleep(nanoseconds: 4_000_000_000)
             } catch {
+                guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+                historySyncState = .idle
                 return
             }
         }
@@ -333,12 +343,14 @@ final class AppStore {
         if LaunchArguments.contains(LaunchArguments.seedLargeHistory) {
             guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             history = Self.uiTestingHistoryEntries(count: 500)
+            historySyncState = .idle
             return
         }
 
         if LaunchArguments.contains(LaunchArguments.seedHistory) {
             guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             history = [Self.uiTestingHistoryEntry]
+            historySyncState = .idle
             return
         }
 #endif
@@ -347,17 +359,23 @@ final class AppStore {
             do {
                 guard let accessToken = try await authenticatedAccessTokenForSignedRequest(), accessToken.isEmpty == false else {
                     guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+                    historySyncState = .failed(APIError.sessionExpired.localizedDescription)
                     showSessionExpiredToast()
                     return
                 }
                 let remoteHistory = try await remoteHistoryClient.fetchHistory(accessToken: accessToken)
                 guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
                 history = remoteHistory
+                historySyncState = .idle
             } catch let error where APIError.isCancellation(error) {
+                guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+                historySyncState = .idle
                 return
             } catch {
                 guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
-                showToast(APIError.userMessage(for: error), style: .error)
+                let message = APIError.userMessage(for: error)
+                historySyncState = .failed(message)
+                showToast(message, style: .error)
             }
             return
         }
@@ -366,11 +384,16 @@ final class AppStore {
             let localHistory = try await loadLocalHistory()
             guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
             history = localHistory
+            historySyncState = .idle
         } catch let error where APIError.isCancellation(error) {
+            guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
+            historySyncState = .idle
             return
         } catch {
             guard isCurrentHistoryMutationGeneration(refreshGeneration) else { return }
-            showToast("Couldn't load recent listings.".localized, style: .error)
+            let message = "Couldn't load recent listings.".localized
+            historySyncState = .failed(message)
+            showToast(message, style: .error)
         }
     }
 
@@ -862,6 +885,7 @@ final class AppStore {
     private func advanceHistoryMutationGeneration() -> Int {
         sessionResetHistoryTask?.cancel()
         sessionResetHistoryTask = nil
+        historySyncState = .idle
         historyMutationGeneration += 1
         return historyMutationGeneration
     }
@@ -1024,11 +1048,9 @@ struct RootView: View {
             SettingsView()
                 .nativeSystemSheetPresentationChrome()
         }
-        .overlay {
-            if let flowSheetContext = appStore.flowSheetContext {
-                FlowSheetOverlay(context: flowSheetContext, reduceMotion: shouldReduceMotion)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
+        .sheet(isPresented: flowSheetBinding) {
+            FlowSheetContent()
+                .nativeSystemFlowSheetPresentationChrome(detents: flowSheetDetents)
         }
         .overlay(alignment: .top) {
             if let toast = appStore.toast {
@@ -1080,237 +1102,48 @@ struct RootView: View {
         AppMotion.shouldReduceMotion(os: osReduceMotion, app: appStore.reduceMotion)
     }
 
+    private var flowSheetBinding: Binding<Bool> {
+        Binding {
+            appStore.flowSheetContext != nil
+        } set: { isPresented in
+            if isPresented == false {
+                appStore.dismissFlowSheet()
+            }
+        }
+    }
+
+    private var flowSheetDetents: Set<PresentationDetent> {
+        switch appStore.flowSheetContext {
+        case .snapResult:
+            [.large]
+        case .marketplacePicker, .listing:
+            [.large]
+        case nil:
+            [.large]
+        }
+    }
 }
 
-private struct FlowSheetOverlay: View {
-    let context: FlowSheetContext
-    let reduceMotion: Bool
-
+private struct FlowSheetContent: View {
     @Environment(AppStore.self) private var appStore
-    @State private var snapResultDetent: FlowSheetDetent = .medium
-    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .bottom) {
-                Color.brand.shadow.opacity(0.10)
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .accessibilityHidden(true)
-
-                sheetCard(height: sheetHeight(in: proxy), bottomInset: proxy.safeAreaInsets.bottom)
-                    .offset(y: dragOffset)
-                    .gesture(dismissDragGesture)
+        Group {
+            switch appStore.flowSheetContext {
+            case .snapResult(let context):
+                SnapResultSheet(context: context)
+            case .marketplacePicker(let context):
+                MarketplacePickerSheet(context: context)
+            case .listing(let context):
+                ListingSheet(context: context)
+            case nil:
+                Color.clear
             }
-            .ignoresSafeArea(edges: .bottom)
-            .animation(reduceMotion ? AppMotion.quick : AppMotion.sheet, value: dragOffset)
-            .animation(reduceMotion ? AppMotion.quick : AppMotion.sheet, value: snapResultDetent)
-        }
-        .onChange(of: context) { _, newContext in
-            if case .snapResult = newContext {
-                snapResultDetent = .medium
-            }
-            dragOffset = 0
         }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
-        .accessibilityLabel(flowSheetAccessibilityLabel)
-        .accessibilityValue(flowSheetAccessibilityValue)
-        .accessibilityHint(flowSheetAccessibilityHint)
-        .accessibilityAction(.escape) {
-            dismiss()
-        }
-        .modifier(FlowSheetAdjustableActionModifier(isEnabled: isSnapResultSheet) { direction in
-            adjustSnapResultDetent(direction)
-        })
         .accessibilitySortPriority(1_000)
     }
-
-    private func sheetCard(height: CGFloat, bottomInset: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.brand.mutedForeground.opacity(0.32))
-                .frame(width: 54, height: 6)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.xs)
-                .accessibilityHidden(true)
-
-            content
-
-            Color.clear
-                .frame(height: bottomInset)
-                .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: height, alignment: .top)
-        .nativeMaterialSheet(cornerRadius: 28, tintOpacity: 0.88, strokeOpacity: 0.68)
-        .modifier(AppShadow.elevated())
-        .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch context {
-        case .snapResult(let context):
-            SnapResultSheet(context: context)
-        case .marketplacePicker(let context):
-            MarketplacePickerSheet(context: context)
-        case .listing(let context):
-            ListingSheet(context: context)
-        }
-    }
-
-    private func sheetHeight(in proxy: GeometryProxy) -> CGFloat {
-        switch context {
-        case .snapResult:
-            switch snapResultDetent {
-            case .medium:
-                mediumSheetHeight(in: proxy)
-            case .large:
-                largeSheetHeight(in: proxy)
-            }
-        case .marketplacePicker, .listing:
-            largeSheetHeight(in: proxy)
-        }
-    }
-
-    private func mediumSheetHeight(in proxy: GeometryProxy) -> CGFloat {
-        min(max(proxy.size.height * 0.64, 520), largeSheetHeight(in: proxy))
-    }
-
-    private func largeSheetHeight(in proxy: GeometryProxy) -> CGFloat {
-        proxy.size.height - largeSheetTopInset(in: proxy)
-    }
-
-    private func largeSheetTopInset(in proxy: GeometryProxy) -> CGFloat {
-        max(proxy.safeAreaInsets.top + Spacing.md, 68)
-    }
-
-    private var dismissDragGesture: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                dragOffset = interactiveDragOffset(for: value.translation.height)
-            }
-            .onEnded { value in
-                if shouldExpandSnapResult(for: value) {
-                    snapResultDetent = .large
-                    dragOffset = 0
-                } else if shouldCollapseSnapResult(for: value) {
-                    snapResultDetent = .medium
-                    dragOffset = 0
-                } else if shouldDismiss(for: value) {
-                    dismiss()
-                } else {
-                    dragOffset = 0
-                }
-            }
-    }
-
-    private var isSnapResultSheet: Bool {
-        if case .snapResult = context {
-            return true
-        }
-        return false
-    }
-
-    private func interactiveDragOffset(for translationHeight: CGFloat) -> CGFloat {
-        guard isSnapResultSheet, snapResultDetent == .medium, translationHeight < 0 else {
-            return max(0, translationHeight)
-        }
-        return max(translationHeight * 0.22, -44)
-    }
-
-    private func shouldExpandSnapResult(for value: DragGesture.Value) -> Bool {
-        guard isSnapResultSheet, snapResultDetent == .medium else { return false }
-        return value.translation.height < -72 || value.predictedEndTranslation.height < -132
-    }
-
-    private func shouldCollapseSnapResult(for value: DragGesture.Value) -> Bool {
-        guard isSnapResultSheet, snapResultDetent == .large else { return false }
-        guard shouldDismiss(for: value) == false else { return false }
-        return value.translation.height > 72 || value.predictedEndTranslation.height > 132
-    }
-
-    private func shouldDismiss(for value: DragGesture.Value) -> Bool {
-        if isSnapResultSheet, snapResultDetent == .large {
-            return value.translation.height > 220 || value.predictedEndTranslation.height > 320
-        }
-        return value.translation.height > 110 || value.predictedEndTranslation.height > 180
-    }
-
-    private func dismiss() {
-        withAnimation(reduceMotion ? AppMotion.quick : AppMotion.sheet) {
-            appStore.dismissFlowSheet()
-            dragOffset = 0
-        }
-    }
-
-    private var flowSheetAccessibilityLabel: Text {
-        switch context {
-        case .snapResult:
-            Text("Item details".localized)
-        case .marketplacePicker:
-            Text("Marketplace choices".localized)
-        case .listing:
-            Text("Listing draft".localized)
-        }
-    }
-
-    private var flowSheetAccessibilityValue: Text {
-        if isSnapResultSheet {
-            switch snapResultDetent {
-            case .medium:
-                Text("Half height".localized)
-            case .large:
-                Text("Expanded".localized)
-            }
-        } else {
-            Text("Expanded".localized)
-        }
-    }
-
-    private var flowSheetAccessibilityHint: Text {
-        isSnapResultSheet
-            ? Text("Swipe up or down to resize. Escape closes the sheet.".localized)
-            : Text("Escape closes the sheet.".localized)
-    }
-
-    private func adjustSnapResultDetent(_ direction: AccessibilityAdjustmentDirection) {
-        guard isSnapResultSheet else { return }
-        switch direction {
-        case .increment:
-            snapResultDetent = .large
-            dragOffset = 0
-        case .decrement:
-            if snapResultDetent == .large {
-                snapResultDetent = .medium
-                dragOffset = 0
-            } else {
-                dismiss()
-            }
-        @unknown default:
-            break
-        }
-    }
-}
-
-private struct FlowSheetAdjustableActionModifier: ViewModifier {
-    let isEnabled: Bool
-    let action: (AccessibilityAdjustmentDirection) -> Void
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if isEnabled {
-            content.accessibilityAdjustableAction(action)
-        } else {
-            content
-        }
-    }
-}
-
-private enum FlowSheetDetent: Equatable {
-    case medium
-    case large
 }
 
 struct SplashView: View {

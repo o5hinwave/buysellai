@@ -49,6 +49,9 @@ serve(async (request) => {
         `category must be one of: ${categories.join(", ")}.`,
         `condition must be one of: ${conditions.join(", ")}.`,
         "currentPrice must be a plausible USD resale price greater than zero.",
+        "Also return analysis.itemFacts with short label, visible value, and confidence from 0 to 1 for useful identity facts.",
+        "Return analysis.missingFacts for facts that would materially affect sale price if the user knows them.",
+        "Return analysis.photoPrompt as one plain sentence only when one extra photo would help; otherwise return an empty string.",
         "Ignore tax, deductible, and follow-up-question concepts.",
       ].join(" "),
       [
@@ -62,8 +65,31 @@ serve(async (request) => {
           category: { type: "STRING", enum: categories },
           condition: { type: "STRING", enum: conditions },
           currentPrice: { type: "NUMBER", minimum: 1 },
+          analysis: {
+            type: "OBJECT",
+            properties: {
+              itemFacts: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    label: { type: "STRING" },
+                    value: { type: "STRING" },
+                    confidence: { type: "NUMBER", minimum: 0, maximum: 1 },
+                  },
+                  required: ["label", "value", "confidence"],
+                },
+              },
+              missingFacts: {
+                type: "ARRAY",
+                items: { type: "STRING" },
+              },
+              photoPrompt: { type: "STRING" },
+            },
+            required: ["itemFacts", "missingFacts", "photoPrompt"],
+          },
         },
-        required: ["name", "category", "condition", "currentPrice"],
+        required: ["name", "category", "condition", "currentPrice", "analysis"],
       },
     );
 
@@ -135,6 +161,7 @@ function normalizeAnalyzeResult(result: Record<string, unknown>) {
     category,
     condition,
     currentPrice: Math.round(price * 100) / 100,
+    analysis: normalizeAnalyzeIntelligence(result.analysis),
   };
 }
 
@@ -143,4 +170,52 @@ function asString(value: unknown, field: string): string {
     throw new HttpError(`Missing ${field}`, 502);
   }
   return value.trim();
+}
+
+function normalizeAnalyzeIntelligence(value: unknown) {
+  const payload = isJsonObject(value) ? value : {};
+  return {
+    itemFacts: unknownArray(payload.itemFacts)
+      .map(normalizeAnalyzeFact)
+      .filter((fact): fact is { label: string; value: string; confidence: number } => fact !== null)
+      .slice(0, 8),
+    missingFacts: stringArray(payload.missingFacts, 5, 80),
+    photoPrompt: optionalString(payload.photoPrompt, 120) ?? "",
+  };
+}
+
+function normalizeAnalyzeFact(value: unknown): { label: string; value: string; confidence: number } | null {
+  if (!isJsonObject(value)) return null;
+  const label = optionalString(value.label, 40);
+  const factValue = optionalString(value.value, 80);
+  const confidence = Number(value.confidence);
+  if (!label || !factValue || !Number.isFinite(confidence)) return null;
+
+  return {
+    label,
+    value: factValue,
+    confidence: Math.round(Math.min(Math.max(confidence, 0), 1) * 100) / 100,
+  };
+}
+
+function stringArray(value: unknown, maxItems: number, maxLength: number): string[] {
+  return unknownArray(value)
+    .map((entry) => optionalString(entry, maxLength))
+    .filter((entry): entry is string => entry !== null)
+    .slice(0, maxItems);
+}
+
+function optionalString(value: unknown, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+function unknownArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
