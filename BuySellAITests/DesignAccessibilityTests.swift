@@ -1517,8 +1517,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(tutorial.range(of: #".controlSize(.large)"#))
         XCTAssertNotNil(tutorial.range(of: #".accessibilityLabel("Start selling".localized)"#))
         XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.space)"#))
-        XCTAssertNil(tutorial.range(of: #".onKeyPress(.rightArrow)"#))
-        XCTAssertNil(tutorial.range(of: #".onKeyPress(.leftArrow)"#))
+        XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.rightArrow)"#))
+        XCTAssertNotNil(tutorial.range(of: #".onKeyPress(.leftArrow)"#))
     }
 
     func testTutorialUsesFullScreenControlsAndConciseGuideAction() throws {
