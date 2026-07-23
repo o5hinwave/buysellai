@@ -430,7 +430,7 @@ The performance verifier carries forward the no-sign archive log's `bundle id:`,
 
 The combined gate also requires the App Store metadata log's `screenshot brand signal: warm orange present` marker and the Today feature nomination log's Apple source, placement, lead-time, role, story, and asset markers. It requires a clean git worktree, so every release source, screenshot, script, and evidence-document change must be committed or intentionally stashed before final submit-readiness can pass.
 
-The combined gate checks a retained unit test suite result bundle; the current default evidence is `/tmp/buysell-full-unit-tests.xcresult` with `477` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
+The combined gate checks a retained unit test suite result bundle; the current default evidence is `/tmp/buysell-full-unit-tests.xcresult` with `480` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
 
 Until every latest-design SDK, signed archive, App Store metadata/submission, backend, real-device, and manual evidence item is complete, record the known readiness blocker:
 
