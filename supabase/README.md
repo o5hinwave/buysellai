@@ -21,7 +21,7 @@ supabase secrets set APPLE_TIMEOUT_MS=8000
 supabase secrets set SUPABASE_SERVICE_TIMEOUT_MS=8000
 ```
 
-The shared Gemini helper defaults to Google's stable `gemini-2.5-flash` model so final App Store evidence proves one exact model version while keeping listing research fast and low-cost. `generate-listing` creates a minimal search plan, reuses fresh `marketplace_research_cache` rows, and only enables live Google Search/URL context when saved research is missing or stale. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
+The shared Gemini helper defaults to Google's stable `gemini-2.5-flash` model so final App Store evidence proves one exact model version while keeping listing research fast and low-cost. `generate-listing` creates a minimal search plan, reuses fresh `marketplace_research_cache` rows, and only enables live Google Search when saved research is missing or stale. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
 
 Apply the bundled schema migrations before deploying functions:
 
@@ -53,7 +53,7 @@ ALLOW_MISSING_SUPABASE_DEPLOY=1 bash Scripts/deploy_supabase_backend.sh prefligh
 CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy | tee /tmp/buysell-submit-readiness-supabase-deploy.log
 ```
 
-The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing apple-token-identity`. Manual equivalent commands are:
+The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing apple-token-identity`. Manual equivalent commands are:
 
 ```sh
 supabase functions deploy analyze-image

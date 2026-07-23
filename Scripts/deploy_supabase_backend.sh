@@ -11,6 +11,7 @@ required_secrets=(GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY APPLE_TEAM_ID APPLE_K
 pending_items=()
 supabase_url=""
 project_ref=""
+secret_list_timeout="${M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS:-30}"
 
 export SUPABASE_TELEMETRY_DISABLED="${SUPABASE_TELEMETRY_DISABLED:-1}"
 
@@ -69,6 +70,31 @@ plist_value() {
 
 trim_value() {
     python3 -c 'import sys; print(sys.stdin.read().strip(), end="")'
+}
+
+run_secret_list_with_timeout() {
+    local project_ref="$1"
+    local output_path="$2"
+    local elapsed=0
+    local pid
+    local status=0
+
+    [[ "$secret_list_timeout" =~ ^[0-9]+$ && "$secret_list_timeout" -gt 0 ]] || fail "M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS must be a positive integer"
+
+    supabase secrets list --project-ref "$project_ref" --output json > "$output_path" 2>/dev/null &
+    pid="$!"
+    while kill -0 "$pid" 2>/dev/null; do
+        if (( elapsed >= secret_list_timeout )); then
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            return 124
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    wait "$pid" || status="$?"
+    return "$status"
 }
 
 validate_config() {
@@ -180,8 +206,8 @@ require_secret_names() {
     secrets_file="$(mktemp "${TMPDIR:-/tmp}/buysell-supabase-secrets-list.XXXXXX")"
     trap 'rm -f "$secrets_file"' RETURN
 
-    if ! supabase secrets list --project-ref "$project_ref" --output json > "$secrets_file" 2>/dev/null; then
-        pending_or_fail "Supabase secret names could not be listed; run supabase login and Scripts/setup_supabase_secrets.sh full"
+    if ! run_secret_list_with_timeout "$project_ref" "$secrets_file"; then
+        pending_or_fail "Supabase secret names could not be listed within ${secret_list_timeout}s; run supabase login and Scripts/setup_supabase_secrets.sh full"
         return 0
     fi
 

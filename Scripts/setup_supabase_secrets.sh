@@ -7,6 +7,7 @@ config_path="${SUPABASE_CONFIG_PATH:-$repo_root/BuySellAI/App/Config.plist}"
 linked_ref_file="$repo_root/supabase/.temp/project-ref"
 secret_file=""
 project_ref=""
+secret_list_timeout="${M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS:-30}"
 
 export SUPABASE_TELEMETRY_DISABLED="${SUPABASE_TELEMETRY_DISABLED:-1}"
 
@@ -193,10 +194,39 @@ resolve_project_ref() {
     fail "SUPABASE_PROJECT_REF is required, or write BuySellAI/App/Config.plist with Scripts/setup_supabase_config.sh, or run supabase link --project-ref <project-ref>"
 }
 
+run_secret_list_with_timeout() {
+    local output_path="$1"
+    local elapsed=0
+    local pid
+    local status=0
+
+    [[ "$secret_list_timeout" =~ ^[0-9]+$ && "$secret_list_timeout" -gt 0 ]] || fail "M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS must be a positive integer"
+
+    supabase secrets list --project-ref "$project_ref" --output json > "$output_path" 2>/dev/null &
+    pid="$!"
+    while kill -0 "$pid" 2>/dev/null; do
+        if (( elapsed >= secret_list_timeout )); then
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            return 124
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    wait "$pid" || status="$?"
+    return "$status"
+}
+
 require_secret_access() {
-    if ! supabase secrets list --project-ref "$project_ref" --output json >/dev/null 2>&1; then
-        fail "Supabase secret access unavailable for project '$project_ref'; run supabase login and confirm the project before entering secrets"
+    local secrets_file
+
+    secrets_file="$(mktemp "${TMPDIR:-/tmp}/buysell-supabase-secret-access.XXXXXX")"
+    if ! run_secret_list_with_timeout "$secrets_file"; then
+        rm -f "$secrets_file"
+        fail "Supabase secret access unavailable within ${secret_list_timeout}s for project '$project_ref'; run supabase login and confirm the project before entering secrets"
     fi
+    rm -f "$secrets_file"
 }
 
 validate_apple_private_key_path() {
