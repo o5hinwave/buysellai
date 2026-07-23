@@ -230,7 +230,7 @@ final class AppStore {
         isShowingCamera = false
     }
 
-    func presentMarketplacePicker(item: DetectedItem, imageData: Data) {
+    func presentMarketplacePicker(item: DetectedItem, imageData: Data?) {
         advanceFlowGeneration()
         presentFlowSheet(.marketplacePicker(MarketplacePickerContext(item: item, imageData: imageData)))
     }

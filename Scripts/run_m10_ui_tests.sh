@@ -40,6 +40,7 @@ tests=(
     "BuySellAIUITests/BuySellAIUITests/testRecentListingReopensListingSheetDirectly"
     "BuySellAIUITests/BuySellAIUITests/testMarketplaceBestSummaryOpensListingSheetDirectly"
     "BuySellAIUITests/BuySellAIUITests/testListingRetakeKeepsMarketplaceAndSkipsPicker"
+    "BuySellAIUITests/BuySellAIUITests/testListingCanReturnToMarketplacePickerWithoutRetakingPhoto"
     "BuySellAIUITests/BuySellAIUITests/testCopyListingWritesOnlyListingTextToPasteboard"
     "BuySellAIUITests/BuySellAIUITests/testGenerateListingOfflineShowsToastAndRegenerateButton"
     "BuySellAIUITests/BuySellAIUITests/testSettingsThemeAndReduceMotionPersistAcrossRelaunch"

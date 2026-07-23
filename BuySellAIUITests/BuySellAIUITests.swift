@@ -671,6 +671,36 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Pick where to sell"].exists)
     }
 
+    func testListingCanReturnToMarketplacePickerWithoutRetakingPhoto() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history"]
+        app.launch()
+
+        let snap = app.buttons["Snap to sell"]
+        XCTAssertTrue(snap.waitForExistence(timeout: 5))
+        snap.tap()
+
+        let looksRight = app.buttons["Looks right — pick where to sell"]
+        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        looksRight.tap()
+
+        tapMarketplace("craigslist", in: app)
+
+        let copy = app.buttons["Copy listing"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Craigslist"].exists)
+
+        let tryAnother = app.buttons["Try another marketplace"]
+        XCTAssertTrue(tryAnother.waitForExistence(timeout: 5))
+        tryAnother.tap()
+
+        XCTAssertTrue(app.staticTexts["Pick where to sell"].waitForExistence(timeout: 5))
+        tapMarketplace("ebay", in: app)
+
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["eBay"].exists)
+    }
+
     func testCopyListingWritesOnlyListingTextToPasteboard() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth", "--reset-history", "--ui-testing-verify-clipboard"]

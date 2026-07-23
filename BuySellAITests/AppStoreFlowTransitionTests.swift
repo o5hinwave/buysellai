@@ -36,13 +36,30 @@ final class AppStoreFlowTransitionTests: XCTestCase {
 
         XCTAssertNil(store.snapResultContext)
         XCTAssertEqual(store.marketplacePickerContext?.item, item)
-        XCTAssertEqual(store.marketplacePickerContext?.imageData, imageData)
+        XCTAssertEqual(store.marketplacePickerContext?.imageData, Optional(imageData))
         XCTAssertNil(store.listingContext)
         guard case .marketplacePicker(let context) = store.flowSheetContext else {
             return XCTFail("Expected marketplace picker flow sheet.")
         }
         XCTAssertEqual(context.item, item)
-        XCTAssertEqual(context.imageData, imageData)
+        XCTAssertEqual(context.imageData, Optional(imageData))
+    }
+
+    func testMarketplacePickerCanOpenFromSavedListingWithoutFullPhotoData() {
+        let store = makeStore()
+        let item = lamp
+
+        store.presentMarketplacePicker(item: item, imageData: nil)
+
+        XCTAssertNil(store.snapResultContext)
+        XCTAssertEqual(store.marketplacePickerContext?.item, item)
+        XCTAssertNil(store.marketplacePickerContext?.imageData)
+        XCTAssertNil(store.listingContext)
+        guard case .marketplacePicker(let context) = store.flowSheetContext else {
+            return XCTFail("Expected marketplace picker flow sheet.")
+        }
+        XCTAssertEqual(context.item, item)
+        XCTAssertNil(context.imageData)
     }
 
     func testListingUpdatesSingleFlowSheetImmediately() {
