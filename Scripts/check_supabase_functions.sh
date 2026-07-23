@@ -70,8 +70,21 @@ require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "result[geminiGroundingSourcesKey]" \
     "saved Gemini grounding sources"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "requireStructuredListingDraft" \
+    "structured listing draft validation"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "formatListingDraft" \
+    "deterministic listing formatting"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "return jsonResponse({ listing, draft })" \
+    "structured draft response"
 
 printf 'Supabase function Deno check passed\n'
 printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
 printf 'listing research tools: google_search url_context gated-by-cache\n'
 printf 'listing research cache: Gemini grounding saved\n'
+printf 'listing draft: structured fields formatted deterministically\n'

@@ -136,6 +136,52 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
     }
 
+    func testGenerateListingPayloadReturnsSanitizedStructuredDraft() async throws {
+        let item = Self.sampleItem
+        let client = try makeClient { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (
+                response,
+                Data(
+                    """
+                    {
+                      "listing": "TITLE:\\nLamp\\n\\nDESCRIPTION:\\nWorks well.",
+                      "draft": {
+                        "title": "  Lamp  ",
+                        "description": "Works well.",
+                        "listPrice": 45,
+                        "likelySalePrice": 40,
+                        "takeHomeEstimate": 35,
+                        "firstPhoto": "Show the full lamp.",
+                        "missingPhotoPrompt": "Show the cord.",
+                        "fitReason": "Good broad fit.",
+                        "postingNotes": ["Keep pickup details clear.", "Keep pickup details clear."],
+                        "itemSpecifics": ["Brass", "Table lamp"],
+                        "tags": ["lamp"]
+                      }
+                    }
+                    """.utf8
+                )
+            )
+        }
+
+        let payload = try await client.generateListingPayload(item: item, marketplace: .ebay)
+
+        XCTAssertEqual(payload.listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
+        XCTAssertEqual(payload.draft?.title, "Lamp")
+        XCTAssertEqual(payload.draft?.listPrice, Decimal(45))
+        XCTAssertEqual(payload.draft?.likelySalePrice, Decimal(40))
+        XCTAssertEqual(payload.draft?.takeHomeEstimate, Decimal(35))
+        XCTAssertEqual(payload.draft?.firstPhoto, "Show the full lamp.")
+        XCTAssertEqual(payload.draft?.missingPhotoPrompt, "Show the cord.")
+        XCTAssertEqual(payload.draft?.fitReason, "Good broad fit.")
+        XCTAssertEqual(payload.draft?.postingNotes, ["Keep pickup details clear."])
+        XCTAssertEqual(payload.draft?.itemSpecifics, ["Brass", "Table lamp"])
+        XCTAssertEqual(payload.draft?.tags, ["lamp"])
+    }
+
     func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {
         let item = Self.sampleItem
         let client = try makeClient { request in

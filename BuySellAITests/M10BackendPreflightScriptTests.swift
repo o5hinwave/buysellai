@@ -119,10 +119,14 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "{ google_search: {} }"))
         XCTAssertNotNil(script.range(of: "result[geminiGroundingSearchQueriesKey]"))
         XCTAssertNotNil(script.range(of: "result[geminiGroundingSourcesKey]"))
+        XCTAssertNotNil(script.range(of: "requireStructuredListingDraft"))
+        XCTAssertNotNil(script.range(of: "formatListingDraft"))
+        XCTAssertNotNil(script.range(of: "return jsonResponse({ listing, draft })"))
         XCTAssertNotNil(script.range(of: "Supabase function Deno check passed"))
         XCTAssertNotNil(script.range(of: "functions: analyze-image generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "listing research tools: google_search url_context gated-by-cache"))
         XCTAssertNotNil(script.range(of: "listing research cache: Gemini grounding saved"))
+        XCTAssertNotNil(script.range(of: "listing draft: structured fields formatted deterministically"))
     }
 
     func testSupabaseSchemaStaticCheckScriptCoversRLSGrantsIndexesAndSwiftParity() throws {
