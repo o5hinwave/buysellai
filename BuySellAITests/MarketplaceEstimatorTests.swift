@@ -180,6 +180,87 @@ final class MarketplaceEstimatorTests: XCTestCase {
         }
     }
 
+    func testRecommendationScoreAccountsForPickupAndShippingFriction() throws {
+        let dresser = DetectedItem(
+            name: "Large oak dresser with mirror",
+            category: .furniture,
+            condition: .fair,
+            priceEstimate: Decimal(180)
+        )
+
+        let ranked = MarketplaceEstimator.estimates(for: dresser)
+        XCTAssertEqual(ranked.first?.id, .craigslist)
+        XCTAssertFalse(ranked.prefix(3).map(\.id).contains(.ebay))
+
+        let craigslist = try recommendationComponents(for: .craigslist, item: dresser)
+        let ebay = try recommendationComponents(for: .ebay, item: dresser)
+
+        XCTAssertGreaterThan(craigslist.localPickupFit, ebay.localPickupFit)
+        XCTAssertGreaterThan(craigslist.shippingFit, ebay.shippingFit)
+        XCTAssertGreaterThan(craigslist.listingEffort, ebay.listingEffort)
+    }
+
+    func testSummaryPlannerSeparatesBestChanceFromMostMoneyBackWhenTheyDiffer() throws {
+        let guitar = DetectedItem(
+            name: "Fender Stratocaster Electric Guitar",
+            category: .music,
+            condition: .good,
+            priceEstimate: Decimal(650)
+        )
+
+        let ranked = MarketplaceEstimator.estimates(for: guitar)
+        let picks = MarketplaceSummaryPlanner.picks(from: ranked)
+
+        XCTAssertEqual(picks.map(\.kind), [.bestChance, .mostMoneyBack, .goodFit])
+        XCTAssertEqual(picks.first?.estimate.id, .reverb)
+        XCTAssertEqual(picks[1].estimate.payout, ranked.map(\.payout).max())
+        XCTAssertNotEqual(picks[0].estimate.id, picks[1].estimate.id)
+    }
+
+    func testSummaryPlannerUsesSecondAndThirdWhenBestChanceAlsoPaysMost() {
+        let lamp = DetectedItem(
+            name: "Vintage brass table lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+
+        let picks = MarketplaceSummaryPlanner.picks(from: MarketplaceEstimator.estimates(for: lamp))
+
+        XCTAssertEqual(picks.map(\.kind), [.bestChance, .second, .third])
+        XCTAssertEqual(picks.first?.estimate.id, .craigslist)
+        XCTAssertFalse(picks.contains { $0.kind == .mostMoneyBack })
+    }
+
+    func testMarketplaceRecommendationScoringInputsStayBoundedAndLocalized() throws {
+        let localizedStrings = try loadLocalizedStrings()
+        let item = DetectedItem(name: "Generic household clutter box", category: .other, condition: .fair, priceEstimate: Decimal(18))
+
+        for marketplace in Marketplace.allCases {
+            let profile = marketplace.optimizationProfile
+            for score in [
+                profile.listingEffort(for: item),
+                profile.buyerTrust(for: item),
+                profile.localPickupFit(for: item),
+                profile.shippingFit(for: item),
+                profile.speedScore,
+                marketplace.searchFitScore(for: item)
+            ] {
+                XCTAssertTrue((1...100).contains(score), "\(marketplace.displayName) score should stay bounded")
+            }
+        }
+
+        for kind in [
+            MarketplaceSummaryKind.bestChance,
+            .mostMoneyBack,
+            .goodFit,
+            .second,
+            .third
+        ] {
+            XCTAssertEqual(localizedStrings[kind.label], kind.label)
+        }
+    }
+
     func testMarketplaceListingOptimizerKeepsTitlesInsideMarketplaceLimits() {
         let item = DetectedItem(
             name: "Vintage Mid Century Modern Walnut and Brass Adjustable Floor Lamp With Original Shade",
@@ -275,6 +356,31 @@ final class MarketplaceEstimatorTests: XCTestCase {
         let data = try Data(contentsOf: projectURL("BuySellAI/Resources/Localizable.strings"))
         let propertyList = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
         return try XCTUnwrap(propertyList as? [String: String])
+    }
+
+    private func recommendationComponents(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> MarketplaceRecommendationComponents {
+        let payoutEstimates = MarketplaceEstimator.estimates(for: item.priceEstimate)
+        let payouts = payoutEstimates.map(\.payout)
+        let highestPayout = try XCTUnwrap(payouts.max(), file: file, line: line)
+        let lowestPayout = try XCTUnwrap(payouts.min(), file: file, line: line)
+        let payoutRange = max(highestPayout.doubleValue - lowestPayout.doubleValue, 1)
+        let estimate = try XCTUnwrap(
+            payoutEstimates.first { $0.id == marketplace },
+            file: file,
+            line: line
+        )
+
+        return MarketplaceEstimator.recommendationComponents(
+            for: item,
+            estimate: estimate,
+            lowestPayout: lowestPayout,
+            payoutRange: payoutRange
+        )
     }
 
     private func assertPlainMarketplaceCopy(

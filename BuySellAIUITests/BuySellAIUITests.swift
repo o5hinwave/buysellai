@@ -484,9 +484,9 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        let bestSummary = app.buttons["MarketplaceSummary.best.craigslist"]
+        let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
-        XCTAssertTrue(bestSummary.label.contains("Best, Craigslist, estimated payout"))
+        XCTAssertTrue(bestSummary.label.contains("Best chance, Craigslist, estimated payout"))
 
         let craigslistRow = app.buttons["MarketplaceRow.craigslist"]
         XCTAssertTrue(craigslistRow.waitForExistence(timeout: 5))
@@ -624,7 +624,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
         looksRight.tap()
 
-        let bestSummary = app.buttons["MarketplaceSummary.best.craigslist"]
+        let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
         bestSummary.tap()
 
@@ -860,7 +860,7 @@ final class BuySellAIUITests: XCTestCase {
         try saveAppStoreScreenshot("02-result", in: screenshotURL)
 
         looksRight.tap()
-        XCTAssertTrue(app.buttons["MarketplaceSummary.best.craigslist"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["MarketplaceSummary.bestChance.craigslist"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["MarketplaceRow.craigslist"].waitForExistence(timeout: 5))
         try saveAppStoreScreenshot("03-marketplaces", in: screenshotURL)
 

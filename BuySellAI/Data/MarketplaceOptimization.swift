@@ -6,6 +6,11 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
     let searchFocus: String
     let photoGuidance: String
     let featuredGuidance: String
+    let listingEffortScore: Int
+    let buyerTrustScore: Int
+    let localPickupScore: Int
+    let shippingEaseScore: Int
+    let speedScore: Int
 
     private let baselineSearchFit: Int
     private let categoryFits: [Category: Int]
@@ -18,6 +23,11 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
         searchFocus: String,
         photoGuidance: String,
         featuredGuidance: String,
+        listingEffortScore: Int = 68,
+        buyerTrustScore: Int = 68,
+        localPickupScore: Int = 18,
+        shippingEaseScore: Int = 72,
+        speedScore: Int = 62,
         baselineSearchFit: Int,
         categoryFits: [Category: Int],
         preferredConditions: Set<Condition>? = nil,
@@ -28,6 +38,11 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
         self.searchFocus = searchFocus
         self.photoGuidance = photoGuidance
         self.featuredGuidance = featuredGuidance
+        self.listingEffortScore = Self.clamped(listingEffortScore)
+        self.buyerTrustScore = Self.clamped(buyerTrustScore)
+        self.localPickupScore = Self.clamped(localPickupScore)
+        self.shippingEaseScore = Self.clamped(shippingEaseScore)
+        self.speedScore = Self.clamped(speedScore)
         self.baselineSearchFit = baselineSearchFit
         self.categoryFits = categoryFits
         self.preferredConditions = preferredConditions ?? Set(Condition.allCases)
@@ -38,6 +53,158 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
         let categoryFit = categoryFits[item.category] ?? baselineSearchFit
         let conditionAdjustment = preferredConditions.contains(item.condition) ? 0 : -conditionPenalty
         return min(max(categoryFit + conditionAdjustment, 1), 100)
+    }
+
+    func listingEffort(for item: DetectedItem) -> Int {
+        let categoryAdjustment: Int
+        switch item.category {
+        case .other:
+            categoryAdjustment = -8
+        case .collectibles, .art, .jewelry:
+            categoryAdjustment = -4
+        default:
+            categoryAdjustment = 0
+        }
+
+        return Self.clamped(listingEffortScore + categoryAdjustment)
+    }
+
+    func buyerTrust(for item: DetectedItem) -> Int {
+        let conditionAdjustment: Int
+        switch item.condition {
+        case .new, .likeNew:
+            conditionAdjustment = 4
+        case .good:
+            conditionAdjustment = 0
+        case .fair:
+            conditionAdjustment = -6
+        case .forParts:
+            conditionAdjustment = -16
+        }
+
+        return Self.clamped(buyerTrustScore + conditionAdjustment)
+    }
+
+    func localPickupFit(for item: DetectedItem) -> Int {
+        weightedScore(neutral: 58, target: localPickupScore, intensity: item.localPickupNeedScore)
+    }
+
+    func shippingFit(for item: DetectedItem) -> Int {
+        let platformAndItemFit = Int((Double(shippingEaseScore) * 0.56 + Double(item.shippingEaseScore) * 0.44).rounded())
+
+        if item.localPickupNeedScore >= 74, localPickupScore >= 82 {
+            return max(platformAndItemFit, 88)
+        }
+
+        if item.localPickupNeedScore >= 74, localPickupScore <= 24 {
+            return min(platformAndItemFit, 48)
+        }
+
+        return Self.clamped(platformAndItemFit)
+    }
+
+    private func weightedScore(neutral: Int, target: Int, intensity: Int) -> Int {
+        let clampedIntensity = Double(Self.clamped(intensity)) / 100
+        let value = Double(neutral) + (Double(target - neutral) * clampedIntensity)
+        return Self.clamped(Int(value.rounded()))
+    }
+
+    private static func clamped(_ value: Int) -> Int {
+        min(max(value, 1), 100)
+    }
+}
+
+extension DetectedItem {
+    var localPickupNeedScore: Int {
+        switch category {
+        case .furniture:
+            96
+        case .tools:
+            nameContainsAny(["ladder", "saw", "compressor", "tool box", "bench"]) ? 86 : 72
+        case .home:
+            nameContainsAny(["mirror", "lamp", "vase", "glass", "ceramic", "frame", "large", "set"])
+                ? 72
+                : 56
+        case .sports:
+            nameContainsAny(["bike", "bicycle", "treadmill", "bench", "weights", "golf bag"]) ? 82 : 52
+        case .music:
+            nameContainsAny(["guitar", "amp", "amplifier", "keyboard", "drum"]) ? 58 : 34
+        case .art:
+            nameContainsAny(["framed", "canvas", "large", "glass"]) ? 62 : 42
+        case .electronics:
+            nameContainsAny(["tv", "television", "monitor", "speaker", "receiver"]) ? 60 : 24
+        case .kids, .toys:
+            nameContainsAny(["stroller", "crib", "bike", "playhouse", "wagon"]) ? 84 : 38
+        case .books, .media, .clothing, .shoes, .bags, .jewelry, .collectibles:
+            16
+        case .other:
+            nameContainsAny(["large", "heavy", "fragile", "glass", "set"]) ? 66 : 44
+        }
+    }
+
+    var shippingEaseScore: Int {
+        switch category {
+        case .clothing, .shoes, .bags:
+            92
+        case .books, .media:
+            84
+        case .jewelry:
+            82
+        case .electronics:
+            nameContainsAny(["tv", "television", "monitor", "speaker", "receiver"]) ? 46 : 74
+        case .collectibles:
+            nameContainsAny(["graded", "card", "coin", "pin"]) ? 86 : 66
+        case .kids, .toys:
+            nameContainsAny(["stroller", "crib", "bike", "playhouse", "wagon"]) ? 36 : 70
+        case .music:
+            nameContainsAny(["guitar", "amp", "amplifier", "keyboard", "drum"]) ? 42 : 64
+        case .sports:
+            nameContainsAny(["bike", "bicycle", "treadmill", "bench", "weights", "golf bag"]) ? 34 : 62
+        case .home:
+            nameContainsAny(["mirror", "lamp", "vase", "glass", "ceramic", "frame", "large", "set"]) ? 38 : 62
+        case .tools:
+            nameContainsAny(["ladder", "compressor", "tool box", "bench"]) ? 36 : 54
+        case .art:
+            nameContainsAny(["framed", "canvas", "large", "glass"]) ? 36 : 58
+        case .furniture:
+            18
+        case .other:
+            nameContainsAny(["large", "heavy", "fragile", "glass", "set"]) ? 38 : 56
+        }
+    }
+
+    var marketplaceFactQualityScore: Int {
+        let words = normalizedMarketplaceName
+            .split { $0.isWhitespace || $0.isPunctuation }
+            .count
+        let wordScore: Int
+        switch words {
+        case 0:
+            wordScore = 28
+        case 1:
+            wordScore = 46
+        case 2:
+            wordScore = 62
+        case 3:
+            wordScore = 76
+        default:
+            wordScore = 88
+        }
+
+        let categoryScore = category == .other ? -14 : 0
+        let conditionScore = condition == .forParts ? -8 : 0
+        return min(max(wordScore + categoryScore + conditionScore, 1), 100)
+    }
+
+    private var normalizedMarketplaceName: String {
+        name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+    }
+
+    private func nameContainsAny(_ fragments: [String]) -> Bool {
+        let normalized = normalizedMarketplaceName
+        return fragments.contains { normalized.contains($0) }
     }
 }
 
@@ -51,6 +218,9 @@ extension Marketplace {
                 searchFocus: "Good for shippable items with a broad audience and detailed item pages.",
                 photoGuidance: "Use a bright lead photo, then show every angle, labels, model numbers, and flaws.",
                 featuredGuidance: "Pay for extra placement only after the details, photos, and price look right.",
+                listingEffortScore: 64,
+                buyerTrustScore: 82,
+                shippingEaseScore: 78,
                 baselineSearchFit: 78,
                 categoryFits: [
                     .electronics: 92, .collectibles: 92, .media: 88, .books: 86, .music: 82,
@@ -64,6 +234,11 @@ extension Marketplace {
                 searchFocus: "Best for local pickup and bulky everyday goods where no fee keeps more cash.",
                 photoGuidance: "Lead with the full item in a clean space; add size, flaws, and pickup-friendly scale shots.",
                 featuredGuidance: "Renew only when allowed, and keep pickup details clear.",
+                listingEffortScore: 96,
+                buyerTrustScore: 56,
+                localPickupScore: 96,
+                shippingEaseScore: 92,
+                speedScore: 86,
                 baselineSearchFit: 58,
                 categoryFits: [
                     .furniture: 94, .tools: 90, .home: 86, .sports: 82, .electronics: 72,
@@ -77,6 +252,11 @@ extension Marketplace {
                 searchFocus: "Good for quick local interest when the category, price, and condition are clear.",
                 photoGuidance: "Make the first photo obvious; add close-ups for flaws, tags, and scale.",
                 featuredGuidance: "Pay for local placement only when the photos and price already look right.",
+                listingEffortScore: 90,
+                buyerTrustScore: 64,
+                localPickupScore: 92,
+                shippingEaseScore: 88,
+                speedScore: 86,
                 baselineSearchFit: 76,
                 categoryFits: [
                     .furniture: 92, .home: 88, .kids: 88, .toys: 86, .tools: 84, .sports: 84,
@@ -90,6 +270,11 @@ extension Marketplace {
                 searchFocus: "Good for clothing, shoes, bags, and accessories with clear size and condition details.",
                 photoGuidance: "Use a crisp cover shot, then tags, fabric, size, measurements, and flaws.",
                 featuredGuidance: "Send an offer after people show interest, and keep the item details complete.",
+                listingEffortScore: 74,
+                buyerTrustScore: 74,
+                localPickupScore: 12,
+                shippingEaseScore: 82,
+                speedScore: 68,
                 baselineSearchFit: 38,
                 categoryFits: [.clothing: 96, .shoes: 92, .bags: 92, .jewelry: 82, .kids: 74],
                 preferredConditions: [.new, .likeNew, .good],
@@ -102,6 +287,11 @@ extension Marketplace {
                 searchFocus: "Good for easy shipping on everyday items with accurate details and complete photos.",
                 photoGuidance: "Use natural light, a plain background, all sides, and clear flaw photos.",
                 featuredGuidance: "Lower the price only after the listing has had time to be seen.",
+                listingEffortScore: 82,
+                buyerTrustScore: 70,
+                localPickupScore: 14,
+                shippingEaseScore: 86,
+                speedScore: 74,
                 baselineSearchFit: 80,
                 categoryFits: [
                     .electronics: 88, .toys: 88, .collectibles: 88, .home: 84, .clothing: 82,
@@ -115,6 +305,11 @@ extension Marketplace {
                 searchFocus: "Good for pickup items and quick neighborhood interest.",
                 photoGuidance: "Show exactly what is included, the full item, close-ups, and any damage.",
                 featuredGuidance: "Pay for local placement only when the price and first photo are strong.",
+                listingEffortScore: 88,
+                buyerTrustScore: 58,
+                localPickupScore: 94,
+                shippingEaseScore: 88,
+                speedScore: 84,
                 baselineSearchFit: 62,
                 categoryFits: [.furniture: 90, .tools: 88, .home: 84, .sports: 84, .electronics: 80, .kids: 76]
             )
@@ -125,6 +320,11 @@ extension Marketplace {
                 searchFocus: "Good for vintage and style-driven clothing when the item details are accurate.",
                 photoGuidance: "Use original photos, fit/detail shots, measurements, and visible wear.",
                 featuredGuidance: "Use extra placement only for clearly described fashion items.",
+                listingEffortScore: 70,
+                buyerTrustScore: 62,
+                localPickupScore: 10,
+                shippingEaseScore: 82,
+                speedScore: 66,
                 baselineSearchFit: 32,
                 categoryFits: [.clothing: 90, .shoes: 88, .bags: 86, .jewelry: 76],
                 preferredConditions: [.new, .likeNew, .good, .fair],
@@ -137,6 +337,11 @@ extension Marketplace {
                 searchFocus: "Good for collectibles that make sense in a live-sale format.",
                 photoGuidance: "Show the front, back, edition marks, flaws, and anything that proves the exact item.",
                 featuredGuidance: "Put it in a live show only when the category fit is clear.",
+                listingEffortScore: 42,
+                buyerTrustScore: 62,
+                localPickupScore: 8,
+                shippingEaseScore: 54,
+                speedScore: 38,
                 baselineSearchFit: 44,
                 categoryFits: [.collectibles: 88, .toys: 78, .sports: 76, .media: 74, .books: 66]
             )
@@ -147,6 +352,11 @@ extension Marketplace {
                 searchFocus: "Good for menswear, streetwear, and designer items with clear brand, size, and condition.",
                 photoGuidance: "Show front/back, tags, fabric labels, measurements, and wear.",
                 featuredGuidance: "Drop the price after interest appears, and keep details precise.",
+                listingEffortScore: 58,
+                buyerTrustScore: 70,
+                localPickupScore: 8,
+                shippingEaseScore: 76,
+                speedScore: 54,
                 baselineSearchFit: 28,
                 categoryFits: [.clothing: 82, .shoes: 80, .bags: 74, .jewelry: 58],
                 preferredConditions: [.new, .likeNew, .good],
@@ -159,6 +369,11 @@ extension Marketplace {
                 searchFocus: "Good for music gear with exact brand, model, year, function, and condition.",
                 photoGuidance: "Show serial/model labels, electronics, hardware, finish wear, and the item working if possible.",
                 featuredGuidance: "Use extra placement only after specs, condition, and photos are complete.",
+                listingEffortScore: 62,
+                buyerTrustScore: 80,
+                localPickupScore: 8,
+                shippingEaseScore: 68,
+                speedScore: 58,
                 baselineSearchFit: 22,
                 categoryFits: [.music: 100, .electronics: 54, .media: 42],
                 preferredConditions: [.new, .likeNew, .good, .fair],
@@ -171,6 +386,11 @@ extension Marketplace {
                 searchFocus: "Good for handmade, vintage, art, and craft items with accurate details.",
                 photoGuidance: "Lead with a clean product photo; add detail, scale, material, and clear close-ups.",
                 featuredGuidance: "Pay for placement only after the details and photos are complete.",
+                listingEffortScore: 56,
+                buyerTrustScore: 72,
+                localPickupScore: 8,
+                shippingEaseScore: 66,
+                speedScore: 52,
                 baselineSearchFit: 48,
                 categoryFits: [.art: 92, .jewelry: 88, .home: 84, .collectibles: 78, .clothing: 70, .bags: 66]
             )
@@ -181,6 +401,11 @@ extension Marketplace {
                 searchFocus: "Good for new authenticated sneakers and collectibles with a precise name, size, and colorway.",
                 photoGuidance: "Show box, labels, size tag, soles, and any defects before choosing this marketplace.",
                 featuredGuidance: "Use the marketplace ask price mechanics rather than extra listing copy.",
+                listingEffortScore: 66,
+                buyerTrustScore: 88,
+                localPickupScore: 4,
+                shippingEaseScore: 78,
+                speedScore: 58,
                 baselineSearchFit: 18,
                 categoryFits: [.shoes: 96, .collectibles: 82],
                 preferredConditions: [.new, .likeNew],
@@ -193,6 +418,11 @@ extension Marketplace {
                 searchFocus: "Good for sneakers once the account and item are accepted; document every defect clearly.",
                 photoGuidance: "Photograph box, labels, soles, uppers, and every defect clearly.",
                 featuredGuidance: "Use GOAT pricing and offer mechanics after approval; avoid vague item names.",
+                listingEffortScore: 62,
+                buyerTrustScore: 86,
+                localPickupScore: 4,
+                shippingEaseScore: 76,
+                speedScore: 54,
                 baselineSearchFit: 18,
                 categoryFits: [.shoes: 94, .collectibles: 72],
                 preferredConditions: [.new, .likeNew, .good],
@@ -205,6 +435,11 @@ extension Marketplace {
                 searchFocus: "Good for kids items with size, brand, condition, and season written plainly.",
                 photoGuidance: "Show front/back, size tags, fabric, stains, and wear.",
                 featuredGuidance: "Refresh seasonally when the size and photos are complete.",
+                listingEffortScore: 72,
+                buyerTrustScore: 66,
+                localPickupScore: 12,
+                shippingEaseScore: 80,
+                speedScore: 64,
                 baselineSearchFit: 28,
                 categoryFits: [.kids: 96, .toys: 78, .clothing: 72, .shoes: 72]
             )
@@ -215,6 +450,11 @@ extension Marketplace {
                 searchFocus: "Good for simple fashion resale with brand, size, color, and honest condition.",
                 photoGuidance: "Show the whole item, size label, material tag, and flaws.",
                 featuredGuidance: "Use extra placement only for clean, complete fashion listings.",
+                listingEffortScore: 82,
+                buyerTrustScore: 64,
+                localPickupScore: 10,
+                shippingEaseScore: 82,
+                speedScore: 70,
                 baselineSearchFit: 34,
                 categoryFits: [.clothing: 76, .shoes: 74, .bags: 72, .kids: 70, .jewelry: 58],
                 preferredConditions: [.new, .likeNew, .good],
@@ -227,6 +467,11 @@ extension Marketplace {
                 searchFocus: "Good for luxury fashion when brand, authenticity, condition, and photos are clear.",
                 photoGuidance: "Show labels, serial or authenticity marks, material, hardware, corners, and wear.",
                 featuredGuidance: "Drop the price only after authenticity details are complete.",
+                listingEffortScore: 50,
+                buyerTrustScore: 86,
+                localPickupScore: 6,
+                shippingEaseScore: 72,
+                speedScore: 46,
                 baselineSearchFit: 20,
                 categoryFits: [.bags: 94, .jewelry: 86, .clothing: 82, .shoes: 82],
                 preferredConditions: [.new, .likeNew, .good],
@@ -239,6 +484,11 @@ extension Marketplace {
                 searchFocus: "Good for consignment-style luxury items with clear brand, material, authenticity, and condition.",
                 photoGuidance: "Capture brand marks, serial labels, hardware, fabric, wear, and authenticity details.",
                 featuredGuidance: "Follow the consignment flow; complete documentation matters more than extra placement.",
+                listingEffortScore: 46,
+                buyerTrustScore: 88,
+                localPickupScore: 4,
+                shippingEaseScore: 70,
+                speedScore: 40,
                 baselineSearchFit: 16,
                 categoryFits: [.bags: 92, .jewelry: 88, .clothing: 78, .shoes: 78, .art: 62],
                 preferredConditions: [.new, .likeNew, .good],
@@ -251,6 +501,11 @@ extension Marketplace {
                 searchFocus: "Good for used tech with model, storage, carrier, battery, unlock status, and condition.",
                 photoGuidance: "Show the screen on, ports, model/settings, battery health if available, and scratches.",
                 featuredGuidance: "Set a fair price first; use extra placement only after verification details are complete.",
+                listingEffortScore: 76,
+                buyerTrustScore: 82,
+                localPickupScore: 8,
+                shippingEaseScore: 82,
+                speedScore: 68,
                 baselineSearchFit: 20,
                 categoryFits: [.electronics: 98],
                 preferredConditions: [.new, .likeNew, .good, .fair],
@@ -263,6 +518,11 @@ extension Marketplace {
                 searchFocus: "Good for designer bags, shoes, and clothing with brand, size, color, and condition up front.",
                 photoGuidance: "Show labels, hardware, soles, fabric, corners, and signs of wear.",
                 featuredGuidance: "Drop the price after interest appears, and keep details directly related to the item.",
+                listingEffortScore: 58,
+                buyerTrustScore: 74,
+                localPickupScore: 8,
+                shippingEaseScore: 76,
+                speedScore: 54,
                 baselineSearchFit: 22,
                 categoryFits: [.bags: 90, .shoes: 84, .clothing: 78, .jewelry: 72],
                 preferredConditions: [.new, .likeNew, .good],
@@ -275,6 +535,11 @@ extension Marketplace {
                 searchFocus: "Good for vintage furniture and decor with era, maker, material, dimensions, and style.",
                 photoGuidance: "Lead with the full piece, then scale, texture, maker marks, dimensions, and damage.",
                 featuredGuidance: "Use strong main photos and complete details before paying for placement.",
+                listingEffortScore: 54,
+                buyerTrustScore: 78,
+                localPickupScore: 62,
+                shippingEaseScore: 44,
+                speedScore: 52,
                 baselineSearchFit: 22,
                 categoryFits: [.furniture: 98, .home: 92, .art: 86, .jewelry: 54, .collectibles: 62]
             )
@@ -285,6 +550,11 @@ extension Marketplace {
                 searchFocus: "Good for general resale when the title and details are straightforward.",
                 photoGuidance: "Use clear photos with a simple background, detail shots, and flaw photos.",
                 featuredGuidance: "Pay for placement only after photos, details, and price are complete.",
+                listingEffortScore: 66,
+                buyerTrustScore: 64,
+                localPickupScore: 10,
+                shippingEaseScore: 72,
+                speedScore: 56,
                 baselineSearchFit: 62,
                 categoryFits: [.collectibles: 74, .home: 70, .electronics: 70, .books: 68, .media: 68]
             )
@@ -295,6 +565,11 @@ extension Marketplace {
                 searchFocus: "Good for mobile fashion sales with brand, size, style, and occasion.",
                 photoGuidance: "Show cover, fit, size tag, material, and any wear.",
                 featuredGuidance: "Use offers or price changes after interest appears.",
+                listingEffortScore: 76,
+                buyerTrustScore: 62,
+                localPickupScore: 10,
+                shippingEaseScore: 82,
+                speedScore: 68,
                 baselineSearchFit: 24,
                 categoryFits: [.clothing: 82, .shoes: 76, .bags: 74, .jewelry: 64],
                 preferredConditions: [.new, .likeNew, .good],
@@ -307,6 +582,11 @@ extension Marketplace {
                 searchFocus: "Neighborhood sales work for pickup-friendly items and practical household goods.",
                 photoGuidance: "Show the whole item, scale, pickup condition, and flaws.",
                 featuredGuidance: "Refresh when allowed, and keep pickup details clear.",
+                listingEffortScore: 86,
+                buyerTrustScore: 60,
+                localPickupScore: 94,
+                shippingEaseScore: 88,
+                speedScore: 82,
                 baselineSearchFit: 54,
                 categoryFits: [.furniture: 88, .home: 84, .tools: 82, .kids: 80, .sports: 78, .toys: 76]
             )
@@ -317,6 +597,11 @@ extension Marketplace {
                 searchFocus: "Good for catalog-like new products with a precise brand, model, and variant.",
                 photoGuidance: "Use sharp, simple product photos and the exact product details; avoid used one-off ambiguity.",
                 featuredGuidance: "Pay for placement only for catalog-ready items, not casual one-off resale.",
+                listingEffortScore: 28,
+                buyerTrustScore: 62,
+                localPickupScore: 2,
+                shippingEaseScore: 58,
+                speedScore: 42,
                 baselineSearchFit: 24,
                 categoryFits: [.books: 78, .media: 74, .electronics: 62, .toys: 60],
                 preferredConditions: [.new, .likeNew],
@@ -329,6 +614,11 @@ extension Marketplace {
                 searchFocus: "Good when the person already has a storefront and a complete product page.",
                 photoGuidance: "Use a clean product photo set with close-up detail shots.",
                 featuredGuidance: "Pay for storefront traffic only when the shop, product page, and checkout are ready.",
+                listingEffortScore: 18,
+                buyerTrustScore: 55,
+                localPickupScore: 2,
+                shippingEaseScore: 54,
+                speedScore: 28,
                 baselineSearchFit: 18,
                 categoryFits: [.art: 48, .jewelry: 44, .home: 42, .clothing: 40]
             )
@@ -339,6 +629,11 @@ extension Marketplace {
                 searchFocus: "Good for antiques and fine art with era, maker, material, provenance, and condition.",
                 photoGuidance: "Show maker marks, signatures, materials, scale, condition, and any restoration.",
                 featuredGuidance: "Use shop placement only after provenance and condition are complete.",
+                listingEffortScore: 44,
+                buyerTrustScore: 76,
+                localPickupScore: 8,
+                shippingEaseScore: 58,
+                speedScore: 42,
                 baselineSearchFit: 18,
                 categoryFits: [.art: 94, .jewelry: 90, .collectibles: 86, .home: 78, .books: 58]
             )
@@ -349,6 +644,11 @@ extension Marketplace {
                 searchFocus: "Good for trading cards with the card name, set, number, variant, and condition.",
                 photoGuidance: "Show front/back, corners, surface, centering, and any grading slab.",
                 featuredGuidance: "Match the catalog item and set a fair price before paying for placement.",
+                listingEffortScore: 68,
+                buyerTrustScore: 78,
+                localPickupScore: 4,
+                shippingEaseScore: 88,
+                speedScore: 62,
                 baselineSearchFit: 10,
                 categoryFits: [.collectibles: 90],
                 preferredConditions: [.new, .likeNew, .good, .fair],
