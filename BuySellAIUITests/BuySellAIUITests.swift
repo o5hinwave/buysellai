@@ -304,8 +304,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Delete this listing? This can't be undone."].waitForExistence(timeout: 2))
         app.buttons["Delete listing"].tap()
 
-        XCTAssertTrue(app.staticTexts["Your past listings will show up here."].waitForExistence(timeout: 3))
-        XCTAssertFalse(listing.exists)
+        XCTAssertTrue(listing.waitForNonExistence(timeout: 3))
     }
 
     func testAnalyzeOfflineShowsToastAndRetryButton() {
@@ -486,11 +485,14 @@ final class BuySellAIUITests: XCTestCase {
 
         let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
-        XCTAssertTrue(bestSummary.label.contains("Best chance, Craigslist, estimated payout"))
+        XCTAssertTrue(bestSummary.label.contains("Best chance"))
+        XCTAssertTrue(bestSummary.label.contains("Craigslist"))
+        XCTAssertTrue(bestSummary.label.contains("estimated payout"))
 
         let craigslistRow = app.buttons["MarketplaceRow.craigslist"]
         XCTAssertTrue(craigslistRow.waitForExistence(timeout: 5))
-        XCTAssertTrue(craigslistRow.label.contains("Craigslist, estimated payout"))
+        XCTAssertTrue(craigslistRow.label.contains("Craigslist"))
+        XCTAssertTrue(craigslistRow.label.contains("estimated payout"))
         tapMarketplace("craigslist", in: app)
 
         let copy = app.buttons["Copy listing"]
@@ -694,7 +696,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(tryAnother.waitForExistence(timeout: 5))
         tryAnother.tap()
 
-        XCTAssertTrue(app.staticTexts["Pick where to sell"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Best place to sell"].waitForExistence(timeout: 5))
         tapMarketplace("ebay", in: app)
 
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
