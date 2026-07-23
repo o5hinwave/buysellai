@@ -107,7 +107,7 @@ serve(async (request) => {
     );
 
     const draft = requireStructuredListingDraft(result, item, platform, profile);
-    const listing = formatListingDraft(draft, platform);
+    const listing = formatListingDraft(draft);
     requireCleanListing(listing, profile.titleMaxCharacters);
     await saveMarketplaceResearchCache(researchPlan, result);
     return jsonResponse({ listing, draft });
@@ -727,27 +727,13 @@ function requireStructuredListingDraft(
   };
 }
 
-function formatListingDraft(draft: StructuredListingDraft, platform: MarketplaceId): string {
-  const detailLines = [
-    `List at: ${formatUsd(draft.listPrice)}`,
-    `Likely sells for: ${formatUsd(draft.likelySalePrice)}`,
-    `Take-home estimate: ${formatUsd(draft.takeHomeEstimate)}`,
-    `Main photo: ${draft.firstPhoto}`,
-    draft.missingPhotoPrompt ? `Photo to add: ${draft.missingPhotoPrompt}` : null,
-    `Why ${marketplaceDisplayNames[platform]}: ${draft.fitReason}`,
-    draft.itemSpecifics.length > 0 ? `Details to include: ${draft.itemSpecifics.join(", ")}` : null,
-    draft.tags.length > 0 ? `Tags: ${draft.tags.join(", ")}` : null,
-    draft.postingNotes.length > 0 ? `Posting note: ${draft.postingNotes.join(" ")}` : null,
-  ].filter((line): line is string => line !== null);
-
+function formatListingDraft(draft: StructuredListingDraft): string {
   return [
     "TITLE:",
     draft.title,
     "",
     "DESCRIPTION:",
     draft.description,
-    "",
-    ...detailLines,
   ].join("\n");
 }
 
@@ -791,11 +777,6 @@ function positiveNumberOrFallback(value: unknown, fallback: number): number {
     return Math.round(number * 100) / 100;
   }
   return Math.round(Math.max(fallback, 1) * 100) / 100;
-}
-
-function formatUsd(value: number): string {
-  const rounded = Math.round(value * 100) / 100;
-  return `$${rounded.toFixed(Number.isInteger(rounded) ? 0 : 2)}`;
 }
 
 type SupabaseServiceConfig = {

@@ -38,6 +38,17 @@ require_source_contains() {
     fi
 }
 
+require_source_not_contains() {
+    local file="$1"
+    local forbidden="$2"
+    local label="$3"
+
+    if grep -Fq "$forbidden" "$file"; then
+        printf 'error: %s still contains %s\n' "$file" "$label" >&2
+        exit 1
+    fi
+}
+
 require_source_contains \
     "supabase/functions/_shared/gemini.ts" \
     "attachGroundingMetadata" \
@@ -82,6 +93,14 @@ require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "return jsonResponse({ listing, draft })" \
     "structured draft response"
+require_source_not_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "List at:" \
+    "copyable listing price-plan rows"
+require_source_not_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "Main photo:" \
+    "copyable listing photo guidance rows"
 
 printf 'Supabase function Deno check passed\n'
 printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'

@@ -100,9 +100,11 @@ actor APIClient {
             body: payload
         )
         let response = try await perform(request, decoding: GenerateListingResponse.self)
+        let draft = response.draft?.sanitizedForDisplay()
+        let listing = draft?.copyableListingText ?? response.listing
         return GeneratedListing(
-            listing: try ListingTextContract.validatedGenerated(response.listing),
-            draft: response.draft?.sanitizedForDisplay()
+            listing: try ListingTextContract.validatedGenerated(listing),
+            draft: draft
         )
     }
 
