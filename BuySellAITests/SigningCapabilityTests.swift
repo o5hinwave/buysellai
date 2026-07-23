@@ -41,8 +41,8 @@ final class SigningCapabilityTests: XCTestCase {
 
         XCTAssertEqual(teamIDs, ["ZVFG6KC7KA"])
         XCTAssertNotNil(readme.range(of: "Apple Developer account state: team `RHODES MCALLEN COONS COONS` (`ZVFG6KC7KA`) is selected in the Xcode project for Bundle ID `com.despia.buysellai`"))
-        XCTAssertNotNil(readme.range(of: "Sign in with Apple is still pending in Apple Developer because the App ID capability is not enabled, no Services ID exists, and no Sign in with Apple key has been created"))
-        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, App Store Connect legal/account-owner confirmation, backend smoke preflight, and Instruments pass are blocked until Apple portal Sign in with Apple setup, App Store Connect API-key credentials, confirmed account-owner/product-page metadata, deployed real Supabase config/functions, and trusted physical hardware are available"))
+        XCTAssertNotNil(readme.range(of: "The Apple Developer portal has Sign in with Apple enabled for the primary App ID and Services ID `com.despia.buysellai.signin` configured for domain `czuoebqjajupghivqkch.supabase.co`"))
+        XCTAssertNotNil(readme.range(of: "A signed archive, App Store Connect IPA export, App Store Connect validation, App Store Connect legal/account-owner confirmation, Supabase secret deployment evidence, and Instruments pass are blocked until App Store Connect API-key credentials, confirmed account-owner/product-page metadata, the Apple `.p8` download plus Supabase Auth provider secrets, and trusted physical hardware are available"))
         XCTAssertNotNil(readme.range(of: "real-device acceptance pass remains blocked until the acceptance evidence table is recorded"))
     }
 
