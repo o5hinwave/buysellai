@@ -11,7 +11,7 @@ struct MarketplacePickerSheet: View {
             List {
                 if let estimates = computedEstimates, estimates.isEmpty == false {
                     Section("Top picks".localized) {
-                        summaryActions(estimates: Array(estimates.prefix(3)))
+                        summaryActions(picks: MarketplaceSummaryPlanner.picks(from: estimates))
                     }
                     .accessibilitySortPriority(3)
                 }
@@ -61,26 +61,15 @@ struct MarketplacePickerSheet: View {
         }
     }
 
-    private func summaryActions(estimates: [MarketplaceEstimate]) -> some View {
-        ForEach(Array(estimates.enumerated()), id: \.element.id) { index, estimate in
-            summaryButton(label: summaryLabel(for: index), estimate: estimate)
+    private func summaryActions(picks: [MarketplaceSummaryPick]) -> some View {
+        ForEach(picks) { pick in
+            summaryButton(pick: pick)
         }
     }
 
-    private func summaryButton(label: String, estimate: MarketplaceEstimate) -> some View {
-        SummaryButton(label: label, estimate: estimate, item: context.item) {
-            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: estimate.id)
-        }
-    }
-
-    private func summaryLabel(for index: Int) -> String {
-        switch index {
-        case 0:
-            "Best"
-        case 1:
-            "Second"
-        default:
-            "Third"
+    private func summaryButton(pick: MarketplaceSummaryPick) -> some View {
+        SummaryButton(pick: pick, item: context.item) {
+            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id)
         }
     }
 
@@ -121,8 +110,7 @@ struct MarketplacePickerSheet: View {
 }
 
 private struct SummaryButton: View {
-    let label: String
-    let estimate: MarketplaceEstimate
+    let pick: MarketplaceSummaryPick
     let item: DetectedItem
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -132,19 +120,19 @@ private struct SummaryButton: View {
             MarketplaceSelectionFeedback.perform(action)
         } label: {
             HStack(alignment: .center, spacing: Spacing.sm) {
-                MarketplaceIcon(marketplace: estimate.id, size: 34)
+                MarketplaceIcon(marketplace: pick.estimate.id, size: 34)
 
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text(label.localized)
+                    Text(pick.kind.label.localized)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(label == "Best" ? Color.brand.success : Color.brand.mutedForeground)
+                        .foregroundStyle(pick.kind == .bestChance ? Color.brand.success : Color.brand.mutedForeground)
                         .lineLimit(1)
-                    Text(estimate.id.displayName)
+                    Text(pick.estimate.id.displayName)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brand.foreground)
                         .lineLimit(summaryLineLimit)
                         .minimumScaleFactor(0.82)
-                    Text(estimate.id.recommendationReason(for: item))
+                    Text(pick.estimate.id.recommendationReason(for: item))
                         .font(.caption)
                         .foregroundStyle(Color.brand.mutedForeground)
                         .lineLimit(reasonLineLimit)
@@ -154,7 +142,7 @@ private struct SummaryButton: View {
                 Spacer(minLength: Spacing.sm)
 
                 VStack(alignment: .trailing, spacing: Spacing.xxs) {
-                    Text(estimate.payout.currency())
+                    Text(pick.estimate.payout.currency())
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Color.brand.foreground)
                         .monospacedDigit()
@@ -172,9 +160,9 @@ private struct SummaryButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(label, for: estimate, item: item))
-        .accessibilityIdentifier("MarketplaceSummary.\(label.lowercased()).\(estimate.id.rawValue)")
-        .accessibilitySortPriority(label == "Best" ? 2 : 1)
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))
+        .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
+        .accessibilitySortPriority(pick.kind == .bestChance ? 2 : 1)
     }
 
     private var summaryLineLimit: Int {

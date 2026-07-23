@@ -444,8 +444,8 @@ final class DesignAccessibilityTests: XCTestCase {
 
         let above = MarketplaceEstimate(id: .craigslist, payout: Decimal(45), deltaPct: 12.4, badge: .best)
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best", for: above),
-            "Best, Craigslist, estimated payout 45 dollars, 12 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best chance", for: above),
+            "Best chance, Craigslist, estimated payout 45 dollars, 12 percent above average"
         )
 
         let average = MarketplaceEstimate(id: .facebook, payout: Decimal(43), deltaPct: 0.2, badge: .none)
@@ -946,10 +946,10 @@ final class DesignAccessibilityTests: XCTestCase {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
         XCTAssertNotNil(marketplace.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
-        XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(estimates: [MarketplaceEstimate]) -> some View"#))
-        XCTAssertNotNil(marketplace.range(of: #"ForEach(Array(estimates.enumerated()), id: \.element.id)"#))
+        XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(picks: [MarketplaceSummaryPick]) -> some View"#))
+        XCTAssertNotNil(marketplace.range(of: #"summaryActions(picks: MarketplaceSummaryPlanner.picks(from: estimates))"#))
         XCTAssertNotNil(marketplace.range(of: #"HStack(alignment: .center, spacing: Spacing.sm)"#))
-        XCTAssertNotNil(marketplace.range(of: #"summaryButton(label: summaryLabel(for: index), estimate: estimate)"#))
+        XCTAssertNotNil(marketplace.range(of: #"summaryButton(pick: pick)"#))
         XCTAssertNotNil(marketplace.range(of: #"Image(systemName: "chevron.right")"#))
         XCTAssertNotNil(marketplace.range(of: #".buttonStyle(PressButtonStyle())"#))
         XCTAssertNil(marketplace.range(of: #"VStack(spacing: Spacing.sm)"#))
@@ -957,7 +957,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(marketplace.range(of: #".buttonBorderShape(.capsule)"#))
         XCTAssertNil(marketplace.range(of: #".controlSize(.large)"#))
         XCTAssertNotNil(marketplace.range(of: #".monospacedDigit()"#))
-        XCTAssertNil(marketplace.range(of: #".tint(label == "Best" ? Color.brand.success : Color.brand.primary)"#))
+        let obsoleteBestConditional = #"label == ""# + "Best" + #"""#
+        XCTAssertNil(marketplace.range(of: obsoleteBestConditional))
         XCTAssertNil(marketplace.range(of: #".brandFont("#))
         XCTAssertNotNil(marketplace.range(of: #".font(.caption.weight(.semibold))"#))
         XCTAssertNotNil(marketplace.range(of: #".font(.body.weight(.semibold))"#))

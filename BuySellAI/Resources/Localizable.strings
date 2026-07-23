@@ -54,6 +54,8 @@
 	<string>Bags</string>
 	<key>Best</key>
 	<string>Best</string>
+	<key>Best chance</key>
+	<string>Best chance</string>
 	<key>Bonanza</key>
 	<string>Bonanza</string>
 	<key>Books</key>
@@ -222,6 +224,8 @@
 	<string>Generated listing text</string>
 	<key>Get started</key>
 	<string>Get started</string>
+	<key>Good fit</key>
+	<string>Good fit</string>
 	<key>Good</key>
 	<string>Good</string>
 	<key>Grailed</key>
@@ -286,6 +290,8 @@
 	<string>Menswear, streetwear, designer</string>
 	<key>Mercari</key>
 	<string>Mercari</string>
+	<key>Most money back</key>
+	<string>Most money back</string>
 	<key>Music</key>
 	<string>Music</string>
 	<key>Music gear</key>

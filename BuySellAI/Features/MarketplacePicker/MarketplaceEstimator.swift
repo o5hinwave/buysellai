@@ -1,5 +1,27 @@
 import Foundation
 
+struct MarketplaceRecommendationComponents: Sendable, Hashable {
+    let saleLikelihood: Double
+    let netPayout: Double
+    let listingEffort: Double
+    let shippingFit: Double
+    let localPickupFit: Double
+    let buyerTrust: Double
+    let speed: Double
+    let itemFactQuality: Double
+
+    var total: Double {
+        saleLikelihood * 0.52
+            + netPayout * 0.18
+            + listingEffort * 0.07
+            + shippingFit * 0.08
+            + localPickupFit * 0.05
+            + buyerTrust * 0.04
+            + speed * 0.04
+            + itemFactQuality * 0.02
+    }
+}
+
 enum MarketplaceEstimator {
     static func estimates(for base: Decimal) -> [MarketplaceEstimate] {
         sortedPayoutEstimates(for: base)
@@ -19,10 +41,13 @@ enum MarketplaceEstimator {
             .map { estimate -> (MarketplaceEstimate, Double) in
                 var copy = estimate
                 copy.badge = .none
-                let payoutScore = ((estimate.payout.doubleValue - lowestPayout.doubleValue) / payoutRange) * 100
-                let searchScore = Double(estimate.id.searchFitScore(for: item))
-                let recommendationScore = searchScore * 0.68 + payoutScore * 0.32
-                return (copy, recommendationScore)
+                let components = recommendationComponents(
+                    for: item,
+                    estimate: estimate,
+                    lowestPayout: lowestPayout,
+                    payoutRange: payoutRange
+                )
+                return (copy, components.total)
             }
             .sorted { lhs, rhs in
                 if lhs.1 != rhs.1 {
@@ -49,6 +74,25 @@ enum MarketplaceEstimator {
             }
             return copy
         }
+    }
+
+    static func recommendationComponents(
+        for item: DetectedItem,
+        estimate: MarketplaceEstimate,
+        lowestPayout: Decimal,
+        payoutRange: Double
+    ) -> MarketplaceRecommendationComponents {
+        let profile = estimate.id.optimizationProfile
+        return MarketplaceRecommendationComponents(
+            saleLikelihood: Double(estimate.id.searchFitScore(for: item)),
+            netPayout: ((estimate.payout.doubleValue - lowestPayout.doubleValue) / max(payoutRange, 1)) * 100,
+            listingEffort: Double(profile.listingEffort(for: item)),
+            shippingFit: Double(profile.shippingFit(for: item)),
+            localPickupFit: Double(profile.localPickupFit(for: item)),
+            buyerTrust: Double(profile.buyerTrust(for: item)),
+            speed: Double(profile.speedScore),
+            itemFactQuality: Double(item.marketplaceFactQualityScore)
+        )
     }
 
     private static func sortedPayoutEstimates(for base: Decimal) -> [MarketplaceEstimate] {
@@ -86,5 +130,77 @@ enum MarketplaceEstimator {
             }
             return copy
         }
+    }
+}
+
+enum MarketplaceSummaryKind: String, Sendable, Hashable {
+    case bestChance
+    case mostMoneyBack
+    case goodFit
+    case second
+    case third
+
+    var label: String {
+        switch self {
+        case .bestChance:
+            "Best chance"
+        case .mostMoneyBack:
+            "Most money back"
+        case .goodFit:
+            "Good fit"
+        case .second:
+            "Second"
+        case .third:
+            "Third"
+        }
+    }
+}
+
+struct MarketplaceSummaryPick: Identifiable, Sendable, Hashable {
+    let kind: MarketplaceSummaryKind
+    let estimate: MarketplaceEstimate
+
+    var id: String {
+        "\(kind.rawValue).\(estimate.id.rawValue)"
+    }
+}
+
+enum MarketplaceSummaryPlanner {
+    static func picks(from estimates: [MarketplaceEstimate]) -> [MarketplaceSummaryPick] {
+        guard let bestChance = estimates.first else {
+            return []
+        }
+
+        let mostMoneyBack = estimates.max { lhs, rhs in
+            if lhs.payout != rhs.payout {
+                return lhs.payout < rhs.payout
+            }
+            return catalogIndex(lhs.id) > catalogIndex(rhs.id)
+        }
+
+        var picks = [MarketplaceSummaryPick(kind: .bestChance, estimate: bestChance)]
+        if let mostMoneyBack, mostMoneyBack.id != bestChance.id {
+            picks.append(MarketplaceSummaryPick(kind: .mostMoneyBack, estimate: mostMoneyBack))
+        }
+
+        for estimate in estimates where picks.contains(where: { $0.estimate.id == estimate.id }) == false {
+            let kind: MarketplaceSummaryKind
+            if picks.contains(where: { $0.kind == .mostMoneyBack }) {
+                kind = .goodFit
+            } else {
+                kind = picks.count == 1 ? .second : .third
+            }
+            picks.append(MarketplaceSummaryPick(kind: kind, estimate: estimate))
+
+            if picks.count == 3 {
+                break
+            }
+        }
+
+        return picks
+    }
+
+    private static func catalogIndex(_ marketplace: Marketplace) -> Int {
+        Marketplace.allCases.firstIndex(of: marketplace) ?? Int.max
     }
 }
