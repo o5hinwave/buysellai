@@ -334,7 +334,7 @@ The combined gate also requires the App Store metadata log's `screenshot brand s
 
 The combined gate checks a retained unit test suite result bundle; the current refreshed evidence path is `/tmp/buysell-full-unit-tests.xcresult` with `480` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
 
-Until the latest-design SDK, signed archive, App Store metadata/submission, backend, real-device, and manual evidence gates are complete, record the known blockers:
+Until the latest-design SDK, signed archive, App Store metadata/submission, Supabase secret-deployment, real-device, and manual evidence gates are complete, record the known blockers:
 
 ```sh
 ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
@@ -343,9 +343,9 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 ## Submit-Ready Gates
 
 - [x] Configure the real Apple development team for the app target: `RHODES MCALLEN COONS COONS` / `ZVFG6KC7KA`.
-- [ ] Enable Sign in with Apple for App ID `com.despia.buysellai`.
-- [ ] Register Services ID `com.despia.buysellai.signin` with callback `https://czuoebqjajupghivqkch.supabase.co/auth/v1/callback`.
-- [ ] Create a Sign in with Apple key, download the `.p8`, and configure Supabase Auth plus Edge Function server-side Apple secrets.
+- [x] Enable Sign in with Apple for App ID `com.despia.buysellai`.
+- [x] Register Services ID `com.despia.buysellai.signin` with callback `https://czuoebqjajupghivqkch.supabase.co/auth/v1/callback`.
+- [ ] Secure the `DHYVMQK789` Sign in with Apple `.p8`, configure Supabase Auth, and set Edge Function server-side Apple secrets.
 - [ ] Produce a signed Release archive with automatic signing enabled.
 - [ ] Export an App Store Connect IPA with automatic signing enabled.
 - [ ] Validate the signed archive in Xcode Organizer.
@@ -353,7 +353,7 @@ ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.m
 - [x] Materialize the file-provider-backed workspace so Git, source reads, screenshot inspection, and release verifiers are locally trustworthy.
 - [ ] Complete App Store Connect metadata, screenshots, public privacy/support/accessibility URLs, app privacy answers, Accessibility Nutrition Labels, age rating, DSA status, and legal owner fields.
 - [x] Run the Apple Today feature nomination verifier and retain `/tmp/buysell-submit-readiness-today-feature.log`.
-- [ ] Run the M10 backend smoke preflight against the production Supabase project.
+- [x] Run the M10 backend smoke preflight against the production Supabase project.
 - [ ] Confirm Sign in with Apple entitlement is present in the signed archive.
 - [x] Confirm App Store privacy manifest validation passes.
 - [ ] Run the M10 latest-design SDK verifier with Xcode/iPhoneOS SDK 27+ by default.
