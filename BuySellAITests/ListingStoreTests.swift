@@ -14,8 +14,8 @@ final class ListingStoreTests: XCTestCase {
 
     func testStaleGeneratedListingDoesNotOverrideLatestRegeneration() async {
         var attempts = 0
-        var firstContinuation: CheckedContinuation<String, Error>?
-        var secondContinuation: CheckedContinuation<String, Error>?
+        var firstContinuation: CheckedContinuation<GeneratedListing, Error>?
+        var secondContinuation: CheckedContinuation<GeneratedListing, Error>?
         let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
@@ -37,10 +37,10 @@ final class ListingStoreTests: XCTestCase {
         let secondTask = Task { await store.generate(accessToken: nil) }
         await waitUntil { secondContinuation != nil }
 
-        secondContinuation?.resume(returning: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
+        secondContinuation?.resume(returning: GeneratedListing(listing: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post."))
         await secondTask.value
 
-        firstContinuation?.resume(returning: "TITLE:\nOld listing\n\nDESCRIPTION:\nOutdated copy.")
+        firstContinuation?.resume(returning: GeneratedListing(listing: "TITLE:\nOld listing\n\nDESCRIPTION:\nOutdated copy."))
         await firstTask.value
 
         XCTAssertEqual(store.phase, .success)
@@ -49,8 +49,8 @@ final class ListingStoreTests: XCTestCase {
 
     func testStaleGenerateFailureDoesNotOverrideLatestSuccess() async {
         var attempts = 0
-        var firstContinuation: CheckedContinuation<String, Error>?
-        var secondContinuation: CheckedContinuation<String, Error>?
+        var firstContinuation: CheckedContinuation<GeneratedListing, Error>?
+        var secondContinuation: CheckedContinuation<GeneratedListing, Error>?
         let store = ListingStore(
             item: lamp,
             marketplace: .ebay,
@@ -72,7 +72,7 @@ final class ListingStoreTests: XCTestCase {
         let secondTask = Task { await store.generate(accessToken: nil) }
         await waitUntil { secondContinuation != nil }
 
-        secondContinuation?.resume(returning: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
+        secondContinuation?.resume(returning: GeneratedListing(listing: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post."))
         await secondTask.value
 
         firstContinuation?.resume(throwing: APIError.timeout)
@@ -140,7 +140,7 @@ final class ListingStoreTests: XCTestCase {
             marketplace: .ebay,
             existingListingText: nil,
             generateHandler: { _, _, _ in
-                "  \nTITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.\n  "
+                GeneratedListing(listing: "  \nTITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.\n  ")
             }
         )
 
@@ -148,6 +148,38 @@ final class ListingStoreTests: XCTestCase {
 
         XCTAssertEqual(store.phase, .success)
         XCTAssertEqual(store.listingText, "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
+    }
+
+    func testValidatedGeneratedListingStoresStructuredDraft() async {
+        let draft = GeneratedListingDraft(
+            title: "Fresh listing",
+            description: "Ready to post.",
+            listPrice: Decimal(45),
+            likelySalePrice: Decimal(40),
+            takeHomeEstimate: Decimal(35),
+            firstPhoto: "Show the full lamp.",
+            missingPhotoPrompt: nil,
+            fitReason: "Good broad-audience fit.",
+            postingNotes: ["Keep pickup details clear."],
+            itemSpecifics: ["Brass", "Table lamp"],
+            tags: ["lamp"]
+        )
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _ in
+                GeneratedListing(
+                    listing: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.",
+                    draft: draft
+                )
+            }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.draft, draft)
     }
 
     func testExistingListingReturnsTrimmedCopyWhenReopened() {
@@ -175,7 +207,7 @@ final class ListingStoreTests: XCTestCase {
                 item: lamp,
                 marketplace: .ebay,
                 existingListingText: nil,
-                generateHandler: { _, _, _ in unsafeText }
+                generateHandler: { _, _, _ in GeneratedListing(listing: unsafeText) }
             )
 
             await store.generate(accessToken: nil)
@@ -206,7 +238,7 @@ final class ListingStoreTests: XCTestCase {
                 item: lamp,
                 marketplace: .ebay,
                 existingListingText: nil,
-                generateHandler: { _, _, _ in unsafeText }
+                generateHandler: { _, _, _ in GeneratedListing(listing: unsafeText) }
             )
 
             await store.generate(accessToken: nil)

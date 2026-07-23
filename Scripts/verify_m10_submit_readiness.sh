@@ -690,6 +690,7 @@ require_file_contains "$supabase_function_log" "Supabase function Deno check pas
 require_file_contains "$supabase_function_log" "functions: analyze-image generate-listing store-apple-token delete-account" "Supabase function type-check log"
 require_file_contains "$supabase_function_log" "listing research tools: google_search url_context gated-by-cache" "Supabase function type-check log"
 require_file_contains "$supabase_function_log" "listing research cache: Gemini grounding saved" "Supabase function type-check log"
+require_file_contains "$supabase_function_log" "listing draft: structured fields formatted deterministically" "Supabase function type-check log"
 require_same_marker_value "$supabase_deploy_log" "project:" "Supabase deploy log" "$backend_log" "project:" "backend preflight log" "backend project"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive" "$signed_log" "archive:" "signed archive preflight log" "signed archive metadata"
 require_metadata_references_marker_value "$acceptance_file" "Signed archive validation" "$signed_log" "archive:" "signed archive preflight log" "signed archive validation metadata"

@@ -201,6 +201,89 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     }
 }
 
+struct GeneratedListing: Sendable, Equatable {
+    let listing: String
+    let draft: GeneratedListingDraft?
+
+    init(listing: String, draft: GeneratedListingDraft? = nil) {
+        self.listing = listing
+        self.draft = draft
+    }
+}
+
+struct GeneratedListingDraft: Codable, Sendable, Equatable {
+    var title: String?
+    var description: String?
+    var listPrice: Decimal?
+    var likelySalePrice: Decimal?
+    var takeHomeEstimate: Decimal?
+    var firstPhoto: String?
+    var missingPhotoPrompt: String?
+    var fitReason: String?
+    var postingNotes: [String]?
+    var itemSpecifics: [String]?
+    var tags: [String]?
+
+    func sanitizedForDisplay() -> GeneratedListingDraft? {
+        let sanitized = GeneratedListingDraft(
+            title: clean(title, maxLength: 120),
+            description: clean(description, maxLength: 1_500),
+            listPrice: positive(listPrice),
+            likelySalePrice: positive(likelySalePrice),
+            takeHomeEstimate: positive(takeHomeEstimate),
+            firstPhoto: clean(firstPhoto, maxLength: 180),
+            missingPhotoPrompt: clean(missingPhotoPrompt, maxLength: 140),
+            fitReason: clean(fitReason, maxLength: 220),
+            postingNotes: cleanList(postingNotes, maxItems: 3, maxLength: 160),
+            itemSpecifics: cleanList(itemSpecifics, maxItems: 6, maxLength: 80),
+            tags: cleanList(tags, maxItems: 8, maxLength: 40)
+        )
+
+        if sanitized.title == nil,
+           sanitized.description == nil,
+           sanitized.listPrice == nil,
+           sanitized.likelySalePrice == nil,
+           sanitized.takeHomeEstimate == nil,
+           sanitized.firstPhoto == nil,
+           sanitized.missingPhotoPrompt == nil,
+           sanitized.fitReason == nil,
+           sanitized.postingNotes?.isEmpty ?? true,
+           sanitized.itemSpecifics?.isEmpty ?? true,
+           sanitized.tags?.isEmpty ?? true {
+            return nil
+        }
+
+        return sanitized
+    }
+
+    private func clean(_ value: String?, maxLength: Int) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false,
+              trimmed.contains("```") == false,
+              trimmed.range(of: #"^(TITLE|DESCRIPTION)\s*:"#, options: [.regularExpression, .caseInsensitive]) == nil
+        else {
+            return nil
+        }
+        return String(trimmed.prefix(maxLength))
+    }
+
+    private func cleanList(_ values: [String]?, maxItems: Int, maxLength: Int) -> [String]? {
+        let cleaned = (values ?? [])
+            .compactMap { clean($0, maxLength: maxLength) }
+            .reduce(into: [String]()) { result, value in
+                guard result.contains(value) == false, result.count < maxItems else { return }
+                result.append(value)
+            }
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
+    private func positive(_ value: Decimal?) -> Decimal? {
+        guard let value, value > 0 else { return nil }
+        return value.rounded(scale: 2)
+    }
+}
+
 enum ListingTextContract {
     static func validatedGenerated(_ text: String) throws -> String {
         try validated(text, requiresSections: true)

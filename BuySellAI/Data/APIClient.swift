@@ -56,6 +56,14 @@ actor APIClient {
     }
 
     func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
+        try await generateListingPayload(
+            item: item,
+            marketplace: marketplace,
+            accessToken: accessToken
+        ).listing
+    }
+
+    func generateListingPayload(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> GeneratedListing {
         if LaunchArguments.contains(LaunchArguments.uiTestingGenerateOffline) {
             throw APIError.offline
         }
@@ -70,7 +78,9 @@ actor APIClient {
 #if DEBUG
         if isUITesting {
             try await Task.sleep(nanoseconds: 250_000_000)
-            return ListingFixtureText.sample(for: item, marketplace: marketplace, currencyCode: displayCurrencyCode)
+            return GeneratedListing(
+                listing: ListingFixtureText.sample(for: item, marketplace: marketplace, currencyCode: displayCurrencyCode)
+            )
         }
 #endif
 
@@ -90,7 +100,10 @@ actor APIClient {
             body: payload
         )
         let response = try await perform(request, decoding: GenerateListingResponse.self)
-        return try ListingTextContract.validatedGenerated(response.listing)
+        return GeneratedListing(
+            listing: try ListingTextContract.validatedGenerated(response.listing),
+            draft: response.draft?.sanitizedForDisplay()
+        )
     }
 
     private func loadConfig() throws -> AppConfig {
@@ -294,6 +307,7 @@ private struct ListingItemPayload: Encodable {
 
 private struct GenerateListingResponse: Decodable {
     let listing: String
+    let draft: GeneratedListingDraft?
 }
 
 private extension JSONEncoder {

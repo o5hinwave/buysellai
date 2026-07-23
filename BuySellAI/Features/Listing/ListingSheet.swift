@@ -97,6 +97,23 @@ struct ListingSheet: View {
                 loading
             }
         case .success:
+            Section("Price plan".localized) {
+                listingPriceRow(
+                    title: "List at",
+                    value: pricePlan.listAt,
+                    detail: "Start here"
+                )
+                listingPriceRow(
+                    title: "Likely sells for",
+                    value: pricePlan.likelySellsFor,
+                    detail: "Expected sale"
+                )
+                listingPriceRow(
+                    title: "Take-home estimate",
+                    value: pricePlan.takeHomeEstimate,
+                    detail: "What you may keep"
+                )
+            }
             Section("Generated listing text".localized) {
                 listingText
             }
@@ -104,12 +121,19 @@ struct ListingSheet: View {
                 marketplaceTipRow(
                     title: "Main photo",
                     systemImage: "photo",
-                    detail: context.marketplace.optimizationProfile.photoGuidance
+                    detail: store.draft?.firstPhoto ?? context.marketplace.optimizationProfile.photoGuidance
                 )
+                if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
+                    marketplaceTipRow(
+                        title: "Photo to add",
+                        systemImage: "plus.viewfinder",
+                        detail: missingPhotoPrompt
+                    )
+                }
                 marketplaceTipRow(
                     title: "What helps here",
                     systemImage: "sparkles",
-                    detail: context.marketplace.optimizationProfile.featuredGuidance
+                    detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
                 )
             }
         case .failed(let message):
@@ -149,6 +173,27 @@ struct ListingSheet: View {
             .accessibilityLabel("Generated listing text".localized)
             .accessibilityValue(store.listingText)
             .accessibilitySortPriority(3)
+    }
+
+    private func listingPriceRow(title: String, value: Decimal, detail: String) -> some View {
+        LabeledContent {
+            VStack(alignment: .trailing, spacing: Spacing.xxs) {
+                Text(value.currency(code: context.item.currencyCode))
+                    .font(.body.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.brand.foreground)
+                Text(detail.localized)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+            }
+        } label: {
+            Text(title.localized)
+                .font(.body)
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .padding(.vertical, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, value.currency(code: context.item.currencyCode)))
     }
 
     private func marketplaceTipRow(title: String, systemImage: String, detail: String) -> some View {
@@ -344,6 +389,10 @@ struct ListingSheet: View {
         (try? ListingTextContract.validatedGenerated(store.listingText)) ?? ""
     }
 
+    private var pricePlan: ListingPricePlan {
+        ListingPricePlan(item: context.item, marketplace: context.marketplace, draft: store.draft)
+    }
+
     private var sheetContentMaxWidth: CGFloat {
         usesRegularWidthLayout ? 820 : .infinity
     }
@@ -380,5 +429,26 @@ struct ListingSheet: View {
     private func cancelGenerationTask() {
         generationTask?.cancel()
         generationTask = nil
+    }
+}
+
+private struct ListingPricePlan {
+    let listAt: Decimal
+    let likelySellsFor: Decimal
+    let takeHomeEstimate: Decimal
+
+    private static let likelySaleMultiplier = Decimal(9) / Decimal(10)
+
+    init(item: DetectedItem, marketplace: Marketplace, draft: GeneratedListingDraft?) {
+        let localTakeHomeEstimate = MarketplaceEstimator.estimates(for: item.priceEstimate)
+            .first { $0.id == marketplace }?
+            .payout ?? item.priceEstimate * marketplace.feeMultiplier - marketplace.fixedDeduction
+
+        listAt = max((draft?.listPrice ?? item.priceEstimate).rounded(scale: 0), Decimal(1))
+        likelySellsFor = max(
+            (draft?.likelySalePrice ?? item.priceEstimate * Self.likelySaleMultiplier).rounded(scale: 0),
+            Decimal(1)
+        )
+        takeHomeEstimate = max((draft?.takeHomeEstimate ?? localTakeHomeEstimate).rounded(scale: 0), Decimal(1))
     }
 }

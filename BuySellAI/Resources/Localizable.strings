@@ -194,6 +194,8 @@
 	<string>Etsy</string>
 	<key>Easy shipping for everyday items</key>
 	<string>Easy shipping for everyday items</string>
+	<key>Expected sale</key>
+	<string>Expected sale</string>
 	<key>Expanded</key>
 	<string>Expanded</string>
 	<key>Facebook</key>
@@ -262,12 +264,16 @@
 	<string>Light</string>
 	<key>Like New</key>
 	<string>Like New</string>
+	<key>Likely sells for</key>
+	<string>Likely sells for</string>
 	<key>Listing draft</key>
 	<string>Listing draft</string>
 	<key>Listing for %@</key>
 	<string>Listing for %@</string>
 	<key>Listing</key>
 	<string>Listing</string>
+	<key>List at</key>
+	<string>List at</string>
 	<key>Live-stream selling</key>
 	<string>Live-stream selling</string>
 	<key>Local pickup, mobile-first</key>
@@ -332,6 +338,8 @@
 	<string>Photo couldn't be imported.</string>
 	<key>Photo couldn't be captured.</key>
 	<string>Photo couldn't be captured.</string>
+	<key>Photo to add</key>
+	<string>Photo to add</string>
 	<key>Pick where to sell</key>
 	<string>Pick where to sell</string>
 	<key>Pick where to sell.</key>
@@ -344,6 +352,8 @@
 	<string>Poshmark</string>
 	<key>Price</key>
 	<string>Price</string>
+	<key>Price plan</key>
+	<string>Price plan</string>
 	<key>Privacy policy</key>
 	<string>Privacy policy</string>
 	<key>Quick tips</key>
@@ -424,6 +434,8 @@
 	<string>Starting camera…</string>
 	<key>Start selling</key>
 	<string>Start selling</string>
+	<key>Start here</key>
+	<string>Start here</string>
 	<key>Step %d</key>
 	<string>Step %d</string>
 	<key>Step %d of %d</key>
@@ -440,6 +452,8 @@
 	<string>System</string>
 	<key>TCGplayer</key>
 	<string>TCGplayer</string>
+	<key>Take-home estimate</key>
+	<string>Take-home estimate</string>
 	<key>Take photo</key>
 	<string>Take photo</string>
 	<key>Take a clear photo</key>
@@ -512,6 +526,8 @@
 	<string>We suggest the best place first.</string>
 	<key>What helps here</key>
 	<string>What helps here</string>
+	<key>What you may keep</key>
+	<string>What you may keep</string>
 	<key>Whatnot</key>
 	<string>Whatnot</string>
 	<key>Women's fashion (mobile)</key>

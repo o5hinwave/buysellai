@@ -53,7 +53,26 @@ serve(async (request) => {
       {
         type: "OBJECT",
         properties: {
-          listing: { type: "STRING" },
+          title: { type: "STRING" },
+          description: { type: "STRING" },
+          listPrice: { type: "NUMBER", minimum: 1 },
+          likelySalePrice: { type: "NUMBER", minimum: 1 },
+          takeHomeEstimate: { type: "NUMBER", minimum: 1 },
+          firstPhoto: { type: "STRING" },
+          missingPhotoPrompt: { type: "STRING" },
+          fitReason: { type: "STRING" },
+          postingNotes: {
+            type: "ARRAY",
+            items: { type: "STRING" },
+          },
+          itemSpecifics: {
+            type: "ARRAY",
+            items: { type: "STRING" },
+          },
+          tags: {
+            type: "ARRAY",
+            items: { type: "STRING" },
+          },
           researchSummary: { type: "STRING" },
           usefulFindings: {
             type: "ARRAY",
@@ -68,7 +87,15 @@ serve(async (request) => {
             items: { type: "STRING" },
           },
         },
-        required: ["listing"],
+        required: [
+          "title",
+          "description",
+          "listPrice",
+          "likelySalePrice",
+          "takeHomeEstimate",
+          "firstPhoto",
+          "fitReason",
+        ],
       },
       {
         tools: usesCachedResearch ? [] : [
@@ -79,9 +106,11 @@ serve(async (request) => {
       },
     );
 
-    const listing = requireCleanListing(result.listing, profile.titleMaxCharacters);
+    const draft = requireStructuredListingDraft(result, item, platform, profile);
+    const listing = formatListingDraft(draft, platform);
+    requireCleanListing(listing, profile.titleMaxCharacters);
     await saveMarketplaceResearchCache(researchPlan, result);
-    return jsonResponse({ listing });
+    return jsonResponse({ listing, draft });
   } catch (error) {
     if (error instanceof HttpError) {
       return errorResponse(error.message, error.status);
@@ -114,6 +143,20 @@ type ListingItem = {
   condition: string;
   originalPrice: number;
   currentPrice: number;
+};
+
+type StructuredListingDraft = {
+  title: string;
+  description: string;
+  listPrice: number;
+  likelySalePrice: number;
+  takeHomeEstimate: number;
+  firstPhoto: string;
+  missingPhotoPrompt: string | null;
+  fitReason: string;
+  postingNotes: string[];
+  itemSpecifics: string[];
+  tags: string[];
 };
 
 const knownMarketplaceIds = [
@@ -195,10 +238,11 @@ function listingSystemInstruction(
   return [
     "You write concise copy-paste resale listings for BuySell AI.",
     "Return one valid JSON object only, with no markdown fences.",
-    "The JSON object must include a string field named listing.",
-    "Do not return TITLE or DESCRIPTION as top-level JSON keys.",
-    "The listing value must preserve plain text newlines.",
-    "Use this exact section format: TITLE:\\n<title>\\n\\nDESCRIPTION:\\n<body>.",
+    "Return structured draft fields only; BuySell formats the final listing text.",
+    "Do not return a listing field, markdown, preambles, watermarks, or section headings.",
+    "Required fields: title, description, listPrice, likelySalePrice, takeHomeEstimate, firstPhoto, fitReason.",
+    "Optional fields: missingPhotoPrompt, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
+    "title must be body text only and description must be body text only.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
     usesCachedResearch
       ? "Use the saved marketplace research provided. Do not broaden beyond it."
@@ -208,7 +252,7 @@ function listingSystemInstruction(
     "Return usefulFindings, officialSources, and searchedFor only when the finding can help future listings.",
     `Keep TITLE at or below ${profile.titleMaxCharacters} characters.`,
     "Only use facts provided by the item name, category, condition, and price.",
-    "Do not add markdown, preambles, watermarks, tax language, or follow-up questions.",
+    "Do not add tax language or follow-up questions.",
     "Keep the tone warm, direct, and useful for a person selling one thing.",
   ].join(" ");
 }
@@ -650,6 +694,108 @@ function uniqueStrings(values: string[], maxItems: number): string[] {
     if (unique.length >= maxItems) break;
   }
   return unique;
+}
+
+function requireStructuredListingDraft(
+  result: Record<string, unknown>,
+  item: ListingItem,
+  platform: MarketplaceId,
+  profile: MarketplaceListingProfile,
+): StructuredListingDraft {
+  const title = cleanDraftText(result.title, "title", profile.titleMaxCharacters);
+  const description = cleanDraftText(result.description, "description", 1_500);
+  const listPrice = positiveNumberOrFallback(result.listPrice, item.currentPrice);
+  const likelySalePrice = positiveNumberOrFallback(result.likelySalePrice, Math.max(item.currentPrice * 0.9, 1));
+  const takeHomeEstimate = positiveNumberOrFallback(result.takeHomeEstimate, Math.max(likelySalePrice * 0.85, 1));
+  const firstPhoto = optionalCleanDraftText(result.firstPhoto, 180) ?? profile.photoGuidance;
+  const missingPhotoPrompt = optionalCleanDraftText(result.missingPhotoPrompt, 140);
+  const fitReason = optionalCleanDraftText(result.fitReason, 220) ??
+    `${marketplaceDisplayNames[platform]} fits this item when the details and photos are clear.`;
+
+  return {
+    title,
+    description,
+    listPrice,
+    likelySalePrice,
+    takeHomeEstimate,
+    firstPhoto,
+    missingPhotoPrompt,
+    fitReason,
+    postingNotes: cleanStringList(result.postingNotes, 3, 160),
+    itemSpecifics: cleanStringList(result.itemSpecifics, 6, 80),
+    tags: cleanStringList(result.tags, 8, 40),
+  };
+}
+
+function formatListingDraft(draft: StructuredListingDraft, platform: MarketplaceId): string {
+  const detailLines = [
+    `List at: ${formatUsd(draft.listPrice)}`,
+    `Likely sells for: ${formatUsd(draft.likelySalePrice)}`,
+    `Take-home estimate: ${formatUsd(draft.takeHomeEstimate)}`,
+    `Main photo: ${draft.firstPhoto}`,
+    draft.missingPhotoPrompt ? `Photo to add: ${draft.missingPhotoPrompt}` : null,
+    `Why ${marketplaceDisplayNames[platform]}: ${draft.fitReason}`,
+    draft.itemSpecifics.length > 0 ? `Details to include: ${draft.itemSpecifics.join(", ")}` : null,
+    draft.tags.length > 0 ? `Tags: ${draft.tags.join(", ")}` : null,
+    draft.postingNotes.length > 0 ? `Posting note: ${draft.postingNotes.join(" ")}` : null,
+  ].filter((line): line is string => line !== null);
+
+  return [
+    "TITLE:",
+    draft.title,
+    "",
+    "DESCRIPTION:",
+    draft.description,
+    "",
+    ...detailLines,
+  ].join("\n");
+}
+
+function cleanDraftText(value: unknown, field: string, maxLength: number): string {
+  const text = asString(value, field).trim();
+  const cleaned = rejectUnsafeDraftText(text, field).slice(0, maxLength).trim();
+  if (!cleaned) {
+    throw new HttpError(`Missing ${field}`, 502);
+  }
+  return cleaned;
+}
+
+function optionalCleanDraftText(value: unknown, maxLength: number): string | null {
+  const text = optionalString(value, maxLength);
+  if (!text) return null;
+  return rejectUnsafeDraftText(text, "draft field").slice(0, maxLength).trim() || null;
+}
+
+function cleanStringList(value: unknown, maxItems: number, maxLength: number): string[] {
+  return stringArray(value, maxItems, maxLength)
+    .map((entry) => rejectUnsafeDraftText(entry, "draft list item").slice(0, maxLength).trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function rejectUnsafeDraftText(text: string, field: string): string {
+  if (/```/i.test(text)) {
+    throw new HttpError(`${field} included markdown fences`, 502);
+  }
+  if (/^(title|description)\s*:/im.test(text)) {
+    throw new HttpError(`${field} included listing section headings`, 502);
+  }
+  if (/^(here(?:'|’)?s|here is)\s+(?:your\s+)?listing\s*[:\-]/i.test(text)) {
+    throw new HttpError(`${field} included a preamble`, 502);
+  }
+  return text.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function positiveNumberOrFallback(value: unknown, fallback: number): number {
+  const number = Number(value);
+  if (Number.isFinite(number) && number > 0) {
+    return Math.round(number * 100) / 100;
+  }
+  return Math.round(Math.max(fallback, 1) * 100) / 100;
+}
+
+function formatUsd(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return `$${rounded.toFixed(Number.isInteger(rounded) ? 0 : 2)}`;
 }
 
 type SupabaseServiceConfig = {
