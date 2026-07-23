@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { generateJsonWithGemini } from "../_shared/gemini.ts";
+import {
+  geminiGroundingSearchQueriesKey,
+  geminiGroundingSourcesKey,
+  generateJsonWithGemini,
+} from "../_shared/gemini.ts";
 import {
   errorResponse,
   fetchWithTimeout,
@@ -286,8 +290,14 @@ async function saveMarketplaceResearchCache(
 
   const researchSummary = optionalString(result.researchSummary);
   const usefulFindings = stringArray(result.usefulFindings, 8);
-  const officialSources = stringArray(result.officialSources, 8);
-  const searchedFor = stringArray(result.searchedFor, 3);
+  const officialSources = uniqueStrings([
+    ...stringArray(result.officialSources, 8),
+    ...stringArray(result[geminiGroundingSourcesKey], 8),
+  ], 8);
+  const searchedFor = uniqueStrings([
+    ...stringArray(result.searchedFor, 3),
+    ...stringArray(result[geminiGroundingSearchQueriesKey], 3),
+  ], 3);
   const researchSummaryForCache = researchSummary ?? (usefulFindings.join(" ") || officialSources.join(" "));
   if (!researchSummaryForCache) return;
 
@@ -628,6 +638,16 @@ function stringArray(value: unknown, maxItems = 6, maxLength = 260): string[] {
     if (values.length >= maxItems) break;
   }
   return values;
+}
+
+function uniqueStrings(values: string[], maxItems: number): string[] {
+  const unique: string[] = [];
+  for (const value of values) {
+    if (unique.includes(value)) continue;
+    unique.push(value);
+    if (unique.length >= maxItems) break;
+  }
+  return unique;
 }
 
 type SupabaseServiceConfig = {
