@@ -881,6 +881,52 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(source.range(of: #"Text("Add what you know".localized)"#))
     }
 
+    func testItemQuestionsSheetCoversBroadMarketplaceSpecificPrompts() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/ItemQuestions/ItemQuestionsSheet.swift"), encoding: .utf8)
+        let localizedKeys = try localizedStringKeys()
+
+        [
+            #"case .mercari:"#,
+            #"return mercariQuestions(for: item, answers: answers)"#,
+            #"private static func mercariQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion]"#,
+            #"title: "How hard is shipping?""#,
+            #"case .whatnot:"#,
+            #"return whatnotQuestions(for: item, answers: answers)"#,
+            #"private static func whatnotQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion]"#,
+            #"title: "Single item or bundle?""#,
+            #"case .amazon:"#,
+            #"return amazonQuestions(for: item, answers: answers)"#,
+            #"private static func amazonQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion]"#,
+            #"title: "Can you list this on Amazon?""#,
+            #"case .shopify:"#,
+            #"return shopifyQuestions(for: item, answers: answers)"#,
+            #"private static func shopifyQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion]"#,
+            #"title: "Do you already have a store?""#,
+            #"case .bonanza:"#,
+            #"return bonanzaQuestions(for: item, answers: answers)"#,
+            #"private static func bonanzaQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion]"#,
+            #"title: "Any shipping or bundle note?""#,
+            #"private static func whatnotChoices(for category: Category) -> [DetailChoice]"#
+        ].forEach { marker in
+            XCTAssertNotNil(source.range(of: marker), marker)
+        }
+
+        [
+            "How hard is shipping?",
+            "Mercari buyers need the exact size, model, and condition before shipping feels safe.",
+            "Single item or bundle?",
+            "Whatnot works best when the exact item, quantity, and condition are easy to say fast.",
+            "Is there a barcode or exact product page?",
+            "Can you list this on Amazon?",
+            "Do you already have a store?",
+            "Your own store needs clear specs, shipping, and a reason to trust the item.",
+            "Any shipping or bundle note?",
+            "Bonanza needs straightforward search words and shipping details."
+        ].forEach { key in
+            XCTAssertTrue(localizedKeys.contains(key), key)
+        }
+    }
+
     func testMarketplacePickerRunsPlatformQuestionBeforeListingGeneration() throws {
         let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
 
@@ -2444,6 +2490,13 @@ final class DesignAccessibilityTests: XCTestCase {
     private func colorComponent(_ name: String, in components: [String: Any]) throws -> Double {
         let rawValue = try XCTUnwrap(components[name] as? String)
         return try XCTUnwrap(Double(rawValue))
+    }
+
+    private func localizedStringKeys() throws -> Set<String> {
+        let data = try Data(contentsOf: projectURL("BuySellAI/Resources/Localizable.strings"))
+        let propertyList = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        let strings = try XCTUnwrap(propertyList as? [String: String])
+        return Set(strings.keys)
     }
 
     private func contrastRatio(_ foreground: RGB, _ background: RGB) -> Double {

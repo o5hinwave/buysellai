@@ -38,8 +38,12 @@
 	<string>Amazon</string>
 	<key>Amazon marketplace — high reach, high fee</key>
 	<string>Amazon marketplace — high reach, high fee</string>
+	<key>Amazon needs the matching product page, condition, and whether it is new or used.</key>
+	<string>Amazon needs the matching product page, condition, and whether it is new or used.</string>
 	<key>Analyzing your photo…</key>
 	<string>Analyzing your photo…</string>
+	<key>Approved, not sure, already have an account...</key>
+	<string>Approved, not sure, already have an account...</string>
 	<key>Answer</key>
 	<string>Answer</string>
 	<key>Answer a few questions</key>
@@ -70,6 +74,8 @@
 	<string>Best place to sell</string>
 	<key>Bonanza</key>
 	<string>Bonanza</string>
+	<key>Bonanza needs straightforward search words and shipping details.</key>
+	<string>Bonanza needs straightforward search words and shipping details.</string>
 	<key>Books</key>
 	<string>Books</string>
 	<key>Broadest audience, small fees</key>
@@ -374,6 +380,8 @@
 	<string>Nextdoor</string>
 	<key>No account required.</key>
 	<string>No account required.</string>
+	<key>No account</key>
+	<string>No account</string>
 	<key>No saved listings yet</key>
 	<string>No saved listings yet</string>
 	<key>No selling preferences</key>
@@ -652,6 +660,8 @@
 	<string>Box, charger, remote...</string>
 	<key>Brand, maker, or label</key>
 	<string>Brand, maker, or label</string>
+	<key>Brand, size, style, condition...</key>
+	<string>Brand, size, style, condition...</string>
 	<key>Brand or maker...</key>
 	<string>Brand or maker...</string>
 	<key>BuySell found</key>
@@ -728,6 +738,8 @@
 	<string>Model, year, serial...</string>
 	<key>Nike, Coach, Levi's...</key>
 	<string>Nike, Coach, Levi's...</string>
+	<key>New with barcode</key>
+	<string>New with barcode</string>
 	<key>No selling skills needed.</key>
 	<string>No selling skills needed.</string>
 	<key>Only what you know.</key>
@@ -788,6 +800,8 @@
 	<string>Your past listings will show up here.</string>
 	<key>Your listing is written for you. Paste it in.</key>
 	<string>Your listing is written for you. Paste it in.</string>
+	<key>Your own store needs clear specs, shipping, and a reason to trust the item.</key>
+	<string>Your own store needs clear specs, shipping, and a reason to trust the item.</string>
 	<key>above</key>
 	<string>above</string>
 	<key>below</key>
@@ -812,6 +826,10 @@
 	<string>A fit note helps clothing feel safer to buy.</string>
 	<key>A model number, measurement, or maker mark can change the price.</key>
 	<string>A model number, measurement, or maker mark can change the price.</string>
+	<key>A shipping note helps BuySell price it without guessing on packing.</key>
+	<string>A shipping note helps BuySell price it without guessing on packing.</string>
+	<key>A simple shipping note helps the listing read cleanly.</key>
+	<string>A simple shipping note helps the listing read cleanly.</string>
 	<key>A visible mark helps this place trust what the item is.</key>
 	<string>A visible mark helps this place trust what the item is.</string>
 	<key>Accessories, packaging, and manuals can help the listing.</key>
@@ -834,6 +852,8 @@
 	<string>Any measurements or maker marks?</string>
 	<key>Any model, year, or serial number?</key>
 	<string>Any model, year, or serial number?</string>
+	<key>Any shipping or bundle note?</key>
+	<string>Any shipping or bundle note?</string>
 	<key>Any set, edition, or number?</key>
 	<string>Any set, edition, or number?</string>
 	<key>Any size, model, or useful detail?</key>
@@ -864,6 +884,8 @@
 	<string>Can help load</string>
 	<key>Can someone pick it up?</key>
 	<string>Can someone pick it up?</string>
+	<key>Can you list this on Amazon?</key>
+	<string>Can you list this on Amazon?</string>
 	<key>Case, cable, strap, power supply, or manual can help.</key>
 	<string>Case, cable, strap, power supply, or manual can help.</string>
 	<key>Charger, cables, box, or remote can change what people will pay.</key>
@@ -876,6 +898,8 @@
 	<string>Do you know the age or material?</string>
 	<key>Do you know the exact size or SKU?</key>
 	<string>Do you know the exact size or SKU?</string>
+	<key>Do you already have a store?</key>
+	<string>Do you already have a store?</string>
 	<key>Do you see a brand, maker, or label?</key>
 	<string>Do you see a brand, maker, or label?</string>
 	<key>Does it turn on?</key>
@@ -902,6 +926,14 @@
 	<string>Fixed price, auction, shipping note...</string>
 	<key>How should pickup work?</key>
 	<string>How should pickup work?</string>
+	<key>How hard is shipping?</key>
+	<string>How hard is shipping?</string>
+	<key>Have seller account</key>
+	<string>Have seller account</string>
+	<key>Have a store</key>
+	<string>Have a store</string>
+	<key>Have a store, need setup, pickup only...</key>
+	<string>Have a store, need setup, pickup only...</string>
 	<key>I can measure it</key>
 	<string>I can measure it</string>
 	<key>I don't know</key>
@@ -918,6 +950,8 @@
 	<string>Is it signed, numbered, or framed?</string>
 	<key>Is the original box included?</key>
 	<string>Is the original box included?</string>
+	<key>Is there a barcode or exact product page?</key>
+	<string>Is there a barcode or exact product page?</string>
 	<key>Is it vintage, handmade, or signed?</key>
 	<string>Is it vintage, handmade, or signed?</string>
 	<key>Item only</key>
@@ -926,8 +960,14 @@
 	<string>Light wear</string>
 	<key>Local pickup</key>
 	<string>Local pickup</string>
+	<key>Lot or bundle</key>
+	<string>Lot or bundle</string>
+	<key>Lot size and condition change how live buyers compare the price.</key>
+	<string>Lot size and condition change how live buyers compare the price.</string>
 	<key>Looks vintage</key>
 	<string>Looks vintage</string>
+	<key>Mercari buyers need the exact size, model, and condition before shipping feels safe.</key>
+	<string>Mercari buyers need the exact size, model, and condition before shipping feels safe.</string>
 	<key>Model, storage, carrier, and working condition help match sold prices.</key>
 	<string>Model, storage, carrier, and working condition help match sold prices.</string>
 	<key>Model, year, serial, and working condition matter for music gear.</key>
@@ -968,6 +1008,8 @@
 	<string>Original box</string>
 	<key>Original box, no box, box damage...</key>
 	<string>Original box, no box, box damage...</string>
+	<key>Set, edition, lot count, sealed...</key>
+	<string>Set, edition, lot count, sealed...</string>
 	<key>Phones need storage, carrier, battery, unlock status, and condition.</key>
 	<string>Phones need storage, carrier, battery, unlock status, and condition.</string>
 	<key>Pickup, shipping, size, model, or material...</key>
@@ -1000,6 +1042,14 @@
 	<string>Shipping or pickup</string>
 	<key>Shipping should work. Pack it well and show any flaws in the photos.</key>
 	<string>Shipping should work. Pack it well and show any flaws in the photos.</string>
+	<key>Ships easily</key>
+	<string>Ships easily</string>
+	<key>Ships easily, needs padding, box size...</key>
+	<string>Ships easily, needs padding, box size...</string>
+	<key>Ships USPS, bundle, item only...</key>
+	<string>Ships USPS, bundle, item only...</string>
+	<key>Shopify only helps when you can send people to your own storefront.</key>
+	<string>Shopify only helps when you can send people to your own storefront.</string>
 	<key>Signed or marked</key>
 	<string>Signed or marked</string>
 	<key>Signed, numbered, framed...</key>
@@ -1008,8 +1058,18 @@
 	<string>Skip all</string>
 	<key>Size, brand, and material help people find the listing.</key>
 	<string>Size, brand, and material help people find the listing.</string>
+	<key>Size, material, color, shipping...</key>
+	<string>Size, material, color, shipping...</string>
 	<key>Size, material, and measurements help the listing fit the right place.</key>
 	<string>Size, material, and measurements help the listing fit the right place.</string>
+	<key>Single item</key>
+	<string>Single item</string>
+	<key>Single item or bundle?</key>
+	<string>Single item or bundle?</string>
+	<key>Single item, bundle, condition...</key>
+	<string>Single item, bundle, condition...</string>
+	<key>Single item, lot of 3, sealed...</key>
+	<string>Single item, lot of 3, sealed...</string>
 	<key>SKU, size, colorway...</key>
 	<string>SKU, size, colorway...</string>
 	<key>Sleeved</key>
@@ -1038,14 +1098,26 @@
 	<string>Unlocked</string>
 	<key>Untested</key>
 	<string>Untested</string>
+	<key>Barcode, product page, new sealed...</key>
+	<string>Barcode, product page, new sealed...</string>
+	<key>Used or open box</key>
+	<string>Used or open box</string>
 	<key>Vintage, handmade, signed, materials...</key>
 	<string>Vintage, handmade, signed, materials...</string>
 	<key>We think this is</key>
 	<string>We think this is</string>
+	<key>What exact item or quantity is it?</key>
+	<string>What exact item or quantity is it?</string>
 	<key>What exact model or specs do you know?</key>
 	<string>What exact model or specs do you know?</string>
+	<key>What set, edition, or quantity is it?</key>
+	<string>What set, edition, or quantity is it?</string>
 	<key>What set, number, or card condition do you know?</key>
 	<string>What set, number, or card condition do you know?</string>
+	<key>What should the product page say?</key>
+	<string>What should the product page say?</string>
+	<key>What size, brand, or style is it?</key>
+	<string>What size, brand, or style is it?</string>
 	<key>What size or material is on the tag?</key>
 	<string>What size or material is on the tag?</string>
 	<key>What storage or carrier do you know?</key>
@@ -1138,6 +1210,8 @@
 	<string>What does the label say?</string>
 	<key>What exact detail can you see?</key>
 	<string>What exact detail can you see?</string>
+	<key>Whatnot works best when the exact item, quantity, and condition are easy to say fast.</key>
+	<string>Whatnot works best when the exact item, quantity, and condition are easy to say fast.</string>
 	<key>Yes, that's it</key>
 	<string>Yes, that's it</string>
 	<key>Next: a few easy questions.</key>
@@ -1200,6 +1274,8 @@
 	<string>Source</string>
 	<key>Source details</key>
 	<string>Source details</string>
+	<key>Some products need approval, a matched catalog page, or a selling account.</key>
+	<string>Some products need approval, a matched catalog page, or a selling account.</string>
 	<key>No sold prices found</key>
 	<string>No sold prices found</string>
 	<key>Sold price range</key>

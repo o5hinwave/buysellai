@@ -973,10 +973,14 @@ struct ItemQuestionsSheet: View {
         switch marketplace {
         case .ebay:
             return ebayQuestions(for: item, answers: answers)
+        case .mercari:
+            return mercariQuestions(for: item, answers: answers)
         case .facebook, .craigslist, .offerup, .nextdoor:
             return [localQuestion(for: marketplace, item: item, answers: answers)]
         case .poshmark, .depop, .vinted, .vestiaire, .therealreal, .grailed, .curtsy:
             return fashionQuestions(for: marketplace, item: item, answers: answers)
+        case .whatnot:
+            return whatnotQuestions(for: item, answers: answers)
         case .etsy, .chairish, .rubylane:
             return vintageQuestions(for: marketplace, item: item, answers: answers)
         case .stockx, .goat:
@@ -985,6 +989,12 @@ struct ItemQuestionsSheet: View {
             return swappaQuestions(for: item, answers: answers)
         case .reverb:
             return reverbQuestions(for: item, answers: answers)
+        case .amazon:
+            return amazonQuestions(for: item, answers: answers)
+        case .shopify:
+            return shopifyQuestions(for: item, answers: answers)
+        case .bonanza:
+            return bonanzaQuestions(for: item, answers: answers)
         case .tcgplayer:
             return tradingCardQuestions(for: item, answers: answers)
         default:
@@ -1018,6 +1028,38 @@ struct ItemQuestionsSheet: View {
             choices: [
                 DetailChoice(title: "Fixed price", value: .text("Prefer fixed price")),
                 DetailChoice(title: "Auction", value: .text("Open to auction")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func mercariQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-mercari-spec",
+                contextLabel: Marketplace.mercari.displayName,
+                title: specQuestionTitle(for: item.category, marketplace: .mercari),
+                detail: "Mercari buyers need the exact size, model, and condition before shipping feels safe.",
+                placeholder: sizePlaceholder(for: item.category),
+                systemImage: specQuestionSymbol(for: item.category),
+                kind: .text(.sizeOrModel),
+                choices: specChoices(for: item.category)
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-mercari-shipping",
+            contextLabel: Marketplace.mercari.displayName,
+            title: "How hard is shipping?",
+            detail: "A shipping note helps BuySell price it without guessing on packing.",
+            placeholder: "Ships easily, needs padding, box size...",
+            systemImage: AppSymbol.Marketplace.package,
+            kind: .text(.marketplaceNote(.mercari)),
+            choices: [
+                DetailChoice(title: "Ships easily", value: .text("Ships easily")),
+                DetailChoice(title: "Pack carefully", value: .text("Needs careful packing")),
                 DetailChoice(title: "I don't know", value: .unknown)
             ]
         ))
@@ -1112,6 +1154,38 @@ struct ItemQuestionsSheet: View {
             choices: [
                 DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
                 DetailChoice(title: "Signed or marked", value: .text("Signed or marked")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func whatnotQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-whatnot-spec",
+                contextLabel: Marketplace.whatnot.displayName,
+                title: whatnotSpecQuestionTitle(for: item.category),
+                detail: "Whatnot works best when the exact item, quantity, and condition are easy to say fast.",
+                placeholder: whatnotPlaceholder(for: item.category),
+                systemImage: AppSymbol.Marketplace.video,
+                kind: .text(.sizeOrModel),
+                choices: whatnotChoices(for: item.category)
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-whatnot-format",
+            contextLabel: Marketplace.whatnot.displayName,
+            title: "Single item or bundle?",
+            detail: "Lot size and condition change how live buyers compare the price.",
+            placeholder: "Single item, lot of 3, sealed...",
+            systemImage: AppSymbol.Marketplace.video,
+            kind: .text(.marketplaceNote(.whatnot)),
+            choices: [
+                DetailChoice(title: "Single item", value: .text("Single item")),
+                DetailChoice(title: "Lot or bundle", value: .text("Lot or bundle")),
                 DetailChoice(title: "I don't know", value: .unknown)
             ]
         ))
@@ -1229,6 +1303,108 @@ struct ItemQuestionsSheet: View {
         return questions
     }
 
+    private static func amazonQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-amazon-spec",
+                contextLabel: Marketplace.amazon.displayName,
+                title: "Is there a barcode or exact product page?",
+                detail: "Amazon needs the matching product page, condition, and whether it is new or used.",
+                placeholder: "Barcode, product page, new sealed...",
+                systemImage: AppSymbol.Marketplace.cart,
+                kind: .text(.sizeOrModel),
+                choices: [
+                    DetailChoice(title: "New with barcode", value: .text("New with barcode")),
+                    DetailChoice(title: "Used or open box", value: .text("Used or open box")),
+                    DetailChoice(title: "I don't know", value: .unknown)
+                ]
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-amazon-fit",
+            contextLabel: Marketplace.amazon.displayName,
+            title: "Can you list this on Amazon?",
+            detail: "Some products need approval, a matched catalog page, or a selling account.",
+            placeholder: "Approved, not sure, already have an account...",
+            systemImage: AppSymbol.Marketplace.verified,
+            kind: .text(.marketplaceNote(.amazon)),
+            choices: [
+                DetailChoice(title: "Have seller account", value: .text("Has Amazon selling account")),
+                DetailChoice(title: "Not sure", value: .unknown),
+                DetailChoice(title: "No account", value: .text("No Amazon selling account"))
+            ]
+        ))
+        return questions
+    }
+
+    private static func shopifyQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers), item.category != .furniture {
+            questions.append(DetailQuestion(
+                id: "marketplace-shopify-spec",
+                contextLabel: Marketplace.shopify.displayName,
+                title: "What should the product page say?",
+                detail: "Your own store needs clear specs, shipping, and a reason to trust the item.",
+                placeholder: "Size, material, color, shipping...",
+                systemImage: AppSymbol.Marketplace.cart,
+                kind: .text(.sizeOrModel),
+                choices: [
+                    DetailChoice(title: "I don't know", value: .unknown)
+                ]
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-shopify-store",
+            contextLabel: Marketplace.shopify.displayName,
+            title: "Do you already have a store?",
+            detail: "Shopify only helps when you can send people to your own storefront.",
+            placeholder: "Have a store, need setup, pickup only...",
+            systemImage: AppSymbol.Marketplace.cart,
+            kind: .text(.marketplaceNote(.shopify)),
+            choices: [
+                DetailChoice(title: "Have a store", value: .text("Has Shopify store")),
+                DetailChoice(title: "No store", value: .text("No Shopify store")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func bonanzaQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-bonanza-spec",
+                contextLabel: Marketplace.bonanza.displayName,
+                title: specQuestionTitle(for: item.category, marketplace: .bonanza),
+                detail: "Bonanza needs straightforward search words and shipping details.",
+                placeholder: sizePlaceholder(for: item.category),
+                systemImage: specQuestionSymbol(for: item.category),
+                kind: .text(.sizeOrModel),
+                choices: specChoices(for: item.category)
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-bonanza-shipping",
+            contextLabel: Marketplace.bonanza.displayName,
+            title: "Any shipping or bundle note?",
+            detail: "A simple shipping note helps the listing read cleanly.",
+            placeholder: "Ships USPS, bundle, item only...",
+            systemImage: AppSymbol.Marketplace.package,
+            kind: .text(.marketplaceNote(.bonanza)),
+            choices: [
+                DetailChoice(title: "Ships easily", value: .text("Ships easily")),
+                DetailChoice(title: "No extra detail", value: .text("No extra detail")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
     private static func tradingCardQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
         var questions: [DetailQuestion] = []
         if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
@@ -1304,6 +1480,17 @@ struct ItemQuestionsSheet: View {
         }
     }
 
+    private static func whatnotSpecQuestionTitle(for category: Category) -> String {
+        switch category {
+        case .collectibles, .toys:
+            return "What set, edition, or quantity is it?"
+        case .clothing, .shoes, .bags:
+            return "What size, brand, or style is it?"
+        default:
+            return "What exact item or quantity is it?"
+        }
+    }
+
     private static func localQuestionDetail(for category: Category, answers: ItemDetailAnswers) -> String {
         if answers.isLargeOrFragile || [.furniture, .home, .art, .tools, .sports, .music].contains(category) {
             return "A pickup area, stairs, or loading note keeps messages easier."
@@ -1317,6 +1504,17 @@ struct ItemQuestionsSheet: View {
             return "Near downtown, pickup only, can help load..."
         default:
             return "Near downtown, porch pickup, can deliver..."
+        }
+    }
+
+    private static func whatnotPlaceholder(for category: Category) -> String {
+        switch category {
+        case .collectibles, .toys:
+            return "Set, edition, lot count, sealed..."
+        case .clothing, .shoes, .bags:
+            return "Brand, size, style, condition..."
+        default:
+            return "Single item, bundle, condition..."
         }
     }
 
@@ -1466,6 +1664,23 @@ struct ItemQuestionsSheet: View {
             ]
         default:
             return [
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        }
+    }
+
+    private static func whatnotChoices(for category: Category) -> [DetailChoice] {
+        switch category {
+        case .collectibles, .toys:
+            return [
+                DetailChoice(title: "Sealed", value: .text("Sealed")),
+                DetailChoice(title: "Opened", value: .text("Opened")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        default:
+            return [
+                DetailChoice(title: "Single item", value: .text("Single item")),
+                DetailChoice(title: "Lot or bundle", value: .text("Lot or bundle")),
                 DetailChoice(title: "I don't know", value: .unknown)
             ]
         }
