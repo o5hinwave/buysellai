@@ -9,29 +9,30 @@ struct HomeView: View {
         NavigationStack {
             List {
                 Section {
-                    HomeCameraHeroMark()
+                    HomeCameraHeroMark(startSnapFlow: startSnapFlow)
                 }
-                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.lg))
+                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
                 Section {
-                    HomeStartRow(startSnapFlow: startSnapFlow)
+                    HomeStepRow(number: 1, title: "Snap it", detail: "Take one photo.", systemImage: "camera.viewfinder")
+                    HomeStepRow(number: 2, title: "Answer tiny questions", detail: "Only what you know.", systemImage: "text.bubble")
+                    HomeStepRow(number: 3, title: "Copy the post", detail: "BuySell picks the place and writes it.", systemImage: "doc.on.doc")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
                         appStore.presentTutorial()
                     }
                 } header: {
-                    Text("Snap · Pick · Sell".localized)
+                    Text("1 · 2 · 3".localized)
                 } footer: {
-                    VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text("Sell anything in three taps.".localized)
-                        Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                    }
+                    Text("No selling skills needed.".localized)
                 }
 
-                Section("Saved listings".localized) {
-                    historySectionContent
+                if shouldShowHistorySection {
+                    Section("Saved listings".localized) {
+                        historySectionContent
+                    }
                 }
             }
             .listStyle(.insetGrouped)
@@ -198,6 +199,10 @@ struct HomeView: View {
         }
     }
 
+    private var shouldShowHistorySection: Bool {
+        isInitialHistoryLoading || historySyncFailureMessage != nil || appStore.history.isEmpty == false
+    }
+
     private var isInitialHistoryLoading: Bool {
         guard case .loading = appStore.historySyncState else { return false }
         return appStore.history.isEmpty
@@ -217,42 +222,130 @@ struct HomeView: View {
 }
 
 private struct HomeCameraHeroMark: View {
+    let startSnapFlow: () -> Void
+
     var body: some View {
-        HStack {
-            Spacer(minLength: 0)
-
-            ZStack {
-                RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                    .fill(heroFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                            .stroke(Color(uiColor: .separator).opacity(0.18), lineWidth: 1)
-                    }
-                    .shadow(color: Color.black.opacity(0.05), radius: 18, y: 8)
-
-                Image(systemName: "camera.viewfinder")
-                    .brandSymbol(.heroIcon)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(Color.brand.foreground)
-                    .accessibilityHidden(true)
-            }
-            .frame(width: 218, height: 132)
-            .accessibilityHidden(true)
-
-            Spacer(minLength: 0)
+        Button {
+            startSnapFlow()
+        } label: {
+            cardContent
+            .frame(maxWidth: .infinity, minHeight: 178)
+            .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         }
-        .accessibilityHidden(true)
+        .buttonStyle(PressButtonStyle())
+        .accessibilityLabel("Snap to sell".localized)
+        .accessibilityHint("Opens the camera".localized)
     }
 
-    private var heroFill: LinearGradient {
+    private var cardContent: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(cardFill)
+                .overlay(alignment: .topLeading) {
+                    cardTopLine
+                        .padding(Spacing.lg)
+                }
+                .overlay(alignment: .center) {
+                    Image(systemName: "camera.viewfinder")
+                        .brandSymbol(.heroIcon)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.brand.foreground)
+                        .accessibilityHidden(true)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text("Snap to sell".localized)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Color.brand.foreground)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+
+                        Text("Point. Shoot. Done.".localized)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.brand.foregroundSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                    }
+                    .padding(Spacing.lg)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color(uiColor: .separator).opacity(0.12), lineWidth: 1)
+                }
+                .shadow(color: Color.black.opacity(0.06), radius: 22, y: 10)
+        }
+    }
+
+    private var cardTopLine: some View {
+        HStack(alignment: .center, spacing: Spacing.xs) {
+            Text("BuySell".localized)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.foregroundSecondary)
+            Circle()
+                .fill(Color.brand.primary)
+                .frame(width: 7, height: 7)
+                .accessibilityHidden(true)
+            Spacer(minLength: 0)
+            Image(systemName: "sparkles")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var cardFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color(uiColor: .secondarySystemGroupedBackground),
-                Color(uiColor: .systemBackground)
+                Color(uiColor: .systemBackground),
+                Color(uiColor: .secondarySystemGroupedBackground)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+
+}
+
+private struct HomeStepRow: View {
+    let number: Int
+    let title: String
+    let detail: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(Color.brand.primaryMuted)
+                Text(verbatim: "\(number)")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+                    .monospacedDigit()
+            }
+            .frame(width: 34, height: 34)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text(title.localized)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                Text(detail.localized)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Spacing.sm)
+
+            Image(systemName: systemImage)
+                .brandSymbol(.controlIcon)
+                .foregroundStyle(Color.brand.primaryText)
+                .frame(width: 28, height: 28)
+                .accessibilityHidden(true)
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%d. %@. %@", number, title.localized, detail.localized))
     }
 }
 
@@ -328,49 +421,6 @@ private struct HistorySyncFailureRow: View {
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel(String.localizedFormat("%@, %@, %@", "Couldn't update listings".localized, message, "Try again".localized))
         .accessibilityHint("Checks for your latest saved listings".localized)
-    }
-}
-
-private struct HomeStartRow: View {
-    let startSnapFlow: () -> Void
-
-    var body: some View {
-        Button {
-            startSnapFlow()
-        } label: {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: "camera.viewfinder")
-                    .brandSymbol(.controlIcon)
-                    .foregroundStyle(Color.brand.foreground)
-                    .frame(width: 34, height: 34)
-                    .background(Color(uiColor: .tertiarySystemFill), in: Circle())
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text("Snap to sell".localized)
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Color.brand.foreground)
-
-                    Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.brand.foregroundSecondary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: Spacing.sm)
-
-                Image(systemName: "chevron.right")
-                    .brandSymbol(.smallChevron)
-                    .foregroundStyle(Color.brand.mutedForeground)
-                    .accessibilityHidden(true)
-            }
-            .padding(.vertical, Spacing.xs)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Snap to sell".localized)
-        .accessibilityHint("Opens the camera".localized)
     }
 }
 

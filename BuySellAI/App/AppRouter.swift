@@ -7,6 +7,7 @@ import UIKit
 
 enum FlowSheetContext: Equatable {
     case snapResult(SnapResultContext)
+    case itemQuestions(ItemQuestionsContext)
     case marketplacePicker(MarketplacePickerContext)
     case listing(ListingContext)
 }
@@ -35,6 +36,7 @@ final class AppStore {
     var isShowingAuth = false
     var isShowingSettings = false
     var snapResultContext: SnapResultContext?
+    var itemQuestionsContext: ItemQuestionsContext?
     var marketplacePickerContext: MarketplacePickerContext?
     var listingContext: ListingContext?
     var flowSheetContext: FlowSheetContext?
@@ -237,15 +239,37 @@ final class AppStore {
         isShowingCamera = false
     }
 
-    func presentMarketplacePicker(item: DetectedItem, imageData: Data?) {
+    func presentItemQuestions(
+        item: DetectedItem,
+        imageData: Data?,
+        preferredMarketplace: Marketplace? = nil,
+        analysis: AnalyzeIntelligence? = nil,
+        answers: ItemDetailAnswers? = nil
+    ) {
         advanceFlowGeneration()
-        presentFlowSheet(.marketplacePicker(MarketplacePickerContext(item: item, imageData: imageData)))
+        presentFlowSheet(
+            .itemQuestions(
+                ItemQuestionsContext(
+                    item: item,
+                    imageData: imageData,
+                    preferredMarketplace: preferredMarketplace,
+                    analysis: analysis,
+                    answers: answers
+                )
+            )
+        )
+    }
+
+    func presentMarketplacePicker(item: DetectedItem, imageData: Data?, details: ItemDetailAnswers? = nil) {
+        advanceFlowGeneration()
+        presentFlowSheet(.marketplacePicker(MarketplacePickerContext(item: item, imageData: imageData, details: details)))
     }
 
     func presentListing(
         item: DetectedItem,
         imageData: Data?,
         marketplace: Marketplace,
+        details: ItemDetailAnswers? = nil,
         existingListingText: String? = nil,
         existingHistoryEntry: HistoryEntry? = nil
     ) {
@@ -256,6 +280,7 @@ final class AppStore {
                     item: item,
                     imageData: imageData,
                     marketplace: marketplace,
+                    details: details,
                     existingListingText: existingListingText,
                     existingHistoryEntry: existingHistoryEntry
                 )
@@ -303,12 +328,15 @@ final class AppStore {
 
     private func presentFlowSheet(_ context: FlowSheetContext) {
         snapResultContext = nil
+        itemQuestionsContext = nil
         marketplacePickerContext = nil
         listingContext = nil
 
         switch context {
         case .snapResult(let snapResult):
             snapResultContext = snapResult
+        case .itemQuestions(let itemQuestions):
+            itemQuestionsContext = itemQuestions
         case .marketplacePicker(let marketplacePicker):
             marketplacePickerContext = marketplacePicker
         case .listing(let listing):
@@ -320,6 +348,7 @@ final class AppStore {
 
     private func clearFlowSheetState() {
         snapResultContext = nil
+        itemQuestionsContext = nil
         marketplacePickerContext = nil
         listingContext = nil
         flowSheetContext = nil
@@ -1116,7 +1145,7 @@ struct RootView: View {
         switch appStore.flowSheetContext {
         case .snapResult:
             [.large]
-        case .marketplacePicker, .listing:
+        case .itemQuestions, .marketplacePicker, .listing:
             [.large]
         case nil:
             [.large]
@@ -1132,6 +1161,8 @@ private struct FlowSheetContent: View {
             switch appStore.flowSheetContext {
             case .snapResult(let context):
                 SnapResultSheet(context: context)
+            case .itemQuestions(let context):
+                ItemQuestionsSheet(context: context)
             case .marketplacePicker(let context):
                 MarketplacePickerSheet(context: context)
             case .listing(let context):

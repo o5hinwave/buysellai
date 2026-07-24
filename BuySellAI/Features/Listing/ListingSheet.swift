@@ -16,6 +16,8 @@ struct ListingSheet: View {
         _store = State(initialValue: ListingStore(
             item: context.item,
             marketplace: context.marketplace,
+            details: context.details,
+            imageData: context.imageData,
             existingListingText: context.existingListingText
         ))
     }
@@ -120,7 +122,46 @@ struct ListingSheet: View {
                     detail: "What you may keep"
                 )
             }
+            if hasCompRange {
+                Section("What it sells for".localized) {
+                    if let compLowPrice = store.draft?.compLowPrice {
+                        listingPriceRow(
+                            title: "Lowest sold",
+                            value: compLowPrice,
+                            detail: "Past comp"
+                        )
+                    }
+                    if let compMedianPrice = store.draft?.compMedianPrice {
+                        listingPriceRow(
+                            title: "Typical sold",
+                            value: compMedianPrice,
+                            detail: "Past comps"
+                        )
+                    }
+                    if let compHighPrice = store.draft?.compHighPrice {
+                        listingPriceRow(
+                            title: "Highest sold",
+                            value: compHighPrice,
+                            detail: "Past comp"
+                        )
+                    }
+                }
+            }
             Section("Quick tips".localized) {
+                if let feeSummary = store.draft?.feeSummary {
+                    marketplaceTipRow(
+                        title: "Selling fees",
+                        systemImage: "percent",
+                        detail: feeSummary
+                    )
+                }
+                if let pricingStrategy = store.draft?.pricingStrategy {
+                    marketplaceTipRow(
+                        title: "Price move",
+                        systemImage: "slider.horizontal.3",
+                        detail: pricingStrategy
+                    )
+                }
                 marketplaceTipRow(
                     title: "Main photo",
                     systemImage: "photo",
@@ -157,6 +198,13 @@ struct ListingSheet: View {
                         title: "Tags",
                         systemImage: "tag",
                         detail: tags
+                    )
+                }
+                if let evidenceSummary = store.draft?.evidenceSummary {
+                    marketplaceTipRow(
+                        title: "Checked",
+                        systemImage: "magnifyingglass",
+                        detail: evidenceSummary
                     )
                 }
             }
@@ -259,9 +307,15 @@ struct ListingSheet: View {
 
     private var selectedRecommendationKind: MarketplaceSummaryKind {
         MarketplaceSummaryPlanner
-            .picks(from: MarketplaceEstimator.estimates(for: context.item.priceEstimate))
+            .picks(from: MarketplaceEstimator.estimates(for: context.item, details: context.details))
             .first { $0.estimate.id == context.marketplace }?
             .kind ?? .bestChance
+    }
+
+    private var hasCompRange: Bool {
+        store.draft?.compLowPrice != nil ||
+            store.draft?.compMedianPrice != nil ||
+            store.draft?.compHighPrice != nil
     }
 
     private var listingText: some View {
@@ -466,7 +520,7 @@ struct ListingSheet: View {
     }
 
     private func chooseAnotherMarketplace() {
-        appStore.presentMarketplacePicker(item: context.item, imageData: context.imageData)
+        appStore.presentMarketplacePicker(item: context.item, imageData: context.imageData, details: context.details)
     }
 
     private func retakePhoto() {
@@ -500,7 +554,7 @@ struct ListingSheet: View {
     }
 
     private var pricePlan: ListingPricePlan {
-        ListingPricePlan(item: context.item, marketplace: context.marketplace, draft: store.draft)
+        ListingPricePlan(item: context.item, marketplace: context.marketplace, details: context.details, draft: store.draft)
     }
 
     private var sheetContentMaxWidth: CGFloat {
@@ -549,8 +603,8 @@ private struct ListingPricePlan {
 
     private static let likelySaleMultiplier = Decimal(9) / Decimal(10)
 
-    init(item: DetectedItem, marketplace: Marketplace, draft: GeneratedListingDraft?) {
-        let localTakeHomeEstimate = MarketplaceEstimator.estimates(for: item.priceEstimate)
+    init(item: DetectedItem, marketplace: Marketplace, details: ItemDetailAnswers?, draft: GeneratedListingDraft?) {
+        let localTakeHomeEstimate = MarketplaceEstimator.estimates(for: item, details: details)
             .first { $0.id == marketplace }?
             .payout ?? item.priceEstimate * marketplace.feeMultiplier - marketplace.fixedDeduction
 

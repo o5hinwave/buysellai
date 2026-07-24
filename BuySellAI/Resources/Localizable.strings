@@ -572,8 +572,138 @@
 	<string>We suggest the best place first.</string>
 	<key>What helps here</key>
 	<string>What helps here</string>
+	<key>What it sells for</key>
+	<string>What it sells for</string>
 	<key>What we found</key>
 	<string>What we found</string>
+	<key>What comes with it</key>
+	<string>What comes with it</string>
+	<key>Anything else</key>
+	<string>Anything else</string>
+	<key>Anything a buyer would ask...</key>
+	<string>Anything a buyer would ask...</string>
+	<key>Add what you know</key>
+	<string>Add what you know</string>
+	<key>A few details</key>
+	<string>A few details</string>
+	<key>Answer tiny questions</key>
+	<string>Answer tiny questions</string>
+	<key>Apple, Sony, Samsung...</key>
+	<string>Apple, Sony, Samsung...</string>
+	<key>Big, heavy, or fragile</key>
+	<string>Big, heavy, or fragile</string>
+	<key>Box, charger, remote...</key>
+	<string>Box, charger, remote...</string>
+	<key>Brand, maker, or label</key>
+	<string>Brand, maker, or label</string>
+	<key>Brand or maker...</key>
+	<string>Brand or maker...</string>
+	<key>BuySell found</key>
+	<string>BuySell found</string>
+	<key>BuySell picks the place and writes it.</key>
+	<string>BuySell picks the place and writes it.</string>
+	<key>BuySell searches real marketplace info next.</key>
+	<string>BuySell searches real marketplace info next.</string>
+	<key>Check %@</key>
+	<string>Check %@</string>
+	<key>Check artist, signature, and measurements</key>
+	<string>Check artist, signature, and measurements</string>
+	<key>Check if you know it</key>
+	<string>Check if you know it</string>
+	<key>Check maker mark or measurements</key>
+	<string>Check maker mark or measurements</string>
+	<key>Check metal, stamp, or stone info</key>
+	<string>Check metal, stamp, or stone info</string>
+	<key>Check the size tag</key>
+	<string>Check the size tag</string>
+	<key>Checked</key>
+	<string>Checked</string>
+	<key>Copy the post</key>
+	<string>Copy the post</string>
+	<key>Exact product name, colorway, size...</key>
+	<string>Exact product name, colorway, size...</string>
+	<key>Fender, Yamaha, Gibson...</key>
+	<string>Fender, Yamaha, Gibson...</string>
+	<key>Find best place</key>
+	<string>Find best place</string>
+	<key>Find edition, set, or serial number</key>
+	<string>Find edition, set, or serial number</string>
+	<key>Find model, serial, and working condition</key>
+	<string>Find model, serial, and working condition</string>
+	<key>Find the exact model or storage</key>
+	<string>Find the exact model or storage</string>
+	<key>Flaws or damage</key>
+	<string>Flaws or damage</string>
+	<key>Helps prefer local pickup when shipping would be a pain.</key>
+	<string>Helps prefer local pickup when shipping would be a pain.</string>
+	<key>Highest sold</key>
+	<string>Highest sold</string>
+	<key>iPhone 15, 128 GB, unlocked...</key>
+	<string>iPhone 15, 128 GB, unlocked...</string>
+	<key>1 · 2 · 3</key>
+	<string>1 · 2 · 3</string>
+	<key>%d. %@. %@</key>
+	<string>%d. %@. %@</string>
+	<key>List at</key>
+	<string>List at</string>
+	<key>Looks right — add details</key>
+	<string>Looks right — add details</string>
+	<key>Lowest sold</key>
+	<string>Lowest sold</string>
+	<key>Maker, artist, mark...</key>
+	<string>Maker, artist, mark...</string>
+	<key>Measure width, height, and depth</key>
+	<string>Measure width, height, and depth</string>
+	<key>Measurements or model</key>
+	<string>Measurements or model</string>
+	<key>Men's M, size 9, 12 x 8...</key>
+	<string>Men's M, size 9, 12 x 8...</string>
+	<key>Model, size, measurements...</key>
+	<string>Model, size, measurements...</string>
+	<key>Model, storage, or specs</key>
+	<string>Model, storage, or specs</string>
+	<key>Model, year, or serial</key>
+	<string>Model, year, or serial</string>
+	<key>Model, year, serial...</key>
+	<string>Model, year, serial...</string>
+	<key>Nike, Coach, Levi's...</key>
+	<string>Nike, Coach, Levi's...</string>
+	<key>No selling skills needed.</key>
+	<string>No selling skills needed.</string>
+	<key>Only what you know.</key>
+	<string>Only what you know.</string>
+	<key>Past comp</key>
+	<string>Past comp</string>
+	<key>Past comps</key>
+	<string>Past comps</string>
+	<key>Point. Shoot. Done.</key>
+	<string>Point. Shoot. Done.</string>
+	<key>Price move</key>
+	<string>Price move</string>
+	<key>Scratch, stain, missing piece...</key>
+	<string>Scratch, stain, missing piece...</string>
+	<key>Selling fees</key>
+	<string>Selling fees</string>
+	<key>Set name, edition, card number...</key>
+	<string>Set name, edition, card number...</string>
+	<key>Size or measurements</key>
+	<string>Size or measurements</string>
+	<key>Size, model, or details</key>
+	<string>Size, model, or details</string>
+	<key>Skip anything you do not know.</key>
+	<string>Skip anything you do not know.</string>
+	<key>Snap it</key>
+	<string>Snap it</string>
+	<key>Take one photo.</key>
+	<string>Take one photo.</string>
+	<key>These help BuySell search real comps and write the listing without guessing.</key>
+	<string>These help BuySell search real comps and write the listing without guessing.</string>
+	<key>Tiny answers make better searches.</key>
+	<string>Tiny answers make better searches.</string>
+	<key>Typical sold</key>
+	<string>Typical sold</string>
+	<key>Write listing</key>
+	<string>Write listing</string>
 	<key>When posting</key>
 	<string>When posting</string>
 	<key>What you may keep</key>

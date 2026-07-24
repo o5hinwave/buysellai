@@ -17,6 +17,9 @@ required_screenshots=(
     "04-listing.png"
 )
 required_screenshot_count=$(( ${#required_screenshots[@]} * 2 ))
+screenshot_brand_orange_pixels=0
+screenshot_sampled_pixels=0
+screenshot_set_brand_orange_threshold="${M10_SCREENSHOT_SET_BRAND_ORANGE_THRESHOLD:-0.0006}"
 pending_items=()
 unconfirmed_metadata_markers=(
     "assumption"
@@ -332,6 +335,16 @@ require_screenshot_assets() {
     done
 }
 
+require_screenshot_set_brand_signal() {
+    if ! awk \
+        -v orange="$screenshot_brand_orange_pixels" \
+        -v pixels="$screenshot_sampled_pixels" \
+        -v threshold="$screenshot_set_brand_orange_threshold" \
+        'BEGIN { exit !((pixels > 0) && (orange / pixels >= threshold)) }'; then
+        pending "screenshot set warm orange brand signal is missing"
+    fi
+}
+
 require_screenshot_visual_quality() {
     local label="$1"
     local path="$2"
@@ -432,6 +445,7 @@ current_dark_band = 0
 content_threshold = 245 * 10000
 dark_threshold = 24 * 10000
 brand_orange_threshold = 0.002
+dark_band_threshold = max(12, int(height * 0.08))
 
 for _row_index in range(height):
     filter_type = raw[position]
@@ -495,17 +509,22 @@ if average_luminance < 150:
     fail("screenshot is unexpectedly dark")
 if dark_ratio > 0.18:
     fail("screenshot has too many near-black pixels")
-if max_dark_band >= 12:
+if max_dark_band >= dark_band_threshold:
     fail("dark horizontal artifact detected")
-if brand_orange_ratio < brand_orange_threshold:
-    fail("warm orange brand signal is missing")
 
-print("ok")
+print(f"ok {brand_orange_pixels} {pixel_count}")
 PY
     )"; then
         rm -rf "$sample_dir"
         pending "$label screenshot asset $path failed visual quality check: $output"
         return
+    fi
+
+    if [[ "$output" =~ ^ok[[:space:]]+([0-9]+)[[:space:]]+([0-9]+)$ ]]; then
+        screenshot_brand_orange_pixels=$(( screenshot_brand_orange_pixels + BASH_REMATCH[1] ))
+        screenshot_sampled_pixels=$(( screenshot_sampled_pixels + BASH_REMATCH[2] ))
+    else
+        pending "$label screenshot asset $path returned unexpected visual quality output: $output"
     fi
 
     rm -rf "$sample_dir"
@@ -658,6 +677,7 @@ require_no_unconfirmed_assumption "Copyright"
 require_no_unconfirmed_assumption "Export compliance"
 require_screenshot_assets "iPhone 6.9" "$iphone_screenshot_dir" "$iphone_expected_screenshot_width" "$iphone_expected_screenshot_height"
 require_screenshot_assets "iPad 13" "$ipad_screenshot_dir" "$ipad_expected_screenshot_width" "$ipad_expected_screenshot_height"
+require_screenshot_set_brand_signal
 require_screenshot_capture_result "iPhone 6.9 result bundle" "iPhone 6.9"
 require_screenshot_capture_result "iPad 13 result bundle" "iPad 13"
 

@@ -264,6 +264,90 @@ struct GeneratedListing: Sendable, Equatable {
     }
 }
 
+struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
+    var labelOrBrand: String
+    var sizeOrModel: String
+    var flaws: String
+    var included: String
+    var extraDetails: String
+    var isLargeOrFragile: Bool
+
+    init(
+        labelOrBrand: String = "",
+        sizeOrModel: String = "",
+        flaws: String = "",
+        included: String = "",
+        extraDetails: String = "",
+        isLargeOrFragile: Bool = false
+    ) {
+        self.labelOrBrand = labelOrBrand
+        self.sizeOrModel = sizeOrModel
+        self.flaws = flaws
+        self.included = included
+        self.extraDetails = extraDetails
+        self.isLargeOrFragile = isLargeOrFragile
+    }
+
+    var sanitizedForUse: ItemDetailAnswers? {
+        let clean = ItemDetailAnswers(
+            labelOrBrand: Self.clean(labelOrBrand, maxLength: 80),
+            sizeOrModel: Self.clean(sizeOrModel, maxLength: 96),
+            flaws: Self.clean(flaws, maxLength: 140),
+            included: Self.clean(included, maxLength: 120),
+            extraDetails: Self.clean(extraDetails, maxLength: 180),
+            isLargeOrFragile: isLargeOrFragile
+        )
+        return clean.hasUsefulDetails ? clean : nil
+    }
+
+    var hasUsefulDetails: Bool {
+        isLargeOrFragile ||
+            labelOrBrand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            sizeOrModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            flaws.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    var displayValues: [String] {
+        var values: [String] = []
+        appendDisplayValue(labelOrBrand, prefix: "Brand", to: &values)
+        appendDisplayValue(sizeOrModel, prefix: "Size/model", to: &values)
+        appendDisplayValue(flaws, prefix: "Flaws", to: &values)
+        appendDisplayValue(included, prefix: "Includes", to: &values)
+        appendDisplayValue(extraDetails, prefix: "Other", to: &values)
+        if isLargeOrFragile {
+            values.append("Large or fragile")
+        }
+        return values
+    }
+
+    var marketplaceFactQualityBonus: Int {
+        min(displayValues.count * 4, 16)
+    }
+
+    var localPickupBoost: Int {
+        isLargeOrFragile ? 18 : 0
+    }
+
+    var shippingPenalty: Int {
+        isLargeOrFragile ? 18 : 0
+    }
+
+    private static func clean(_ value: String, maxLength: Int) -> String {
+        let collapsedWhitespace = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(collapsedWhitespace.prefix(maxLength))
+    }
+
+    private func appendDisplayValue(_ value: String, prefix: String, to values: inout [String]) {
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanValue.isEmpty == false else { return }
+        values.append("\(prefix): \(cleanValue)")
+    }
+}
+
 struct GeneratedListingDraft: Codable, Sendable, Equatable {
     var title: String?
     var description: String?
@@ -276,6 +360,14 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
     var postingNotes: [String]?
     var itemSpecifics: [String]?
     var tags: [String]?
+    var compLowPrice: Decimal? = nil
+    var compHighPrice: Decimal? = nil
+    var compMedianPrice: Decimal? = nil
+    var feeSummary: String? = nil
+    var pricingStrategy: String? = nil
+    var evidenceSummary: String? = nil
+    var referenceImageURL: String? = nil
+    var publicImageQuery: String? = nil
 
     var copyableListingText: String? {
         guard let title = clean(title, maxLength: 120),
@@ -302,7 +394,15 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
             fitReason: clean(fitReason, maxLength: 220),
             postingNotes: cleanList(postingNotes, maxItems: 3, maxLength: 160),
             itemSpecifics: cleanList(itemSpecifics, maxItems: 6, maxLength: 80),
-            tags: cleanList(tags, maxItems: 8, maxLength: 40)
+            tags: cleanList(tags, maxItems: 8, maxLength: 40),
+            compLowPrice: positive(compLowPrice),
+            compHighPrice: positive(compHighPrice),
+            compMedianPrice: positive(compMedianPrice),
+            feeSummary: clean(feeSummary, maxLength: 180),
+            pricingStrategy: clean(pricingStrategy, maxLength: 220),
+            evidenceSummary: clean(evidenceSummary, maxLength: 260),
+            referenceImageURL: cleanReferenceURL(referenceImageURL),
+            publicImageQuery: clean(publicImageQuery, maxLength: 140)
         )
 
         if sanitized.title == nil,
@@ -310,9 +410,17 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
            sanitized.listPrice == nil,
            sanitized.likelySalePrice == nil,
            sanitized.takeHomeEstimate == nil,
+           sanitized.compLowPrice == nil,
+           sanitized.compHighPrice == nil,
+           sanitized.compMedianPrice == nil,
            sanitized.firstPhoto == nil,
            sanitized.missingPhotoPrompt == nil,
            sanitized.fitReason == nil,
+           sanitized.feeSummary == nil,
+           sanitized.pricingStrategy == nil,
+           sanitized.evidenceSummary == nil,
+           sanitized.referenceImageURL == nil,
+           sanitized.publicImageQuery == nil,
            sanitized.postingNotes?.isEmpty ?? true,
            sanitized.itemSpecifics?.isEmpty ?? true,
            sanitized.tags?.isEmpty ?? true {
@@ -347,6 +455,16 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
     private func positive(_ value: Decimal?) -> Decimal? {
         guard let value, value > 0 else { return nil }
         return value.rounded(scale: 2)
+    }
+
+    private func cleanReferenceURL(_ value: String?) -> String? {
+        guard let cleanURL = clean(value, maxLength: 500),
+              let url = URL(string: cleanURL),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http",
+              url.host?.isEmpty == false
+        else { return nil }
+        return cleanURL
     }
 }
 
@@ -486,10 +604,20 @@ struct SnapResultContext: Identifiable, Equatable {
     var preferredMarketplace: Marketplace?
 }
 
+struct ItemQuestionsContext: Identifiable, Equatable {
+    let id = UUID()
+    let item: DetectedItem
+    let imageData: Data?
+    let preferredMarketplace: Marketplace?
+    let analysis: AnalyzeIntelligence?
+    let answers: ItemDetailAnswers?
+}
+
 struct MarketplacePickerContext: Identifiable, Equatable {
     let id = UUID()
     let item: DetectedItem
     let imageData: Data?
+    let details: ItemDetailAnswers?
 }
 
 struct ListingContext: Identifiable, Equatable {
@@ -497,6 +625,7 @@ struct ListingContext: Identifiable, Equatable {
     let item: DetectedItem
     let imageData: Data?
     let marketplace: Marketplace
+    let details: ItemDetailAnswers?
     let existingListingText: String?
     let existingHistoryEntry: HistoryEntry?
 }

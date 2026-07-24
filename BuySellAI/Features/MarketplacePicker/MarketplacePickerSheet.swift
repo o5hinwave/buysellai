@@ -29,7 +29,7 @@ struct MarketplacePickerSheet: View {
         .task {
             guard computedEstimates == nil else { return }
             try? await Task.sleep(nanoseconds: 180_000_000)
-            computedEstimates = MarketplaceEstimator.estimates(for: context.item)
+            computedEstimates = MarketplaceEstimator.estimates(for: context.item, details: context.details)
         }
     }
 
@@ -52,7 +52,8 @@ struct MarketplacePickerSheet: View {
                 appStore.presentListing(
                     item: context.item,
                     imageData: context.imageData,
-                    marketplace: estimate.id
+                    marketplace: estimate.id,
+                    details: context.details
                 )
             }
         }
@@ -84,13 +85,13 @@ struct MarketplacePickerSheet: View {
 
     private func summaryButton(pick: MarketplaceSummaryPick, isRecommended: Bool) -> some View {
         SummaryButton(pick: pick, item: context.item, isRecommended: isRecommended) {
-            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id)
+            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id, details: context.details)
         }
     }
 
     private func recommendedButton(pick: MarketplaceSummaryPick) -> some View {
         RecommendedMarketplaceButton(pick: pick, item: context.item) {
-            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id)
+            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id, details: context.details)
         }
     }
 
@@ -124,7 +125,7 @@ struct MarketplacePickerSheet: View {
 
         ForEach(Marketplace.activeRecommendationCases) { marketplace in
             MarketplaceFallbackRow(marketplace: marketplace) {
-                appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace)
+                appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace, details: context.details)
             }
         }
     }

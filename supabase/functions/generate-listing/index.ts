@@ -27,8 +27,11 @@ serve(async (request) => {
     const body = await readJson(request);
     const item = requireItem(body.item);
     const platform = requireMarketplace(body.platform);
+    const details = optionalItemDetails(body.details);
+    const imageDataUrl = optionalImageDataUrl(body.imageDataUrl);
+    const imageEvidence = imageDataUrl ? await fetchVisionWebDetectionEvidence(imageDataUrl) : null;
     const profile = marketplaceProfiles[platform];
-    const researchPlan = createMarketplaceResearchPlan(item, platform, profile);
+    const researchPlan = createMarketplaceResearchPlan(item, platform, profile, details, imageEvidence);
     const cachedResearch = await fetchMarketplaceResearchCache(researchPlan);
     const usesCachedResearch = cachedResearch !== null;
 
@@ -43,11 +46,13 @@ serve(async (request) => {
           `Featured guidance to respect: ${profile.featuredGuidance}`,
           `Minimal marketplace research plan: ${JSON.stringify(researchPlan)}`,
           `Saved marketplace research: ${cachedResearch ? JSON.stringify(cachedResearch) : "none"}`,
+          `Visual web evidence: ${imageEvidence ? JSON.stringify(imageEvidence) : "none"}`,
           `Item: ${item.name}`,
           `Category: ${item.category}`,
           `Condition: ${item.condition}`,
           `Original price: ${item.originalPrice}`,
           `Current price: ${item.currentPrice}`,
+          `Seller details: ${detailsForPrompt(details)}`,
         ].join("\n"),
       }],
       {
@@ -73,6 +78,14 @@ serve(async (request) => {
             type: "ARRAY",
             items: { type: "STRING" },
           },
+          compLowPrice: { type: "NUMBER", minimum: 1 },
+          compHighPrice: { type: "NUMBER", minimum: 1 },
+          compMedianPrice: { type: "NUMBER", minimum: 1 },
+          feeSummary: { type: "STRING" },
+          pricingStrategy: { type: "STRING" },
+          evidenceSummary: { type: "STRING" },
+          referenceImageURL: { type: "STRING" },
+          publicImageQuery: { type: "STRING" },
           researchSummary: { type: "STRING" },
           usefulFindings: {
             type: "ARRAY",
@@ -145,6 +158,26 @@ type ListingItem = {
   currentPrice: number;
 };
 
+type ListingItemDetails = {
+  labelOrBrand: string | null;
+  sizeOrModel: string | null;
+  flaws: string | null;
+  included: string | null;
+  extraDetails: string | null;
+  isLargeOrFragile: boolean;
+};
+
+type ImageDataUrl = {
+  base64: string;
+};
+
+type ListingImageEvidence = {
+  bestGuessLabels: string[];
+  matchingPageTitles: string[];
+  matchingImageUrls: string[];
+  similarImageUrls: string[];
+};
+
 type StructuredListingDraft = {
   title: string;
   description: string;
@@ -157,6 +190,14 @@ type StructuredListingDraft = {
   postingNotes: string[];
   itemSpecifics: string[];
   tags: string[];
+  compLowPrice: number | null;
+  compHighPrice: number | null;
+  compMedianPrice: number | null;
+  feeSummary: string | null;
+  pricingStrategy: string | null;
+  evidenceSummary: string | null;
+  referenceImageURL: string | null;
+  publicImageQuery: string | null;
 };
 
 const knownMarketplaceIds = [
@@ -242,16 +283,24 @@ function listingSystemInstruction(
     "Do not return a listing field, markdown, preambles, watermarks, or section headings.",
     "Required fields: title, description, listPrice, likelySalePrice, takeHomeEstimate, firstPhoto, fitReason.",
     "Optional fields: missingPhotoPrompt, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
+    "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery.",
     "title must be body text only and description must be body text only.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
     usesCachedResearch
       ? "Use the saved marketplace research provided. Do not broaden beyond it."
       : "Use Google Search and URL Context only for the minimal research plan provided.",
     "Prefer official marketplace guidance over stale assumptions.",
+    "After the item identity is known, use grounded search for real marketplace fees, sold/completed comps, comparable price history, and marketplace rules.",
+    "Distinguish sold/completed comps from active asking prices. Use compLowPrice, compHighPrice, and compMedianPrice only when grounded evidence supports them.",
+    "If only active listings or weak matches are available, explain the limitation in evidenceSummary and leave unsupported comp price fields empty.",
+    "Use seller details and visual web evidence when present. Never invent brand, model, size, defects, sold prices, fees, or public image URLs.",
+    "referenceImageURL must be a public image URL from visual web evidence or grounded search that is clearly the same or a close comparable item. Leave it empty if uncertain.",
+    "pricingStrategy should be a plain instruction for a non-expert seller: where to list, what offer range to accept, and why.",
+    "feeSummary should be short and grounded in official marketplace fee guidance when available.",
     "Do not use technical search-marketing acronyms in the listing or any returned field.",
     "Return usefulFindings, officialSources, and searchedFor only when the finding can help future listings.",
     `Keep TITLE at or below ${profile.titleMaxCharacters} characters.`,
-    "Only use facts provided by the item name, category, condition, and price.",
+    "Only use facts provided by the item name, category, condition, price, seller details, visual evidence, and grounded research.",
     "Do not add tax language or follow-up questions.",
     "Keep the tone warm, direct, and useful for a person selling one thing.",
   ].join(" ");
@@ -261,30 +310,145 @@ function createMarketplaceResearchPlan(
   item: ListingItem,
   platform: MarketplaceId,
   profile: MarketplaceListingProfile,
+  details: ListingItemDetails | null,
+  imageEvidence: ListingImageEvidence | null,
 ): MarketplaceResearchPlan {
   const displayName = marketplaceDisplayNames[platform] ?? platform;
   const currentYear = new Date().getUTCFullYear();
   const category = normalizedIdentifier(item.category);
   const condition = normalizedIdentifier(item.condition);
+  const identity = researchIdentity(item, details, imageEvidence);
+  const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
   const searchQuestions = [
     `${displayName} official selling fees ${currentYear}`,
-    `${displayName} official ${item.category} listing category condition guidance`,
-    `${displayName} official photo title description guidance`,
+    `${displayName} sold listings ${identity} used ${item.condition}`,
+    `${identity} resale sold price comparable`,
   ];
 
   return {
-    cacheKey: `${platform}:${category}:${condition}`,
+    cacheKey: `${platform}:${category}:${condition}:${identityKey}`,
     marketplace: platform,
     category: item.category,
     condition: item.condition,
     searchQuestions: searchQuestions.slice(0, 3),
     sourceTargets: [
+      "sold or completed listing pages when available",
+      "reputable resale price guides or marketplace sold-result pages",
       "official marketplace help pages",
       "official fee pages",
-      "official prohibited or restricted item guidance when relevant",
+      "public reference images only when the source and item match are clear",
     ],
-    reason: `Need current rules, fee context, and posting guidance before drafting a ${profile.titleMaxCharacters}-character marketplace title.`,
+    reason: `Need current rules, fee context, sold-price evidence, and posting guidance before drafting a ${profile.titleMaxCharacters}-character marketplace title for ${identity}.`,
   };
+}
+
+function researchIdentity(
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  imageEvidence: ListingImageEvidence | null,
+): string {
+  const parts = uniqueStrings([
+    details?.labelOrBrand ?? "",
+    details?.sizeOrModel ?? "",
+    item.name,
+    imageEvidence?.bestGuessLabels[0] ?? "",
+  ].filter((value) => value.trim().length > 0), 5);
+  return parts.join(" ").slice(0, 160) || item.name;
+}
+
+function detailsForPrompt(details: ListingItemDetails | null): string {
+  if (!details) return "none";
+  const lines = [
+    details.labelOrBrand ? `Brand or maker: ${details.labelOrBrand}` : "",
+    details.sizeOrModel ? `Size, model, or measurement: ${details.sizeOrModel}` : "",
+    details.flaws ? `Flaws or damage: ${details.flaws}` : "",
+    details.included ? `Included items: ${details.included}` : "",
+    details.extraDetails ? `Extra seller note: ${details.extraDetails}` : "",
+    details.isLargeOrFragile ? "Shipping note: big, heavy, or fragile" : "",
+  ].filter((value) => value.length > 0);
+  return lines.length ? lines.join("; ") : "none";
+}
+
+async function fetchVisionWebDetectionEvidence(
+  imageDataUrl: ImageDataUrl,
+): Promise<ListingImageEvidence | null> {
+  const apiKey = Deno.env.get("GOOGLE_CLOUD_VISION_API_KEY")?.trim() ||
+    Deno.env.get("GOOGLE_VISION_API_KEY")?.trim();
+  if (!apiKey) return null;
+
+  try {
+    const response = await fetchWithTimeout(
+      `https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: imageDataUrl.base64 },
+            features: [{ type: "WEB_DETECTION", maxResults: 8 }],
+          }],
+        }),
+      },
+      {
+        timeoutMs: timeoutFromEnv("GOOGLE_VISION_TIMEOUT_MS", 8_000),
+        timeoutMessage: "Vision web detection timed out",
+        transportMessage: "Vision web detection transport failed",
+      },
+    );
+    if (!response.ok) return null;
+
+    const body = requireJsonObject(
+      await readResponseJson(response, "Vision web detection response was not valid JSON"),
+      "Vision web detection response was not a JSON object",
+    );
+    const responses = Array.isArray(body.responses) ? body.responses : [];
+    const firstResponse = recordOrNull(responses[0]);
+    const webDetection = recordOrNull(firstResponse?.webDetection);
+    if (!webDetection) return null;
+
+    const bestGuessLabels = stringArray(
+      (Array.isArray(webDetection.bestGuessLabels) ? webDetection.bestGuessLabels : [])
+        .map((entry) => recordOrNull(entry)?.label),
+      4,
+      80,
+    );
+    const matchingPageTitles = stringArray(
+      (Array.isArray(webDetection.pagesWithMatchingImages) ? webDetection.pagesWithMatchingImages : [])
+        .map((entry) => recordOrNull(entry)?.pageTitle),
+      5,
+      120,
+    );
+    const matchingImageUrls = stringArray([
+      ...(Array.isArray(webDetection.fullMatchingImages) ? webDetection.fullMatchingImages : [])
+        .map((entry) => recordOrNull(entry)?.url),
+      ...(Array.isArray(webDetection.partialMatchingImages) ? webDetection.partialMatchingImages : [])
+        .map((entry) => recordOrNull(entry)?.url),
+    ], 5, 500);
+    const similarImageUrls = stringArray(
+      (Array.isArray(webDetection.visuallySimilarImages) ? webDetection.visuallySimilarImages : [])
+        .map((entry) => recordOrNull(entry)?.url),
+      5,
+      500,
+    );
+
+    if (
+      bestGuessLabels.length === 0 &&
+      matchingPageTitles.length === 0 &&
+      matchingImageUrls.length === 0 &&
+      similarImageUrls.length === 0
+    ) {
+      return null;
+    }
+
+    return {
+      bestGuessLabels,
+      matchingPageTitles,
+      matchingImageUrls,
+      similarImageUrls,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchMarketplaceResearchCache(
@@ -620,6 +784,45 @@ function requireItem(value: unknown): ListingItem {
   };
 }
 
+function optionalItemDetails(value: unknown): ListingItemDetails | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+
+  const details = value as Record<string, unknown>;
+  const cleanDetails: ListingItemDetails = {
+    labelOrBrand: optionalString(details.labelOrBrand, 80),
+    sizeOrModel: optionalString(details.sizeOrModel, 96),
+    flaws: optionalString(details.flaws, 140),
+    included: optionalString(details.included, 120),
+    extraDetails: optionalString(details.extraDetails, 180),
+    isLargeOrFragile: details.isLargeOrFragile === true,
+  };
+
+  if (
+    cleanDetails.labelOrBrand === null &&
+    cleanDetails.sizeOrModel === null &&
+    cleanDetails.flaws === null &&
+    cleanDetails.included === null &&
+    cleanDetails.extraDetails === null &&
+    cleanDetails.isLargeOrFragile === false
+  ) {
+    return null;
+  }
+
+  return cleanDetails;
+}
+
+function optionalImageDataUrl(value: unknown): ImageDataUrl | null {
+  if (typeof value !== "string" || !value.startsWith("data:image/jpeg;base64,")) {
+    return null;
+  }
+  const base64 = value.slice("data:image/jpeg;base64,".length).trim();
+  if (!base64 || base64.length > 3_800_000 || /^[A-Za-z0-9+/=]+$/.test(base64) === false) {
+    return null;
+  }
+  return { base64 };
+}
+
 function requireMarketplace(value: unknown): MarketplaceId {
   const platform = asString(value, "platform").toLowerCase();
   if (!knownMarketplaceIdSet.has(platform)) {
@@ -673,6 +876,13 @@ function optionalString(value: unknown, maxLength = 1_200): string | null {
   return trimmed.slice(0, maxLength);
 }
 
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
 function stringArray(value: unknown, maxItems = 6, maxLength = 260): string[] {
   if (!Array.isArray(value)) return [];
   const values: string[] = [];
@@ -711,6 +921,9 @@ function requireStructuredListingDraft(
   const missingPhotoPrompt = optionalCleanDraftText(result.missingPhotoPrompt, 140);
   const fitReason = optionalCleanDraftText(result.fitReason, 220) ??
     `${marketplaceDisplayNames[platform]} fits this item when the details and photos are clear.`;
+  const compLowPrice = optionalPositiveNumber(result.compLowPrice);
+  const compHighPrice = optionalPositiveNumber(result.compHighPrice);
+  const compMedianPrice = optionalPositiveNumber(result.compMedianPrice);
 
   return {
     title,
@@ -724,6 +937,14 @@ function requireStructuredListingDraft(
     postingNotes: cleanStringList(result.postingNotes, 3, 160),
     itemSpecifics: cleanStringList(result.itemSpecifics, 6, 80),
     tags: cleanStringList(result.tags, 8, 40),
+    compLowPrice,
+    compHighPrice,
+    compMedianPrice,
+    feeSummary: optionalCleanDraftText(result.feeSummary, 180),
+    pricingStrategy: optionalCleanDraftText(result.pricingStrategy, 220),
+    evidenceSummary: optionalCleanDraftText(result.evidenceSummary, 260),
+    referenceImageURL: optionalReferenceImageURL(result.referenceImageURL),
+    publicImageQuery: optionalCleanDraftText(result.publicImageQuery, 140),
   };
 }
 
@@ -777,6 +998,26 @@ function positiveNumberOrFallback(value: unknown, fallback: number): number {
     return Math.round(number * 100) / 100;
   }
   return Math.round(Math.max(fallback, 1) * 100) / 100;
+}
+
+function optionalPositiveNumber(value: unknown): number | null {
+  const number = Number(value);
+  if (Number.isFinite(number) && number > 0) {
+    return Math.round(number * 100) / 100;
+  }
+  return null;
+}
+
+function optionalReferenceImageURL(value: unknown): string | null {
+  const text = optionalCleanDraftText(value, 500);
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 type SupabaseServiceConfig = {

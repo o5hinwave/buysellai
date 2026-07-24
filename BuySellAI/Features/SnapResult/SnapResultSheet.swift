@@ -233,13 +233,13 @@ struct SnapResultSheet: View {
             Button {
                 proceedWithItem(item)
             } label: {
-                Label("Looks right — pick where to sell".localized, systemImage: "checkmark.circle.fill")
+                Label("Looks right — add details".localized, systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(Color.brand.primary)
-            .accessibilityLabel("Looks right — pick where to sell".localized)
+            .accessibilityLabel("Looks right — add details".localized)
             .accessibilitySortPriority(3)
         }
         .padding(.horizontal, Spacing.md)
@@ -257,11 +257,12 @@ struct SnapResultSheet: View {
         Haptics.impact(.medium)
         store.commitEdits()
         let item = store.item ?? fallbackItem
-        if let preferred = context.preferredMarketplace {
-            appStore.presentListing(item: item, imageData: context.imageData, marketplace: preferred)
-        } else {
-            appStore.presentMarketplacePicker(item: item, imageData: context.imageData)
-        }
+        appStore.presentItemQuestions(
+            item: item,
+            imageData: context.imageData,
+            preferredMarketplace: context.preferredMarketplace,
+            analysis: store.analysisDetails
+        )
     }
 
     @ViewBuilder

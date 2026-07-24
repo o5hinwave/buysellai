@@ -67,15 +67,29 @@ actor APIClient {
         return try response.validatedForDisplay()
     }
 
-    func generateListing(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> String {
+    func generateListing(
+        item: DetectedItem,
+        marketplace: Marketplace,
+        details: ItemDetailAnswers? = nil,
+        imageData: Data? = nil,
+        accessToken: String? = nil
+    ) async throws -> String {
         try await generateListingPayload(
             item: item,
             marketplace: marketplace,
+            details: details,
+            imageData: imageData,
             accessToken: accessToken
         ).listing
     }
 
-    func generateListingPayload(item: DetectedItem, marketplace: Marketplace, accessToken: String? = nil) async throws -> GeneratedListing {
+    func generateListingPayload(
+        item: DetectedItem,
+        marketplace: Marketplace,
+        details: ItemDetailAnswers? = nil,
+        imageData: Data? = nil,
+        accessToken: String? = nil
+    ) async throws -> GeneratedListing {
         if LaunchArguments.contains(LaunchArguments.uiTestingGenerateOffline) {
             throw APIError.offline
         }
@@ -104,7 +118,13 @@ actor APIClient {
             originalPrice: item.priceEstimate,
             currentPrice: item.priceEstimate
         )
-        let payload = GenerateListingRequest(item: itemPayload, platform: marketplace.rawValue)
+        let cleanDetails = details?.sanitizedForUse
+        let payload = GenerateListingRequest(
+            item: itemPayload,
+            platform: marketplace.rawValue,
+            details: cleanDetails.map(ListingItemDetailsPayload.init(details:)),
+            imageDataUrl: listingImageDataURL(from: imageData)
+        )
         let request = try makeRequest(
             path: "generate-listing",
             config: config,
@@ -192,6 +212,16 @@ actor APIClient {
         default:
             throw APIError.server(httpResponse.statusCode)
         }
+    }
+
+    private func listingImageDataURL(from imageData: Data?) -> String? {
+        guard let imageData, imageData.isEmpty == false else { return nil }
+        let compactImageData = ImageTools.jpegDataDownscaled(
+            from: imageData,
+            maxLongEdge: 900,
+            compression: 0.76
+        ) ?? imageData
+        return "data:image/jpeg;base64,\(compactImageData.base64EncodedString())"
     }
 
 }
@@ -381,6 +411,8 @@ private struct AnalyzeRequest: Encodable {
 private struct GenerateListingRequest: Encodable {
     let item: ListingItemPayload
     let platform: String
+    let details: ListingItemDetailsPayload?
+    let imageDataUrl: String?
 }
 
 private struct ListingItemPayload: Encodable {
@@ -389,6 +421,29 @@ private struct ListingItemPayload: Encodable {
     let condition: String
     let originalPrice: Decimal
     let currentPrice: Decimal
+}
+
+private struct ListingItemDetailsPayload: Encodable {
+    let labelOrBrand: String?
+    let sizeOrModel: String?
+    let flaws: String?
+    let included: String?
+    let extraDetails: String?
+    let isLargeOrFragile: Bool
+
+    init(details: ItemDetailAnswers) {
+        labelOrBrand = Self.optional(details.labelOrBrand)
+        sizeOrModel = Self.optional(details.sizeOrModel)
+        flaws = Self.optional(details.flaws)
+        included = Self.optional(details.included)
+        extraDetails = Self.optional(details.extraDetails)
+        isLargeOrFragile = details.isLargeOrFragile
+    }
+
+    private static func optional(_ value: String) -> String? {
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleanValue.isEmpty ? nil : cleanValue
+    }
 }
 
 private struct GenerateListingResponse: Decodable {

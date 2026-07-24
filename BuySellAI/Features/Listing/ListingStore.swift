@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 @Observable
 final class ListingStore {
-    typealias GenerateHandler = (DetectedItem, Marketplace, String?) async throws -> GeneratedListing
+    typealias GenerateHandler = (DetectedItem, Marketplace, ItemDetailAnswers?, Data?, String?) async throws -> GeneratedListing
 
     enum Phase: Equatable {
         case idle
@@ -15,6 +15,8 @@ final class ListingStore {
 
     let item: DetectedItem
     let marketplace: Marketplace
+    let details: ItemDetailAnswers?
+    let imageData: Data?
     var listingText: String
     var draft: GeneratedListingDraft?
     var phase: Phase
@@ -25,17 +27,23 @@ final class ListingStore {
     init(
         item: DetectedItem,
         marketplace: Marketplace,
+        details: ItemDetailAnswers? = nil,
+        imageData: Data? = nil,
         existingListingText: String?,
-        generateHandler: @escaping GenerateHandler = { item, marketplace, accessToken in
+        generateHandler: @escaping GenerateHandler = { item, marketplace, details, imageData, accessToken in
             try await APIClient.shared.generateListingPayload(
                 item: item,
                 marketplace: marketplace,
+                details: details,
+                imageData: imageData,
                 accessToken: accessToken
             )
         }
     ) {
         self.item = item
         self.marketplace = marketplace
+        self.details = details?.sanitizedForUse
+        self.imageData = imageData
         self.generateHandler = generateHandler
         if let existingListingText {
             if let safeListingText = try? ListingTextContract.validatedStored(existingListingText) {
@@ -77,7 +85,7 @@ final class ListingStore {
         let currentGeneration = generation
         phase = .loading
         do {
-            let generated = try await generateHandler(item, marketplace, accessToken)
+            let generated = try await generateHandler(item, marketplace, details, imageData, accessToken)
             guard currentGeneration == generation else { return }
             listingText = try ListingTextContract.validatedGenerated(generated.listing)
             draft = generated.draft

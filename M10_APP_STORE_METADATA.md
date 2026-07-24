@@ -43,8 +43,8 @@ This file records the App Store Connect product-page, privacy, accessibility, sc
 | Screenshot files | 8 |
 | Screenshot quality | No blank or dark-strip artifacts; warm orange brand signal present. |
 | Screenshot brand signal | warm orange present |
-| iPhone 6.9 result bundle | /tmp/buysell-m10-screenshots-iphone-16-pro-max.xcresult |
-| iPad 13 result bundle | /tmp/buysell-m10-screenshots-ipad-pro-13.xcresult |
+| iPhone 6.9 result bundle | /tmp/buysell-m10-screenshots-iphone-16-pro-max-apple-card-20260723.xcresult |
+| iPad 13 result bundle | /tmp/buysell-m10-screenshots-ipad-pro-13-apple-card-20260723.xcresult |
 | Screenshot result bundle | /tmp/buysell-submit-readiness-full.xcresult |
 | Screenshot capture test | BuySellAIUITests/testM10AppStoreScreenshotsCanBeCaptured() |
 

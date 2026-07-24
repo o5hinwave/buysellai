@@ -27,7 +27,7 @@ enum MarketplaceEstimator {
         sortedPayoutEstimates(for: base)
     }
 
-    static func estimates(for item: DetectedItem) -> [MarketplaceEstimate] {
+    static func estimates(for item: DetectedItem, details: ItemDetailAnswers? = nil) -> [MarketplaceEstimate] {
         let payoutEstimates = sortedPayoutEstimates(for: item.priceEstimate)
         let payouts = payoutEstimates.map(\.payout)
         let highestPayout = payouts.max() ?? Decimal(1)
@@ -43,6 +43,7 @@ enum MarketplaceEstimator {
                 copy.badge = .none
                 let components = recommendationComponents(
                     for: item,
+                    details: details,
                     estimate: estimate,
                     lowestPayout: lowestPayout,
                     payoutRange: payoutRange
@@ -79,20 +80,24 @@ enum MarketplaceEstimator {
 
     static func recommendationComponents(
         for item: DetectedItem,
+        details: ItemDetailAnswers? = nil,
         estimate: MarketplaceEstimate,
         lowestPayout: Decimal,
         payoutRange: Double
     ) -> MarketplaceRecommendationComponents {
         let profile = estimate.id.optimizationProfile
+        let shippingFit = max(1, profile.shippingFit(for: item) - (details?.shippingPenalty ?? 0))
+        let localPickupFit = min(100, profile.localPickupFit(for: item) + (details?.localPickupBoost ?? 0))
+        let itemFactQuality = min(100, item.marketplaceFactQualityScore + (details?.marketplaceFactQualityBonus ?? 0))
         return MarketplaceRecommendationComponents(
             saleLikelihood: Double(estimate.id.searchFitScore(for: item)),
             netPayout: ((estimate.payout.doubleValue - lowestPayout.doubleValue) / max(payoutRange, 1)) * 100,
             listingEffort: Double(profile.listingEffort(for: item)),
-            shippingFit: Double(profile.shippingFit(for: item)),
-            localPickupFit: Double(profile.localPickupFit(for: item)),
+            shippingFit: Double(shippingFit),
+            localPickupFit: Double(localPickupFit),
             buyerTrust: Double(profile.buyerTrust(for: item)),
             speed: Double(profile.speedScore),
-            itemFactQuality: Double(item.marketplaceFactQualityScore)
+            itemFactQuality: Double(itemFactQuality)
         )
     }
 

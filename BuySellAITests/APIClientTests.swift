@@ -159,13 +159,35 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(item["condition"] as? String, "good")
             XCTAssertEqual((item["originalPrice"] as? NSNumber)?.decimalValue, Decimal(45))
             XCTAssertEqual((item["currentPrice"] as? NSNumber)?.decimalValue, Decimal(45))
+            let details = try XCTUnwrap(json["details"] as? [String: Any])
+            XCTAssertEqual(details["labelOrBrand"] as? String, "Stiffel")
+            XCTAssertEqual(details["sizeOrModel"] as? String, "24 inches")
+            XCTAssertEqual(details["flaws"] as? String, "Small scratch")
+            XCTAssertEqual(details["included"] as? String, "Shade")
+            XCTAssertEqual(details["extraDetails"] as? String, "Brass finish")
+            XCTAssertEqual(details["isLargeOrFragile"] as? Bool, true)
+            let imageDataURL = try XCTUnwrap(json["imageDataUrl"] as? String)
+            XCTAssertTrue(imageDataURL.hasPrefix("data:image/jpeg;base64,"))
 
             let url = try XCTUnwrap(request.url)
             let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
             return (response, Data(#"{"listing":"  \nTITLE:\nLamp\n\nDESCRIPTION:\nWorks well.\n  "}"#.utf8))
         }
 
-        let listing = try await client.generateListing(item: item, marketplace: .ebay, accessToken: "access-token")
+        let listing = try await client.generateListing(
+            item: item,
+            marketplace: .ebay,
+            details: ItemDetailAnswers(
+                labelOrBrand: "Stiffel",
+                sizeOrModel: "24 inches",
+                flaws: "Small scratch",
+                included: "Shade",
+                extraDetails: "Brass finish",
+                isLargeOrFragile: true
+            ),
+            imageData: ImageTools.sampleJPEG(),
+            accessToken: "access-token"
+        )
 
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
     }
@@ -193,7 +215,15 @@ final class APIClientTests: XCTestCase {
                         "fitReason": "Good broad fit.",
                         "postingNotes": ["Keep pickup details clear.", "Keep pickup details clear."],
                         "itemSpecifics": ["Brass", "Table lamp"],
-                        "tags": ["lamp"]
+                        "tags": ["lamp"],
+                        "compLowPrice": 28,
+                        "compMedianPrice": 42,
+                        "compHighPrice": 65,
+                        "feeSummary": "Craigslist has no standard listing fee for most local household goods.",
+                        "pricingStrategy": "List at $45 and accept $38 or more if pickup is easy.",
+                        "evidenceSummary": "Checked sold and active comparable brass lamps.",
+                        "referenceImageURL": "https://example.com/lamp.jpg",
+                        "publicImageQuery": "vintage brass table lamp"
                       }
                     }
                     """.utf8
@@ -216,6 +246,14 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(payload.draft?.postingNotes, ["Keep pickup details clear."])
         XCTAssertEqual(payload.draft?.itemSpecifics, ["Brass", "Table lamp"])
         XCTAssertEqual(payload.draft?.tags, ["lamp"])
+        XCTAssertEqual(payload.draft?.compLowPrice, Decimal(28))
+        XCTAssertEqual(payload.draft?.compMedianPrice, Decimal(42))
+        XCTAssertEqual(payload.draft?.compHighPrice, Decimal(65))
+        XCTAssertEqual(payload.draft?.feeSummary, "Craigslist has no standard listing fee for most local household goods.")
+        XCTAssertEqual(payload.draft?.pricingStrategy, "List at $45 and accept $38 or more if pickup is easy.")
+        XCTAssertEqual(payload.draft?.evidenceSummary, "Checked sold and active comparable brass lamps.")
+        XCTAssertEqual(payload.draft?.referenceImageURL, "https://example.com/lamp.jpg")
+        XCTAssertEqual(payload.draft?.publicImageQuery, "vintage brass table lamp")
     }
 
     func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {
