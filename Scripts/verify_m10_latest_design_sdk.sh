@@ -182,16 +182,16 @@ require_home_marker "HomePearlCardSheen(cornerRadius: Radius.xl)"
 require_home_marker "HomeHeroIconTrail()"
 require_home_marker "HomeHeroLoopBadge()"
 require_home_marker 'HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)'
-require_home_marker 'HomeHeroTrailSymbol(systemImage: "questionmark.bubble.fill", isPrimary: false)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: "message.fill", isPrimary: false)'
 require_home_marker 'HomeHeroTrailSymbol(systemImage: "doc.on.doc.fill", isPrimary: false)'
 require_home_marker 'Section("Recent listings".localized)'
-require_home_marker 'Label("No listings yet".localized, systemImage: "tray.fill")'
+require_home_marker 'Label("No listings yet".localized, systemImage: "doc.text.fill")'
 require_home_marker "HomeStepRow(number: 1"
 require_home_marker "HomeStepRow(number: 2"
 require_home_marker "HomeStepRow(number: 3"
-require_home_marker 'systemImage: "questionmark.bubble.fill"'
+require_home_marker 'systemImage: "message.fill"'
 require_home_marker 'systemImage: "doc.on.doc.fill"'
-require_home_marker 'Image(systemName: "questionmark.circle.fill")'
+require_home_marker 'Image(systemName: "info.circle.fill")'
 require_home_marker ".symbolRenderingMode(.hierarchical)"
 require_home_marker "HomeHowItWorksRow"
 require_home_marker ".toolbar {"

@@ -21,7 +21,7 @@ struct HomeView: View {
 
                 Section {
                     HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.fill")
-                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "questionmark.bubble.fill")
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "message.fill")
                     HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc.fill")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
@@ -265,7 +265,7 @@ private struct HomeCameraHeroMark: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
 
-            Text("Photo. Questions. Listing.".localized)
+            Text("Photo. Answer. Copy.".localized)
                 .font(.subheadline)
                 .foregroundStyle(Color.brand.foregroundSecondary)
                 .lineLimit(1)
@@ -370,7 +370,7 @@ private struct HomeHeroCameraGlyph: View {
                         .stroke(Color.brand.border.opacity(0.82), lineWidth: 1)
                 }
 
-            Image(systemName: "camera.fill")
+            Image(systemName: "camera.viewfinder")
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.foreground)
@@ -400,7 +400,7 @@ private struct HomeHeroCameraGlyph: View {
 
 private struct HomeHeroLoopBadge: View {
     var body: some View {
-        Image(systemName: "arrow.triangle.2.circlepath")
+        Image(systemName: "arrow.clockwise.circle.fill")
             .brandSymbol(.rowIcon)
             .foregroundStyle(Color.brand.primaryForeground)
             .frame(width: 34, height: 34)
@@ -419,12 +419,12 @@ private struct HomeHeroIconTrail: View {
         HStack(spacing: Spacing.sm) {
             HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "questionmark.bubble.fill", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "message.fill", isPrimary: false)
             HomeHeroTrailConnector()
             HomeHeroTrailSymbol(systemImage: "doc.on.doc.fill", isPrimary: false)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Photo. Questions. Listing.".localized)
+        .accessibilityLabel("Photo. Answer. Copy.".localized)
     }
 }
 
@@ -511,7 +511,7 @@ private struct HomeStepRow: View {
 private struct EmptyHistoryView: View {
     var body: some View {
         ContentUnavailableView {
-            Label("No listings yet".localized, systemImage: "tray.fill")
+            Label("No listings yet".localized, systemImage: "doc.text.fill")
         } description: {
             Text("Copy a listing and it will appear here.".localized)
         }
@@ -591,7 +591,7 @@ private struct HomeHowItWorksRow: View {
             showTutorial()
         } label: {
             HStack(spacing: Spacing.md) {
-                Image(systemName: "questionmark.circle.fill")
+                Image(systemName: "info.circle.fill")
                     .brandSymbol(.controlIcon)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.brand.foreground)

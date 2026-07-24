@@ -419,7 +419,10 @@ struct ItemQuestionsSheet: View {
     }
 
     private var primaryActionSystemImage: String {
-        isLastQuestion ? "sparkle.magnifyingglass" : "chevron.right"
+        if isLastQuestion {
+            return context.preferredMarketplace == nil ? "magnifyingglass" : "pencil.and.outline"
+        }
+        return "chevron.right"
     }
 
     private var bottomHelperText: String {

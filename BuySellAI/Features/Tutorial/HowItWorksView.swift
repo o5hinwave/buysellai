@@ -150,7 +150,7 @@ private struct CompactGuideGraphic: View {
                 }
                 .modifier(AppShadow.raised())
 
-            Image(systemName: "camera.fill")
+            Image(systemName: "camera.viewfinder")
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.primaryText)
@@ -158,7 +158,7 @@ private struct CompactGuideGraphic: View {
 
             VStack {
                 HStack {
-                    Image(systemName: "questionmark.bubble.fill")
+                    Image(systemName: "message.fill")
                     Spacer()
                     Image(systemName: "doc.on.doc.fill")
                 }
@@ -269,7 +269,7 @@ private struct TutorialStep: Identifiable {
         ),
         TutorialStep(
             id: 2,
-            systemImage: "questionmark.bubble.fill",
+            systemImage: "message.fill",
             title: "Answer a few questions",
             detail: "Tap I don't know anytime."
         ),

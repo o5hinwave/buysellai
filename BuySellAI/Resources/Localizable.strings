@@ -1032,6 +1032,8 @@
 	<string>Photo check</string>
 	<key>Photo</key>
 	<string>Photo</string>
+	<key>Photo. Answer. Copy.</key>
+	<string>Photo. Answer. Copy.</string>
 	<key>Photo. Questions. Listing.</key>
 	<string>Photo. Questions. Listing.</string>
 	<key>Price, place, and post are ready.</key>
