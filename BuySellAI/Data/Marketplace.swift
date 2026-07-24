@@ -446,7 +446,7 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
                 title: "Shopify fees and costs",
                 url: "https://help.shopify.com/en/manual/international/pricing/fees",
                 checked: checked,
-                summary: "Payment, transaction, conversion, plan, and provider fees depend on market and payment provider."
+                summary: "Payment, transaction, plan, currency, and provider fees depend on market and payment provider."
             )
         case .rubylane:
             return evidence(
