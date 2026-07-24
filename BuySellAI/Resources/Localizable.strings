@@ -532,6 +532,8 @@
 	<string>Take photo, pick place, copy listing.</string>
 	<key>Tap I don't know anytime.</key>
 	<string>Tap I don't know anytime.</string>
+	<key>Tap any detail to fix it.</key>
+	<string>Tap any detail to fix it.</string>
 	<key>Tap the item to set focus and exposure.</key>
 	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>
@@ -700,6 +702,8 @@
 	<string>No selling skills needed.</string>
 	<key>Only what you know.</key>
 	<string>Only what you know.</string>
+	<key>Only add what someone can see, measure, or trust.</key>
+	<string>Only add what someone can see, measure, or trust.</string>
 	<key>Past comp</key>
 	<string>Past comp</string>
 	<key>Past comps</key>
@@ -780,6 +784,8 @@
 	<string>Answer if you know it. Skip if you don't.</string>
 	<key>Answer only what you know.</key>
 	<string>Answer only what you know.</string>
+	<key>Anything else worth saying?</key>
+	<string>Anything else worth saying?</string>
 	<key>Any flaws someone should see?</key>
 	<string>Any flaws someone should see?</string>
 	<key>Any measurements or maker marks?</key>
@@ -860,6 +866,10 @@
 	<string>Model number, shipping weight, fixed price...</string>
 	<key>Model, year, serial, and working condition matter for music gear.</key>
 	<string>Model, year, serial, and working condition matter for music gear.</string>
+	<key>Material, age, pickup note...</key>
+	<string>Material, age, pickup note...</string>
+	<key>Material, color, pickup, or note...</key>
+	<string>Material, color, pickup, or note...</string>
 	<key>Music gear listings need working condition, model, serial, and accessories.</key>
 	<string>Music gear listings need working condition, model, serial, and accessories.</string>
 	<key>Near downtown, porch pickup, can deliver...</key>
@@ -906,6 +916,8 @@
 	<string>Shipping</string>
 	<key>Signed or marked</key>
 	<string>Signed or marked</string>
+	<key>Signed, numbered, framed...</key>
+	<string>Signed, numbered, framed...</string>
 	<key>Skip all</key>
 	<string>Skip all</string>
 	<key>Size, material, and measurements help the listing fit the right place.</key>
@@ -914,6 +926,8 @@
 	<string>SKU, size, original box, box damage...</string>
 	<key>Sleeved</key>
 	<string>Sleeved</string>
+	<key>Serial, tested, accessories...</key>
+	<string>Serial, tested, accessories...</string>
 	<key>Storage, carrier, model, or whether it turns on can change the price.</key>
 	<string>Storage, carrier, model, or whether it turns on can change the price.</string>
 	<key>This helps BuySell decide whether local pickup beats shipping.</key>
@@ -928,8 +942,6 @@
 	<string>Turns on, unlocked, 128 GB, battery health...</string>
 	<key>Untested</key>
 	<string>Untested</string>
-	<key>Use Back to change an answer.</key>
-	<string>Use Back to change an answer.</string>
 	<key>Vintage, handmade, signed, materials...</key>
 	<string>Vintage, handmade, signed, materials...</string>
 	<key>We think this is</key>

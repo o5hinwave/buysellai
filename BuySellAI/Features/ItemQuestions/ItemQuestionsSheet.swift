@@ -41,13 +41,13 @@ struct ItemQuestionsSheet: View {
                     .accessibilitySortPriority(3)
                 }
 
-                if answers.displayValues.isEmpty == false {
+                if savedDetailRows.isEmpty == false {
                     Section {
                         savedDetailsRows
                     } header: {
                         Text("Saved so far".localized)
                     } footer: {
-                        Text("Use Back to change an answer.".localized)
+                        Text("Tap any detail to fix it.".localized)
                     }
                     .accessibilitySortPriority(2)
                 }
@@ -220,19 +220,100 @@ struct ItemQuestionsSheet: View {
     }
 
     private var savedDetailsRows: some View {
-        ForEach(answers.displayValues, id: \.self) { value in
-            Label {
-                Text(value)
-                    .font(.body)
-                    .foregroundStyle(Color.brand.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.brand.primaryText)
-                    .accessibilityHidden(true)
+        ForEach(savedDetailRows) { row in
+            Button {
+                editSavedDetail(row)
+            } label: {
+                HStack(alignment: .center, spacing: Spacing.md) {
+                    Image(systemName: row.systemImage)
+                        .brandSymbol(.controlIcon)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.brand.primaryText)
+                        .frame(width: 28, height: 28)
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text(row.title.localized)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.brand.mutedForeground)
+                            .lineLimit(1)
+
+                        Text(row.value)
+                            .font(.body)
+                            .foregroundStyle(Color.brand.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: Spacing.sm)
+
+                    Image(systemName: "pencil.circle.fill")
+                        .brandSymbol(.controlIcon)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .accessibilityHidden(true)
+                }
+                .padding(.vertical, Spacing.xxs)
             }
-            .padding(.vertical, Spacing.xxs)
+            .buttonStyle(PressButtonStyle())
             .accessibilityElement(children: .combine)
+            .accessibilityLabel(String.localizedFormat("%@, %@, %@", row.title.localized, row.value, "Fix this".localized))
+        }
+    }
+
+    private var savedDetailRows: [SavedDetailRow] {
+        var rows: [SavedDetailRow] = []
+        appendSavedTextRow(title: "Brand", value: answers.labelOrBrand, field: .labelOrBrand, systemImage: "tag.fill", to: &rows)
+        appendSavedTextRow(title: "Size/model", value: answers.sizeOrModel, field: .sizeOrModel, systemImage: "ruler", to: &rows)
+        appendSavedTextRow(title: "Flaws", value: answers.flaws, field: .flaws, systemImage: "exclamationmark.circle.fill", to: &rows)
+        appendSavedTextRow(title: "Includes", value: answers.included, field: .included, systemImage: "shippingbox.fill", to: &rows)
+        appendSavedTextRow(title: "Other", value: answers.extraDetails, field: .extraDetails, systemImage: "text.bubble.fill", to: &rows)
+        appendSavedMarketplaceRows(to: &rows)
+
+        if answers.isLargeOrFragile || answers.answeredFieldKeys.contains(.largeOrFragile) {
+            rows.append(SavedDetailRow(
+                title: "Large or fragile",
+                value: answers.isLargeOrFragile ? "Yes".localized : "No".localized,
+                systemImage: "shippingbox.and.arrow.backward.fill",
+                target: .largeOrFragile
+            ))
+        }
+        return rows
+    }
+
+    private func appendSavedTextRow(
+        title: String,
+        value: String,
+        field: Field,
+        systemImage: String,
+        to rows: inout [SavedDetailRow]
+    ) {
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let detailKey = field.detailKey
+        if cleanValue.isEmpty == false {
+            rows.append(SavedDetailRow(title: title, value: cleanValue, systemImage: systemImage, target: .field(field)))
+        } else if answers.answeredFieldKeys.contains(detailKey) {
+            rows.append(SavedDetailRow(title: title, value: "I don't know".localized, systemImage: systemImage, target: .field(field)))
+        }
+    }
+
+    private func appendSavedMarketplaceRows(to rows: inout [SavedDetailRow]) {
+        Marketplace.allCases.forEach { marketplace in
+            let cleanValue = answers.marketplaceNote(for: marketplace).trimmingCharacters(in: .whitespacesAndNewlines)
+            if cleanValue.isEmpty == false {
+                rows.append(SavedDetailRow(
+                    title: marketplace.displayName,
+                    value: cleanValue,
+                    systemImage: marketplace.iconSystemName,
+                    target: .field(.marketplaceNote(marketplace))
+                ))
+            } else if answers.answeredMarketplaces.contains(marketplace) {
+                rows.append(SavedDetailRow(
+                    title: marketplace.displayName,
+                    value: "I don't know".localized,
+                    systemImage: marketplace.iconSystemName,
+                    target: .field(.marketplaceNote(marketplace))
+                ))
+            }
         }
     }
 
@@ -465,6 +546,42 @@ struct ItemQuestionsSheet: View {
         focusedField = nil
         Haptics.impact(.light)
         currentQuestionIndex = max(currentQuestionIndex - 1, 0)
+    }
+
+    private func editSavedDetail(_ row: SavedDetailRow) {
+        focusedField = nil
+        Haptics.impact(.light)
+        let question = editableQuestion(for: row.target)
+        if let existingIndex = questions.firstIndex(where: { $0.kind == question.kind }) {
+            questions[existingIndex] = question
+            currentQuestionIndex = existingIndex
+        } else {
+            let insertionIndex = questions.isEmpty ? 0 : min(currentQuestionIndex, questions.count)
+            questions.insert(question, at: insertionIndex)
+            currentQuestionIndex = insertionIndex
+        }
+        if case .text(let field) = question.kind {
+            focusedField = field
+        }
+    }
+
+    private func editableQuestion(for target: SavedDetailTarget) -> DetailQuestion {
+        switch target {
+        case .field(.labelOrBrand):
+            Self.brandQuestion(for: context.item.category)
+        case .field(.sizeOrModel):
+            Self.specQuestion(for: context.item.category, marketplace: context.preferredMarketplace)
+        case .field(.flaws):
+            Self.flawQuestion
+        case .field(.included):
+            Self.includedQuestion(for: context.item.category)
+        case .field(.extraDetails):
+            Self.extraDetailQuestion(for: context.item.category)
+        case .field(.marketplaceNote(let marketplace)):
+            Self.marketplaceQuestion(for: marketplace, item: context.item)
+        case .largeOrFragile:
+            Self.largeOrFragileQuestion(for: context.item.category)
+        }
     }
 
     private func continueWithDetails() {
@@ -742,6 +859,35 @@ struct ItemQuestionsSheet: View {
                 DetailChoice(title: "I don't know", value: .unknown)
             ]
         )
+    }
+
+    private static func extraDetailQuestion(for category: Category) -> DetailQuestion {
+        DetailQuestion(
+            id: "extra",
+            contextLabel: "Details",
+            title: "Anything else worth saying?",
+            detail: "Only add what someone can see, measure, or trust.",
+            placeholder: extraDetailPlaceholder(for: category),
+            systemImage: "text.bubble.fill",
+            kind: .text(.extraDetails),
+            choices: [
+                DetailChoice(title: "No extra detail", value: .text("No extra detail")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        )
+    }
+
+    private static func extraDetailPlaceholder(for category: Category) -> String {
+        switch category {
+        case .art, .collectibles:
+            "Signed, numbered, framed..."
+        case .furniture, .home:
+            "Material, age, pickup note..."
+        case .electronics, .tools, .music:
+            "Serial, tested, accessories..."
+        default:
+            "Material, color, pickup, or note..."
+        }
     }
 
     private static func includedPlaceholder(for category: Category) -> String {
@@ -1115,6 +1261,22 @@ private struct DetailQuestion: Identifiable, Hashable {
 
 private enum QuestionKind: Hashable {
     case text(ItemQuestionsSheet.Field)
+    case largeOrFragile
+}
+
+private struct SavedDetailRow: Identifiable, Hashable {
+    let title: String
+    let value: String
+    let systemImage: String
+    let target: SavedDetailTarget
+
+    var id: String {
+        "\(target)-\(title)-\(value)"
+    }
+}
+
+private enum SavedDetailTarget: Hashable {
+    case field(ItemQuestionsSheet.Field)
     case largeOrFragile
 }
 
