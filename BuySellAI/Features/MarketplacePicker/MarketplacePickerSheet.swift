@@ -49,12 +49,7 @@ struct MarketplacePickerSheet: View {
     private func estimateRows(_ estimates: [MarketplaceEstimate]) -> some View {
         ForEach(estimates) { estimate in
             MarketplaceRow(estimate: estimate, item: context.item) {
-                appStore.presentListing(
-                    item: context.item,
-                    imageData: context.imageData,
-                    marketplace: estimate.id,
-                    details: context.details
-                )
+                chooseMarketplace(estimate.id)
             }
         }
     }
@@ -85,13 +80,13 @@ struct MarketplacePickerSheet: View {
 
     private func summaryButton(pick: MarketplaceSummaryPick, isRecommended: Bool) -> some View {
         SummaryButton(pick: pick, item: context.item, isRecommended: isRecommended) {
-            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id, details: context.details)
+            chooseMarketplace(pick.estimate.id)
         }
     }
 
     private func recommendedButton(pick: MarketplaceSummaryPick) -> some View {
         RecommendedMarketplaceButton(pick: pick, item: context.item) {
-            appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: pick.estimate.id, details: context.details)
+            chooseMarketplace(pick.estimate.id)
         }
     }
 
@@ -125,9 +120,18 @@ struct MarketplacePickerSheet: View {
 
         ForEach(Marketplace.activeRecommendationCases) { marketplace in
             MarketplaceFallbackRow(marketplace: marketplace) {
-                appStore.presentListing(item: context.item, imageData: context.imageData, marketplace: marketplace, details: context.details)
+                chooseMarketplace(marketplace)
             }
         }
+    }
+
+    private func chooseMarketplace(_ marketplace: Marketplace) {
+        appStore.presentItemQuestions(
+            item: context.item,
+            imageData: context.imageData,
+            preferredMarketplace: marketplace,
+            answers: context.details
+        )
     }
 }
 

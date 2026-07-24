@@ -737,6 +737,52 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"store.phase == .idle && automaticCancellationRetryCount > 0"#))
     }
 
+    func testItemQuestionsSheetUsesDynamicOneQuestionFlow() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/ItemQuestions/ItemQuestionsSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"@State private var questions: [DetailQuestion]"#))
+        XCTAssertNotNil(source.range(of: #"@State private var currentQuestionIndex = 0"#))
+        XCTAssertNotNil(source.range(of: #"Self.makeQuestions(context: context, answers: initialAnswers)"#))
+        XCTAssertNotNil(source.range(of: #"if let currentQuestion {"#))
+        XCTAssertNotNil(source.range(of: #"questionCard(currentQuestion)"#))
+        XCTAssertNotNil(source.range(of: #"Text("One quick thing".localized)"#))
+        XCTAssertNotNil(source.range(of: #"Text("Ready to write".localized)"#))
+        XCTAssertNotNil(source.range(of: #"Text("BuySell has enough details for this marketplace.".localized)"#))
+        XCTAssertNotNil(source.range(of: #".navigationTitle("Tiny details".localized)"#))
+        XCTAssertNotNil(source.range(of: #"ProgressView(value: questionProgress)"#))
+        XCTAssertNotNil(source.range(of: #".accessibilityLabel("Question progress".localized)"#))
+        XCTAssertNotNil(source.range(of: #"Text("I don't know".localized)"#))
+        XCTAssertNotNil(source.range(of: #"previousQuestionButton"#))
+        XCTAssertNotNil(source.range(of: #"Section {"#))
+        XCTAssertNotNil(source.range(of: #"Text("Saved so far".localized)"#))
+        XCTAssertNotNil(source.range(of: #"question.isAnswered(in: answers)"#))
+        XCTAssertNotNil(source.range(of: #"usedKinds.contains(question.kind)"#))
+        XCTAssertNotNil(source.range(of: #"marketplaceQuestion(for: marketplace, item: context.item)"#))
+        XCTAssertNotNil(source.range(of: #"case .ebay:"#))
+        XCTAssertNotNil(source.range(of: #"case .facebook, .craigslist, .offerup, .nextdoor:"#))
+        XCTAssertNotNil(source.range(of: #"case .poshmark, .depop, .vinted, .vestiaire, .therealreal, .grailed, .curtsy:"#))
+        XCTAssertNotNil(source.range(of: #"case .stockx, .goat:"#))
+        XCTAssertNotNil(source.range(of: #"return Array(questions.prefix(2))"#))
+        XCTAssertNotNil(source.range(of: #"return limitedQuestions.isEmpty ? [flawQuestion] : limitedQuestions"#))
+        XCTAssertNil(source.range(of: #"questionField("#))
+        XCTAssertNil(source.range(of: #"Toggle(isOn: $answers.isLargeOrFragile)"#))
+        XCTAssertNil(source.range(of: #"Text("Check if you know it".localized)"#))
+        XCTAssertNil(source.range(of: #"Text("Add what you know".localized)"#))
+    }
+
+    func testMarketplacePickerRunsPlatformQuestionBeforeListingGeneration() throws {
+        let marketplace = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(marketplace.range(of: #"private func chooseMarketplace(_ marketplace: Marketplace)"#))
+        XCTAssertNotNil(marketplace.range(of: #"chooseMarketplace(estimate.id)"#))
+        XCTAssertNotNil(marketplace.range(of: #"chooseMarketplace(pick.estimate.id)"#))
+        XCTAssertNotNil(marketplace.range(of: #"chooseMarketplace(marketplace)"#))
+        XCTAssertNotNil(marketplace.range(of: #"appStore.presentItemQuestions("#))
+        XCTAssertNotNil(marketplace.range(of: #"preferredMarketplace: marketplace"#))
+        XCTAssertNotNil(marketplace.range(of: #"answers: context.details"#))
+        XCTAssertNil(marketplace.range(of: #"appStore.presentListing(item: context.item"#))
+    }
+
     func testHomePrimaryActionUsesAppleSimpleOneTwoThreeFrontDoor() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
