@@ -148,14 +148,22 @@
 	<string>Continue with Email</string>
 	<key>Copied — paste it into %@</key>
 	<string>Copied — paste it into %@</string>
+	<key>Copied %@</key>
+	<string>Copied %@</string>
 	<key>Could help</key>
 	<string>Could help</string>
+	<key>Copy</key>
+	<string>Copy</string>
+	<key>Copy %@</key>
+	<string>Copy %@</string>
 	<key>Copy and paste.</key>
 	<string>Copy and paste.</string>
 	<key>Copy a listing and it will appear here.</key>
 	<string>Copy a listing and it will appear here.</string>
 	<key>Copy listing</key>
 	<string>Copy listing</string>
+	<key>Copy pieces</key>
+	<string>Copy pieces</string>
 	<key>Copy the listing</key>
 	<string>Copy the listing</string>
 	<key>Current step</key>
@@ -190,6 +198,10 @@
 	<string>Delete listing</string>
 	<key>Delete this listing? This can't be undone.</key>
 	<string>Delete this listing? This can't be undone.</string>
+	<key>Description</key>
+	<string>Description</string>
+	<key>Details</key>
+	<string>Details</string>
 	<key>Details to include</key>
 	<string>Details to include</string>
 	<key>Deleting…</key>
@@ -512,6 +524,8 @@
 	<string>Terms</string>
 	<key>Thanks for rating BuySell.</key>
 	<string>Thanks for rating BuySell.</string>
+	<key>Title</key>
+	<string>Title</string>
 	<key>That Apple account is already linked to another BuySell account.</key>
 	<string>That Apple account is already linked to another BuySell account.</string>
 	<key>That took too long. Try again.</key>

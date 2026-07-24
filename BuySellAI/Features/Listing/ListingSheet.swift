@@ -103,6 +103,13 @@ struct ListingSheet: View {
             Section("Generated listing text".localized) {
                 listingText
             }
+            if copyableListingFields.isEmpty == false {
+                Section("Copy pieces".localized) {
+                    ForEach(copyableListingFields) { field in
+                        copyFieldRow(field)
+                    }
+                }
+            }
             Section {
                 listingRecommendationSummary
             }
@@ -401,6 +408,29 @@ struct ListingSheet: View {
             .accessibilitySortPriority(3)
     }
 
+    private func copyFieldRow(_ field: ListingCopyField) -> some View {
+        Button {
+            copyListingField(field)
+        } label: {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                Label(field.title.localized, systemImage: field.systemImage)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foreground)
+
+                Spacer(minLength: Spacing.sm)
+
+                Label("Copy".localized, systemImage: "doc.on.doc")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+                    .labelStyle(.titleAndIcon)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressButtonStyle())
+        .accessibilityLabel(String.localizedFormat("Copy %@".localized, field.title.localized))
+        .accessibilityValue(field.accessibilityValue)
+    }
+
     private func listingPriceRow(title: String, value: Decimal, detail: String) -> some View {
         LabeledContent {
             VStack(alignment: .trailing, spacing: Spacing.xxs) {
@@ -480,6 +510,37 @@ struct ListingSheet: View {
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }
         .accessibilityLabel(title.localized)
+    }
+
+    private var copyableListingFields: [ListingCopyField] {
+        var fields: [ListingCopyField] = []
+        let draft = store.draft
+        fields.appendIfPresent(
+            title: "Title",
+            value: draft?.title,
+            systemImage: "textformat"
+        )
+        fields.appendIfPresent(
+            title: "Description",
+            value: draft?.description,
+            systemImage: "text.alignleft"
+        )
+        fields.append(ListingCopyField(
+            title: "Price",
+            value: pricePlan.listAt.currency(code: context.item.currencyCode),
+            systemImage: "tag"
+        ))
+        fields.appendIfPresent(
+            title: "Details",
+            value: joinedDraftValues(draft?.itemSpecifics),
+            systemImage: "list.bullet.rectangle"
+        )
+        fields.appendIfPresent(
+            title: "Tags",
+            value: joinedDraftValues(draft?.tags),
+            systemImage: "number"
+        )
+        return fields
     }
 
     private func evidenceSourceRow(_ source: ListingEvidenceSource) -> some View {
@@ -682,6 +743,14 @@ struct ListingSheet: View {
         appStore.closeFlow()
     }
 
+    private func copyListingField(_ field: ListingCopyField) {
+        let cleanValue = field.value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanValue.isEmpty == false else { return }
+        UIPasteboard.general.string = cleanValue
+        Haptics.notify(.success)
+        appStore.showToast(String.localizedFormat("Copied %@", field.title.localized), style: .success)
+    }
+
     private var copyableListingText: String {
         (try? ListingTextContract.validatedGenerated(store.listingText)) ?? ""
     }
@@ -788,5 +857,25 @@ private struct ListingPricePlan {
             Decimal(1)
         )
         takeHomeEstimate = max((draft?.takeHomeEstimate ?? localTakeHomeEstimate).rounded(scale: 0), Decimal(1))
+    }
+}
+
+private struct ListingCopyField: Identifiable, Hashable {
+    let title: String
+    let value: String
+    let systemImage: String
+
+    var id: String { "\(title)-\(value)" }
+
+    var accessibilityValue: String {
+        String(value.prefix(160))
+    }
+}
+
+private extension Array where Element == ListingCopyField {
+    mutating func appendIfPresent(title: String, value: String?, systemImage: String) {
+        let cleanValue = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard cleanValue.isEmpty == false else { return }
+        append(ListingCopyField(title: title, value: cleanValue, systemImage: systemImage))
     }
 }

@@ -1840,6 +1840,37 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(listing.range(of: #".onChange(of: store.phase)"#))
     }
 
+    func testListingExposesNativeCopyButtonsForUsefulDraftFields() throws {
+        let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let copyFieldRange = try XCTUnwrap(listing.range(of: #"private func copyFieldRow(_ field: ListingCopyField) -> some View"#))
+        let priceRowRange = try XCTUnwrap(listing.range(of: #"private func listingPriceRow"#, range: copyFieldRange.upperBound..<listing.endIndex))
+        let copyFieldSource = String(listing[copyFieldRange.lowerBound..<priceRowRange.lowerBound])
+        let copyActionRange = try XCTUnwrap(listing.range(of: #"private func copyListingField(_ field: ListingCopyField)"#))
+        let copyableTextRange = try XCTUnwrap(listing.range(of: #"private var copyableListingText: String"#, range: copyActionRange.upperBound..<listing.endIndex))
+        let copyActionSource = String(listing[copyActionRange.lowerBound..<copyableTextRange.lowerBound])
+
+        XCTAssertNotNil(listing.range(of: #"Section("Copy pieces".localized) {"#))
+        XCTAssertNotNil(listing.range(of: #"ForEach(copyableListingFields) { field in"#))
+        XCTAssertNotNil(copyFieldSource.range(of: #"Label(field.title.localized, systemImage: field.systemImage)"#))
+        XCTAssertNotNil(copyFieldSource.range(of: #"Label("Copy".localized, systemImage: "doc.on.doc")"#))
+        XCTAssertNotNil(copyFieldSource.range(of: #".buttonStyle(PressButtonStyle())"#))
+        XCTAssertNotNil(copyFieldSource.range(of: #".accessibilityLabel(String.localizedFormat("Copy %@".localized, field.title.localized))"#))
+        XCTAssertNotNil(listing.range(of: #"private var copyableListingFields: [ListingCopyField]"#))
+        XCTAssertNotNil(listing.range(of: #"title: "Title""#))
+        XCTAssertNotNil(listing.range(of: #"title: "Description""#))
+        XCTAssertNotNil(listing.range(of: #"title: "Price""#))
+        XCTAssertNotNil(listing.range(of: #"title: "Details""#))
+        XCTAssertNotNil(listing.range(of: #"title: "Tags""#))
+        XCTAssertNotNil(listing.range(of: #"pricePlan.listAt.currency(code: context.item.currencyCode)"#))
+        XCTAssertNotNil(listing.range(of: #"private struct ListingCopyField: Identifiable, Hashable"#))
+        XCTAssertNotNil(listing.range(of: #"private extension Array where Element == ListingCopyField"#))
+        XCTAssertNotNil(copyActionSource.range(of: #"UIPasteboard.general.string = cleanValue"#))
+        XCTAssertNotNil(copyActionSource.range(of: #"Haptics.notify(.success)"#))
+        XCTAssertNotNil(copyActionSource.range(of: #"appStore.showToast(String.localizedFormat("Copied %@", field.title.localized), style: .success)"#))
+        XCTAssertNil(copyActionSource.range(of: #"appStore.closeFlow()"#))
+        XCTAssertNil(copyActionSource.range(of: #"appStore.saveListing("#))
+    }
+
     func testListingStructuredDraftGuidanceUsesNativeTipRows() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
         let quickTipsRange = try XCTUnwrap(listing.range(of: #"Section("Quick tips".localized) {"#))
