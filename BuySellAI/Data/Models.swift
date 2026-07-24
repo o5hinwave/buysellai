@@ -103,11 +103,11 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
         case .toys:
             "gamecontroller.fill"
         case .kids:
-            "figure.2"
+            "teddybear.fill"
         case .tools:
             "wrench.and.screwdriver.fill"
         case .sports:
-            "sportscourt.fill"
+            "basketball.fill"
         case .books:
             "books.vertical.fill"
         case .media:

@@ -820,6 +820,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"case .stockx, .goat:"#))
         XCTAssertNotNil(source.range(of: #"return Array(questions.prefix(3))"#))
         XCTAssertNotNil(source.range(of: #"return limitedQuestions.isEmpty ? [flawQuestion] : limitedQuestions"#))
+        XCTAssertNotNil(source.range(of: #"systemImage: "shippingbox.fill""#))
+        XCTAssertNil(source.range(of: #"shippingbox.and.arrow.backward"#))
         XCTAssertNil(source.range(of: #"questionField("#))
         XCTAssertNil(source.range(of: #"Toggle(isOn: $answers.isLargeOrFragile)"#))
         XCTAssertNil(source.range(of: #"Text("Check if you know it".localized)"#))
@@ -1684,6 +1686,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(snapResult.range(of: #"category?.placeholderSystemImage ?? "camera.fill""#))
         XCTAssertNotNil(snapResult.range(of: #"Text("No photo".localized)"#))
         XCTAssertNotNil(snapResult.range(of: #".accessibilityLabel("Item photo placeholder".localized)"#))
+    }
+
+    func testCategoryPlaceholdersUseFamiliarItemSymbols() throws {
+        let models = try String(contentsOf: projectURL("BuySellAI/Data/Models.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(models.range(of: #"case .kids:"#))
+        XCTAssertNotNil(models.range(of: #""teddybear.fill""#))
+        XCTAssertNotNil(models.range(of: #"case .sports:"#))
+        XCTAssertNotNil(models.range(of: #""basketball.fill""#))
+        XCTAssertNil(models.range(of: #""figure.2""#))
+        XCTAssertNil(models.range(of: #""sportscourt.fill""#))
     }
 
     func testAnimatedSurfacesUseSharedReduceMotionDecision() throws {

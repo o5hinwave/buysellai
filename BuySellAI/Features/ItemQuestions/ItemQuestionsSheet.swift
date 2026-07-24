@@ -273,7 +273,7 @@ struct ItemQuestionsSheet: View {
             rows.append(SavedDetailRow(
                 title: "Large or fragile",
                 value: answers.isLargeOrFragile ? "Yes".localized : "No".localized,
-                systemImage: "shippingbox.and.arrow.backward.fill",
+                systemImage: "shippingbox.fill",
                 target: .largeOrFragile
             ))
         }
@@ -912,7 +912,7 @@ struct ItemQuestionsSheet: View {
             title: largeOrFragileTitle(for: category),
             detail: "This helps BuySell decide whether local pickup beats shipping.",
             placeholder: "",
-            systemImage: "shippingbox.and.arrow.backward",
+            systemImage: "shippingbox.fill",
             kind: .largeOrFragile,
             choices: [
                 DetailChoice(title: "Yes", value: .largeFragile(true)),
