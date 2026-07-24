@@ -27,6 +27,8 @@ extension Color {
         static let pearlIvory = Color.dynamic(light: 0xFFFDF8, dark: 0x1B1816)
         static let pearlMist = Color.dynamic(light: 0xF2F6FF, dark: 0x171A22)
         static let pearlPeach = Color.dynamic(light: 0xFFEAD8, dark: 0x2D1B12)
+        static let pearlRose = Color.dynamic(light: 0xFFE7EF, dark: 0x29171D)
+        static let pearlSky = Color.dynamic(light: 0xEAF6FF, dark: 0x121F2A)
         static let pearlChampagne = Color.dynamic(light: 0xF8E7C6, dark: 0x261D12)
         static let platformEbay = Color(hex: 0x0064D2)
         static let platformMercari = Color(hex: 0xE60023)

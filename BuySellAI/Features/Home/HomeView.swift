@@ -11,9 +11,13 @@ struct HomeView: View {
                 Section {
                     HomeCameraHeroMark(startSnapFlow: startSnapFlow)
                 }
-                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.lg, trailing: Spacing.lg))
+                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+
+                Section("Recent listings".localized) {
+                    historySectionContent
+                }
 
                 Section {
                     HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.viewfinder")
@@ -27,12 +31,6 @@ struct HomeView: View {
                     Text("1 · 2 · 3".localized)
                 } footer: {
                     Text("No selling skills needed.".localized)
-                }
-
-                if shouldShowHistorySection {
-                    Section("Saved listings".localized) {
-                        historySectionContent
-                    }
                 }
             }
             .listStyle(.insetGrouped)
@@ -199,10 +197,6 @@ struct HomeView: View {
         }
     }
 
-    private var shouldShowHistorySection: Bool {
-        isInitialHistoryLoading || historySyncFailureMessage != nil || appStore.history.isEmpty == false
-    }
-
     private var isInitialHistoryLoading: Bool {
         guard case .loading = appStore.historySyncState else { return false }
         return appStore.history.isEmpty
@@ -229,7 +223,7 @@ private struct HomeCameraHeroMark: View {
             startSnapFlow()
         } label: {
             cardContent
-                .frame(maxWidth: .infinity, minHeight: 306)
+                .frame(maxWidth: .infinity, minHeight: 268)
                 .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         }
         .buttonStyle(PressButtonStyle())
@@ -252,20 +246,14 @@ private struct HomeCameraHeroMark: View {
                 .shadow(color: Color.brand.pearlPeach.opacity(0.22), radius: 18, x: -8, y: -8)
 
             VStack(spacing: Spacing.lg) {
-                cardTopLine
-
-                Spacer(minLength: Spacing.xs)
-
+                Spacer(minLength: 0)
                 HomeHeroCameraGlyph()
-
-                Spacer(minLength: Spacing.xs)
-
-                VStack(spacing: Spacing.sm) {
-                    HomeCardStepStrip()
-                    cardBottomCopy
-                }
+                cardBottomCopy
+                HomeHeroIconTrail()
+                Spacer(minLength: 0)
             }
-            .padding(Spacing.lg)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.vertical, Spacing.xl)
         }
     }
 
@@ -286,35 +274,13 @@ private struct HomeCameraHeroMark: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var cardTopLine: some View {
-        HStack(alignment: .center, spacing: Spacing.xs) {
-            BrandWordmark(size: .regular, periodColor: Color.brand.primaryText)
-                .foregroundStyle(Color.brand.foreground)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-
-            Spacer(minLength: 0)
-
-            Text("1 2 3".localized)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.brand.foregroundSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-                .overlay(alignment: .center) {
-                    Capsule(style: .continuous)
-                        .stroke(Color.brand.border.opacity(0.78), lineWidth: 1)
-                        .padding(.horizontal, -Spacing.sm)
-                        .padding(.vertical, -Spacing.xs)
-                }
-        }
-    }
-
     private var cardFill: LinearGradient {
         LinearGradient(
             stops: [
                 .init(color: Color.brand.pearlIvory, location: 0),
-                .init(color: Color.brand.pearlMist.opacity(0.92), location: 0.38),
-                .init(color: Color.brand.pearlPeach.opacity(0.72), location: 0.7),
+                .init(color: Color.brand.pearlSky.opacity(0.9), location: 0.34),
+                .init(color: Color.brand.pearlRose.opacity(0.68), location: 0.58),
+                .init(color: Color.brand.pearlPeach.opacity(0.82), location: 0.78),
                 .init(color: Color.brand.backgroundSubtle, location: 1)
             ],
             startPoint: .topLeading,
@@ -329,8 +295,8 @@ private struct HomePearlScreenBackground: View {
         LinearGradient(
             stops: [
                 .init(color: Color.brand.background, location: 0),
-                .init(color: Color.brand.pearlMist.opacity(0.44), location: 0.34),
-                .init(color: Color.brand.pearlPeach.opacity(0.2), location: 0.62),
+                .init(color: Color.brand.pearlSky.opacity(0.34), location: 0.34),
+                .init(color: Color.brand.pearlPeach.opacity(0.18), location: 0.62),
                 .init(color: Color(uiColor: .systemGroupedBackground), location: 1)
             ],
             startPoint: .top,
@@ -404,11 +370,14 @@ private struct HomeHeroCameraGlyph: View {
                         .stroke(Color.brand.border.opacity(0.82), lineWidth: 1)
                 }
 
-            Image(systemName: "camera.aperture")
+            Image(systemName: "camera.fill")
                 .brandSymbol(.heroIcon)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(Color.brand.foreground, Color.brand.primaryText)
+                .foregroundStyle(Color.brand.foreground)
                 .accessibilityHidden(true)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            HomeHeroLoopBadge()
+                .offset(x: 6, y: 6)
         }
         .frame(width: 118, height: 118)
         .shadow(color: Color.brand.shadow.opacity(0.08), radius: 24, x: 0, y: 14)
@@ -420,7 +389,7 @@ private struct HomeHeroCameraGlyph: View {
             colors: [
                 Color.brand.surface.opacity(0.99),
                 Color.brand.pearlIvory.opacity(0.96),
-                Color.brand.pearlMist.opacity(0.84)
+                Color.brand.pearlSky.opacity(0.84)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -428,60 +397,62 @@ private struct HomeHeroCameraGlyph: View {
     }
 }
 
-private struct HomeCardStepStrip: View {
+private struct HomeHeroLoopBadge: View {
     var body: some View {
-        HStack(spacing: 0) {
-            HomeCardStepPill(number: 1, title: "Photo", systemImage: "camera.viewfinder")
-            HomeCardStepDivider()
-            HomeCardStepPill(number: 2, title: "Answer", systemImage: "text.bubble")
-            HomeCardStepDivider()
-            HomeCardStepPill(number: 3, title: "Copy", systemImage: "doc.on.doc")
-        }
-        .padding(Spacing.xxs)
-        .background {
-            Capsule(style: .continuous)
-                .fill(Color.brand.surface.opacity(0.58))
-        }
-        .overlay {
-            Capsule(style: .continuous)
-                .stroke(Color.brand.border.opacity(0.62), lineWidth: 1)
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .brandSymbol(.rowIcon)
+            .foregroundStyle(Color.brand.primaryForeground)
+            .frame(width: 34, height: 34)
+            .background(Color.brand.primaryText, in: Circle())
+            .overlay {
+                Circle()
+                    .stroke(Color.brand.surface.opacity(0.86), lineWidth: 2)
+            }
+            .shadow(color: Color.brand.shadow.opacity(0.1), radius: 12, x: 0, y: 6)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct HomeHeroIconTrail: View {
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
+            HomeHeroTrailConnector()
+            HomeHeroTrailSymbol(systemImage: "text.bubble", isPrimary: false)
+            HomeHeroTrailConnector()
+            HomeHeroTrailSymbol(systemImage: "doc.on.doc", isPrimary: false)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("Photo. Questions. Listing.".localized)
     }
 }
 
-private struct HomeCardStepPill: View {
-    let number: Int
-    let title: String
+private struct HomeHeroTrailSymbol: View {
     let systemImage: String
+    let isPrimary: Bool
 
     var body: some View {
-        HStack(spacing: Spacing.xxs) {
-            Text(verbatim: "\(number)")
-                .font(.caption.weight(.semibold))
-                .monospacedDigit()
-
-            Image(systemName: systemImage)
-                .brandSymbol(.smallChevron)
-                .accessibilityHidden(true)
-
-            Text(title.localized)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-        }
-        .foregroundStyle(number == 1 ? Color.brand.primaryText : Color.brand.foreground)
-        .frame(maxWidth: .infinity, minHeight: 32)
-        .contentShape(Rectangle())
-        .accessibilityLabel(String.localizedFormat("%d. %@", number, title.localized))
+        Image(systemName: systemImage)
+            .brandSymbol(.rowIcon)
+            .foregroundStyle(isPrimary ? Color.brand.primaryText : Color.brand.foregroundSecondary)
+            .frame(width: 34, height: 34)
+            .background {
+                Circle()
+                    .fill(isPrimary ? Color.brand.pearlPeach.opacity(0.58) : Color.brand.surface.opacity(0.54))
+            }
+            .overlay {
+                Circle()
+                    .stroke(Color.brand.border.opacity(0.6), lineWidth: 1)
+            }
+            .accessibilityHidden(true)
     }
 }
 
-private struct HomeCardStepDivider: View {
+private struct HomeHeroTrailConnector: View {
     var body: some View {
-        Rectangle()
-            .fill(Color.brand.border.opacity(0.68))
-            .frame(width: 1, height: 18)
+        Image(systemName: "chevron.right")
+            .brandSymbol(.smallChevron)
+            .foregroundStyle(Color.brand.mutedForeground)
             .accessibilityHidden(true)
     }
 }
@@ -537,9 +508,9 @@ private struct HomeStepRow: View {
 private struct EmptyHistoryView: View {
     var body: some View {
         ContentUnavailableView {
-            Label("No saved listings yet".localized, systemImage: "clock.arrow.circlepath")
+            Label("No listings yet".localized, systemImage: "clock.arrow.circlepath")
         } description: {
-            Text("Ready when you are.".localized)
+            Text("Copy a listing and it will appear here.".localized)
         }
         .frame(maxWidth: .infinity, minHeight: 116)
         .accessibilityElement(children: .combine)

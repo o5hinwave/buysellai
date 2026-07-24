@@ -352,6 +352,8 @@
 	<string>No account required.</string>
 	<key>No saved listings yet</key>
 	<string>No saved listings yet</string>
+	<key>No listings yet</key>
+	<string>No listings yet</string>
 	<key>Not signed in</key>
 	<string>Not signed in</string>
 	<key>OfferUp</key>

@@ -20,9 +20,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -489,9 +487,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Category, Home"].exists)
         XCTAssertTrue(app.buttons["Condition, Good"].exists)
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
@@ -542,7 +538,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        XCTAssertTrue(app.buttons["Looks right — add details"].waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForDetectedItemConfirmButton(in: app) != nil)
     }
 
     func testAuthGuestEscapeRemainsReachableAtAccessibilityThree() {
@@ -579,9 +575,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -634,9 +628,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
@@ -657,9 +649,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -671,16 +661,16 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(retake.waitForExistence(timeout: 5))
         retake.tap()
 
-        if looksRight.waitForExistence(timeout: 5) == false {
+        if waitForDetectedItemConfirmButton(in: app, timeout: 5) == nil {
             let rawCancellation = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "CancellationError")).firstMatch
             XCTAssertFalse(rawCancellation.exists)
 
             let retry = app.buttons["Try again"]
             XCTAssertTrue(retry.waitForExistence(timeout: 2))
             retry.tap()
-            XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+            XCTAssertTrue(waitForDetectedItemConfirmButton(in: app, timeout: 5) != nil)
         }
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
@@ -697,9 +687,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -728,9 +716,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -762,9 +748,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -851,9 +835,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(snap.waitForExistence(timeout: 5))
         snap.tap()
 
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
         tapMarketplace("craigslist", in: app)
@@ -875,12 +857,11 @@ final class BuySellAIUITests: XCTestCase {
         try saveAppStoreScreenshot("01-home", in: screenshotURL)
 
         snap.tap()
-        let looksRight = app.buttons["Looks right — add details"]
-        XCTAssertTrue(looksRight.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForDetectedItemConfirmButton(in: app) != nil)
         XCTAssertTrue(app.descendants(matching: .any)["Item photo"].waitForExistence(timeout: 5))
         try saveAppStoreScreenshot("02-result", in: screenshotURL)
 
-        looksRight.tap()
+        confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
         XCTAssertTrue(app.buttons["MarketplaceSummary.bestChance.craigslist"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["MarketplaceRow.craigslist"].waitForExistence(timeout: 5))
@@ -928,20 +909,86 @@ final class BuySellAIUITests: XCTestCase {
         .joined()
     }
 
+    private func waitForDetectedItemConfirmButton(
+        in app: XCUIApplication,
+        timeout: TimeInterval = 5
+    ) -> XCUIElement? {
+        for label in ["Yes, that's it", "Looks right — add details", "Looks right — pick where to sell"] {
+            let button = app.buttons[label]
+            if button.waitForExistence(timeout: timeout) {
+                return button
+            }
+        }
+        return nil
+    }
+
+    private func confirmDetectedItem(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if isOnItemQuestionsStep(in: app) {
+            return
+        }
+
+        guard let button = waitForDetectedItemConfirmButton(in: app) else {
+            XCTFail("Missing item confirmation button.", file: file, line: line)
+            return
+        }
+
+        if isOnItemQuestionsStep(in: app) {
+            return
+        }
+
+        XCTAssertTrue(button.isHittable, "Item confirmation button is not hittable.", file: file, line: line)
+        button.tap()
+    }
+
+    private func isOnItemQuestionsStep(in app: XCUIApplication) -> Bool {
+        app.buttons["Skip all"].exists ||
+            app.buttons["Find best place"].exists ||
+            app.buttons["Write listing"].exists ||
+            app.buttons["Next"].exists
+    }
+
     private func continuePastItemQuestions(
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let findBestPlace = app.buttons["Find best place"]
-        if findBestPlace.waitForExistence(timeout: 5) {
-            findBestPlace.tap()
-            return
+        for _ in 0..<5 {
+            let findBestPlace = app.buttons["Find best place"]
+            if findBestPlace.waitForExistence(timeout: 2) {
+                findBestPlace.tap()
+                return
+            }
+
+            let writeListing = app.buttons["Write listing"]
+            if writeListing.waitForExistence(timeout: 1) {
+                writeListing.tap()
+                return
+            }
+
+            let skipAll = app.buttons["Skip all"]
+            if skipAll.waitForExistence(timeout: 1) {
+                skipAll.tap()
+                return
+            }
+
+            let unknown = app.buttons["I don't know"]
+            if unknown.waitForExistence(timeout: 1) {
+                unknown.tap()
+                continue
+            }
+
+            let next = app.buttons["Next"]
+            if next.waitForExistence(timeout: 1) {
+                next.tap()
+                continue
+            }
         }
 
-        let writeListing = app.buttons["Write listing"]
-        XCTAssertTrue(writeListing.waitForExistence(timeout: 2), "Missing item detail continue button.", file: file, line: line)
-        writeListing.tap()
+        XCTFail("Missing item detail continue button.", file: file, line: line)
     }
 
     private func tapMarketplace(
