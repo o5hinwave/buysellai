@@ -579,7 +579,9 @@ function cleanEvidenceSources(
     const url = optionalReferenceURL(record.url ?? record.sourceUrl ?? record.sourceURL);
     const title = optionalCleanText(record.title ?? record.sourceTitle, 120);
     const rawSourceMarketplace = optionalCleanText(record.sourceMarketplace ?? record.marketplace, 48);
-    const listingStatus = cleanListingStatus(record.listingStatus ?? record.status ?? record.sourceType);
+    const listingStatus = cleanListingStatus(
+      record.listingStatus ?? record.status ?? record.sourceType ?? listingStatusFromPriceFields(record),
+    );
     const conditionAndVariant = optionalCleanText(
       record.conditionAndVariant ?? record.conditionVariant ?? record.variant,
       100,
@@ -863,11 +865,19 @@ function cleanListingStatus(value: unknown): string | null {
   if (!text) return null;
   switch (normalizedIdentifier(text)) {
     case "sold":
+    case "soldlisting":
+    case "soldsale":
     case "completed":
+    case "completedlisting":
+    case "completedsale":
     case "soldcompleted":
+    case "completedsold":
       return "Sold";
     case "active":
+    case "activelisting":
     case "asking":
+    case "askingprice":
+    case "currentasking":
       return "Active";
     case "official":
     case "officialmarketplace":
@@ -879,6 +889,12 @@ function cleanListingStatus(value: unknown): string | null {
     default:
       return text;
   }
+}
+
+function listingStatusFromPriceFields(record: Record<string, unknown>): string | null {
+  if (optionalPositiveNumber(record.soldPrice) !== null) return "Sold";
+  if (optionalPositiveNumber(record.activePrice ?? record.askingPrice) !== null) return "Active";
+  return null;
 }
 
 function normalizedIdentifier(value: string): string {

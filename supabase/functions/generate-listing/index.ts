@@ -255,7 +255,8 @@ function listingSystemInstruction(
       : "Use Google Search and URL Context only for the minimal research plan provided.",
     "Prefer official marketplace guidance over stale assumptions.",
     "After the item identity is known, use grounded search for real marketplace fees, sold/completed comps, comparable price history, and marketplace rules.",
-    "Distinguish sold/completed comps from active asking prices. Use compLowPrice, compHighPrice, and compMedianPrice only when grounded evidence supports them.",
+    "Distinguish sold/completed comps from active asking prices. Use compLowPrice, compHighPrice, and compMedianPrice only when grounded sold/completed evidence supports them.",
+    "Active listings and asking prices may appear in evidenceSources, but they must never populate sold comp price fields.",
     "If only active listings or weak matches are available, explain the limitation in evidenceSummary and leave unsupported comp price fields empty.",
     "For every factual market result you rely on, add one evidenceSources object with sourceMarketplace, title, url when available, dateChecked, listingStatus sold/active/official/reference, conditionAndVariant, comparability, and price when grounded.",
     "Do not add evidenceSources entries for guessed prices, unsupported comps, or unverified marketplace claims.",
@@ -1097,10 +1098,11 @@ function requireStructuredListingDraft(
   const missingPhotoPrompt = optionalCleanDraftText(result.missingPhotoPrompt, 140);
   const fitReason = optionalCleanDraftText(result.fitReason, 220) ??
     `${marketplaceDisplayNames[platform]} fits this item when the details and photos are clear.`;
-  const compLowPrice = optionalPositiveNumber(result.compLowPrice);
-  const compHighPrice = optionalPositiveNumber(result.compHighPrice);
-  const compMedianPrice = optionalPositiveNumber(result.compMedianPrice);
   const evidenceSources = cleanEvidenceSources(result.evidenceSources, platform);
+  const hasSoldCompEvidence = evidenceSources.some(isSoldEvidenceSource);
+  const compLowPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compLowPrice) : null;
+  const compHighPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compHighPrice) : null;
+  const compMedianPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compMedianPrice) : null;
 
   return {
     title,
@@ -1231,7 +1233,9 @@ function cleanEvidenceSources(value: unknown, platform: MarketplaceId): Structur
     );
     const title = optionalCleanDraftText(record.title ?? record.sourceTitle, 120);
     const dateChecked = optionalCleanDraftText(record.dateChecked ?? record.checkedDate, 32);
-    const listingStatus = cleanListingStatus(record.listingStatus ?? record.status ?? record.sourceType);
+    const listingStatus = cleanListingStatus(
+      record.listingStatus ?? record.status ?? record.sourceType ?? listingStatusFromPriceFields(record),
+    );
     const conditionAndVariant = optionalCleanDraftText(
       record.conditionAndVariant ?? record.conditionVariant ?? record.variant,
       100,
@@ -1288,11 +1292,19 @@ function cleanListingStatus(value: unknown): string | null {
   if (!text) return null;
   switch (normalizedIdentifier(text)) {
     case "sold":
+    case "soldlisting":
+    case "soldsale":
     case "completed":
+    case "completedlisting":
+    case "completedsale":
     case "soldcompleted":
+    case "completedsold":
       return "Sold";
     case "active":
+    case "activelisting":
     case "asking":
+    case "askingprice":
+    case "currentasking":
       return "Active";
     case "official":
     case "officialmarketplace":
@@ -1304,6 +1316,16 @@ function cleanListingStatus(value: unknown): string | null {
     default:
       return text;
   }
+}
+
+function listingStatusFromPriceFields(record: Record<string, unknown>): string | null {
+  if (optionalPositiveNumber(record.soldPrice) !== null) return "Sold";
+  if (optionalPositiveNumber(record.activePrice ?? record.askingPrice) !== null) return "Active";
+  return null;
+}
+
+function isSoldEvidenceSource(source: StructuredEvidenceSource): boolean {
+  return source.listingStatus === "Sold" && source.price !== null;
 }
 
 type SupabaseServiceConfig = {

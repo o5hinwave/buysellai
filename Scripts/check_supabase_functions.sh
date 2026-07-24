@@ -100,6 +100,22 @@ require_source_contains \
     "structured evidence source validation"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
+    "const hasSoldCompEvidence = evidenceSources.some(isSoldEvidenceSource)" \
+    "listing sold comp evidence guard"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "compLowPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compLowPrice) : null" \
+    "listing comp low sold-only guard"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "function listingStatusFromPriceFields(record: Record<string, unknown>): string | null" \
+    "listing source status inference"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "function isSoldEvidenceSource(source: StructuredEvidenceSource): boolean" \
+    "listing sold evidence predicate"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
     "detailsForPrompt(details, platform)" \
     "selected-marketplace seller detail prompt"
 require_source_contains \
@@ -142,6 +158,14 @@ require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "Prioritize sold/completed listing evidence over active asking prices." \
     "sold-comps-first marketplace compare instruction"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "compLowPrice: hasSoldEvidence ? optionalPositiveNumber(row.compLowPrice) : null" \
+    "marketplace compare sold comp guard"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "function listingStatusFromPriceFields(record: Record<string, unknown>): string | null" \
+    "marketplace compare source status inference"
 require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "Do not invent sold listings, prices, fees, dates, demand, restrictions, or source URLs." \
@@ -194,4 +218,4 @@ printf 'marketplace compare: grounded candidate search before picker recommendat
 printf 'marketplace compare cache: grounded findings saved for listing reuse\n'
 printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
-printf 'listing evidence sources: structured source/date/status/comparability\n'
+printf 'listing evidence sources: sold-comp guarded structured source/date/status/comparability\n'

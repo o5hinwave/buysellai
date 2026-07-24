@@ -127,6 +127,7 @@
 - Listing field-copy continuation: the final listing sheet now keeps the primary `Copy listing` action, then exposes a calm native `Copy pieces` section for useful marketplace form fields: title, description, recommended price, details, and tags when the structured draft provides them. Copying one field writes only that field to the clipboard, gives success feedback, and keeps the user on the listing sheet.
 - Apple Card polish continuation: the Home hero card now uses adaptive pearl ivory, mist, champagne, and pale peach tokens with a layered sheen, a raised centered `camera.viewfinder` glyph, and an in-card `Photo / Answer / Copy` strip. The native task rows remain below for scanning and accessibility, but the first visual object now carries the whole beginner flow without leaning on orange.
 - Native icon continuation: Home and the first-use guide now use the same familiar iPhone-style symbols for the core loop: camera/viewfinder for taking the photo, message for answering, overlapping documents for copying, document text for saved listings, and info for the guide entry.
+- Sold-comp evidence continuation: the `generate-listing` and `compare-marketplaces` Edge Functions now infer Sold versus Active status from structured evidence fields and only preserve comp low/median/high prices when sold or completed-price evidence is present. Active listings and asking prices can still support context, but they cannot populate sold-history price fields.
 
 ## Proposed System Direction
 
