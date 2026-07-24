@@ -219,6 +219,7 @@ private struct HomeCameraHeroMark: View {
     let startSnapFlow: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.legibilityWeight) private var legibilityWeight
 
     var body: some View {
         Button {
@@ -249,12 +250,13 @@ private struct HomeCameraHeroMark: View {
                         .stroke(Color.brand.border.opacity(0.76), lineWidth: 1)
                 }
                 .shadow(color: Color.brand.shadow.opacity(0.08), radius: 34, x: 0, y: 20)
-                .shadow(color: Color.brand.pearlPeach.opacity(0.22), radius: 18, x: -8, y: -8)
+                .shadow(color: Color.brand.pearlPeach.opacity(0.18), radius: 18, x: -8, y: -8)
 
-            VStack(spacing: Spacing.md) {
+            VStack(spacing: dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.md) {
                 Spacer(minLength: 0)
+
                 Text("Snap · Pick · Sell".localized)
-                    .font(.caption.weight(.semibold))
+                    .font(.caption.weight(legibilityWeight == .bold ? .bold : .semibold))
                     .foregroundStyle(Color.brand.primaryText)
                     .textCase(.uppercase)
                     .lineLimit(1)
@@ -262,51 +264,63 @@ private struct HomeCameraHeroMark: View {
                     .accessibilityHidden(true)
 
                 HomeHeroCameraGlyph()
-                    .padding(.bottom, Spacing.xs)
+                    .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? 0 : Spacing.xs)
 
-                Text("Sell anything in three taps.".localized)
-                    .font(.title.weight(.bold))
-                    .foregroundStyle(Color.brand.foreground)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.78)
+                VStack(spacing: Spacing.xs) {
+                    Text("Sell anything in three taps.".localized)
+                        .font(.title.weight(.bold))
+                        .foregroundStyle(Color.brand.foreground)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
 
-                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                    .font(.body)
-                    .foregroundStyle(Color.brand.foregroundSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
+                        .font(.body)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 cardBottomCopy
-                    .padding(.top, Spacing.xs)
-
-                HomeHeroPrimaryCue()
+                    .padding(.top, dynamicTypeSize.isAccessibilitySize ? 0 : Spacing.xs)
 
                 HomeHeroIconTrail()
+                    .padding(.top, dynamicTypeSize.isAccessibilitySize ? 0 : Spacing.xs)
+
+                HomeHeroPrimaryCue()
+                    .padding(.top, dynamicTypeSize.isAccessibilitySize ? 0 : Spacing.sm)
+
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.xl)
+            .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.xl)
         }
     }
 
     private var cardBottomCopy: some View {
         Text("Photo. Answer. Copy.".localized)
-            .font(.subheadline)
-            .foregroundStyle(Color.brand.foregroundSecondary)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.brand.foreground)
             .lineLimit(1)
             .minimumScaleFactor(0.82)
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(Color.brand.surface.opacity(0.54), in: Capsule(style: .continuous))
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(Color.brand.border.opacity(0.48), lineWidth: 1)
+            }
     }
 
     private var cardFill: LinearGradient {
         LinearGradient(
             stops: [
                 .init(color: Color.brand.pearlIvory, location: 0),
-                .init(color: Color.brand.pearlSky.opacity(0.9), location: 0.34),
-                .init(color: Color.brand.pearlRose.opacity(0.68), location: 0.58),
-                .init(color: Color.brand.pearlPeach.opacity(0.82), location: 0.78),
+                .init(color: Color.brand.pearlSky.opacity(0.82), location: 0.3),
+                .init(color: Color.brand.pearlRose.opacity(0.42), location: 0.55),
+                .init(color: Color.brand.pearlPeach.opacity(0.68), location: 0.78),
                 .init(color: Color.brand.backgroundSubtle, location: 1)
             ],
             startPoint: .topLeading,
@@ -330,11 +344,11 @@ private struct HomeHeroPrimaryCue: View {
                 .minimumScaleFactor(0.82)
         }
         .foregroundStyle(Color.brand.primaryForeground)
-        .frame(maxWidth: .infinity, minHeight: 54)
+        .frame(maxWidth: .infinity, minHeight: 56)
         .background(
             LinearGradient(
                 colors: [
-                    Color.brand.primaryText,
+                    Color.brand.primary,
                     Color.brand.primaryPressed
                 ],
                 startPoint: .topLeading,
@@ -356,8 +370,8 @@ private struct HomePearlScreenBackground: View {
         LinearGradient(
             stops: [
                 .init(color: Color.brand.background, location: 0),
-                .init(color: Color.brand.pearlSky.opacity(0.34), location: 0.34),
-                .init(color: Color.brand.pearlPeach.opacity(0.18), location: 0.62),
+                .init(color: Color.brand.pearlSky.opacity(0.24), location: 0.34),
+                .init(color: Color.brand.pearlPeach.opacity(0.14), location: 0.62),
                 .init(color: Color(uiColor: .systemGroupedBackground), location: 1)
             ],
             startPoint: .top,
@@ -434,16 +448,16 @@ private struct HomeHeroCameraGlyph: View {
             Image(systemName: AppSymbol.Flow.snapPhoto)
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.brand.foreground)
+                .foregroundStyle(Color.brand.foreground, Color.brand.primaryText.opacity(0.82))
                 .accessibilityHidden(true)
         }
         .overlay(alignment: .bottomTrailing) {
             HomeHeroLoopBadge()
-                .offset(x: 6, y: 6)
+                .offset(x: 5, y: 5)
         }
-        .frame(width: 118, height: 118)
-        .shadow(color: Color.brand.shadow.opacity(0.08), radius: 24, x: 0, y: 14)
-        .shadow(color: Color.brand.pearlChampagne.opacity(0.26), radius: 16, x: -5, y: -5)
+        .frame(width: 132, height: 132)
+        .shadow(color: Color.brand.shadow.opacity(0.08), radius: 26, x: 0, y: 14)
+        .shadow(color: Color.brand.pearlChampagne.opacity(0.22), radius: 16, x: -5, y: -5)
     }
 
     private var glyphFill: LinearGradient {
@@ -451,7 +465,8 @@ private struct HomeHeroCameraGlyph: View {
             colors: [
                 Color.brand.surface.opacity(0.99),
                 Color.brand.pearlIvory.opacity(0.96),
-                Color.brand.pearlSky.opacity(0.84)
+                Color.brand.pearlPeach.opacity(0.58),
+                Color.brand.pearlSky.opacity(0.58)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -465,7 +480,7 @@ private struct HomeHeroLoopBadge: View {
             .brandSymbol(.rowIcon)
             .foregroundStyle(Color.brand.primaryForeground)
             .frame(width: 34, height: 34)
-            .background(Color.brand.primaryText, in: Circle())
+            .background(Color.brand.primary, in: Circle())
             .overlay {
                 Circle()
                     .stroke(Color.brand.surface.opacity(0.86), lineWidth: 2)
@@ -477,13 +492,16 @@ private struct HomeHeroLoopBadge: View {
 
 private struct HomeHeroIconTrail: View {
     var body: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Spacing.xs) {
             HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.snapPhotoCompact, isPrimary: true)
             HomeHeroTrailConnector()
             HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.answer, isPrimary: false)
             HomeHeroTrailConnector()
             HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.copy, isPrimary: false)
         }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.xs)
+        .background(Color.brand.surface.opacity(0.42), in: Capsule(style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Photo. Answer. Copy.".localized)
     }
@@ -497,11 +515,11 @@ private struct HomeHeroTrailSymbol: View {
         Image(systemName: systemImage)
             .brandSymbol(.rowIcon)
             .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(isPrimary ? Color.brand.primaryText : Color.brand.foregroundSecondary)
-            .frame(width: 34, height: 34)
+            .foregroundStyle(isPrimary ? Color.brand.primary : Color.brand.foregroundSecondary)
+            .frame(width: 32, height: 32)
             .background {
                 Circle()
-                    .fill(isPrimary ? Color.brand.pearlPeach.opacity(0.58) : Color.brand.surface.opacity(0.54))
+                    .fill(isPrimary ? Color.brand.pearlPeach.opacity(0.64) : Color.brand.surface.opacity(0.62))
             }
             .overlay {
                 Circle()
@@ -530,7 +548,7 @@ private struct HomeStepRow: View {
         HStack(alignment: .center, spacing: Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(Color.brand.surface)
+                    .fill(number == 1 ? Color.brand.pearlPeach.opacity(0.72) : Color.brand.surface)
                     .overlay {
                         Circle()
                             .stroke(Color.brand.border.opacity(0.78), lineWidth: 1)
@@ -559,7 +577,7 @@ private struct HomeStepRow: View {
             Image(systemName: systemImage)
                 .brandSymbol(.controlIcon)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.brand.primaryText)
+                .foregroundStyle(number == 1 ? Color.brand.primary : Color.brand.foregroundSecondary)
                 .frame(width: 28, height: 28)
                 .accessibilityHidden(true)
         }
@@ -577,6 +595,12 @@ private struct EmptyHistoryView: View {
             Text("Your past listings will show up here.".localized)
         }
         .frame(maxWidth: .infinity, minHeight: 116)
+        .padding(.vertical, Spacing.sm)
+        .background(Color.brand.surface.opacity(0.64), in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.58), lineWidth: 1)
+        }
         .accessibilityElement(children: .combine)
     }
 }
