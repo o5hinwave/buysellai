@@ -71,6 +71,12 @@ require_home_marker() {
     grep -Fq "$marker" "$home_source" || fail "HomeView.swift is missing '$marker'"
 }
 
+reject_home_marker() {
+    local marker="$1"
+
+    ! grep -Fq "$marker" "$home_source" || fail "HomeView.swift should not contain obsolete '$marker'"
+}
+
 require_camera_marker() {
     local marker="$1"
 
@@ -154,11 +160,17 @@ reject_buttons_marker "struct SecondaryPillButton"
 reject_buttons_marker "struct GhostButton"
 require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
-require_home_marker ".listStyle(.plain)"
-require_home_marker "HomeHeroSection("
+require_home_marker ".listStyle(.insetGrouped)"
+require_home_marker "HomeCameraHeroMark()"
+require_home_marker "Color(uiColor: .secondarySystemGroupedBackground)"
+require_home_marker "Color(uiColor: .tertiarySystemFill)"
+require_home_marker "HomeStartRow(startSnapFlow: startSnapFlow)"
+require_home_marker "HomeHowItWorksRow"
+reject_home_marker "Color.brand.primaryText"
+reject_home_marker "Color.brand.primaryMuted"
 require_home_marker ".toolbar {"
 require_home_marker 'ToolbarItem(placement: .principal)'
-require_home_marker "BrandWordmark(size: .regular)"
+require_home_marker "BrandWordmark(size: .regular, periodColor: Color.brand.foregroundSecondary)"
 require_home_marker '.navigationTitle("BuySell.".localized)'
 require_home_marker ".navigationBarTitleDisplayMode(.inline)"
 require_camera_marker ".nativeLiquidGlassControlGroup(spacing: Spacing.md)"
@@ -224,7 +236,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
         printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
         printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
-        printf 'home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions\n'
+        printf 'home setup: neutral centered camera card, native inset grouped task rows, quiet footer copy, monochrome toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'

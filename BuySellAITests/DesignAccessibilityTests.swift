@@ -175,7 +175,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(material.range(of: "NativeMaterialCircleBackground("))
         XCTAssertNotNil(buttons.range(of: ".nativeIconButtonBackground("))
         XCTAssertNotNil(material.range(of: "usesAccessibleStroke: usesAccessibleMaterialStroke"))
-        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
         XCTAssertNotNil(home.range(of: ".toolbar {"))
         XCTAssertNil(home.range(of: ".nativeLiquidGlassControlGroup"))
         XCTAssertNil(home.range(of: #"Image("SigmaHero")"#))
@@ -377,7 +377,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: ".brandSymbol(.rowIcon)"))
         XCTAssertNotNil(marketplace.range(of: ".brandSymbol(.chevron)"))
         XCTAssertNotNil(snapResult.range(of: ".brandSymbol(.smallChevron)"))
-        XCTAssertNotNil(try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8).range(of: ".brandSymbol(.heroIcon)"))
+        let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
+        XCTAssertNotNil(home.range(of: ".brandSymbol(.heroIcon)"))
+        XCTAssertNotNil(home.range(of: ".brandSymbol(.controlIcon)"))
+        XCTAssertNotNil(home.range(of: ".brandSymbol(.smallChevron)"))
 
         for file in try appSwiftFiles() {
             let source = try String(contentsOf: file, encoding: .utf8)
@@ -734,39 +737,47 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"store.phase == .idle && automaticCancellationRetryCount > 0"#))
     }
 
-    func testHomePrimaryActionUsesFirstPartyHeroCommandSurface() throws {
+    func testHomePrimaryActionUsesNativeTaskRowsInsteadOfMarketingHero() throws {
         let root = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
         XCTAssertNotNil(root.range(of: #".dynamicTypeLimit()"#))
-        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
-        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
-        XCTAssertNotNil(home.range(of: "private struct HomeHeroSection: View"))
-        XCTAssertNotNil(home.range(of: "private struct HomeHeroVisual: View"))
-        XCTAssertNotNil(home.range(of: "private struct HomePromiseStrip: View"))
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: "HomeCameraHeroMark()"))
+        XCTAssertNotNil(home.range(of: "private struct HomeCameraHeroMark: View"))
+        XCTAssertNotNil(home.range(of: ".brandSymbol(.heroIcon)"))
+        XCTAssertNotNil(home.range(of: "Color(uiColor: .secondarySystemGroupedBackground)"))
+        XCTAssertNotNil(home.range(of: "Color(uiColor: .tertiarySystemFill)"))
+        XCTAssertNotNil(home.range(of: "HomeStartRow(startSnapFlow: startSnapFlow)"))
+        XCTAssertNotNil(home.range(of: "private struct HomeStartRow: View"))
+        XCTAssertNotNil(home.range(of: "private struct HomeHowItWorksRow: View"))
+        XCTAssertNil(home.range(of: "HomeHeroSection("))
+        XCTAssertNil(home.range(of: "private struct HomeHeroSection: View"))
+        XCTAssertNil(home.range(of: "private struct HomeHeroVisual: View"))
+        XCTAssertNil(home.range(of: "private struct HomePromiseStrip: View"))
+        XCTAssertNil(home.range(of: "Color.brand.primaryText"))
+        XCTAssertNil(home.range(of: "Color.brand.primaryMuted"))
         XCTAssertNotNil(home.range(of: #"Text("Snap · Pick · Sell".localized)"#))
         XCTAssertNotNil(home.range(of: #"Text("Sell anything in three taps.".localized)"#))
         XCTAssertNotNil(home.range(of: #"Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)"#))
-        XCTAssertLessThan(
-            try XCTUnwrap(home.range(of: "HomePromiseStrip()")).lowerBound,
-            try XCTUnwrap(home.range(of: "primaryAction")).lowerBound
-        )
-        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
-        XCTAssertNotNil(home.range(of: #".buttonStyle(.borderedProminent)"#))
+        XCTAssertNotNil(home.range(of: #"Text("Snap to sell".localized)"#))
+        XCTAssertNotNil(home.range(of: #".buttonStyle(.plain)"#))
+        XCTAssertNil(home.range(of: #".buttonStyle(.borderedProminent)"#))
         XCTAssertNotNil(home.range(of: #".accessibilityHint("Opens the camera".localized)"#))
-        XCTAssertNotNil(home.range(of: #".accessibilityLabel("Step 1, take a photo. Step 2, pick a place. Step 3, copy the listing.".localized)"#))
-        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "1", title: "Take photo", systemImage: "camera")"#))
-        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "2", title: "Pick place", systemImage: "mappin.and.ellipse")"#))
-        XCTAssertNotNil(home.range(of: #"HomePromiseItem(stepNumber: "3", title: "Copy listing", systemImage: "doc.on.clipboard")"#))
+        XCTAssertNotNil(home.range(of: #".accessibilityLabel("Snap to sell".localized)"#))
+        XCTAssertNotNil(home.range(of: #"Text("How it works".localized)"#))
+        XCTAssertNotNil(home.range(of: #"Text("Take photo, pick place, copy listing.".localized)"#))
+        XCTAssertNil(home.range(of: "HomePromiseItem("))
+        XCTAssertNil(home.range(of: "private struct HomePromiseItem"))
         XCTAssertNotNil(home.range(of: #"Section("Saved listings".localized) {"#))
         XCTAssertNotNil(home.range(of: #"Label("No saved listings yet".localized, systemImage: "clock.arrow.circlepath")"#))
         XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 116)"#))
         XCTAssertNil(home.range(of: #"Section("Recent listings".localized) {"#))
         XCTAssertNil(home.range(of: #"Copy a listing and it will appear here."#))
         XCTAssertNil(home.range(of: #".brandFont("#))
-        XCTAssertNotNil(home.range(of: #".font(.headline.weight(.semibold))"#))
-        XCTAssertNotNil(home.range(of: #".font(.largeTitle.weight(.bold))"#))
-        XCTAssertNotNil(home.range(of: #".font(.caption.weight(.semibold))"#))
+        XCTAssertNotNil(home.range(of: #".font(.body.weight(.semibold))"#))
+        XCTAssertNotNil(home.range(of: #".font(.subheadline)"#))
+        XCTAssertNil(home.range(of: #".font(.largeTitle.weight(.bold))"#))
         XCTAssertNil(home.range(of: "SnapActionRow()"))
         XCTAssertNil(home.range(of: "private struct SnapActionRow: View"))
         XCTAssertNil(home.range(of: ".brandFont(.display)"))
@@ -866,15 +877,17 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 116)"#))
     }
 
-    func testHomeUsesNativePlainListHistoryWithHeroInsteadOfCustomWidthClamps() throws {
+    func testHomeUsesNativeInsetGroupedTaskRowsInsteadOfCustomWidthClamps() throws {
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
 
-        XCTAssertNotNil(home.range(of: ".listStyle(.plain)"))
-        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
+        XCTAssertNotNil(home.range(of: ".listStyle(.insetGrouped)"))
+        XCTAssertNotNil(home.range(of: "HomeStartRow(startSnapFlow: startSnapFlow)"))
+        XCTAssertNotNil(home.range(of: "HomeHowItWorksRow"))
+        XCTAssertNil(home.range(of: "HomeHeroSection("))
         XCTAssertNotNil(home.range(of: #".navigationTitle("BuySell.".localized)"#))
         XCTAssertNotNil(home.range(of: ".navigationBarTitleDisplayMode(.inline)"))
         XCTAssertNotNil(home.range(of: "ToolbarItem(placement: .principal)"))
-        XCTAssertNotNil(home.range(of: "BrandWordmark(size: .regular)"))
+        XCTAssertNotNil(home.range(of: "BrandWordmark(size: .regular, periodColor: Color.brand.foregroundSecondary)"))
         XCTAssertNil(home.range(of: "horizontalSizeClass"))
         XCTAssertNil(home.range(of: "UIDevice.current.userInterfaceIdiom"))
         XCTAssertNil(home.range(of: "heroContentMaxWidth"))
@@ -890,7 +903,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(home.range(of: "SigmaHero"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: heroContents.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: heroSVG.path))
-        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: #"Text("Snap to sell".localized)"#))
+        XCTAssertNil(home.range(of: "HomeHeroVisual"))
     }
 
     func testAppIconUsesCameraFirstBrandArtworkWithoutTextTile() throws {
@@ -1090,7 +1104,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(marketplace.range(of: #".accessibilityAddTraits(.updatesFrequently)"#))
     }
 
-    func testHomeRemovesDecorativePrimaryGlowAndUsesHeroCommandSurface() throws {
+    func testHomeRemovesDecorativePrimaryGlowAndUsesNativeTaskRows() throws {
         let buttons = try String(contentsOf: projectURL("BuySellAI/Design/Buttons.swift"), encoding: .utf8)
         let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
         let home = try String(contentsOf: projectURL("BuySellAI/Features/Home/HomeView.swift"), encoding: .utf8)
@@ -1102,8 +1116,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(buttons.range(of: "struct TextActionButton: View"))
         XCTAssertNotNil(buttons.range(of: "struct PressButtonStyle: ButtonStyle"))
         XCTAssertNotNil(buttons.range(of: ".nativeGlassButtonStyle(.standard)"))
-        XCTAssertNotNil(home.range(of: "HomeHeroSection("))
-        XCTAssertNotNil(home.range(of: #"Label("Snap to sell".localized, systemImage: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: "HomeStartRow(startSnapFlow: startSnapFlow)"))
+        XCTAssertNotNil(home.range(of: #"Text("Snap to sell".localized)"#))
         XCTAssertNil(home.range(of: #"PrimaryPillButton("#))
         XCTAssertNil(home.range(of: #"systemImage: "camera.fill""#))
     }
@@ -1115,7 +1129,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: #"ToolbarItem(placement: .principal) {"#))
         XCTAssertNotNil(home.range(of: #"ToolbarItem(placement: .topBarTrailing) {"#))
         XCTAssertNotNil(home.range(of: #".navigationTitle("BuySell.".localized)"#))
-        XCTAssertNotNil(home.range(of: "BrandWordmark(size: .regular)"))
+        XCTAssertNotNil(home.range(of: "BrandWordmark(size: .regular, periodColor: Color.brand.foregroundSecondary)"))
         XCTAssertNotNil(home.range(of: #"private var accountButton: some View"#))
         XCTAssertNotNil(home.range(of: #"private var settingsButton: some View"#))
         XCTAssertNil(home.range(of: "@ViewBuilder\n    private var header: some View"))

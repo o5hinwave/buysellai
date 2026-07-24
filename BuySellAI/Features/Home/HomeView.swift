@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Environment(AppStore.self) private var appStore
@@ -8,31 +9,40 @@ struct HomeView: View {
         NavigationStack {
             List {
                 Section {
-                    HomeHeroSection(
-                        startSnapFlow: startSnapFlow,
-                        showTutorial: {
-                            Haptics.impact(.light)
-                            appStore.presentTutorial()
-                        }
-                    )
+                    HomeCameraHeroMark()
                 }
-                .listRowInsets(EdgeInsets(top: Spacing.lg, leading: Spacing.lg, bottom: Spacing.xl, trailing: Spacing.lg))
+                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.sm, trailing: Spacing.lg))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+
+                Section {
+                    HomeStartRow(startSnapFlow: startSnapFlow)
+                    HomeHowItWorksRow {
+                        Haptics.impact(.light)
+                        appStore.presentTutorial()
+                    }
+                } header: {
+                    Text("Snap · Pick · Sell".localized)
+                } footer: {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text("Sell anything in three taps.".localized)
+                        Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
+                    }
+                }
 
                 Section("Saved listings".localized) {
                     historySectionContent
                 }
             }
-            .listStyle(.plain)
+            .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .background(Color.brand.background)
+            .background(Color(uiColor: .systemGroupedBackground))
             .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
             .navigationTitle("BuySell.".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    BrandWordmark(size: .regular)
+                    BrandWordmark(size: .regular, periodColor: Color.brand.foregroundSecondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.88)
                 }
@@ -75,6 +85,7 @@ struct HomeView: View {
         } label: {
             Text(accountButtonTitle.localized)
         }
+        .tint(Color.brand.foreground)
         .accessibilityLabel(accountButtonTitle.localized)
     }
 
@@ -89,6 +100,7 @@ struct HomeView: View {
         } label: {
             Image(systemName: "gearshape")
         }
+        .tint(Color.brand.foreground)
         .accessibilityLabel("Settings".localized)
     }
 
@@ -204,6 +216,46 @@ struct HomeView: View {
     }
 }
 
+private struct HomeCameraHeroMark: View {
+    var body: some View {
+        HStack {
+            Spacer(minLength: 0)
+
+            ZStack {
+                RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                    .fill(heroFill)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                            .stroke(Color(uiColor: .separator).opacity(0.18), lineWidth: 1)
+                    }
+                    .shadow(color: Color.black.opacity(0.05), radius: 18, y: 8)
+
+                Image(systemName: "camera.viewfinder")
+                    .brandSymbol(.heroIcon)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.brand.foreground)
+                    .accessibilityHidden(true)
+            }
+            .frame(width: 218, height: 132)
+            .accessibilityHidden(true)
+
+            Spacer(minLength: 0)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var heroFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(uiColor: .secondarySystemGroupedBackground),
+                Color(uiColor: .systemBackground)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
 private struct EmptyHistoryView: View {
     var body: some View {
         ContentUnavailableView {
@@ -266,7 +318,7 @@ private struct HistorySyncFailureRow: View {
 
                 Text("Try again".localized)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.brand.primaryText)
+                    .foregroundStyle(Color.brand.foreground)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
             }
@@ -279,192 +331,87 @@ private struct HistorySyncFailureRow: View {
     }
 }
 
-private struct HomeHeroSection: View {
+private struct HomeStartRow: View {
     let startSnapFlow: () -> Void
-    let showTutorial: () -> Void
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: heroSpacing) {
-            HomeHeroVisual()
-                .padding(.top, Spacing.sm)
-
-            VStack(spacing: Spacing.sm) {
-                Text("Snap · Pick · Sell".localized)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.brand.primaryText)
-                    .multilineTextAlignment(.center)
-
-                Text("Sell anything in three taps.".localized)
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundStyle(Color.brand.foreground)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
-                    .minimumScaleFactor(0.74)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
-                    .font(.body)
-                    .foregroundStyle(Color.brand.foregroundSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: 430)
-
-            HomePromiseStrip()
-
-            primaryAction
-                .padding(.top, Spacing.xs)
-
-            Button {
-                showTutorial()
-            } label: {
-                Label("How it works".localized, systemImage: "questionmark.circle")
-                    .frame(maxWidth: .infinity, minHeight: secondaryActionHeight)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .accessibilityLabel("How it works".localized)
-            .accessibilityHint("Shows the first-use guide.".localized)
-
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain)
-    }
-
-    private var primaryAction: some View {
         Button {
             startSnapFlow()
         } label: {
-            Label("Snap to sell".localized, systemImage: "camera.viewfinder")
-                .font(.headline.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: primaryActionHeight)
+            HStack(spacing: Spacing.md) {
+                Image(systemName: "camera.viewfinder")
+                    .brandSymbol(.controlIcon)
+                    .foregroundStyle(Color.brand.foreground)
+                    .frame(width: 34, height: 34)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Circle())
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("Snap to sell".localized)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.brand.foreground)
+
+                    Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: Spacing.sm)
+
+                Image(systemName: "chevron.right")
+                    .brandSymbol(.smallChevron)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, Spacing.xs)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .tint(Color.brand.primary)
+        .buttonStyle(.plain)
         .accessibilityLabel("Snap to sell".localized)
         .accessibilityHint("Opens the camera".localized)
     }
-
-    private var heroSpacing: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? Spacing.lg : Spacing.xl
-    }
-
-    private var primaryActionHeight: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 64 : 56
-    }
-
-    private var secondaryActionHeight: CGFloat {
-        dynamicTypeSize.isAccessibilitySize ? 58 : 50
-    }
 }
 
-private struct HomeHeroVisual: View {
+private struct HomeHowItWorksRow: View {
+    let showTutorial: () -> Void
+
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                .fill(Color.brand.primaryMuted)
-                .overlay {
-                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                        .stroke(Color.brand.border.opacity(0.72), lineWidth: 1)
+        Button {
+            showTutorial()
+        } label: {
+            HStack(spacing: Spacing.md) {
+                Image(systemName: "questionmark.circle")
+                    .brandSymbol(.controlIcon)
+                    .foregroundStyle(Color.brand.foreground)
+                    .frame(width: 34, height: 34)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Circle())
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("How it works".localized)
+                        .font(.body)
+                        .foregroundStyle(Color.brand.foreground)
+
+                    Text("Take photo, pick place, copy listing.".localized)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
                 }
 
-            Image(systemName: "camera.viewfinder")
-                .brandSymbol(.heroIcon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.brand.primaryText)
-                .accessibilityHidden(true)
+                Spacer(minLength: Spacing.sm)
 
-            VStack {
-                HStack {
-                    Image(systemName: "sparkles")
-                    Spacer()
-                    Image(systemName: "doc.on.clipboard")
-                }
-                Spacer()
-                HStack {
-                    Image(systemName: "tag")
-                    Spacer()
-                    Image(systemName: "checkmark.circle")
-                }
+                Image(systemName: "chevron.right")
+                    .brandSymbol(.smallChevron)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .accessibilityHidden(true)
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.brand.primaryText.opacity(0.72))
-            .padding(Spacing.md)
-            .accessibilityHidden(true)
+            .padding(.vertical, Spacing.xs)
+            .contentShape(Rectangle())
         }
-        .frame(width: 132, height: 132)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct HomePromiseStrip: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: Spacing.xs) {
-                    promiseItems
-                }
-            } else {
-                HStack(spacing: Spacing.xs) {
-                    promiseItems
-                }
-            }
-        }
-        .padding(Spacing.xs)
-        .background {
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(Color.brand.surface)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .stroke(Color.brand.border.opacity(0.8), lineWidth: 1)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Step 1, take a photo. Step 2, pick a place. Step 3, copy the listing.".localized)
-    }
-
-    @ViewBuilder
-    private var promiseItems: some View {
-        HomePromiseItem(stepNumber: "1", title: "Take photo", systemImage: "camera")
-        HomePromiseItem(stepNumber: "2", title: "Pick place", systemImage: "mappin.and.ellipse")
-        HomePromiseItem(stepNumber: "3", title: "Copy listing", systemImage: "doc.on.clipboard")
-    }
-}
-
-private struct HomePromiseItem: View {
-    let stepNumber: String
-    let title: String
-    let systemImage: String
-
-    var body: some View {
-        HStack(spacing: Spacing.xs) {
-            Text(stepNumber)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(Color.brand.primaryText)
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(Color.brand.primaryMuted))
-
-            Image(systemName: systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.brand.primaryText)
-                .frame(width: 18, height: 18)
-                .accessibilityHidden(true)
-
-            Text(title.localized)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.brand.foregroundSecondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
-                .multilineTextAlignment(.leading)
-        }
-        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-        .padding(.horizontal, Spacing.xs)
+        .buttonStyle(.plain)
+        .accessibilityLabel("How it works".localized)
+        .accessibilityHint("Shows the first-use guide.".localized)
     }
 }
 

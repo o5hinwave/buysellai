@@ -504,6 +504,8 @@
 	<string>Take a photo. We suggest where to sell and write the listing.</string>
 	<key>Take a photo. Pick a place. Copy the listing.</key>
 	<string>Take a photo. Pick a place. Copy the listing.</string>
+	<key>Take photo, pick place, copy listing.</key>
+	<string>Take photo, pick place, copy listing.</string>
 	<key>Tap the item to set focus and exposure.</key>
 	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>
