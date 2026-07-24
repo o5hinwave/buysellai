@@ -458,8 +458,8 @@ final class DesignAccessibilityTests: XCTestCase {
 
         let above = MarketplaceEstimate(id: .craigslist, payout: Decimal(45), deltaPct: 12.4, badge: .best)
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: above),
-            "Best chance to sell, Craigslist, estimated payout 45 dollars, 12 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best overall", for: above),
+            "Best overall, Craigslist, estimated payout 45 dollars, 12 percent above average"
         )
 
         let average = MarketplaceEstimate(id: .facebook, payout: Decimal(43), deltaPct: 0.2, badge: .none)
@@ -476,8 +476,8 @@ final class DesignAccessibilityTests: XCTestCase {
             fitScore: 91
         )
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: strongFit),
-            "Best chance to sell, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best overall", for: strongFit),
+            "Best overall, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
         )
     }
 
@@ -1043,7 +1043,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertEqual(MarketplaceRowLayout.payoutCircleSize, 56)
         XCTAssertEqual(MarketplaceRowLayout.payoutStackWidth, 66)
         XCTAssertEqual(MarketplaceRowLayout.deltaReservedHeight, 14)
-        XCTAssertEqual(MarketplaceRowLayout.rowMinHeight, 88)
+        XCTAssertEqual(MarketplaceRowLayout.rowMinHeight, 104)
         XCTAssertNotNil(rowSource.range(of: #"var size: CGFloat = MarketplaceRowLayout.iconSize"#))
         XCTAssertNotNil(row.range(of: #".frame(width: MarketplaceRowLayout.payoutStackWidth)"#))
         XCTAssertNotNil(row.range(of: #".frame(height: MarketplaceRowLayout.deltaReservedHeight)"#))
@@ -1070,13 +1070,18 @@ final class DesignAccessibilityTests: XCTestCase {
         let row = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplaceRow.swift"), encoding: .utf8)
 
         XCTAssertEqual(MarketplaceRowLayout.accessibilityPayoutCircleSize, 64)
-        XCTAssertEqual(MarketplaceRowLayout.accessibilityRowMinHeight, 128)
+        XCTAssertEqual(MarketplaceRowLayout.accessibilityRowMinHeight, 148)
         XCTAssertNotNil(row.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(row.range(of: #"if dynamicTypeSize.isAccessibilitySize"#))
         XCTAssertNotNil(row.range(of: #"private var regularRowContent: some View"#))
         XCTAssertNotNil(row.range(of: #"private var accessibilityRowContent: some View"#))
         XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 1, blurbLineLimit: 2, fitLineLimit: 1)"#))
         XCTAssertNotNil(row.range(of: #"marketplaceCopy(nameLineLimit: 2, blurbLineLimit: 3, fitLineLimit: 2)"#))
+        XCTAssertNotNil(row.range(of: #"Text(estimate.comparisonSignals(for: item).rowLine)"#))
+        XCTAssertNotNil(row.range(of: #"struct MarketplaceComparisonSignals: Sendable, Hashable"#))
+        XCTAssertNotNil(row.range(of: #"List around %@"#))
+        XCTAssertNotNil(row.range(of: #"Fast sale"#))
+        XCTAssertNotNil(row.range(of: #"Local pickup"#))
         XCTAssertNotNil(row.range(of: #"if let fitSummary = estimate.fitSummary"#))
         XCTAssertNotNil(row.range(of: #"Text(fitSummary.localized)"#))
         XCTAssertNotNil(row.range(of: #".font(.caption2.weight(.semibold))"#))
@@ -1133,13 +1138,15 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(marketplace.range(of: #"@Environment(\.dynamicTypeSize) private var dynamicTypeSize"#))
         XCTAssertNotNil(marketplace.range(of: #"private func summaryActions(picks: [MarketplaceSummaryPick]) -> some View"#))
-        XCTAssertNotNil(marketplace.range(of: #"recommendationSections(picks: MarketplaceSummaryPlanner.picks(from: estimates))"#))
+        XCTAssertNotNil(marketplace.range(of: #"recommendationSections(picks: MarketplaceSummaryPlanner.picks("#))
+        XCTAssertNotNil(marketplace.range(of: #"item: context.item"#))
+        XCTAssertNotNil(marketplace.range(of: #"details: context.details"#))
         XCTAssertNotNil(marketplace.range(of: #"private func recommendationSections(picks: [MarketplaceSummaryPick]) -> some View"#))
         XCTAssertNotNil(marketplace.range(of: #"Section("Best place to sell".localized) {"#))
         XCTAssertNotNil(marketplace.range(of: #"recommendedButton(pick: recommendedPick)"#))
         XCTAssertNotNil(marketplace.range(of: #"private struct RecommendedMarketplaceButton: View"#))
         XCTAssertNotNil(marketplace.range(of: #"Text("We found the best place to sell this".localized)"#))
-        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel(MarketplaceAccessibilityText.summaryLabel("Best chance", for: pick.estimate, item: item))"#))
+        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))"#))
         XCTAssertNotNil(marketplace.range(of: #".accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")"#))
         XCTAssertNotNil(marketplace.range(of: #"Section("Compare".localized) {"#))
         XCTAssertNotNil(marketplace.range(of: #"let otherPicks = Array(picks.dropFirst())"#))
@@ -1161,6 +1168,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(marketplace.range(of: #".nativeMaterialPanel(cornerRadius: Radius.lg, tintOpacity: 0.72)"#))
         XCTAssertNil(marketplace.range(of: #"NativeMaterialRoundedBackground("#))
         XCTAssertNotNil(marketplace.range(of: #"Text("Take-home".localized)"#))
+        XCTAssertNotNil(marketplace.range(of: #"Label(pick.kind.label.localized, systemImage: pick.kind.systemImage)"#))
+        XCTAssertNotNil(marketplace.range(of: #"Text(pick.estimate.comparisonSignals(for: item).summaryLine)"#))
         XCTAssertNotNil(marketplace.range(of: #"if let fitSummary = pick.estimate.fitSummary"#))
         XCTAssertNotNil(marketplace.range(of: #".font(.caption2.weight(.semibold))"#))
         XCTAssertNotNil(marketplace.range(of: #"private var summaryLineLimit: Int"#))
@@ -1850,10 +1859,11 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)"#))
         XCTAssertNotNil(listing.range(of: #"private var selectedRecommendationKind: MarketplaceSummaryKind"#))
         XCTAssertNotNil(listing.range(of: #"MarketplaceSummaryPlanner"#))
-        XCTAssertNotNil(listing.range(of: #"MarketplaceEstimator.estimates(for: context.item.priceEstimate)"#))
-        XCTAssertNotNil(listing.range(of: #"case .mostMoneyBack:"#))
-        XCTAssertNotNil(listing.range(of: #""Most money back""#))
-        XCTAssertNotNil(listing.range(of: #""Good place to sell""#))
+        XCTAssertNotNil(listing.range(of: #"MarketplaceEstimator.estimates(for: context.item, details: context.details)"#))
+        XCTAssertNotNil(listing.range(of: #"case .mostMoney:"#))
+        XCTAssertNotNil(listing.range(of: #""Most money""#))
+        XCTAssertNotNil(listing.range(of: #""Fastest sale""#))
+        XCTAssertNotNil(listing.range(of: #""Easiest option""#))
         XCTAssertNotNil(listing.range(of: #"context.marketplace.recommendationReason(for: context.item)"#))
         XCTAssertNotNil(listing.range(of: #".accessibilityIdentifier("Listing.RecommendationSummary")"#))
         XCTAssertNotNil(listing.range(of: #".accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))"#))

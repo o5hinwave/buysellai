@@ -10,7 +10,11 @@ struct MarketplacePickerSheet: View {
         NavigationStack {
             List {
                 if let estimates = computedEstimates, estimates.isEmpty == false {
-                    recommendationSections(picks: MarketplaceSummaryPlanner.picks(from: estimates))
+                    recommendationSections(picks: MarketplaceSummaryPlanner.picks(
+                        from: estimates,
+                        item: context.item,
+                        details: context.details
+                    ))
                 }
 
                 Section("All places".localized) {
@@ -152,7 +156,7 @@ private struct RecommendedMarketplaceButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel("Best chance", for: pick.estimate, item: item))
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))
         .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
         .accessibilitySortPriority(2)
     }
@@ -169,9 +173,10 @@ private struct RecommendedMarketplaceButton: View {
                 }
 
                 reasonCopy
+                comparisonCue
 
                 VStack(alignment: .leading, spacing: Spacing.sm) {
-                    chanceLabel
+                    recommendationKindLabel
                     takeHome(alignment: .leading)
                 }
             }
@@ -186,7 +191,8 @@ private struct RecommendedMarketplaceButton: View {
                 }
 
                 reasonCopy
-                chanceLabel
+                comparisonCue
+                recommendationKindLabel
             }
         }
     }
@@ -215,8 +221,16 @@ private struct RecommendedMarketplaceButton: View {
             .multilineTextAlignment(.leading)
     }
 
-    private var chanceLabel: some View {
-        Label(pick.kind.label.localized, systemImage: "checkmark.seal")
+    private var comparisonCue: some View {
+        Text(pick.estimate.comparisonSignals(for: item).summaryLine)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.brand.foregroundSecondary)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+            .multilineTextAlignment(.leading)
+    }
+
+    private var recommendationKindLabel: some View {
+        Label(pick.kind.label.localized, systemImage: pick.kind.systemImage)
             .font(.caption.weight(.semibold))
             .foregroundStyle(Color.brand.success)
             .lineLimit(2)
@@ -271,6 +285,11 @@ private struct SummaryButton: View {
                         .foregroundStyle(Color.brand.foreground)
                         .lineLimit(summaryLineLimit)
                         .minimumScaleFactor(0.82)
+
+                    Text(pick.estimate.comparisonSignals(for: item).summaryLine)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .lineLimit(reasonLineLimit)
 
                     if let fitSummary = pick.estimate.fitSummary {
                         Text(fitSummary.localized)

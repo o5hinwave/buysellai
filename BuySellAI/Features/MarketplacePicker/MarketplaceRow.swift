@@ -6,10 +6,28 @@ enum MarketplaceRowLayout {
     static let accessibilityPayoutCircleSize: CGFloat = 64
     static let payoutStackWidth: CGFloat = 66
     static let deltaReservedHeight: CGFloat = 14
-    static let rowMinHeight: CGFloat = 88
-    static let accessibilityRowMinHeight: CGFloat = 128
+    static let rowMinHeight: CGFloat = 104
+    static let accessibilityRowMinHeight: CGFloat = 148
     static let fallbackRowMinHeight: CGFloat = 72
     static let fallbackAccessibilityRowMinHeight: CGFloat = 112
+}
+
+struct MarketplaceComparisonSignals: Sendable, Hashable {
+    let listPrice: String
+    let speed: String
+    let fulfillment: String
+
+    var rowLine: String {
+        String.localizedFormat("%@ · %@ · %@", listPrice, speed, fulfillment)
+    }
+
+    var summaryLine: String {
+        String.localizedFormat("%@ · %@", speed, fulfillment)
+    }
+
+    var accessibilitySummary: String {
+        String.localizedFormat("%@, %@, %@", listPrice, speed, fulfillment)
+    }
 }
 
 struct MarketplaceIcon: View {
@@ -114,6 +132,12 @@ struct MarketplaceRow: View {
                 .font(.caption)
                 .foregroundStyle(Color.brand.mutedForeground)
                 .lineLimit(blurbLineLimit)
+                .multilineTextAlignment(.leading)
+
+            Text(estimate.comparisonSignals(for: item).rowLine)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.brand.foregroundSecondary)
+                .lineLimit(fitLineLimit)
                 .multilineTextAlignment(.leading)
 
             if let fitSummary = estimate.fitSummary {
@@ -290,7 +314,12 @@ enum MarketplaceAccessibilityText {
         guard let item else {
             return label
         }
-        return String.localizedFormat("%@, %@", label, estimate.id.recommendationReason(for: item))
+        return String.localizedFormat(
+            "%@, %@, %@",
+            label,
+            estimate.comparisonSignals(for: item).accessibilitySummary,
+            estimate.id.recommendationReason(for: item)
+        )
     }
 
     private static func nameAndFitLabel(for estimate: MarketplaceEstimate) -> String {
@@ -298,5 +327,43 @@ enum MarketplaceAccessibilityText {
             return estimate.id.displayName
         }
         return String.localizedFormat("%@, %@", estimate.id.displayName, fitSummary.localized.lowercased())
+    }
+}
+
+extension MarketplaceEstimate {
+    func comparisonSignals(for item: DetectedItem) -> MarketplaceComparisonSignals {
+        let profile = id.optimizationProfile
+        return MarketplaceComparisonSignals(
+            listPrice: String.localizedFormat("List around %@", item.priceEstimate.currency(code: item.currencyCode)),
+            speed: speedCue(score: profile.speedScore),
+            fulfillment: fulfillmentCue(for: item, profile: profile)
+        )
+    }
+
+    private func speedCue(score: Int) -> String {
+        switch score {
+        case 80...100:
+            "Fast sale".localized
+        case 58..<80:
+            "Steady sale".localized
+        default:
+            "Slower sale".localized
+        }
+    }
+
+    private func fulfillmentCue(for item: DetectedItem, profile: MarketplaceOptimizationProfile) -> String {
+        let localFit = profile.localPickupFit(for: item)
+        let shippingFit = profile.shippingFit(for: item)
+
+        if item.localPickupNeedScore >= 72, localFit >= shippingFit {
+            return "Local pickup".localized
+        }
+        if shippingFit >= 76 {
+            return "Easy shipping".localized
+        }
+        if shippingFit <= 48 {
+            return "Pack carefully".localized
+        }
+        return "Shipping okay".localized
     }
 }

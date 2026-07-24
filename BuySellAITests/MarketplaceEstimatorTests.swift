@@ -295,7 +295,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertGreaterThan(craigslist.listingEffort, ebay.listingEffort)
     }
 
-    func testSummaryPlannerSeparatesBestChanceFromMostMoneyBackWhenTheyDiffer() throws {
+    func testSummaryPlannerBuildsUsefulDistinctComparisonLabels() throws {
         let guitar = DetectedItem(
             name: "Fender Stratocaster Electric Guitar",
             category: .music,
@@ -304,15 +304,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
         )
 
         let ranked = MarketplaceEstimator.estimates(for: guitar)
-        let picks = MarketplaceSummaryPlanner.picks(from: ranked)
+        let picks = MarketplaceSummaryPlanner.picks(from: ranked, item: guitar)
 
-        XCTAssertEqual(picks.map(\.kind), [.bestChance, .mostMoneyBack, .goodFit])
+        XCTAssertEqual(picks.map(\.kind), [.bestOverall, .mostMoney, .fastestSale, .easiestOption])
         XCTAssertEqual(picks.first?.estimate.id, .reverb)
         XCTAssertEqual(picks[1].estimate.payout, ranked.map(\.payout).max())
-        XCTAssertNotEqual(picks[0].estimate.id, picks[1].estimate.id)
+        XCTAssertEqual(Set(picks.map(\.estimate.id)).count, picks.count)
     }
 
-    func testSummaryPlannerUsesSecondAndThirdWhenBestChanceAlsoPaysMost() {
+    func testSummaryPlannerKeepsSpecificLabelsWhenBestOverallAlsoPaysMost() {
         let lamp = DetectedItem(
             name: "Vintage brass table lamp",
             category: .home,
@@ -320,11 +320,14 @@ final class MarketplaceEstimatorTests: XCTestCase {
             priceEstimate: Decimal(45)
         )
 
-        let picks = MarketplaceSummaryPlanner.picks(from: MarketplaceEstimator.estimates(for: lamp))
+        let picks = MarketplaceSummaryPlanner.picks(
+            from: MarketplaceEstimator.estimates(for: lamp),
+            item: lamp
+        )
 
-        XCTAssertEqual(picks.map(\.kind), [.bestChance, .second, .third])
+        XCTAssertEqual(picks.map(\.kind), [.bestOverall, .mostMoney, .fastestSale, .easiestOption])
         XCTAssertEqual(picks.first?.estimate.id, .craigslist)
-        XCTAssertFalse(picks.contains { $0.kind == .mostMoneyBack })
+        XCTAssertEqual(Set(picks.map(\.estimate.id)).count, picks.count)
     }
 
     func testMarketplaceRecommendationScoringInputsStayBoundedAndLocalized() throws {
@@ -346,13 +349,25 @@ final class MarketplaceEstimatorTests: XCTestCase {
         }
 
         for kind in [
-            MarketplaceSummaryKind.bestChance,
-            .mostMoneyBack,
-            .goodFit,
-            .second,
-            .third
+            MarketplaceSummaryKind.bestOverall,
+            .mostMoney,
+            .fastestSale,
+            .easiestOption
         ] {
             XCTAssertEqual(localizedStrings[kind.label], kind.label)
+        }
+
+        for cue in [
+            "List around %@",
+            "Fast sale",
+            "Steady sale",
+            "Slower sale",
+            "Local pickup",
+            "Easy shipping",
+            "Pack carefully",
+            "Shipping okay"
+        ] {
+            XCTAssertEqual(localizedStrings[cue], cue)
         }
 
         for fitSummary in [

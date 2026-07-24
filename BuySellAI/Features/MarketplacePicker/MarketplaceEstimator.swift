@@ -144,24 +144,34 @@ enum MarketplaceEstimator {
 }
 
 enum MarketplaceSummaryKind: String, Sendable, Hashable {
-    case bestChance
-    case mostMoneyBack
-    case goodFit
-    case second
-    case third
+    case bestOverall
+    case fastestSale
+    case mostMoney
+    case easiestOption
 
     var label: String {
         switch self {
-        case .bestChance:
-            "Best chance to sell"
-        case .mostMoneyBack:
-            "Most money back"
-        case .goodFit:
-            "Good fit"
-        case .second:
-            "Second"
-        case .third:
-            "Third"
+        case .bestOverall:
+            "Best overall"
+        case .fastestSale:
+            "Fastest sale"
+        case .mostMoney:
+            "Most money"
+        case .easiestOption:
+            "Easiest option"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .bestOverall:
+            "checkmark.seal"
+        case .fastestSale:
+            "bolt"
+        case .mostMoney:
+            "dollarsign.circle"
+        case .easiestOption:
+            "hand.tap"
         }
     }
 }
@@ -177,34 +187,60 @@ struct MarketplaceSummaryPick: Identifiable, Sendable, Hashable {
 
 enum MarketplaceSummaryPlanner {
     static func picks(from estimates: [MarketplaceEstimate]) -> [MarketplaceSummaryPick] {
-        guard let bestChance = estimates.first else {
-            return []
+        plannedPicks(from: estimates, item: nil, details: nil)
+    }
+
+    static func picks(
+        from estimates: [MarketplaceEstimate],
+        item: DetectedItem,
+        details: ItemDetailAnswers? = nil
+    ) -> [MarketplaceSummaryPick] {
+        plannedPicks(from: estimates, item: item, details: details)
+    }
+
+    private static func plannedPicks(
+        from estimates: [MarketplaceEstimate],
+        item: DetectedItem?,
+        details: ItemDetailAnswers?
+    ) -> [MarketplaceSummaryPick] {
+        guard let bestOverall = estimates.first else { return [] }
+
+        let components = item.map { componentsByMarketplace(for: estimates, item: $0, details: details) } ?? [:]
+        var picks = [MarketplaceSummaryPick(kind: .bestOverall, estimate: bestOverall)]
+
+        appendBestDistinct(
+            kind: .mostMoney,
+            estimates: estimates,
+            into: &picks
+        ) { estimate in
+            estimate.payout.doubleValue
         }
 
-        let mostMoneyBack = estimates.max { lhs, rhs in
-            if lhs.payout != rhs.payout {
-                return lhs.payout < rhs.payout
+        appendBestDistinct(
+            kind: .fastestSale,
+            estimates: estimates,
+            into: &picks
+        ) { estimate in
+            if let component = components[estimate.id] {
+                return component.speed * 0.64 + component.saleLikelihood * 0.36
             }
-            return catalogIndex(lhs.id) > catalogIndex(rhs.id)
+            return Double(estimate.id.optimizationProfile.speedScore)
         }
 
-        var picks = [MarketplaceSummaryPick(kind: .bestChance, estimate: bestChance)]
-        if let mostMoneyBack, mostMoneyBack.id != bestChance.id {
-            picks.append(MarketplaceSummaryPick(kind: .mostMoneyBack, estimate: mostMoneyBack))
-        }
-
-        for estimate in estimates where picks.contains(where: { $0.estimate.id == estimate.id }) == false {
-            let kind: MarketplaceSummaryKind
-            if picks.contains(where: { $0.kind == .mostMoneyBack }) {
-                kind = .goodFit
-            } else {
-                kind = picks.count == 1 ? .second : .third
+        appendBestDistinct(
+            kind: .easiestOption,
+            estimates: estimates,
+            into: &picks
+        ) { estimate in
+            if let component = components[estimate.id] {
+                return component.listingEffort * 0.58
+                    + max(component.shippingFit, component.localPickupFit) * 0.24
+                    + component.buyerTrust * 0.18
             }
-            picks.append(MarketplaceSummaryPick(kind: kind, estimate: estimate))
-
-            if picks.count == 3 {
-                break
-            }
+            let profile = estimate.id.optimizationProfile
+            return Double(profile.listingEffortScore) * 0.58
+                + Double(max(profile.shippingEaseScore, profile.localPickupScore)) * 0.24
+                + Double(profile.buyerTrustScore) * 0.18
         }
 
         return picks
@@ -212,5 +248,55 @@ enum MarketplaceSummaryPlanner {
 
     private static func catalogIndex(_ marketplace: Marketplace) -> Int {
         Marketplace.activeRecommendationCases.firstIndex(of: marketplace) ?? Int.max
+    }
+
+    private static func appendBestDistinct(
+        kind: MarketplaceSummaryKind,
+        estimates: [MarketplaceEstimate],
+        into picks: inout [MarketplaceSummaryPick],
+        score: (MarketplaceEstimate) -> Double
+    ) {
+        guard let estimate = estimates
+            .filter({ candidate in
+                picks.contains { $0.estimate.id == candidate.id } == false
+            })
+            .max(by: { lhs, rhs in
+                let lhsScore = score(lhs)
+                let rhsScore = score(rhs)
+                if lhsScore != rhsScore {
+                    return lhsScore < rhsScore
+                }
+                if lhs.payout != rhs.payout {
+                    return lhs.payout < rhs.payout
+                }
+                return catalogIndex(lhs.id) > catalogIndex(rhs.id)
+            })
+        else { return }
+
+        picks.append(MarketplaceSummaryPick(kind: kind, estimate: estimate))
+    }
+
+    private static func componentsByMarketplace(
+        for estimates: [MarketplaceEstimate],
+        item: DetectedItem,
+        details: ItemDetailAnswers?
+    ) -> [Marketplace: MarketplaceRecommendationComponents] {
+        let payouts = estimates.map(\.payout)
+        let highestPayout = payouts.max() ?? Decimal(1)
+        let lowestPayout = payouts.min() ?? Decimal(1)
+        let payoutRange = max(highestPayout.doubleValue - lowestPayout.doubleValue, 1)
+
+        return Dictionary(uniqueKeysWithValues: estimates.map { estimate in
+            (
+                estimate.id,
+                MarketplaceEstimator.recommendationComponents(
+                    for: item,
+                    details: details,
+                    estimate: estimate,
+                    lowestPayout: lowestPayout,
+                    payoutRange: payoutRange
+                )
+            )
+        })
     }
 }

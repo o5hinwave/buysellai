@@ -292,12 +292,14 @@ struct ListingSheet: View {
 
     private var recommendationLabel: String {
         switch selectedRecommendationKind {
-        case .bestChance:
-            "Best chance to sell"
-        case .mostMoneyBack:
-            "Most money back"
-        case .goodFit, .second, .third:
-            "Good place to sell"
+        case .bestOverall:
+            "Best overall"
+        case .fastestSale:
+            "Fastest sale"
+        case .mostMoney:
+            "Most money"
+        case .easiestOption:
+            "Easiest option"
         }
     }
 
@@ -307,9 +309,13 @@ struct ListingSheet: View {
 
     private var selectedRecommendationKind: MarketplaceSummaryKind {
         MarketplaceSummaryPlanner
-            .picks(from: MarketplaceEstimator.estimates(for: context.item, details: context.details))
+            .picks(
+                from: MarketplaceEstimator.estimates(for: context.item, details: context.details),
+                item: context.item,
+                details: context.details
+            )
             .first { $0.estimate.id == context.marketplace }?
-            .kind ?? .bestChance
+            .kind ?? .bestOverall
     }
 
     private var hasCompRange: Bool {

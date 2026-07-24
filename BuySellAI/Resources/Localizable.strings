@@ -954,5 +954,29 @@
 	<string>Yes, that's it</string>
 	<key>Next: a few easy questions.</key>
 	<string>Next: a few easy questions.</string>
+	<key>%@ · %@ · %@</key>
+	<string>%@ · %@ · %@</string>
+	<key>Best overall</key>
+	<string>Best overall</string>
+	<key>Easy shipping</key>
+	<string>Easy shipping</string>
+	<key>Easiest option</key>
+	<string>Easiest option</string>
+	<key>Fast sale</key>
+	<string>Fast sale</string>
+	<key>Fastest sale</key>
+	<string>Fastest sale</string>
+	<key>List around %@</key>
+	<string>List around %@</string>
+	<key>Most money</key>
+	<string>Most money</string>
+	<key>Pack carefully</key>
+	<string>Pack carefully</string>
+	<key>Shipping okay</key>
+	<string>Shipping okay</string>
+	<key>Slower sale</key>
+	<string>Slower sale</string>
+	<key>Steady sale</key>
+	<string>Steady sale</string>
 </dict>
 </plist>
