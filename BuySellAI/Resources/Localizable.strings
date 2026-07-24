@@ -38,6 +38,8 @@
 	<string>Amazon marketplace — high reach, high fee</string>
 	<key>Analyzing your photo…</key>
 	<string>Analyzing your photo…</string>
+	<key>Answer</key>
+	<string>Answer</string>
 	<key>Antiques &amp; fine art</key>
 	<string>Antiques &amp; fine art</string>
 	<key>All places</key>
@@ -986,6 +988,8 @@
 	<string>Fit the whole thing.</string>
 	<key>Photo check</key>
 	<string>Photo check</string>
+	<key>Photo</key>
+	<string>Photo</string>
 	<key>Photo. Questions. Listing.</key>
 	<string>Photo. Questions. Listing.</string>
 	<key>Price, place, and post are ready.</key>

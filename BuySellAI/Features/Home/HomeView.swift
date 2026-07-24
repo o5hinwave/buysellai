@@ -229,7 +229,7 @@ private struct HomeCameraHeroMark: View {
             startSnapFlow()
         } label: {
             cardContent
-                .frame(maxWidth: .infinity, minHeight: 258)
+                .frame(maxWidth: .infinity, minHeight: 306)
                 .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         }
         .buttonStyle(PressButtonStyle())
@@ -242,26 +242,30 @@ private struct HomeCameraHeroMark: View {
             RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
                 .fill(cardFill)
                 .overlay {
-                    HomePearlTopHighlight(cornerRadius: Radius.xl)
-                }
-                .overlay(alignment: .topLeading) {
-                    cardTopLine
-                        .padding(Spacing.lg)
-                }
-                .overlay(alignment: .center) {
-                    HomeHeroCameraGlyph()
-                }
-                .overlay(alignment: .bottom) {
-                    cardBottomCopy
-                        .padding(.horizontal, Spacing.lg)
-                        .padding(.bottom, Spacing.lg)
+                    HomePearlCardSheen(cornerRadius: Radius.xl)
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
                         .stroke(Color.brand.border.opacity(0.76), lineWidth: 1)
                 }
-                .shadow(color: Color.brand.shadow.opacity(0.07), radius: 30, x: 0, y: 18)
-                .shadow(color: Color.brand.primaryMuted.opacity(0.32), radius: 18, x: -8, y: -8)
+                .shadow(color: Color.brand.shadow.opacity(0.08), radius: 34, x: 0, y: 20)
+                .shadow(color: Color.brand.pearlPeach.opacity(0.22), radius: 18, x: -8, y: -8)
+
+            VStack(spacing: Spacing.lg) {
+                cardTopLine
+
+                Spacer(minLength: Spacing.xs)
+
+                HomeHeroCameraGlyph()
+
+                Spacer(minLength: Spacing.xs)
+
+                VStack(spacing: Spacing.sm) {
+                    HomeCardStepStrip()
+                    cardBottomCopy
+                }
+            }
+            .padding(Spacing.lg)
         }
     }
 
@@ -308,8 +312,9 @@ private struct HomeCameraHeroMark: View {
     private var cardFill: LinearGradient {
         LinearGradient(
             stops: [
-                .init(color: Color.brand.surface, location: 0),
-                .init(color: Color.brand.primaryMuted.opacity(0.32), location: 0.46),
+                .init(color: Color.brand.pearlIvory, location: 0),
+                .init(color: Color.brand.pearlMist.opacity(0.92), location: 0.38),
+                .init(color: Color.brand.pearlPeach.opacity(0.72), location: 0.7),
                 .init(color: Color.brand.backgroundSubtle, location: 1)
             ],
             startPoint: .topLeading,
@@ -324,13 +329,45 @@ private struct HomePearlScreenBackground: View {
         LinearGradient(
             stops: [
                 .init(color: Color.brand.background, location: 0),
-                .init(color: Color.brand.primaryMuted.opacity(0.18), location: 0.42),
+                .init(color: Color.brand.pearlMist.opacity(0.44), location: 0.34),
+                .init(color: Color.brand.pearlPeach.opacity(0.2), location: 0.62),
                 .init(color: Color(uiColor: .systemGroupedBackground), location: 1)
             ],
             startPoint: .top,
             endPoint: .bottom
         )
         .ignoresSafeArea()
+    }
+}
+
+private struct HomePearlCardSheen: View {
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                stops: [
+                    .init(color: Color.brand.surface.opacity(0.86), location: 0),
+                    .init(color: Color.brand.pearlChampagne.opacity(0.34), location: 0.42),
+                    .init(color: Color.clear, location: 1)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            LinearGradient(
+                stops: [
+                    .init(color: Color.clear, location: 0),
+                    .init(color: Color.brand.primaryMuted.opacity(0.34), location: 1)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            HomePearlTopHighlight(cornerRadius: cornerRadius)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .allowsHitTesting(false)
     }
 }
 
@@ -369,24 +406,83 @@ private struct HomeHeroCameraGlyph: View {
 
             Image(systemName: "camera.aperture")
                 .brandSymbol(.heroIcon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Color.brand.foreground)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.brand.foreground, Color.brand.primaryText)
                 .accessibilityHidden(true)
         }
-        .frame(width: 112, height: 112)
+        .frame(width: 118, height: 118)
         .shadow(color: Color.brand.shadow.opacity(0.08), radius: 24, x: 0, y: 14)
+        .shadow(color: Color.brand.pearlChampagne.opacity(0.26), radius: 16, x: -5, y: -5)
     }
 
     private var glyphFill: LinearGradient {
         LinearGradient(
             colors: [
-                Color.brand.surface.opacity(0.98),
-                Color.brand.backgroundSubtle.opacity(0.94),
-                Color.brand.primaryMuted.opacity(0.28)
+                Color.brand.surface.opacity(0.99),
+                Color.brand.pearlIvory.opacity(0.96),
+                Color.brand.pearlMist.opacity(0.84)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+}
+
+private struct HomeCardStepStrip: View {
+    var body: some View {
+        HStack(spacing: 0) {
+            HomeCardStepPill(number: 1, title: "Photo", systemImage: "camera.viewfinder")
+            HomeCardStepDivider()
+            HomeCardStepPill(number: 2, title: "Answer", systemImage: "text.bubble")
+            HomeCardStepDivider()
+            HomeCardStepPill(number: 3, title: "Copy", systemImage: "doc.on.doc")
+        }
+        .padding(Spacing.xxs)
+        .background {
+            Capsule(style: .continuous)
+                .fill(Color.brand.surface.opacity(0.58))
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(Color.brand.border.opacity(0.62), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct HomeCardStepPill: View {
+    let number: Int
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: Spacing.xxs) {
+            Text(verbatim: "\(number)")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+
+            Image(systemName: systemImage)
+                .brandSymbol(.smallChevron)
+                .accessibilityHidden(true)
+
+            Text(title.localized)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+        .foregroundStyle(number == 1 ? Color.brand.primaryText : Color.brand.foreground)
+        .frame(maxWidth: .infinity, minHeight: 32)
+        .contentShape(Rectangle())
+        .accessibilityLabel(String.localizedFormat("%d. %@", number, title.localized))
+    }
+}
+
+private struct HomeCardStepDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.brand.border.opacity(0.68))
+            .frame(width: 1, height: 18)
+            .accessibilityHidden(true)
     }
 }
 
@@ -400,7 +496,12 @@ private struct HomeStepRow: View {
         HStack(alignment: .center, spacing: Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(Color.brand.primaryMuted)
+                    .fill(Color.brand.surface)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.brand.border.opacity(0.78), lineWidth: 1)
+                    }
+                    .shadow(color: Color.brand.shadow.opacity(0.04), radius: 8, x: 0, y: 4)
                 Text(verbatim: "\(number)")
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color.brand.primaryText)

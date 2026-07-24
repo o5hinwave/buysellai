@@ -162,6 +162,11 @@ require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
 require_home_marker ".listStyle(.insetGrouped)"
 require_home_marker "HomeCameraHeroMark(startSnapFlow: startSnapFlow)"
+require_home_marker "HomePearlCardSheen(cornerRadius: Radius.xl)"
+require_home_marker "HomeCardStepStrip()"
+require_home_marker 'HomeCardStepPill(number: 1, title: "Photo", systemImage: "camera.viewfinder")'
+require_home_marker 'HomeCardStepPill(number: 2, title: "Answer", systemImage: "text.bubble")'
+require_home_marker 'HomeCardStepPill(number: 3, title: "Copy", systemImage: "doc.on.doc")'
 require_home_marker "HomeStepRow(number: 1"
 require_home_marker "HomeStepRow(number: 2"
 require_home_marker "HomeStepRow(number: 3"
@@ -234,7 +239,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
         printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
         printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
-        printf 'home setup: Apple Card-style centered camera card, native 1-2-3 task rows, quiet footer copy, restrained warm accent, monochrome toolbar wordmark, account, and settings actions\n'
+        printf 'home setup: pearl Apple Card-style centered camera card, in-card Photo Answer Copy strip, native 1-2-3 task rows, quiet footer copy, restrained warm accent, monochrome toolbar wordmark, account, and settings actions\n'
         printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
@@ -257,7 +262,7 @@ printf 'source: BuySellAI/Design/NativeMaterialSurface.swift\n'
 printf 'source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent\n'
 printf 'obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers\n'
 printf 'active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls\n'
-printf 'home setup: Apple Card-style centered camera card, native 1-2-3 task rows, quiet footer copy, restrained warm accent, monochrome toolbar wordmark, account, and settings actions\n'
+printf 'home setup: pearl Apple Card-style centered camera card, in-card Photo Answer Copy strip, native 1-2-3 task rows, quiet footer copy, restrained warm accent, monochrome toolbar wordmark, account, and settings actions\n'
 printf 'camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+\n'
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
 printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'

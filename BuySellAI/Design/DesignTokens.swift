@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 extension Color {
     enum brand {
@@ -23,6 +24,10 @@ extension Color {
         static let info = Color("Info")
         static let cameraBackdrop = Color("CameraBackdrop")
         static let shadow = Color(hex: 0x000000)
+        static let pearlIvory = Color.dynamic(light: 0xFFFDF8, dark: 0x1B1816)
+        static let pearlMist = Color.dynamic(light: 0xF2F6FF, dark: 0x171A22)
+        static let pearlPeach = Color.dynamic(light: 0xFFEAD8, dark: 0x2D1B12)
+        static let pearlChampagne = Color.dynamic(light: 0xF8E7C6, dark: 0x261D12)
         static let platformEbay = Color(hex: 0x0064D2)
         static let platformMercari = Color(hex: 0xE60023)
         static let platformPoshmark = Color(hex: 0xE51A72)
@@ -78,6 +83,18 @@ extension Color {
         let green = Double((hex >> 8) & 0xFF) / 255
         let blue = Double(hex & 0xFF) / 255
         self.init(.sRGB, red: red, green: green, blue: blue, opacity: alpha)
+    }
+
+    static func dynamic(light: UInt, dark: UInt) -> Color {
+        Color(uiColor: UIColor { traits in
+            let hex = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(
+                red: CGFloat((hex >> 16) & 0xFF) / 255,
+                green: CGFloat((hex >> 8) & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255,
+                alpha: 1
+            )
+        })
     }
 }
 

@@ -298,6 +298,13 @@ final class DesignAccessibilityTests: XCTestCase {
     func testSemanticColorAssetsMeetPromptContrastTargets() throws {
         let textAssets = ["Foreground", "ForegroundSecondary", "MutedForeground"]
         let backgrounds = ["Background", "Surface"]
+        let designTokens = try String(contentsOf: projectURL("BuySellAI/Design/DesignTokens.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(designTokens.range(of: "static let pearlIvory = Color.dynamic(light: 0xFFFDF8, dark: 0x1B1816)"))
+        XCTAssertNotNil(designTokens.range(of: "static let pearlMist = Color.dynamic(light: 0xF2F6FF, dark: 0x171A22)"))
+        XCTAssertNotNil(designTokens.range(of: "static let pearlPeach = Color.dynamic(light: 0xFFEAD8, dark: 0x2D1B12)"))
+        XCTAssertNotNil(designTokens.range(of: "static let pearlChampagne = Color.dynamic(light: 0xF8E7C6, dark: 0x261D12)"))
+        XCTAssertNotNil(designTokens.range(of: "static func dynamic(light: UInt, dark: UInt) -> Color"))
 
         for appearance in ColorAppearance.allCases {
             for backgroundName in backgrounds {
@@ -822,14 +829,27 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(home.range(of: "HomeCameraHeroMark(startSnapFlow: startSnapFlow)"))
         XCTAssertNotNil(home.range(of: "private struct HomeCameraHeroMark: View"))
         XCTAssertNotNil(home.range(of: "let startSnapFlow: () -> Void"))
+        XCTAssertNotNil(home.range(of: #".frame(maxWidth: .infinity, minHeight: 306)"#))
         XCTAssertNotNil(home.range(of: ".brandSymbol(.heroIcon)"))
+        XCTAssertNotNil(home.range(of: "Color.brand.pearlIvory"))
+        XCTAssertNotNil(home.range(of: "Color.brand.pearlMist"))
+        XCTAssertNotNil(home.range(of: "Color.brand.pearlPeach"))
+        XCTAssertNotNil(home.range(of: "Color.brand.pearlChampagne"))
         XCTAssertNotNil(home.range(of: "Color.brand.primaryMuted"))
         XCTAssertNotNil(home.range(of: "HomePearlScreenBackground()"))
+        XCTAssertNotNil(home.range(of: "private struct HomePearlCardSheen: View"))
+        XCTAssertNotNil(home.range(of: "HomePearlCardSheen(cornerRadius: Radius.xl)"))
         XCTAssertNotNil(home.range(of: "HomePearlTopHighlight(cornerRadius: Radius.xl)"))
         XCTAssertNotNil(home.range(of: "private struct HomeHeroCameraGlyph: View"))
         XCTAssertNotNil(home.range(of: #"Image(systemName: "camera.aperture")"#))
         XCTAssertNotNil(home.range(of: "Color.brand.border.opacity(0.76)"))
-        XCTAssertNotNil(home.range(of: "Color.brand.shadow.opacity(0.07)"))
+        XCTAssertNotNil(home.range(of: "Color.brand.shadow.opacity(0.08)"))
+        XCTAssertNotNil(home.range(of: "private struct HomeCardStepStrip: View"))
+        XCTAssertNotNil(home.range(of: "private struct HomeCardStepPill: View"))
+        XCTAssertNotNil(home.range(of: #"HomeCardStepPill(number: 1, title: "Photo", systemImage: "camera.viewfinder")"#))
+        XCTAssertNotNil(home.range(of: #"HomeCardStepPill(number: 2, title: "Answer", systemImage: "text.bubble")"#))
+        XCTAssertNotNil(home.range(of: #"HomeCardStepPill(number: 3, title: "Copy", systemImage: "doc.on.doc")"#))
+        XCTAssertNotNil(home.range(of: "private struct HomeCardStepDivider: View"))
         XCTAssertNotNil(home.range(of: "private struct HomeStepRow: View"))
         XCTAssertNotNil(home.range(of: #"HomeStepRow(number: 1, title: "Snap a photo""#))
         XCTAssertNotNil(home.range(of: #"HomeStepRow(number: 2, title: "Answer what you know""#))
