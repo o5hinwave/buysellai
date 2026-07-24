@@ -524,7 +524,7 @@ struct SnapResultSheet: View {
 
     private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
-            Image(systemName: "text.magnifyingglass")
+            Image(systemName: "magnifyingglass.circle.fill")
                 .foregroundStyle(Color.brand.primaryText)
                 .accessibilityHidden(true)
 
@@ -721,7 +721,7 @@ struct SnapResultSheet: View {
                 .accessibilityLabel(category.display)
             }
         } label: {
-            SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)
+            SnapResultMenuLabel(title: "Change category", systemImage: "tag.fill", maxWidth: sheetContentMaxWidth)
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
@@ -771,34 +771,16 @@ struct SnapResultSheet: View {
     }
 
     private func categoryMenuItemIcon(for category: Category) -> String {
-        switch category {
-        case .electronics: "display"
-        case .furniture: "house"
-        case .clothing: "tshirt"
-        case .shoes: "shoeprints.fill"
-        case .bags: "handbag"
-        case .jewelry: "sparkles"
-        case .toys: "gamecontroller"
-        case .kids: "figure.2"
-        case .home: "house"
-        case .tools: "wrench.and.screwdriver"
-        case .sports: "sportscourt"
-        case .books: "books.vertical"
-        case .media: "play.rectangle"
-        case .music: "music.note"
-        case .collectibles: "star"
-        case .art: "paintpalette"
-        case .other: "shippingbox"
-        }
+        category.placeholderSystemImage
     }
 
     private func conditionMenuItemIcon(for condition: Condition) -> String {
         switch condition {
-        case .new: "sparkles"
-        case .likeNew: "checkmark.seal"
-        case .good: "hand.thumbsup"
-        case .fair: "exclamationmark.circle"
-        case .forParts: "wrench"
+        case .new: "checkmark.seal.fill"
+        case .likeNew: "checkmark.circle.fill"
+        case .good: "hand.thumbsup.fill"
+        case .fair: "exclamationmark.circle.fill"
+        case .forParts: "wrench.fill"
         }
     }
 

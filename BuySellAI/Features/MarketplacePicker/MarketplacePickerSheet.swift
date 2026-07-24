@@ -116,7 +116,7 @@ struct MarketplacePickerSheet: View {
     }
 
     private func marketCheckNotice(_ message: String) -> some View {
-        Label(message.localized, systemImage: "exclamationmark.magnifyingglass")
+        Label(message.localized, systemImage: "exclamationmark.circle.fill")
             .font(.caption)
             .foregroundStyle(Color.brand.mutedForeground)
             .padding(.vertical, Spacing.xxs)

@@ -616,7 +616,7 @@ struct ItemQuestionsSheet: View {
                 fact
             ),
             placeholder: brandPlaceholder(for: category),
-            systemImage: "tag",
+            systemImage: "tag.fill",
             kind: .text(.labelOrBrand),
             choices: [
                 DetailChoice(title: "No visible label", value: .text("No visible label")),
@@ -651,7 +651,7 @@ struct ItemQuestionsSheet: View {
                 fact
             ),
             placeholder: "Scratch, stain, missing piece...",
-            systemImage: "exclamationmark.magnifyingglass",
+            systemImage: "exclamationmark.circle.fill",
             kind: .text(.flaws),
             choices: [
                 DetailChoice(title: "No visible flaws", value: .text("No visible flaws")),
@@ -671,7 +671,7 @@ struct ItemQuestionsSheet: View {
                 fact
             ),
             placeholder: includedPlaceholder(for: category),
-            systemImage: "shippingbox",
+            systemImage: "shippingbox.fill",
             kind: .text(.included),
             choices: [
                 DetailChoice(title: "Item only", value: .text("Item only")),
@@ -688,7 +688,7 @@ struct ItemQuestionsSheet: View {
             title: "Do you see a brand, maker, or label?",
             detail: "A name on a tag, sticker, stamp, or logo can change the search and price.",
             placeholder: brandPlaceholder(for: category),
-            systemImage: "tag",
+            systemImage: "tag.fill",
             kind: .text(.labelOrBrand),
             choices: [
                 DetailChoice(title: "No label", value: .text("No visible label")),
@@ -717,7 +717,7 @@ struct ItemQuestionsSheet: View {
             title: "Any flaws someone should see?",
             detail: "Scratches, stains, missing parts, or wear keep the listing honest.",
             placeholder: "Scratch, stain, missing piece...",
-            systemImage: "exclamationmark.magnifyingglass",
+            systemImage: "exclamationmark.circle.fill",
             kind: .text(.flaws),
             choices: [
                 DetailChoice(title: "No visible flaws", value: .text("No visible flaws")),
@@ -734,7 +734,7 @@ struct ItemQuestionsSheet: View {
             title: "What comes with it?",
             detail: includedQuestionDetail(for: category),
             placeholder: includedPlaceholder(for: category),
-            systemImage: "shippingbox",
+            systemImage: "shippingbox.fill",
             kind: .text(.included),
             choices: [
                 DetailChoice(title: "Item only", value: .text("Item only")),
@@ -785,7 +785,7 @@ struct ItemQuestionsSheet: View {
                 title: "Any model number or shipping note?",
                 detail: "eBay works better when model details and shipping basics are clear.",
                 placeholder: "Model number, shipping weight, fixed price...",
-                systemImage: "number",
+                systemImage: "number.circle.fill",
                 kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Fixed price", value: .text("Prefer fixed price")),
@@ -815,7 +815,7 @@ struct ItemQuestionsSheet: View {
                 title: "What size or material is on the tag?",
                 detail: "Fashion listings need the tag, fit, and any fabric details people can trust.",
                 placeholder: "Women's M, leather, 32 x 30...",
-                systemImage: "tag",
+                systemImage: "tag.fill",
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "No size tag", value: .text("No visible size tag")),
@@ -829,7 +829,7 @@ struct ItemQuestionsSheet: View {
                 title: "Is it vintage, handmade, or signed?",
                 detail: "Age, materials, signature, or maker marks matter on this marketplace.",
                 placeholder: "Vintage, handmade, signed, materials...",
-                systemImage: "sparkles",
+                systemImage: "paintpalette.fill",
                 kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
@@ -844,7 +844,7 @@ struct ItemQuestionsSheet: View {
                 title: "Do you know the SKU, size, or box condition?",
                 detail: "Exact model, size, box, and authenticity details matter here.",
                 placeholder: "SKU, size, original box, box damage...",
-                systemImage: "checkmark.seal",
+                systemImage: "checkmark.seal.fill",
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "Original box", value: .text("Original box included")),
@@ -888,7 +888,7 @@ struct ItemQuestionsSheet: View {
                 title: "What set, number, or card condition do you know?",
                 detail: "Trading cards need exact set and condition before price is reliable.",
                 placeholder: "Set, card number, foil, condition...",
-                systemImage: "rectangle.stack",
+                systemImage: "rectangle.stack.fill",
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "Sleeved", value: .text("Sleeved")),
@@ -992,17 +992,17 @@ struct ItemQuestionsSheet: View {
     private static func specQuestionSymbol(for category: Category) -> String {
         switch category {
         case .electronics:
-            return "cpu"
+            return "iphone"
         case .furniture, .home, .art:
             return "ruler"
         case .clothing, .shoes, .bags, .jewelry, .kids:
-            return "tag"
+            return "tag.fill"
         case .music:
             return "music.note"
         case .collectibles:
-            return "number"
+            return "number.circle.fill"
         default:
-            return "text.magnifyingglass"
+            return category.placeholderSystemImage
         }
     }
 

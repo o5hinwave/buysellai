@@ -187,7 +187,7 @@ struct ListingSheet: View {
                 }
                 marketplaceTipRow(
                     title: "What helps here",
-                    systemImage: "sparkles",
+                    systemImage: "lightbulb.fill",
                     detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
                 )
                 if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
@@ -207,7 +207,7 @@ struct ListingSheet: View {
                 if let tags = joinedDraftValues(store.draft?.tags) {
                     marketplaceTipRow(
                         title: "Tags",
-                        systemImage: "tag",
+                        systemImage: "tag.fill",
                         detail: tags
                     )
                 }
@@ -352,7 +352,7 @@ struct ListingSheet: View {
                 }
                 evidenceDetailRow(
                     title: "Fee source",
-                    systemImage: "doc.text.magnifyingglass",
+                    systemImage: "doc.text.fill",
                     detail: context.marketplace.playbookEvidence.feeModelSourceTitle
                 )
                 evidenceDetailRow(
@@ -528,7 +528,7 @@ struct ListingSheet: View {
         fields.append(ListingCopyField(
             title: "Price",
             value: pricePlan.listAt.currency(code: context.item.currencyCode),
-            systemImage: "tag"
+            systemImage: "tag.fill"
         ))
         fields.appendIfPresent(
             title: "Details",
@@ -538,7 +538,7 @@ struct ListingSheet: View {
         fields.appendIfPresent(
             title: "Tags",
             value: joinedDraftValues(draft?.tags),
-            systemImage: "number"
+            systemImage: "number.circle.fill"
         )
         return fields
     }

@@ -725,7 +725,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"ForEach(Array(details.itemFacts.prefix(3).enumerated()), id: \.offset)"#))
         XCTAssertNotNil(source.range(of: #"private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View"#))
         XCTAssertNotNil(source.range(of: #"private func analysisGuidanceRow(_ guidance: String) -> some View"#))
-        XCTAssertNotNil(source.range(of: #"Image(systemName: "text.magnifyingglass")"#))
+        XCTAssertNotNil(source.range(of: #"Image(systemName: "magnifyingglass.circle.fill")"#))
         XCTAssertNotNil(source.range(of: #"Text("Could help".localized)"#))
         XCTAssertNotNil(source.range(of: #"Image(systemName: "lightbulb")"#))
         XCTAssertNotNil(source.range(of: #".accessibilityLabel(String.localizedFormat("%@, %@", fact.label, fact.value))"#))
@@ -1284,6 +1284,7 @@ final class DesignAccessibilityTests: XCTestCase {
 
     func testSnapResultChangeActionsUseNativeMenusForExactSelection() throws {
         let snapResult = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultSheet.swift"), encoding: .utf8)
+        let models = try String(contentsOf: projectURL("BuySellAI/Data/Models.swift"), encoding: .utf8)
         let store = try String(contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"), encoding: .utf8)
 
         XCTAssertNotNil(snapResult.range(of: "categoryMenuButton(selected: item.category)"))
@@ -1296,9 +1297,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(snapResult.range(of: "private func categoryMenuItemIcon(for category: Category) -> String"))
         XCTAssertNotNil(snapResult.range(of: "private func conditionMenuItemIcon(for condition: Condition) -> String"))
         XCTAssertNotNil(snapResult.range(of: #"Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)"#))
-        XCTAssertNotNil(snapResult.range(of: #".electronics: "display""#))
-        XCTAssertNotNil(snapResult.range(of: #".furniture: "house""#))
-        XCTAssertNotNil(snapResult.range(of: #".forParts: "wrench""#))
+        XCTAssertNotNil(snapResult.range(of: #"category.placeholderSystemImage"#))
+        XCTAssertNotNil(models.range(of: "case .electronics:\n            \"iphone\""))
+        XCTAssertNotNil(models.range(of: "case .furniture, .home:\n            \"house.fill\""))
+        XCTAssertNotNil(snapResult.range(of: #".forParts: "wrench.fill""#))
         XCTAssertNotNil(snapResult.range(of: "store.selectCategory(category)"))
         XCTAssertNotNil(snapResult.range(of: "store.selectCondition(condition)"))
         XCTAssertNotNil(store.range(of: "func selectCategory(_ category: Category)"))
@@ -1314,7 +1316,7 @@ final class DesignAccessibilityTests: XCTestCase {
         let photoRange = try XCTUnwrap(snapResult.range(of: "struct PhotoThumbnail", range: labelRange.upperBound..<snapResult.endIndex))
         let labelSource = String(snapResult[labelRange.lowerBound..<photoRange.lowerBound])
 
-        XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)"#))
+        XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag.fill", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(menuSource.range(of: #"SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertGreaterThanOrEqual(menuSource.components(separatedBy: #".buttonStyle(.bordered)"#).count - 1, 2)
         XCTAssertNil(menuSource.range(of: #".buttonBorderShape(.capsule)"#))
@@ -1350,7 +1352,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(snapResult.range(of: #"(usesRegularWidthLayout || UIScreen.main.bounds.width >= 430)"#))
         XCTAssertNotNil(snapResult.range(of: #"&& dynamicTypeSize.isAccessibilitySize == false"#))
         XCTAssertNotNil(snapResult.range(of: "dynamicTypeSize.isAccessibilitySize\n            ? [GridItem(.flexible())]\n            : [GridItem(.flexible()), GridItem(.flexible())]"))
-        XCTAssertNotNil(snapResult.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag", maxWidth: sheetContentMaxWidth)"#))
+        XCTAssertNotNil(snapResult.range(of: #"SnapResultMenuLabel(title: "Change category", systemImage: "tag.fill", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(snapResult.range(of: #"SnapResultMenuLabel(title: "Change condition", systemImage: "slider.horizontal.3", maxWidth: sheetContentMaxWidth)"#))
         XCTAssertNotNil(m10.range(of: "Narrow-iPhone result actions keep quick retake/retry controls paired while rendering category and condition menu triggers as full-width material rows"))
     }
@@ -1921,7 +1923,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(quickTipsSource.range(of: #"detail: postingNotes"#))
         XCTAssertNotNil(quickTipsSource.range(of: #"if let postingNotes = joinedDraftValues(store.draft?.postingNotes)"#))
         XCTAssertNotNil(quickTipsSource.range(of: #"title: "Tags""#))
-        XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: "tag""#))
+        XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: "tag.fill""#))
         XCTAssertNotNil(quickTipsSource.range(of: #"detail: tags"#))
         XCTAssertNotNil(quickTipsSource.range(of: #"if let tags = joinedDraftValues(store.draft?.tags)"#))
         XCTAssertNil(quickTipsSource.range(of: #"evidenceSummary"#))
