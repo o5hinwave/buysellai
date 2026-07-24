@@ -210,11 +210,11 @@ enum MarketplaceSummaryKind: String, Sendable, Hashable {
     var label: String {
         switch self {
         case .bestOverall:
-            "Best overall"
+            "Best chance to sell"
         case .fastestSale:
-            "Fastest sale"
+            "Fastest local sale"
         case .mostMoney:
-            "Most money"
+            "Most money back"
         case .easiestOption:
             "Easiest option"
         }

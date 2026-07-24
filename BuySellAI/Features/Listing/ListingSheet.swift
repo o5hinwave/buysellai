@@ -316,16 +316,7 @@ struct ListingSheet: View {
     }
 
     private var recommendationLabel: String {
-        switch selectedRecommendationKind {
-        case .bestOverall:
-            "Best overall"
-        case .fastestSale:
-            "Fastest sale"
-        case .mostMoney:
-            "Most money"
-        case .easiestOption:
-            "Easiest option"
-        }
+        selectedRecommendationKind.label
     }
 
     private var recommendationReason: String {

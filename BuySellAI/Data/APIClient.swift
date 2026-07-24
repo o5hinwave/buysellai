@@ -114,7 +114,7 @@ actor APIClient {
                 comparisons: candidates.enumerated().map { index, marketplace in
                     MarketplaceComparison(
                         marketplace: marketplace,
-                        recommendationLabel: index == 0 ? "Best overall" : nil,
+                        recommendationLabel: index == 0 ? MarketplaceSummaryKind.bestOverall.label : nil,
                         marketplaceFitScore: max(90 - index * 6, 48),
                         listPrice: item.priceEstimate,
                         likelyRangeLow: item.priceEstimate * Decimal(8) / Decimal(10),

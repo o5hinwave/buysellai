@@ -1138,6 +1138,8 @@
 	<string>Fast sale</string>
 	<key>Fastest sale</key>
 	<string>Fastest sale</string>
+	<key>Fastest local sale</key>
+	<string>Fastest local sale</string>
 	<key>From %@</key>
 	<string>From %@</string>
 	<key>Image search</key>

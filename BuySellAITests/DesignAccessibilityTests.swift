@@ -465,8 +465,8 @@ final class DesignAccessibilityTests: XCTestCase {
 
         let above = MarketplaceEstimate(id: .craigslist, payout: Decimal(45), deltaPct: 12.4, badge: .best)
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best overall", for: above),
-            "Best overall, Craigslist, estimated payout 45 dollars, 12 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: above),
+            "Best chance to sell, Craigslist, estimated payout 45 dollars, 12 percent above average"
         )
 
         let average = MarketplaceEstimate(id: .facebook, payout: Decimal(43), deltaPct: 0.2, badge: .none)
@@ -483,8 +483,8 @@ final class DesignAccessibilityTests: XCTestCase {
             fitScore: 91
         )
         XCTAssertEqual(
-            MarketplaceAccessibilityText.summaryLabel("Best overall", for: strongFit),
-            "Best overall, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
+            MarketplaceAccessibilityText.summaryLabel("Best chance to sell", for: strongFit),
+            "Best chance to sell, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
         )
 
         let item = DetectedItem(
@@ -2116,6 +2116,7 @@ final class DesignAccessibilityTests: XCTestCase {
 
     func testListingLeadsWithGeneratedTextBeforeMarketplaceDetails() throws {
         let listing = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
+        let estimator = try String(contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplaceEstimator.swift"), encoding: .utf8)
         let successRange = try XCTUnwrap(listing.range(of: "case .success:"))
         let listingTextRange = try XCTUnwrap(listing.range(of: #"Section("Generated listing text".localized) {"#, range: successRange.upperBound..<listing.endIndex))
         let recommendationRange = try XCTUnwrap(listing.range(of: "listingRecommendationSummary", range: listingTextRange.upperBound..<listing.endIndex))
@@ -2142,10 +2143,13 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"private var selectedRecommendationKind: MarketplaceSummaryKind"#))
         XCTAssertNotNil(listing.range(of: #"MarketplaceSummaryPlanner"#))
         XCTAssertNotNil(listing.range(of: #"MarketplaceEstimator.estimates(for: context.item, details: context.details)"#))
-        XCTAssertNotNil(listing.range(of: #"case .mostMoney:"#))
-        XCTAssertNotNil(listing.range(of: #""Most money""#))
-        XCTAssertNotNil(listing.range(of: #""Fastest sale""#))
-        XCTAssertNotNil(listing.range(of: #""Easiest option""#))
+        XCTAssertNotNil(listing.range(of: #"selectedRecommendationKind.label"#))
+        XCTAssertNotNil(estimator.range(of: #""Most money back""#))
+        XCTAssertNotNil(estimator.range(of: #""Fastest local sale""#))
+        XCTAssertNotNil(estimator.range(of: #""Best chance to sell""#))
+        XCTAssertNil(listing.range(of: #""Most money""#))
+        XCTAssertNil(listing.range(of: #""Fastest sale""#))
+        XCTAssertNil(listing.range(of: #""Best overall""#))
         XCTAssertNotNil(listing.range(of: #"context.marketplace.recommendationReason(for: context.item)"#))
         XCTAssertNotNil(listing.range(of: #".accessibilityIdentifier("Listing.RecommendationSummary")"#))
         XCTAssertNotNil(listing.range(of: #".accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))"#))
