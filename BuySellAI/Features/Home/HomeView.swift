@@ -15,10 +15,6 @@ struct HomeView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
-                Section("Recent listings".localized) {
-                    historySectionContent
-                }
-
                 Section {
                     HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: AppSymbol.Flow.snapPhotoCompact)
                     HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: AppSymbol.Flow.answer)
@@ -31,6 +27,10 @@ struct HomeView: View {
                     Text("1 · 2 · 3".localized)
                 } footer: {
                     Text("No selling skills needed.".localized)
+                }
+
+                Section("Recent listings".localized) {
+                    historySectionContent
                 }
             }
             .listStyle(.insetGrouped)
