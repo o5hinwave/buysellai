@@ -184,7 +184,7 @@ final class ArchivePackagingScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "source liquid glass: compiler-gated glassEffect, GlassEffectContainer, GlassButtonStyle, .glass, .glassProminent"))
         XCTAssertNotNil(script.range(of: "obsolete button primitives: removed primary, secondary, and ghost pill helpers plus their primary/standard background modifiers"))
         XCTAssertNotNil(script.range(of: "active control glass: iOS 26+ standard glass for text actions, icon controls, chips, camera controls, and remaining custom controls"))
-        XCTAssertNotNil(script.range(of: "home setup: native plain list command surface with hero, promise strip, branded toolbar wordmark, account, and settings actions"))
+        XCTAssertNotNil(script.range(of: "home setup: Apple Card-style centered camera card, native 1-2-3 task rows, quiet footer copy, restrained warm accent, monochrome toolbar wordmark, account, and settings actions"))
         XCTAssertNotNil(script.range(of: "camera setup: native top controls, tap focus, camera switching, scene-phase recovery, photo import, and capture controls preserve compiler-gated GlassEffectContainer on iOS 26+"))
         XCTAssertNotNil(script.range(of: "auth setup: native inset grouped list, NavigationLink email push, and system bottom bars"))
         XCTAssertNotNil(script.range(of: "tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager"))
