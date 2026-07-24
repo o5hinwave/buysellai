@@ -110,6 +110,18 @@ final class ModelFormattingTests: XCTestCase {
         )
     }
 
+    func testItemDetailAnswersRememberHandledMarketplaceUnknownsWithoutBoostingFactQuality() throws {
+        var answers = ItemDetailAnswers()
+
+        answers.markMarketplaceAnswered(.facebook)
+
+        let sanitized = try XCTUnwrap(answers.sanitizedForUse)
+        XCTAssertTrue(sanitized.hasMarketplaceNoteOrSkipped(.facebook))
+        XCTAssertFalse(sanitized.hasListingPayloadDetails)
+        XCTAssertEqual(sanitized.marketplaceFactQualityBonus, 0)
+        XCTAssertEqual(sanitized.displayValues, ["Facebook: I don't know"])
+    }
+
     func testItemDetailAnswersDecodeOldPayloadWithoutMarketplaceNotes() throws {
         let data = Data(
             """

@@ -534,6 +534,7 @@ struct ItemQuestionsSheet: View {
     private func markQuestionHandled(_ question: DetailQuestion) {
         switch question.kind {
         case .text(let field):
+            clearAnswer(for: field)
             switch field {
             case .marketplaceNote(let marketplace):
                 answers.markMarketplaceAnswered(marketplace)
@@ -542,6 +543,23 @@ struct ItemQuestionsSheet: View {
             }
         case .largeOrFragile:
             answers.markAnswered(.largeOrFragile)
+        }
+    }
+
+    private func clearAnswer(for field: Field) {
+        switch field {
+        case .labelOrBrand:
+            answers.labelOrBrand = ""
+        case .sizeOrModel:
+            answers.sizeOrModel = ""
+        case .flaws:
+            answers.flaws = ""
+        case .included:
+            answers.included = ""
+        case .extraDetails:
+            answers.extraDetails = ""
+        case .marketplaceNote(let marketplace):
+            answers.setMarketplaceNote("", for: marketplace)
         }
     }
 

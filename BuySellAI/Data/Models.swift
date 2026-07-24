@@ -726,7 +726,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
 
     var hasUsefulDetails: Bool {
         hasListingPayloadDetails ||
-            answeredFieldKeys.isEmpty == false
+            answeredFieldKeys.isEmpty == false ||
+            answeredMarketplaces.isEmpty == false
     }
 
     var hasListingPayloadDetails: Bool {

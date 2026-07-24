@@ -88,6 +88,57 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         XCTAssertEqual(context.marketplace, .ebay)
     }
 
+    func testMarketplaceQuestionsReuseRememberedPreferenceForSameMarketplaceOnly() throws {
+        let store = makeStore()
+        let details = ItemDetailAnswers(
+            labelOrBrand: "Stiffel",
+            marketplaceNotes: [.ebay: "Prefer fixed price"]
+        )
+
+        store.presentListing(item: lamp, imageData: nil, marketplace: .ebay, details: details)
+        store.closeFlow()
+        store.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .ebay)
+
+        let ebayAnswers = try XCTUnwrap(store.itemQuestionsContext?.answers)
+        XCTAssertEqual(ebayAnswers.marketplaceNote(for: .ebay), "Prefer fixed price")
+        XCTAssertEqual(ebayAnswers.labelOrBrand, "")
+
+        store.closeFlow()
+        store.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .facebook)
+
+        XCTAssertNil(store.itemQuestionsContext?.answers)
+    }
+
+    func testRememberedMarketplacePreferencePersistsAndCanBeCleared() throws {
+        let suiteName = "AppStoreRememberedSellingPreferences-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let firstStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        firstStore.presentListing(
+            item: lamp,
+            imageData: nil,
+            marketplace: .facebook,
+            details: ItemDetailAnswers(marketplaceNotes: [.facebook: "Can deliver nearby"])
+        )
+
+        let secondStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .facebook)
+
+        XCTAssertEqual(secondStore.itemQuestionsContext?.answers?.marketplaceNote(for: .facebook), "Can deliver nearby")
+
+        secondStore.presentListing(
+            item: lamp,
+            imageData: nil,
+            marketplace: .facebook,
+            details: ItemDetailAnswers(answeredMarketplaces: [.facebook])
+        )
+
+        let thirdStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        thirdStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .facebook)
+
+        XCTAssertNil(thirdStore.itemQuestionsContext?.answers)
+    }
+
     func testCloseFlowCancelsPendingMarketplacePickerPresentation() async {
         let store = makeStore()
 

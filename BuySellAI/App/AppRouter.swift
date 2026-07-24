@@ -30,6 +30,7 @@ final class AppStore {
     var reduceMotion: Bool {
         didSet { defaults.set(reduceMotion, forKey: Keys.reduceMotion) }
     }
+    var rememberedSellingPreferences: ItemDetailAnswers?
 
     var isShowingCamera = false
     var isShowingTutorial = false
@@ -85,10 +86,12 @@ final class AppStore {
         if LaunchArguments.contains(LaunchArguments.resetPreferences) {
             defaults.removeObject(forKey: Keys.theme)
             defaults.removeObject(forKey: Keys.reduceMotion)
+            defaults.removeObject(forKey: Keys.sellingPreferences)
         }
         let storedTheme = defaults.string(forKey: Keys.theme).flatMap(ThemePreference.init(rawValue:))
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
+        self.rememberedSellingPreferences = Self.storedSellingPreferences(from: defaults)
 
         if let userID = Keychain.load(Keys.authUserID) ?? Keychain.load(Keys.appleUserID) {
             self.session = AuthSession(
@@ -247,6 +250,10 @@ final class AppStore {
         answers: ItemDetailAnswers? = nil
     ) {
         advanceFlowGeneration()
+        let rememberedAnswers = answersApplyingRememberedPreferences(
+            answers,
+            preferredMarketplace: preferredMarketplace
+        )
         presentFlowSheet(
             .itemQuestions(
                 ItemQuestionsContext(
@@ -254,7 +261,7 @@ final class AppStore {
                     imageData: imageData,
                     preferredMarketplace: preferredMarketplace,
                     analysis: analysis,
-                    answers: answers
+                    answers: rememberedAnswers
                 )
             )
         )
@@ -267,6 +274,7 @@ final class AppStore {
         analysis: AnalyzeIntelligence? = nil
     ) {
         advanceFlowGeneration()
+        rememberSellingPreferences(from: details)
         presentFlowSheet(
             .marketplacePicker(
                 MarketplacePickerContext(
@@ -288,6 +296,7 @@ final class AppStore {
         existingHistoryEntry: HistoryEntry? = nil
     ) {
         advanceFlowGeneration()
+        rememberSellingPreferences(from: details)
         presentFlowSheet(
             .listing(
                 ListingContext(
@@ -797,6 +806,87 @@ final class AppStore {
         }
     }
 
+    private func answersApplyingRememberedPreferences(
+        _ answers: ItemDetailAnswers?,
+        preferredMarketplace: Marketplace?
+    ) -> ItemDetailAnswers? {
+        guard let preferredMarketplace,
+              let rememberedSellingPreferences,
+              let rememberedNote = cleanMarketplacePreference(
+                rememberedSellingPreferences.marketplaceNote(for: preferredMarketplace)
+              )
+        else {
+            return answers
+        }
+
+        var mergedAnswers = answers ?? ItemDetailAnswers()
+        guard mergedAnswers.hasMarketplaceNoteOrSkipped(preferredMarketplace) == false else {
+            return answers
+        }
+        mergedAnswers.setMarketplaceNote(rememberedNote, for: preferredMarketplace)
+        return mergedAnswers.sanitizedForUse
+    }
+
+    private func rememberSellingPreferences(from details: ItemDetailAnswers?) {
+        guard let details else { return }
+        var updatedPreferences = rememberedSellingPreferences ?? ItemDetailAnswers()
+
+        details.answeredMarketplaces.forEach { marketplace in
+            guard cleanMarketplacePreference(details.marketplaceNote(for: marketplace)) == nil else { return }
+            updatedPreferences.setMarketplaceNote("", for: marketplace)
+        }
+
+        details.marketplaceNotes.forEach { marketplace, note in
+            if let cleanNote = cleanMarketplacePreference(note) {
+                updatedPreferences.setMarketplaceNote(cleanNote, for: marketplace)
+            }
+        }
+
+        rememberedSellingPreferences = Self.marketplacePreferenceSnapshot(from: updatedPreferences)
+        persistRememberedSellingPreferences()
+    }
+
+    private func persistRememberedSellingPreferences() {
+        guard let rememberedSellingPreferences,
+              let data = try? JSONEncoder().encode(rememberedSellingPreferences)
+        else {
+            defaults.removeObject(forKey: Keys.sellingPreferences)
+            return
+        }
+        defaults.set(data, forKey: Keys.sellingPreferences)
+    }
+
+    private static func storedSellingPreferences(from defaults: UserDefaults) -> ItemDetailAnswers? {
+        guard let data = defaults.data(forKey: Keys.sellingPreferences),
+              let decoded = try? JSONDecoder().decode(ItemDetailAnswers.self, from: data)
+        else {
+            return nil
+        }
+        return marketplacePreferenceSnapshot(from: decoded)
+    }
+
+    private static func marketplacePreferenceSnapshot(from details: ItemDetailAnswers?) -> ItemDetailAnswers? {
+        guard let details else { return nil }
+        var snapshot = ItemDetailAnswers()
+        details.marketplaceNotes.forEach { marketplace, note in
+            let cleanNote = cleanMarketplacePreference(note)
+            if let cleanNote {
+                snapshot.setMarketplaceNote(cleanNote, for: marketplace)
+            }
+        }
+        return snapshot.sanitizedForUse
+    }
+
+    private static func cleanMarketplacePreference(_ value: String) -> String? {
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanValue.isEmpty == false else { return nil }
+        return String(cleanValue.prefix(220))
+    }
+
+    private func cleanMarketplacePreference(_ value: String) -> String? {
+        Self.cleanMarketplacePreference(value)
+    }
+
     private func persist(_ session: AuthSession) {
         saveCredential(session.userID, for: Keys.authUserID)
         saveOptional(session.appleUserID, for: Keys.appleUserID)
@@ -1040,6 +1130,7 @@ final class AppStore {
 private enum Keys {
     static let theme = "themePreference"
     static let reduceMotion = "reduceMotion"
+    static let sellingPreferences = "sellingPreferences"
     static let hasSeenHowItWorks = "hasSeenHowItWorks"
     static let appleUserID = "appleUserID"
     static let authUserID = "authUserID"
