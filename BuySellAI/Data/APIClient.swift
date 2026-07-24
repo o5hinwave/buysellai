@@ -311,11 +311,11 @@ actor APIClient {
 
     private func listingImageDataURL(from imageData: Data?) -> String? {
         guard let imageData, imageData.isEmpty == false else { return nil }
-        let compactImageData = ImageTools.jpegDataDownscaled(
+        guard let compactImageData = ImageTools.jpegDataDownscaled(
             from: imageData,
             maxLongEdge: 900,
             compression: 0.76
-        ) ?? imageData
+        ) else { return nil }
         return "data:image/jpeg;base64,\(compactImageData.base64EncodedString())"
     }
 

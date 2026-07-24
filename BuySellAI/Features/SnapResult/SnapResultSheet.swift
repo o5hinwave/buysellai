@@ -1115,6 +1115,17 @@ struct PhotoThumbnail: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.68)
                     .padding(.horizontal, Spacing.xs)
+
+                if showsPlaceholderBadge {
+                    Text("Placeholder".localized)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.brand.primaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.vertical, 2)
+                        .background(Color.brand.primaryMuted.opacity(0.8), in: Capsule(style: .continuous))
+                }
             }
         }
         .overlay {
@@ -1129,5 +1140,9 @@ struct PhotoThumbnail: View {
 
     private var placeholderSpacing: CGFloat {
         size < 72 ? 2 : Spacing.xxs
+    }
+
+    private var showsPlaceholderBadge: Bool {
+        size >= 84
     }
 }

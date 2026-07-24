@@ -106,7 +106,7 @@ private struct HistoryPhotoPlaceholder: View {
                         .foregroundStyle(Color.brand.primaryText)
                         .accessibilityHidden(true)
 
-                    Text("No photo".localized)
+                    Text("Placeholder".localized)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Color.brand.foregroundSecondary)
                         .lineLimit(1)

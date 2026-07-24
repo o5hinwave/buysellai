@@ -273,6 +273,27 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
     }
 
+    func testGenerateListingOmitsUndecodableImageDataFromPayload() async throws {
+        let item = Self.sampleItem
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertNil(json["imageDataUrl"])
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nLamp\n\nDESCRIPTION:\nWorks well."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(
+            item: item,
+            marketplace: .ebay,
+            imageData: Data([0x00, 0x01, 0x02])
+        )
+
+        XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
+    }
+
     func testGenerateListingPayloadReturnsSanitizedStructuredDraft() async throws {
         let item = Self.sampleItem
         let client = try makeClient { request in

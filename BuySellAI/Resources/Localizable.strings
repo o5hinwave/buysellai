@@ -774,6 +774,8 @@
 	<string>eBay</string>
 	<key>No photo</key>
 	<string>No photo</string>
+	<key>Placeholder</key>
+	<string>Placeholder</string>
 	<key>photo placeholder</key>
 	<string>photo placeholder</string>
 	<key>photo attached</key>

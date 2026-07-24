@@ -545,7 +545,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(history.range(of: #".frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)"#))
         XCTAssertNotNil(history.range(of: #"private struct HistoryPhotoPlaceholder: View"#))
         XCTAssertNotNil(history.range(of: #"Image(systemName: category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact)"#))
-        XCTAssertNotNil(history.range(of: #"Text("No photo".localized)"#))
+        XCTAssertNotNil(history.range(of: #"Text("Placeholder".localized)"#))
         XCTAssertNotNil(history.range(of: #".accessibilityLabel("Item photo placeholder".localized)"#))
         XCTAssertNotNil(history.range(of: #"dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight"#))
         XCTAssertNotNil(history.range(of: #".padding(.vertical, Spacing.xs)"#))
@@ -1731,6 +1731,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(history.range(of: #"category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact"#))
         XCTAssertNotNil(snapResult.range(of: #"category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact"#))
         XCTAssertNotNil(snapResult.range(of: #"Text("No photo".localized)"#))
+        XCTAssertNotNil(snapResult.range(of: #"Text("Placeholder".localized)"#))
+        XCTAssertNotNil(snapResult.range(of: #"private var showsPlaceholderBadge: Bool"#))
         XCTAssertNotNil(snapResult.range(of: #".accessibilityLabel("Item photo placeholder".localized)"#))
     }
 
