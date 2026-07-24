@@ -780,6 +780,14 @@
 	<string>A name on a tag, sticker, stamp, or logo can change the search and price.</string>
 	<key>A pickup area or delivery note keeps local messages easier.</key>
 	<string>A pickup area or delivery note keeps local messages easier.</string>
+	<key>A pickup area, stairs, or loading note keeps messages easier.</key>
+	<string>A pickup area, stairs, or loading note keeps messages easier.</string>
+	<key>A fit note helps clothing feel safer to buy.</key>
+	<string>A fit note helps clothing feel safer to buy.</string>
+	<key>A model number, measurement, or maker mark can change the price.</key>
+	<string>A model number, measurement, or maker mark can change the price.</string>
+	<key>A visible mark helps this place trust what the item is.</key>
+	<string>A visible mark helps this place trust what the item is.</string>
 	<key>Accessories, packaging, and manuals can help the listing.</key>
 	<string>Accessories, packaging, and manuals can help the listing.</string>
 	<key>Add one detail a person on this marketplace would expect.</key>
@@ -798,8 +806,6 @@
 	<string>Any flaws someone should see?</string>
 	<key>Any measurements or maker marks?</key>
 	<string>Any measurements or maker marks?</string>
-	<key>Any model number or shipping note?</key>
-	<string>Any model number or shipping note?</string>
 	<key>Any model, year, or serial number?</key>
 	<string>Any model, year, or serial number?</string>
 	<key>Any set, edition, or number?</key>
@@ -808,6 +814,10 @@
 	<string>Any size, model, or useful detail?</string>
 	<key>Anything this place needs?</key>
 	<string>Anything this place needs?</string>
+	<key>Any fit or measurement note?</key>
+	<string>Any fit or measurement note?</string>
+	<key>Any maker mark, signature, or label?</key>
+	<string>Any maker mark, signature, or label?</string>
 	<key>Auction</key>
 	<string>Auction</string>
 	<key>Back</key>
@@ -816,36 +826,54 @@
 	<string>Battery, charger, case, and bits matter for tools.</string>
 	<key>Box, certificate, sleeve, or paperwork can change value.</key>
 	<string>Box, certificate, sleeve, or paperwork can change value.</string>
+	<key>Box condition can change what people will pay.</key>
+	<string>Box condition can change what people will pay.</string>
 	<key>BuySell checks this place and writes the post.</key>
 	<string>BuySell checks this place and writes the post.</string>
 	<key>BuySell has enough details for this marketplace.</key>
 	<string>BuySell has enough details for this marketplace.</string>
 	<key>Can deliver</key>
 	<string>Can deliver</string>
+	<key>Can help load</key>
+	<string>Can help load</string>
+	<key>Can someone pick it up?</key>
+	<string>Can someone pick it up?</string>
 	<key>Case, cable, strap, power supply, or manual can help.</key>
 	<string>Case, cable, strap, power supply, or manual can help.</string>
 	<key>Charger, cables, box, or remote can change what people will pay.</key>
 	<string>Charger, cables, box, or remote can change what people will pay.</string>
+	<key>Compare these references, then pick what looks closest.</key>
+	<string>Compare these references, then pick what looks closest.</string>
 	<key>Dimensions and maker marks help match better comps.</key>
 	<string>Dimensions and maker marks help match better comps.</string>
-	<key>Do you know the SKU, size, or box condition?</key>
-	<string>Do you know the SKU, size, or box condition?</string>
+	<key>Do you know the age or material?</key>
+	<string>Do you know the age or material?</string>
+	<key>Do you know the exact size or SKU?</key>
+	<string>Do you know the exact size or SKU?</string>
 	<key>Do you see a brand, maker, or label?</key>
 	<string>Do you see a brand, maker, or label?</string>
-	<key>Does it turn on and is it unlocked?</key>
-	<string>Does it turn on and is it unlocked?</string>
+	<key>Does it turn on?</key>
+	<string>Does it turn on?</string>
 	<key>Does it work, and what comes with it?</key>
 	<string>Does it work, and what comes with it?</string>
-	<key>eBay works better when model details and shipping basics are clear.</key>
-	<string>eBay works better when model details and shipping basics are clear.</string>
 	<key>Edition, set, number, sealed status, or certificates can change value.</key>
 	<string>Edition, set, number, sealed status, or certificates can change value.</string>
+	<key>Edition, maker marks, and condition help match sold prices.</key>
+	<string>Edition, maker marks, and condition help match sold prices.</string>
+	<key>Exact model, size, and colorway matter here.</key>
+	<string>Exact model, size, and colorway matter here.</string>
 	<key>Exact model, size, box, and authenticity details matter here.</key>
 	<string>Exact model, size, box, and authenticity details matter here.</string>
 	<key>Fashion listings need the tag, fit, and any fabric details people can trust.</key>
 	<string>Fashion listings need the tag, fit, and any fabric details people can trust.</string>
 	<key>Fixed price</key>
 	<string>Fixed price</string>
+	<key>Fixed price or auction?</key>
+	<string>Fixed price or auction?</string>
+	<key>Fixed price is easier. Auction can help when the price is hard to judge.</key>
+	<string>Fixed price is easier. Auction can help when the price is hard to judge.</string>
+	<key>Fixed price, auction, shipping note...</key>
+	<string>Fixed price, auction, shipping note...</string>
 	<key>How should pickup work?</key>
 	<string>How should pickup work?</string>
 	<key>I can measure it</key>
@@ -860,6 +888,10 @@
 	<string>Is it big or pickup-only?</string>
 	<key>Is it big, heavy, or fragile?</key>
 	<string>Is it big, heavy, or fragile?</string>
+	<key>Is it signed, numbered, or framed?</key>
+	<string>Is it signed, numbered, or framed?</string>
+	<key>Is the original box included?</key>
+	<string>Is the original box included?</string>
 	<key>Is it vintage, handmade, or signed?</key>
 	<string>Is it vintage, handmade, or signed?</string>
 	<key>Item only</key>
@@ -870,18 +902,24 @@
 	<string>Local pickup</string>
 	<key>Looks vintage</key>
 	<string>Looks vintage</string>
-	<key>Model number, shipping weight, fixed price...</key>
-	<string>Model number, shipping weight, fixed price...</string>
+	<key>Model, storage, carrier, and working condition help match sold prices.</key>
+	<string>Model, storage, carrier, and working condition help match sold prices.</string>
 	<key>Model, year, serial, and working condition matter for music gear.</key>
 	<string>Model, year, serial, and working condition matter for music gear.</string>
+	<key>Music gear listings need working condition and accessories.</key>
+	<string>Music gear listings need working condition and accessories.</string>
 	<key>Material, age, pickup note...</key>
 	<string>Material, age, pickup note...</string>
 	<key>Material, color, pickup, or note...</key>
 	<string>Material, color, pickup, or note...</string>
+	<key>Music gear needs exact model details before the price is reliable.</key>
+	<string>Music gear needs exact model details before the price is reliable.</string>
 	<key>Music gear listings need working condition, model, serial, and accessories.</key>
 	<string>Music gear listings need working condition, model, serial, and accessories.</string>
 	<key>Near downtown, porch pickup, can deliver...</key>
 	<string>Near downtown, porch pickup, can deliver...</string>
+	<key>Near downtown, pickup only, can help load...</key>
+	<string>Near downtown, pickup only, can help load...</string>
 	<key>No</key>
 	<string>No</string>
 	<key>No box</key>
@@ -902,10 +940,16 @@
 	<string>Opened</string>
 	<key>Original box</key>
 	<string>Original box</string>
-	<key>Phones and tech need working condition, storage, carrier, and battery notes.</key>
-	<string>Phones and tech need working condition, storage, carrier, and battery notes.</string>
+	<key>Original box, no box, box damage...</key>
+	<string>Original box, no box, box damage...</string>
+	<key>Phones need storage, carrier, battery, unlock status, and condition.</key>
+	<string>Phones need storage, carrier, battery, unlock status, and condition.</string>
 	<key>Pickup, shipping, size, model, or material...</key>
 	<string>Pickup, shipping, size, model, or material...</string>
+	<key>Pickup or delivery notes help avoid confusing messages.</key>
+	<string>Pickup or delivery notes help avoid confusing messages.</string>
+	<key>Pickup only</key>
+	<string>Pickup only</string>
 	<key>Prefer pickup. Shipping may be risky for this item.</key>
 	<string>Prefer pickup. Shipping may be risky for this item.</string>
 	<key>Price clue</key>
@@ -936,12 +980,16 @@
 	<string>Signed, numbered, framed...</string>
 	<key>Skip all</key>
 	<string>Skip all</string>
+	<key>Size, brand, and material help people find the listing.</key>
+	<string>Size, brand, and material help people find the listing.</string>
 	<key>Size, material, and measurements help the listing fit the right place.</key>
 	<string>Size, material, and measurements help the listing fit the right place.</string>
-	<key>SKU, size, original box, box damage...</key>
-	<string>SKU, size, original box, box damage...</string>
+	<key>SKU, size, colorway...</key>
+	<string>SKU, size, colorway...</string>
 	<key>Sleeved</key>
 	<string>Sleeved</string>
+	<key>Runs small, pit to pit, inseam...</key>
+	<string>Runs small, pit to pit, inseam...</string>
 	<key>Serial, tested, accessories...</key>
 	<string>Serial, tested, accessories...</string>
 	<key>Storage, carrier, model, or whether it turns on can change the price.</key>
@@ -954,8 +1002,14 @@
 	<string>Trading cards need exact set and condition before price is reliable.</string>
 	<key>Turns on</key>
 	<string>Turns on</string>
+	<key>Turns on, scratches, battery issue...</key>
+	<string>Turns on, scratches, battery issue...</string>
 	<key>Turns on, unlocked, 128 GB, battery health...</key>
 	<string>Turns on, unlocked, 128 GB, battery health...</string>
+	<key>128 GB, unlocked, 89% battery...</key>
+	<string>128 GB, unlocked, 89% battery...</string>
+	<key>Unlocked</key>
+	<string>Unlocked</string>
 	<key>Untested</key>
 	<string>Untested</string>
 	<key>Vintage, handmade, signed, materials...</key>
@@ -968,6 +1022,16 @@
 	<string>What set, number, or card condition do you know?</string>
 	<key>What size or material is on the tag?</key>
 	<string>What size or material is on the tag?</string>
+	<key>What storage or carrier do you know?</key>
+	<string>What storage or carrier do you know?</string>
+	<key>Where can someone pick it up?</key>
+	<string>Where can someone pick it up?</string>
+	<key>Works, case, cables, power supply...</key>
+	<string>Works, case, cables, power supply...</string>
+	<key>Working condition and obvious scratches need to be clear.</key>
+	<string>Working condition and obvious scratches need to be clear.</string>
+	<key>Women's M, leather, 32 x 30...</key>
+	<string>Women's M, leather, 32 x 30...</string>
 	<key>Women's M, leather, 32 x 30...</key>
 	<string>Women's M, leather, 32 x 30...</string>
 	<key>Won't turn on</key>

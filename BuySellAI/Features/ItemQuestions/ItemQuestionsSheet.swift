@@ -581,7 +581,7 @@ struct ItemQuestionsSheet: View {
         case .field(.extraDetails):
             Self.extraDetailQuestion(for: context.item.category)
         case .field(.marketplaceNote(let marketplace)):
-            Self.marketplaceQuestion(for: marketplace, item: context.item)
+            Self.marketplaceQuestion(for: marketplace, item: context.item, answers: answers)
         case .largeOrFragile:
             Self.largeOrFragileQuestion(for: context.item.category)
         }
@@ -630,7 +630,7 @@ struct ItemQuestionsSheet: View {
         }
 
         if let marketplace = context.preferredMarketplace {
-            add(marketplaceQuestion(for: marketplace, item: context.item))
+            marketplaceQuestions(for: marketplace, item: context.item, answers: answers).forEach { add($0) }
             add(analysisQuestion(for: context))
             if shouldAskLargeOrFragile(for: context.item.category, marketplace: marketplace) {
                 add(largeOrFragileQuestion(for: context.item.category))
@@ -925,115 +925,285 @@ struct ItemQuestionsSheet: View {
         )
     }
 
-    private static func marketplaceQuestion(for marketplace: Marketplace, item: DetectedItem) -> DetailQuestion {
+    private static func marketplaceQuestion(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> DetailQuestion {
+        marketplaceQuestions(for: marketplace, item: item, answers: answers).first
+            ?? generalMarketplaceQuestion(for: marketplace, item: item, answers: answers)
+    }
+
+    private static func marketplaceQuestions(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> [DetailQuestion] {
         switch marketplace {
         case .ebay:
-            return DetailQuestion(
-                id: "marketplace-ebay",
-                contextLabel: "eBay",
-                title: "Any model number or shipping note?",
-                detail: "eBay works better when model details and shipping basics are clear.",
-                placeholder: "Model number, shipping weight, fixed price...",
-                systemImage: "number.circle.fill",
-                kind: .text(.marketplaceNote(marketplace)),
-                choices: [
-                    DetailChoice(title: "Fixed price", value: .text("Prefer fixed price")),
-                    DetailChoice(title: "Auction", value: .text("Open to auction")),
-                    DetailChoice(title: "I don't know", value: .unknown)
-                ]
-            )
+            return ebayQuestions(for: item, answers: answers)
         case .facebook, .craigslist, .offerup, .nextdoor:
-            return DetailQuestion(
-                id: "marketplace-local",
-                contextLabel: marketplace.displayName,
-                title: "How should pickup work?",
-                detail: "A pickup area or delivery note keeps local messages easier.",
-                placeholder: "Near downtown, porch pickup, can deliver...",
-                systemImage: AppSymbol.Marketplace.local,
-                kind: .text(.marketplaceNote(marketplace)),
-                choices: [
-                    DetailChoice(title: "Local pickup", value: .text("Local pickup")),
-                    DetailChoice(title: "Can deliver", value: .text("Can deliver nearby")),
-                    DetailChoice(title: "I don't know", value: .unknown)
-                ]
-            )
+            return [localQuestion(for: marketplace, item: item, answers: answers)]
         case .poshmark, .depop, .vinted, .vestiaire, .therealreal, .grailed, .curtsy:
-            return DetailQuestion(
-                id: "marketplace-fashion",
+            return fashionQuestions(for: marketplace, item: item, answers: answers)
+        case .etsy, .chairish, .rubylane:
+            return vintageQuestions(for: marketplace, item: item, answers: answers)
+        case .stockx, .goat:
+            return authenticatedGoodsQuestions(for: marketplace, item: item, answers: answers)
+        case .swappa:
+            return swappaQuestions(for: item, answers: answers)
+        case .reverb:
+            return reverbQuestions(for: item, answers: answers)
+        case .tcgplayer:
+            return tradingCardQuestions(for: item, answers: answers)
+        default:
+            return [generalMarketplaceQuestion(for: marketplace, item: item, answers: answers)]
+        }
+    }
+
+    private static func ebayQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-ebay-spec",
+                contextLabel: "eBay",
+                title: specQuestionTitle(for: item.category, marketplace: .ebay),
+                detail: ebaySpecDetail(for: item.category),
+                placeholder: sizePlaceholder(for: item.category),
+                systemImage: specQuestionSymbol(for: item.category),
+                kind: .text(.sizeOrModel),
+                choices: specChoices(for: item.category)
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-ebay-format",
+            contextLabel: "eBay",
+            title: "Fixed price or auction?",
+            detail: "Fixed price is easier. Auction can help when the price is hard to judge.",
+            placeholder: "Fixed price, auction, shipping note...",
+            systemImage: AppSymbol.Marketplace.cart,
+            kind: .text(.marketplaceNote(.ebay)),
+            choices: [
+                DetailChoice(title: "Fixed price", value: .text("Prefer fixed price")),
+                DetailChoice(title: "Auction", value: .text("Open to auction")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func localQuestion(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> DetailQuestion {
+        DetailQuestion(
+            id: "marketplace-local-\(marketplace.rawValue)",
+            contextLabel: marketplace.displayName,
+            title: localQuestionTitle(for: item.category),
+            detail: localQuestionDetail(for: item.category, answers: answers),
+            placeholder: localPlaceholder(for: item.category),
+            systemImage: AppSymbol.Marketplace.local,
+            kind: .text(.marketplaceNote(marketplace)),
+            choices: localChoices(for: item.category)
+        )
+    }
+
+    private static func fashionQuestions(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-fashion-size-\(marketplace.rawValue)",
                 contextLabel: marketplace.displayName,
                 title: "What size or material is on the tag?",
                 detail: "Fashion listings need the tag, fit, and any fabric details people can trust.",
                 placeholder: "Women's M, leather, 32 x 30...",
-                systemImage: AppSymbol.Action.category,
+                systemImage: AppSymbol.Marketplace.fashion,
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "No size tag", value: .text("No visible size tag")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
-        case .etsy, .chairish, .rubylane:
-            return DetailQuestion(
-                id: "marketplace-vintage",
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-fashion-fit-\(marketplace.rawValue)",
+            contextLabel: marketplace.displayName,
+            title: "Any fit or measurement note?",
+            detail: "A fit note helps clothing feel safer to buy.",
+            placeholder: "Runs small, pit to pit, inseam...",
+            systemImage: "ruler",
+            kind: .text(.marketplaceNote(marketplace)),
+            choices: [
+                DetailChoice(title: "No extra detail", value: .text("No extra detail")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func vintageQuestions(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if answers.hasAnsweredOrSkipped(.labelOrBrand) == false, item.category != .clothing {
+            questions.append(DetailQuestion(
+                id: "marketplace-vintage-maker-\(marketplace.rawValue)",
                 contextLabel: marketplace.displayName,
-                title: "Is it vintage, handmade, or signed?",
-                detail: "Age, materials, signature, or maker marks matter on this marketplace.",
-                placeholder: "Vintage, handmade, signed, materials...",
-                systemImage: AppSymbol.Marketplace.art,
-                kind: .text(.marketplaceNote(marketplace)),
+                title: "Any maker mark, signature, or label?",
+                detail: "A visible mark helps this place trust what the item is.",
+                placeholder: brandPlaceholder(for: item.category),
+                systemImage: AppSymbol.Marketplace.vintage,
+                kind: .text(.labelOrBrand),
                 choices: [
-                    DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
-                    DetailChoice(title: "Signed or marked", value: .text("Signed or marked")),
+                    DetailChoice(title: "No visible label", value: .text("No visible label")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
-        case .stockx, .goat:
-            return DetailQuestion(
-                id: "marketplace-auth",
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-vintage-fit-\(marketplace.rawValue)",
+            contextLabel: marketplace.displayName,
+            title: vintageQuestionTitle(for: item.category),
+            detail: "Age, materials, signature, or maker marks matter on this marketplace.",
+            placeholder: "Vintage, handmade, signed, materials...",
+            systemImage: AppSymbol.Marketplace.art,
+            kind: .text(.marketplaceNote(marketplace)),
+            choices: [
+                DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
+                DetailChoice(title: "Signed or marked", value: .text("Signed or marked")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func authenticatedGoodsQuestions(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-auth-spec-\(marketplace.rawValue)",
                 contextLabel: marketplace.displayName,
-                title: "Do you know the SKU, size, or box condition?",
-                detail: "Exact model, size, box, and authenticity details matter here.",
-                placeholder: "SKU, size, original box, box damage...",
+                title: "Do you know the exact size or SKU?",
+                detail: "Exact model, size, and colorway matter here.",
+                placeholder: "SKU, size, colorway...",
                 systemImage: AppSymbol.Marketplace.verified,
                 kind: .text(.sizeOrModel),
+                choices: [
+                    DetailChoice(title: "I don't know", value: .unknown)
+                ]
+            ))
+        }
+
+        if answers.hasAnsweredOrSkipped(.included) == false {
+            questions.append(DetailQuestion(
+                id: "marketplace-auth-box-\(marketplace.rawValue)",
+                contextLabel: marketplace.displayName,
+                title: "Is the original box included?",
+                detail: "Box condition can change what people will pay.",
+                placeholder: "Original box, no box, box damage...",
+                systemImage: AppSymbol.Marketplace.package,
+                kind: .text(.included),
                 choices: [
                     DetailChoice(title: "Original box", value: .text("Original box included")),
                     DetailChoice(title: "No box", value: .text("No original box")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
-        case .swappa:
-            return DetailQuestion(
-                id: "marketplace-tech",
-                contextLabel: marketplace.displayName,
-                title: "Does it turn on and is it unlocked?",
-                detail: "Phones and tech need working condition, storage, carrier, and battery notes.",
-                placeholder: "Turns on, unlocked, 128 GB, battery health...",
+            ))
+        }
+
+        return questions.isEmpty
+            ? [generalMarketplaceQuestion(for: marketplace, item: item, answers: answers)]
+            : questions
+    }
+
+    private static func swappaQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-tech-spec",
+                contextLabel: Marketplace.swappa.displayName,
+                title: "What storage or carrier do you know?",
+                detail: "Phones need storage, carrier, battery, unlock status, and condition.",
+                placeholder: "128 GB, unlocked, 89% battery...",
                 systemImage: AppSymbol.Marketplace.phone,
                 kind: .text(.sizeOrModel),
                 choices: [
-                    DetailChoice(title: "Turns on", value: .text("Turns on")),
+                    DetailChoice(title: "Unlocked", value: .text("Unlocked")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
-        case .reverb:
-            return DetailQuestion(
-                id: "marketplace-music",
-                contextLabel: marketplace.displayName,
-                title: "Does it work, and what comes with it?",
-                detail: "Music gear listings need working condition, model, serial, and accessories.",
-                placeholder: "Works, serial, case, cables, power supply...",
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-tech-working",
+            contextLabel: Marketplace.swappa.displayName,
+            title: "Does it turn on?",
+            detail: "Working condition and obvious scratches need to be clear.",
+            placeholder: "Turns on, scratches, battery issue...",
+            systemImage: AppSymbol.Marketplace.phone,
+            kind: .text(.marketplaceNote(.swappa)),
+            choices: [
+                DetailChoice(title: "Turns on", value: .text("Turns on")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func reverbQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-music-spec",
+                contextLabel: Marketplace.reverb.displayName,
+                title: "Any model, year, or serial number?",
+                detail: "Music gear needs exact model details before the price is reliable.",
+                placeholder: "Model, year, serial...",
                 systemImage: AppSymbol.Marketplace.music,
-                kind: .text(.marketplaceNote(marketplace)),
+                kind: .text(.sizeOrModel),
                 choices: [
-                    DetailChoice(title: "Works", value: .text("Works")),
-                    DetailChoice(title: "Untested", value: .text("Untested")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
-        case .tcgplayer:
-            return DetailQuestion(
-                id: "marketplace-cards",
-                contextLabel: marketplace.displayName,
+            ))
+        }
+
+        questions.append(DetailQuestion(
+            id: "marketplace-music-working",
+            contextLabel: Marketplace.reverb.displayName,
+            title: "Does it work, and what comes with it?",
+            detail: "Music gear listings need working condition and accessories.",
+            placeholder: "Works, case, cables, power supply...",
+            systemImage: AppSymbol.Marketplace.music,
+            kind: .text(.marketplaceNote(.reverb)),
+            choices: [
+                DetailChoice(title: "Works", value: .text("Works")),
+                DetailChoice(title: "Untested", value: .text("Untested")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        ))
+        return questions
+    }
+
+    private static func tradingCardQuestions(for item: DetectedItem, answers: ItemDetailAnswers) -> [DetailQuestion] {
+        var questions: [DetailQuestion] = []
+        if shouldAskExactMarketplaceSpec(for: item, answers: answers) {
+            questions.append(DetailQuestion(
+                id: "marketplace-cards-spec",
+                contextLabel: Marketplace.tcgplayer.displayName,
                 title: "What set, number, or card condition do you know?",
                 detail: "Trading cards need exact set and condition before price is reliable.",
                 placeholder: "Set, card number, foil, condition...",
@@ -1043,21 +1213,105 @@ struct ItemQuestionsSheet: View {
                     DetailChoice(title: "Sleeved", value: .text("Sleeved")),
                     DetailChoice(title: "I don't know", value: .unknown)
                 ]
-            )
+            ))
+        }
+
+        questions.append(generalMarketplaceQuestion(for: .tcgplayer, item: item, answers: answers))
+        return questions
+    }
+
+    private static func generalMarketplaceQuestion(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers
+    ) -> DetailQuestion {
+        let needsFulfillment = answers.hasAnsweredOrSkipped(.largeOrFragile) == false &&
+            shouldAskLargeOrFragile(for: item.category, marketplace: marketplace)
+        return DetailQuestion(
+            id: "marketplace-general-\(marketplace.rawValue)",
+            contextLabel: marketplace.displayName,
+            title: needsFulfillment ? "Can someone pick it up?" : "Anything this place needs?",
+            detail: needsFulfillment
+                ? "Pickup or delivery notes help avoid confusing messages."
+                : "Add one detail a person on this marketplace would expect.",
+            placeholder: needsFulfillment
+                ? localPlaceholder(for: item.category)
+                : "Pickup, shipping, size, model, or material...",
+            systemImage: needsFulfillment ? AppSymbol.Marketplace.local : AppSymbol.Marketplace.cart,
+            kind: .text(.marketplaceNote(marketplace)),
+            choices: needsFulfillment ? localChoices(for: item.category) : [
+                DetailChoice(title: "No extra detail", value: .text("No extra detail")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        )
+    }
+
+    private static func shouldAskExactMarketplaceSpec(for item: DetectedItem, answers: ItemDetailAnswers) -> Bool {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false else { return false }
+        return item.category != .other
+    }
+
+    private static func ebaySpecDetail(for category: Category) -> String {
+        switch category {
+        case .electronics:
+            return "Model, storage, carrier, and working condition help match sold prices."
+        case .clothing, .shoes, .bags, .jewelry, .kids:
+            return "Size, brand, and material help people find the listing."
+        case .collectibles, .art:
+            return "Edition, maker marks, and condition help match sold prices."
         default:
-            return DetailQuestion(
-                id: "marketplace-general",
-                contextLabel: marketplace.displayName,
-                title: "Anything this place needs?",
-                detail: "Add one detail a person on this marketplace would expect.",
-                placeholder: "Pickup, shipping, size, model, or material...",
-                systemImage: "list.bullet.rectangle",
-                kind: .text(.marketplaceNote(marketplace)),
-                choices: [
-                    DetailChoice(title: "No extra detail", value: .text("No extra detail")),
-                    DetailChoice(title: "I don't know", value: .unknown)
-                ]
-            )
+            return "A model number, measurement, or maker mark can change the price."
+        }
+    }
+
+    private static func localQuestionTitle(for category: Category) -> String {
+        switch category {
+        case .furniture, .home, .art, .tools, .sports, .music:
+            return "Where can someone pick it up?"
+        default:
+            return "How should pickup work?"
+        }
+    }
+
+    private static func localQuestionDetail(for category: Category, answers: ItemDetailAnswers) -> String {
+        if answers.isLargeOrFragile || [.furniture, .home, .art, .tools, .sports, .music].contains(category) {
+            return "A pickup area, stairs, or loading note keeps messages easier."
+        }
+        return "A pickup area or delivery note keeps local messages easier."
+    }
+
+    private static func localPlaceholder(for category: Category) -> String {
+        switch category {
+        case .furniture, .home, .art, .tools, .sports, .music:
+            return "Near downtown, pickup only, can help load..."
+        default:
+            return "Near downtown, porch pickup, can deliver..."
+        }
+    }
+
+    private static func localChoices(for category: Category) -> [DetailChoice] {
+        if [.furniture, .home, .art, .tools, .sports, .music].contains(category) {
+            return [
+                DetailChoice(title: "Pickup only", value: .text("Pickup only")),
+                DetailChoice(title: "Can help load", value: .text("Can help load")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        }
+        return [
+            DetailChoice(title: "Local pickup", value: .text("Local pickup")),
+            DetailChoice(title: "Can deliver", value: .text("Can deliver nearby")),
+            DetailChoice(title: "I don't know", value: .unknown)
+        ]
+    }
+
+    private static func vintageQuestionTitle(for category: Category) -> String {
+        switch category {
+        case .art:
+            return "Is it signed, numbered, or framed?"
+        case .home, .furniture:
+            return "Do you know the age or material?"
+        default:
+            return "Is it vintage, handmade, or signed?"
         }
     }
 
