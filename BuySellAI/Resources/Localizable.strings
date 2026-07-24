@@ -288,6 +288,8 @@
 	<string>Item name</string>
 	<key>Item photo</key>
 	<string>Item photo</string>
+	<key>Item photo placeholder</key>
+	<string>Item photo placeholder</string>
 	<key>Jewelry</key>
 	<string>Jewelry</string>
 	<key>Keep going without an account</key>
@@ -758,8 +760,10 @@
 	<string>below</string>
 	<key>eBay</key>
 	<string>eBay</string>
-	<key>no photo</key>
-	<string>no photo</string>
+	<key>No photo</key>
+	<string>No photo</string>
+	<key>photo placeholder</key>
+	<string>photo placeholder</string>
 	<key>photo attached</key>
 	<string>photo attached</string>
 	<key>A name on a tag, sticker, stamp, or logo can change the search and price.</key>

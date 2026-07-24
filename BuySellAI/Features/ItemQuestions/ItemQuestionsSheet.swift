@@ -85,7 +85,7 @@ struct ItemQuestionsSheet: View {
 
     private var itemHeader: some View {
         HStack(alignment: .center, spacing: Spacing.md) {
-            PhotoThumbnail(data: context.imageData, size: 64)
+            PhotoThumbnail(data: context.imageData, size: 64, category: context.item.category)
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("We think this is".localized)

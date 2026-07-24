@@ -86,6 +86,43 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
         self = Self.knownAPIValue(apiValue) ?? .other
     }
 
+    var placeholderSystemImage: String {
+        switch self {
+        case .electronics:
+            "iphone"
+        case .furniture, .home:
+            "house.fill"
+        case .clothing:
+            "tshirt.fill"
+        case .shoes:
+            "shoeprints.fill"
+        case .bags:
+            "handbag.fill"
+        case .jewelry:
+            "diamond.fill"
+        case .toys:
+            "gamecontroller.fill"
+        case .kids:
+            "figure.2"
+        case .tools:
+            "wrench.and.screwdriver.fill"
+        case .sports:
+            "sportscourt.fill"
+        case .books:
+            "books.vertical.fill"
+        case .media:
+            "play.rectangle.fill"
+        case .music:
+            "music.note"
+        case .collectibles:
+            "star.fill"
+        case .art:
+            "paintpalette.fill"
+        case .other:
+            "shippingbox.fill"
+        }
+    }
+
     func next() -> Category {
         Self.allCases.next(after: self)
     }

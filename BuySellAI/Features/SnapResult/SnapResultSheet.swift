@@ -84,7 +84,7 @@ struct SnapResultSheet: View {
 
     private var loadingView: some View {
         VStack(spacing: Spacing.lg) {
-            PhotoThumbnail(data: context.imageData, size: 112)
+            PhotoThumbnail(data: context.imageData, size: 112, category: store.item?.category)
             ProgressView()
                 .tint(Color.brand.primary)
             Text("Analyzing your photo…".localized)
@@ -208,12 +208,12 @@ struct SnapResultSheet: View {
     private func confirmationHero(item: DetectedItem) -> some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                PhotoThumbnail(data: context.imageData, size: 112)
+                PhotoThumbnail(data: context.imageData, size: 112, category: item.category)
                 confirmationSummary(item: item)
             }
         } else {
             HStack(alignment: .center, spacing: Spacing.md) {
-                PhotoThumbnail(data: context.imageData, size: 96)
+                PhotoThumbnail(data: context.imageData, size: 96, category: item.category)
                 confirmationSummary(item: item)
             }
         }
@@ -886,7 +886,7 @@ struct SnapResultSheet: View {
 
     private func errorView(message: String) -> some View {
         VStack(spacing: Spacing.lg) {
-            PhotoThumbnail(data: context.imageData, size: 156)
+            PhotoThumbnail(data: context.imageData, size: 156, category: store.item?.category)
             Text(message)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.destructive)
@@ -1067,6 +1067,7 @@ private struct SnapResultFactPill: View {
 struct PhotoThumbnail: View {
     let data: Data?
     var size: CGFloat
+    var category: Category? = nil
 
     var body: some View {
         Group {
@@ -1074,16 +1075,53 @@ struct PhotoThumbnail: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
+                    .accessibilityLabel("Item photo".localized)
             } else {
-                Color.brand.primaryMuted
-                    .overlay {
-                        Image(systemName: "camera.fill")
-                            .foregroundStyle(Color.brand.primaryText)
-                    }
+                photoPlaceholder
+                    .accessibilityLabel("Item photo placeholder".localized)
             }
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .accessibilityLabel("Item photo".localized)
+    }
+
+    private var photoPlaceholder: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.brand.surfaceElevated,
+                    Color.brand.primaryMuted.opacity(0.66)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(spacing: placeholderSpacing) {
+                Image(systemName: category?.placeholderSystemImage ?? "camera.fill")
+                    .font(.system(size: iconSize, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.brand.primaryText)
+                    .accessibilityHidden(true)
+
+                Text("No photo".localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+                    .padding(.horizontal, Spacing.xs)
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.7), lineWidth: 1)
+        }
+    }
+
+    private var iconSize: CGFloat {
+        max(20, min(size * 0.36, 44))
+    }
+
+    private var placeholderSpacing: CGFloat {
+        size < 72 ? 2 : Spacing.xxs
     }
 }

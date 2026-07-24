@@ -82,18 +82,54 @@ struct HistoryRow: View {
                 .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         } else {
-            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                .fill(Color.brand.primaryMuted)
-                .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
-                .overlay {
-                    Image(systemName: "camera.fill")
-                        .foregroundStyle(Color.brand.primaryText)
-                }
+            HistoryPhotoPlaceholder(category: entry.category)
         }
     }
 
     private var rowMinHeight: CGFloat {
         dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight
+    }
+}
+
+private struct HistoryPhotoPlaceholder: View {
+    let category: Category?
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+            .fill(placeholderFill)
+            .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
+            .overlay {
+                VStack(spacing: 1) {
+                    Image(systemName: category?.placeholderSystemImage ?? "camera.fill")
+                        .font(.system(size: 19, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(Color.brand.primaryText)
+                        .accessibilityHidden(true)
+
+                    Text("No photo".localized)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.62)
+                        .padding(.horizontal, 3)
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .stroke(Color.brand.border.opacity(0.7), lineWidth: 1)
+            }
+            .accessibilityLabel("Item photo placeholder".localized)
+    }
+
+    private var placeholderFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.brand.surfaceElevated,
+                Color.brand.primaryMuted.opacity(0.62)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
 
@@ -116,7 +152,7 @@ enum HistoryAccessibilityText {
 
     static func thumbnailStatus(for data: Data?) -> String {
         guard let data, UIImage(data: data) != nil else {
-            return "no photo".localized
+            return "photo placeholder".localized
         }
         return "photo attached".localized
     }

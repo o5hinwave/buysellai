@@ -506,8 +506,8 @@ final class DesignAccessibilityTests: XCTestCase {
             HistoryAccessibilityText.rowLabel(for: entry, relativeDate: "2h ago"),
             "Lamp, eBay, 2h ago, photo attached"
         )
-        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: Data([0x00, 0x01])), "no photo")
-        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: nil), "no photo")
+        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: Data([0x00, 0x01])), "photo placeholder")
+        XCTAssertEqual(HistoryAccessibilityText.thumbnailStatus(for: nil), "photo placeholder")
     }
 
     func testHistoryRowsAdaptForAccessibilityDynamicTypeWithoutShrinkingThumbnail() throws {
@@ -526,6 +526,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(history.range(of: #".padding(.trailing, Spacing.lg)"#))
         XCTAssertNotNil(history.range(of: #".overlay(alignment: .bottomTrailing)"#))
         XCTAssertNotNil(history.range(of: #".frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)"#))
+        XCTAssertNotNil(history.range(of: #"private struct HistoryPhotoPlaceholder: View"#))
+        XCTAssertNotNil(history.range(of: #"Image(systemName: category?.placeholderSystemImage ?? "camera.fill")"#))
+        XCTAssertNotNil(history.range(of: #"Text("No photo".localized)"#))
+        XCTAssertNotNil(history.range(of: #".accessibilityLabel("Item photo placeholder".localized)"#))
         XCTAssertNotNil(history.range(of: #"dynamicTypeSize.isAccessibilitySize ? HistoryRowLayout.accessibilityRowMinHeight : HistoryRowLayout.rowMinHeight"#))
         XCTAssertNotNil(history.range(of: #".padding(.vertical, Spacing.xs)"#))
         XCTAssertNil(history.range(of: #".brandFont("#))
@@ -1666,8 +1670,10 @@ final class DesignAccessibilityTests: XCTestCase {
 
         XCTAssertNotNil(camera.range(of: #"Image(systemName: "photo.on.rectangle")"#))
         XCTAssertNil(appSources.range(of: #"Image(systemName: "photo")"#))
-        XCTAssertNotNil(history.range(of: #"Image(systemName: "camera.fill")"#))
-        XCTAssertNotNil(snapResult.range(of: #"Image(systemName: "camera.fill")"#))
+        XCTAssertNotNil(history.range(of: #"category?.placeholderSystemImage ?? "camera.fill""#))
+        XCTAssertNotNil(snapResult.range(of: #"category?.placeholderSystemImage ?? "camera.fill""#))
+        XCTAssertNotNil(snapResult.range(of: #"Text("No photo".localized)"#))
+        XCTAssertNotNil(snapResult.range(of: #".accessibilityLabel("Item photo placeholder".localized)"#))
     }
 
     func testAnimatedSurfacesUseSharedReduceMotionDecision() throws {
