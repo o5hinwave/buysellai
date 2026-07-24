@@ -17,7 +17,7 @@ enum AppSymbol {
         static let edit = "pencil.circle.fill"
         static let retry = "arrow.clockwise"
         static let retakePhoto = "camera.rotate"
-        static let addPhoto = "plus.viewfinder"
+        static let addPhoto = "photo.badge.plus"
         static let category = "tag.fill"
         static let condition = "slider.horizontal.3"
     }

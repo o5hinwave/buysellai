@@ -73,7 +73,7 @@ serve(async (request) => {
         "currentPrice must be a plausible USD resale price greater than zero.",
         "Also return analysis.itemFacts with short label, visible value, and confidence from 0 to 1 for useful identity facts.",
         "Return analysis.missingFacts for facts that would materially affect sale price if the user knows them.",
-        "Return analysis.photoPrompt as one plain sentence only when one extra photo would help; otherwise return an empty string.",
+        "Return analysis.photoPrompt only when one extra photo would help. Choose one short action: Move it into better light. Show the tag. Show the front and back. Show the flaw. Step back so the whole item fits. Otherwise return an empty string.",
         "Return analysis.likelyMatches with up to 3 specific possible matches only when the identity, model, or variant is uncertain; include one plain question that distinguishes each match. Return an empty array when one clear match is enough.",
         "Use visual web evidence only when it clearly matches the pictured item or a close possible match.",
         "Return analysis.referenceImages with up to 3 public image URLs for identification checking only. They are not listing photos and must never be suggested as photos to post.",

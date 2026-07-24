@@ -132,7 +132,21 @@ final class APIClientTests: XCTestCase {
                 source: "Visual search"
             )
         ])
+        XCTAssertEqual(response.analysis?.photoGuidance, "Show the bottom mark.")
+        XCTAssertEqual(response.analysis?.detailGuidance, "Check maker if you know it.")
         XCTAssertEqual(response.analysis?.displayHint, "Show the bottom mark.")
+    }
+
+    func testAnalyzeUsesMissingFactGuidanceWhenNoPhotoPromptIsNeeded() async throws {
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: ["serial number"],
+            photoPrompt: nil
+        )
+
+        XCTAssertNil(analysis.photoGuidance)
+        XCTAssertEqual(analysis.detailGuidance, "Check serial number if you know it.")
+        XCTAssertEqual(analysis.displayHint, "Check serial number if you know it.")
     }
 
     func testAnalyzeGuestRequestOmitsAuthorizationHeader() async throws {

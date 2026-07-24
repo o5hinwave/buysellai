@@ -339,8 +339,10 @@ struct SnapResultSheet: View {
             analysisFactRow(fact)
         }
 
-        if let guidance = details.displayHint {
-            analysisGuidanceRow(guidance)
+        if let guidance = details.photoGuidance {
+            analysisPhotoGuidanceRow(guidance)
+        } else if let guidance = details.detailGuidance {
+            analysisDetailGuidanceRow(guidance)
         }
     }
 
@@ -551,10 +553,26 @@ struct SnapResultSheet: View {
         .accessibilityLabel(String.localizedFormat("%@, %@", fact.label, fact.value))
     }
 
-    private func analysisGuidanceRow(_ guidance: String) -> some View {
+    private func analysisPhotoGuidanceRow(_ guidance: String) -> some View {
+        analysisGuidanceRow(
+            title: "Add one more photo",
+            guidance: guidance,
+            systemImage: AppSymbol.Action.addPhoto
+        )
+    }
+
+    private func analysisDetailGuidanceRow(_ guidance: String) -> some View {
+        analysisGuidanceRow(
+            title: "Could help",
+            guidance: guidance,
+            systemImage: AppSymbol.Action.edit
+        )
+    }
+
+    private func analysisGuidanceRow(title: String, guidance: String, systemImage: String) -> some View {
         Label {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text("Could help".localized)
+                Text(title.localized)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.brand.mutedForeground)
                     .lineLimit(1)
@@ -565,13 +583,13 @@ struct SnapResultSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         } icon: {
-            Image(systemName: "lightbulb")
+            Image(systemName: systemImage)
                 .foregroundStyle(Color.brand.primaryText)
                 .accessibilityHidden(true)
         }
         .padding(.vertical, Spacing.xxs)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(String.localizedFormat("%@, %@", "Could help".localized, guidance))
+        .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, guidance))
     }
 
     private func decisionBar(item: DetectedItem) -> some View {

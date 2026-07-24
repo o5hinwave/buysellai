@@ -543,14 +543,22 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
         )
     }
 
-    var displayHint: String? {
+    var photoGuidance: String? {
         if let prompt = photoPrompt?.trimmingCharacters(in: .whitespacesAndNewlines), prompt.isEmpty == false {
             return prompt
         }
+        return nil
+    }
+
+    var detailGuidance: String? {
         guard let firstMissing = missingFacts.first?.trimmingCharacters(in: .whitespacesAndNewlines),
               firstMissing.isEmpty == false
         else { return nil }
         return String.localizedFormat("Check %@ if you know it.".localized, firstMissing)
+    }
+
+    var displayHint: String? {
+        photoGuidance ?? detailGuidance
     }
 
     var uncertaintyPrompt: String {
