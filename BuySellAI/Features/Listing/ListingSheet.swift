@@ -439,7 +439,7 @@ struct ListingSheet: View {
 
                 Label("Copy".localized, systemImage: AppSymbol.Flow.copy)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.brand.primaryText)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
                     .labelStyle(.titleAndIcon)
             }
             .contentShape(Rectangle())
@@ -652,6 +652,7 @@ struct ListingSheet: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+            .tint(Color.brand.foregroundSecondary)
             .accessibilityLabel("Wrong item — retake".localized)
         }
         .frame(maxWidth: .infinity)
@@ -745,6 +746,7 @@ struct ListingSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .accessibilityLabel(title.localized)
     }
 
