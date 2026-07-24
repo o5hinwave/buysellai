@@ -64,4 +64,26 @@ final class ModelFormattingTests: XCTestCase {
             value.formatted(.currency(code: "USD").precision(.fractionLength(2)))
         )
     }
+
+    func testItemDetailAnswersRememberHandledUnknownsWithoutBoostingFactQuality() throws {
+        var answers = ItemDetailAnswers()
+
+        answers.markAnswered(.labelOrBrand)
+        answers.markAnswered(.largeOrFragile)
+
+        let sanitized = try XCTUnwrap(answers.sanitizedForUse)
+        XCTAssertTrue(sanitized.hasAnsweredOrSkipped(.labelOrBrand))
+        XCTAssertTrue(sanitized.hasAnsweredOrSkipped(.largeOrFragile))
+        XCTAssertFalse(sanitized.hasListingPayloadDetails)
+        XCTAssertEqual(sanitized.marketplaceFactQualityBonus, 0)
+        XCTAssertEqual(sanitized.displayValues, ["Brand: I don't know", "Large or fragile: No"])
+
+        answers.labelOrBrand = "Stiffel"
+        answers.clearAnswered(.labelOrBrand)
+
+        let confirmed = try XCTUnwrap(answers.sanitizedForUse)
+        XCTAssertTrue(confirmed.hasListingPayloadDetails)
+        XCTAssertEqual(confirmed.marketplaceFactQualityBonus, 4)
+        XCTAssertEqual(confirmed.displayValues, ["Brand: Stiffel", "Large or fragile: No"])
+    }
 }

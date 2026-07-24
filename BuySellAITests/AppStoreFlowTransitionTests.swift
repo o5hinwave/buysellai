@@ -31,18 +31,25 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         let store = makeStore()
         let item = lamp
         let imageData = Data([1, 2, 3])
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [AnalyzeItemFact(label: "Material", value: "Brass", confidence: 0.8)],
+            missingFacts: ["maker mark"],
+            photoPrompt: "Show the maker mark."
+        )
 
-        store.presentMarketplacePicker(item: item, imageData: imageData)
+        store.presentMarketplacePicker(item: item, imageData: imageData, analysis: analysis)
 
         XCTAssertNil(store.snapResultContext)
         XCTAssertEqual(store.marketplacePickerContext?.item, item)
         XCTAssertEqual(store.marketplacePickerContext?.imageData, Optional(imageData))
+        XCTAssertEqual(store.marketplacePickerContext?.analysis, analysis)
         XCTAssertNil(store.listingContext)
         guard case .marketplacePicker(let context) = store.flowSheetContext else {
             return XCTFail("Expected marketplace picker flow sheet.")
         }
         XCTAssertEqual(context.item, item)
         XCTAssertEqual(context.imageData, Optional(imageData))
+        XCTAssertEqual(context.analysis, analysis)
     }
 
     func testMarketplacePickerCanOpenFromSavedListingWithoutFullPhotoData() {

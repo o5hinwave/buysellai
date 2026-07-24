@@ -389,6 +389,11 @@ struct ItemQuestionsSheet: View {
         case .extraDetails:
             answers.extraDetails = value
         }
+        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            answers.clearAnswered(field.detailKey)
+        } else {
+            answers.markAnswered(field.detailKey)
+        }
     }
 
     private func applyChoice(_ choice: DetailChoice, for question: DetailQuestion) {
@@ -397,13 +402,15 @@ struct ItemQuestionsSheet: View {
         case (.text(let field), .text(let value)):
             setAnswer(value, for: field)
         case (.text, .unknown):
-            break
+            markQuestionHandled(question)
         case (.text, .largeFragile):
             break
         case (.largeOrFragile, .largeFragile(let value)):
             answers.isLargeOrFragile = value
+            answers.markAnswered(.largeOrFragile)
         case (.largeOrFragile, .unknown):
             answers.isLargeOrFragile = false
+            answers.markAnswered(.largeOrFragile)
         case (.largeOrFragile, .text):
             break
         }
@@ -425,10 +432,22 @@ struct ItemQuestionsSheet: View {
     private func skipQuestion() {
         focusedField = nil
         Haptics.impact(.light)
+        if let currentQuestion {
+            markQuestionHandled(currentQuestion)
+        }
         if isLastQuestion {
             continueWithDetails()
         } else {
             currentQuestionIndex = min(currentQuestionIndex + 1, questions.count - 1)
+        }
+    }
+
+    private func markQuestionHandled(_ question: DetailQuestion) {
+        switch question.kind {
+        case .text(let field):
+            answers.markAnswered(field.detailKey)
+        case .largeOrFragile:
+            answers.markAnswered(.largeOrFragile)
         }
     }
 
@@ -460,7 +479,8 @@ struct ItemQuestionsSheet: View {
             appStore.presentMarketplacePicker(
                 item: context.item,
                 imageData: context.imageData,
-                details: details
+                details: details,
+                analysis: context.analysis
             )
         }
     }
@@ -469,6 +489,7 @@ struct ItemQuestionsSheet: View {
         var questions: [DetailQuestion] = []
         var usedKinds = Set<QuestionKind>()
         let missingFacts = context.analysis?.missingFacts ?? []
+        let knownFacts = context.analysis?.itemFacts ?? []
 
         func add(_ question: DetailQuestion?) {
             guard let question else { return }
@@ -480,16 +501,21 @@ struct ItemQuestionsSheet: View {
 
         if let marketplace = context.preferredMarketplace {
             add(marketplaceQuestion(for: marketplace, item: context.item))
-            return Array(questions.prefix(2))
+            add(analysisQuestion(for: context))
+            if shouldAskLargeOrFragile(for: context.item.category, marketplace: marketplace) {
+                add(largeOrFragileQuestion(for: context.item.category))
+            }
+            return Array(questions.prefix(3))
         }
-        if shouldAskBrand(for: context.item.category, missingFacts: missingFacts) {
+        add(analysisQuestion(for: context))
+        if shouldAskBrand(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(brandQuestion(for: context.item.category))
         }
-        if shouldAskSpecs(for: context.item.category, missingFacts: missingFacts) {
+        if shouldAskSpecs(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(specQuestion(for: context.item.category, marketplace: context.preferredMarketplace))
         }
         add(flawQuestion)
-        if shouldAskIncluded(for: context.item.category, missingFacts: missingFacts) {
+        if shouldAskIncluded(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(includedQuestion(for: context.item.category))
         }
         if shouldAskLargeOrFragile(for: context.item.category, marketplace: context.preferredMarketplace) {
@@ -501,21 +527,58 @@ struct ItemQuestionsSheet: View {
         return limitedQuestions.isEmpty ? [flawQuestion] : limitedQuestions
     }
 
-    private static func shouldAskBrand(for category: Category, missingFacts: [String]) -> Bool {
+    private static func analysisQuestion(for context: ItemQuestionsContext) -> DetailQuestion? {
+        guard let missingFact = context.analysis?.highestImpactMissingFact else { return nil }
+        switch missingFact.detailKind {
+        case .brand:
+            return missingBrandQuestion(fact: missingFact.displayValue, category: context.item.category)
+        case .spec:
+            return missingSpecQuestion(fact: missingFact.displayValue, category: context.item.category)
+        case .included:
+            return missingIncludedQuestion(fact: missingFact.displayValue, category: context.item.category)
+        case .condition:
+            return missingConditionQuestion(fact: missingFact.displayValue)
+        case .shipping:
+            return largeOrFragileQuestion(for: context.item.category)
+        }
+    }
+
+    private static func shouldAskBrand(
+        for category: Category,
+        missingFacts: [String],
+        knownFacts: [AnalyzeItemFact]
+    ) -> Bool {
+        guard knownFacts.containsFact(namedLike: ["brand", "maker", "label", "artist", "mark"]) == false else {
+            return false
+        }
         if missingFacts.containsFact(namedLike: ["brand", "maker", "label", "artist", "mark"]) {
             return true
         }
         return [.electronics, .clothing, .shoes, .bags, .jewelry, .music, .collectibles, .art, .home, .tools].contains(category)
     }
 
-    private static func shouldAskSpecs(for category: Category, missingFacts: [String]) -> Bool {
+    private static func shouldAskSpecs(
+        for category: Category,
+        missingFacts: [String],
+        knownFacts: [AnalyzeItemFact]
+    ) -> Bool {
+        guard knownFacts.containsFact(namedLike: ["model", "size", "storage", "capacity", "measurement", "dimension", "edition", "serial"]) == false else {
+            return false
+        }
         if missingFacts.containsFact(namedLike: ["model", "size", "storage", "capacity", "measurement", "dimension", "edition", "serial"]) {
             return true
         }
         return [.electronics, .furniture, .clothing, .shoes, .bags, .jewelry, .kids, .music, .collectibles, .art, .home, .tools].contains(category)
     }
 
-    private static func shouldAskIncluded(for category: Category, missingFacts: [String]) -> Bool {
+    private static func shouldAskIncluded(
+        for category: Category,
+        missingFacts: [String],
+        knownFacts: [AnalyzeItemFact]
+    ) -> Bool {
+        guard knownFacts.containsFact(namedLike: ["box", "charger", "remote", "accessory", "packaging", "certificate"]) == false else {
+            return false
+        }
         if missingFacts.containsFact(namedLike: ["box", "charger", "remote", "accessory", "packaging", "certificate"]) {
             return true
         }
@@ -531,6 +594,81 @@ struct ItemQuestionsSheet: View {
 
     private static var localMarketplaces: Set<Marketplace> {
         [.facebook, .craigslist, .offerup, .nextdoor]
+    }
+
+    private static func missingBrandQuestion(fact: String, category: Category) -> DetailQuestion {
+        DetailQuestion(
+            id: "analysis-brand-\(fact)",
+            contextLabel: "Photo check",
+            title: "What does the label say?",
+            detail: String.localizedFormat(
+                "The photo did not clearly show %@. Add it only if you can see it.".localized,
+                fact
+            ),
+            placeholder: brandPlaceholder(for: category),
+            systemImage: "tag",
+            kind: .text(.labelOrBrand),
+            choices: [
+                DetailChoice(title: "No visible label", value: .text("No visible label")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        )
+    }
+
+    private static func missingSpecQuestion(fact: String, category: Category) -> DetailQuestion {
+        DetailQuestion(
+            id: "analysis-spec-\(fact)",
+            contextLabel: "Photo check",
+            title: "What exact detail can you see?",
+            detail: String.localizedFormat(
+                "The photo did not clearly show %@. Add it only if you can see it.".localized,
+                fact
+            ),
+            placeholder: sizePlaceholder(for: category),
+            systemImage: specQuestionSymbol(for: category),
+            kind: .text(.sizeOrModel),
+            choices: specChoices(for: category)
+        )
+    }
+
+    private static func missingConditionQuestion(fact: String) -> DetailQuestion {
+        DetailQuestion(
+            id: "analysis-condition-\(fact)",
+            contextLabel: "Photo check",
+            title: "Anything wrong with it?",
+            detail: String.localizedFormat(
+                "The photo did not clearly show %@. Add it only if you can see it.".localized,
+                fact
+            ),
+            placeholder: "Scratch, stain, missing piece...",
+            systemImage: "exclamationmark.magnifyingglass",
+            kind: .text(.flaws),
+            choices: [
+                DetailChoice(title: "No visible flaws", value: .text("No visible flaws")),
+                DetailChoice(title: "Light wear", value: .text("Light wear")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        )
+    }
+
+    private static func missingIncludedQuestion(fact: String, category: Category) -> DetailQuestion {
+        DetailQuestion(
+            id: "analysis-included-\(fact)",
+            contextLabel: "Photo check",
+            title: "What comes with it?",
+            detail: String.localizedFormat(
+                "The photo did not clearly show %@. Add it only if you can see it.".localized,
+                fact
+            ),
+            placeholder: includedPlaceholder(for: category),
+            systemImage: "shippingbox",
+            kind: .text(.included),
+            choices: [
+                DetailChoice(title: "Item only", value: .text("Item only")),
+                DetailChoice(title: "Original box", value: .text("Original box included")),
+                DetailChoice(title: "I don't know", value: .unknown)
+            ]
+        )
     }
 
     private static func brandQuestion(for category: Category) -> DetailQuestion {
@@ -585,7 +723,7 @@ struct ItemQuestionsSheet: View {
             contextLabel: "Included",
             title: "What comes with it?",
             detail: includedQuestionDetail(for: category),
-            placeholder: "Box, charger, remote...",
+            placeholder: includedPlaceholder(for: category),
             systemImage: "shippingbox",
             kind: .text(.included),
             choices: [
@@ -594,6 +732,21 @@ struct ItemQuestionsSheet: View {
                 DetailChoice(title: "I don't know", value: .unknown)
             ]
         )
+    }
+
+    private static func includedPlaceholder(for category: Category) -> String {
+        switch category {
+        case .electronics:
+            "Charger, cable, box..."
+        case .tools:
+            "Battery, charger, case..."
+        case .music:
+            "Case, cable, strap..."
+        case .collectibles:
+            "Box, certificate, sleeve..."
+        default:
+            "Box, charger, remote..."
+        }
     }
 
     private static func largeOrFragileQuestion(for category: Category) -> DetailQuestion {
@@ -906,6 +1059,21 @@ struct ItemQuestionsSheet: View {
         case flaws
         case included
         case extraDetails
+
+        var detailKey: ItemDetailFieldKey {
+            switch self {
+            case .labelOrBrand:
+                .labelOrBrand
+            case .sizeOrModel:
+                .sizeOrModel
+            case .flaws:
+                .flaws
+            case .included:
+                .included
+            case .extraDetails:
+                .extraDetails
+            }
+        }
     }
 }
 
@@ -922,24 +1090,9 @@ private struct DetailQuestion: Identifiable, Hashable {
     func isAnswered(in answers: ItemDetailAnswers) -> Bool {
         switch kind {
         case .text(let field):
-            return textAnswer(in: answers, for: field).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            return answers.hasAnsweredOrSkipped(field.detailKey)
         case .largeOrFragile:
-            return answers.isLargeOrFragile
-        }
-    }
-
-    private func textAnswer(in answers: ItemDetailAnswers, for field: ItemQuestionsSheet.Field) -> String {
-        switch field {
-        case .labelOrBrand:
-            return answers.labelOrBrand
-        case .sizeOrModel:
-            return answers.sizeOrModel
-        case .flaws:
-            return answers.flaws
-        case .included:
-            return answers.included
-        case .extraDetails:
-            return answers.extraDetails
+            return answers.hasAnsweredOrSkipped(.largeOrFragile)
         }
     }
 }
@@ -969,11 +1122,92 @@ private enum DetailChoiceValue: Hashable {
     case unknown
 }
 
+private struct PrioritizedMissingFact: Hashable {
+    let displayValue: String
+    let detailKind: MissingFactDetailKind
+    let priority: Int
+
+    init?(_ value: String) {
+        let cleanValue = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        guard cleanValue.isEmpty == false else { return nil }
+
+        displayValue = String(cleanValue.prefix(60))
+        detailKind = Self.detailKind(for: cleanValue)
+        priority = Self.priority(for: detailKind)
+    }
+
+    private static func detailKind(for value: String) -> MissingFactDetailKind {
+        let lowercased = value.lowercased()
+        if ["brand", "maker", "label", "artist", "mark", "logo"].contains(where: lowercased.contains) {
+            return .brand
+        }
+        if ["box", "charger", "remote", "accessory", "packaging", "certificate", "manual", "case", "cable"].contains(where: lowercased.contains) {
+            return .included
+        }
+        if ["flaw", "damage", "scratch", "stain", "wear", "working", "works", "condition", "missing part"].contains(where: lowercased.contains) {
+            return .condition
+        }
+        if ["weight", "pickup", "fragile", "large", "heavy"].contains(where: lowercased.contains) {
+            return .shipping
+        }
+        return .spec
+    }
+
+    private static func priority(for kind: MissingFactDetailKind) -> Int {
+        switch kind {
+        case .brand:
+            100
+        case .spec:
+            90
+        case .included:
+            80
+        case .condition:
+            70
+        case .shipping:
+            60
+        }
+    }
+}
+
+private enum MissingFactDetailKind: Hashable {
+    case brand
+    case spec
+    case included
+    case condition
+    case shipping
+}
+
+private extension AnalyzeIntelligence {
+    var highestImpactMissingFact: PrioritizedMissingFact? {
+        missingFacts
+            .compactMap(PrioritizedMissingFact.init)
+            .sorted { left, right in
+                if left.priority == right.priority {
+                    return left.displayValue.count < right.displayValue.count
+                }
+                return left.priority > right.priority
+            }
+            .first
+    }
+}
+
 private extension Array where Element == String {
     func containsFact(namedLike needles: [String]) -> Bool {
         contains { fact in
             let lowercased = fact.lowercased()
             return needles.contains { lowercased.contains($0) }
+        }
+    }
+}
+
+private extension Array where Element == AnalyzeItemFact {
+    func containsFact(namedLike needles: [String]) -> Bool {
+        contains { fact in
+            guard fact.confidence >= 0.7 else { return false }
+            let searchable = "\(fact.label) \(fact.value)".lowercased()
+            return needles.contains { searchable.contains($0) }
         }
     }
 }

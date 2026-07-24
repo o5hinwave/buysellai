@@ -134,6 +134,7 @@ struct MarketplacePickerSheet: View {
             item: context.item,
             imageData: context.imageData,
             preferredMarketplace: marketplace,
+            analysis: context.analysis,
             answers: context.details
         )
     }

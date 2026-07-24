@@ -355,6 +355,15 @@ struct ListingEvidenceSource: Codable, Identifiable, Sendable, Equatable, Hashab
     }
 }
 
+enum ItemDetailFieldKey: String, Codable, Sendable, Hashable {
+    case labelOrBrand
+    case sizeOrModel
+    case flaws
+    case included
+    case extraDetails
+    case largeOrFragile
+}
+
 struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
     var labelOrBrand: String
     var sizeOrModel: String
@@ -362,6 +371,7 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
     var included: String
     var extraDetails: String
     var isLargeOrFragile: Bool
+    var answeredFieldKeys: [ItemDetailFieldKey]
 
     init(
         labelOrBrand: String = "",
@@ -369,7 +379,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         flaws: String = "",
         included: String = "",
         extraDetails: String = "",
-        isLargeOrFragile: Bool = false
+        isLargeOrFragile: Bool = false,
+        answeredFieldKeys: [ItemDetailFieldKey] = []
     ) {
         self.labelOrBrand = labelOrBrand
         self.sizeOrModel = sizeOrModel
@@ -377,6 +388,7 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         self.included = included
         self.extraDetails = extraDetails
         self.isLargeOrFragile = isLargeOrFragile
+        self.answeredFieldKeys = Self.uniqueFieldKeys(answeredFieldKeys)
     }
 
     var sanitizedForUse: ItemDetailAnswers? {
@@ -386,12 +398,18 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             flaws: Self.clean(flaws, maxLength: 140),
             included: Self.clean(included, maxLength: 120),
             extraDetails: Self.clean(extraDetails, maxLength: 180),
-            isLargeOrFragile: isLargeOrFragile
+            isLargeOrFragile: isLargeOrFragile,
+            answeredFieldKeys: Self.uniqueFieldKeys(answeredFieldKeys)
         )
         return clean.hasUsefulDetails ? clean : nil
     }
 
     var hasUsefulDetails: Bool {
+        hasListingPayloadDetails ||
+            answeredFieldKeys.isEmpty == false
+    }
+
+    var hasListingPayloadDetails: Bool {
         isLargeOrFragile ||
             labelOrBrand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
             sizeOrModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
@@ -410,11 +428,14 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         if isLargeOrFragile {
             values.append("Large or fragile")
         }
+        answeredFieldKeys.forEach { field in
+            appendHandledValue(field, to: &values)
+        }
         return values
     }
 
     var marketplaceFactQualityBonus: Int {
-        min(displayValues.count * 4, 16)
+        min(confirmedDetailCount * 4, 16)
     }
 
     var localPickupBoost: Int {
@@ -425,6 +446,46 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         isLargeOrFragile ? 18 : 0
     }
 
+    mutating func markAnswered(_ field: ItemDetailFieldKey) {
+        guard answeredFieldKeys.contains(field) == false else { return }
+        answeredFieldKeys.append(field)
+    }
+
+    mutating func clearAnswered(_ field: ItemDetailFieldKey) {
+        answeredFieldKeys.removeAll { $0 == field }
+    }
+
+    func hasAnsweredOrSkipped(_ field: ItemDetailFieldKey) -> Bool {
+        let hasConcreteAnswer: Bool
+        switch field {
+        case .labelOrBrand:
+            hasConcreteAnswer = labelOrBrand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .sizeOrModel:
+            hasConcreteAnswer = sizeOrModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .flaws:
+            hasConcreteAnswer = flaws.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .included:
+            hasConcreteAnswer = included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .extraDetails:
+            hasConcreteAnswer = extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .largeOrFragile:
+            hasConcreteAnswer = false
+        }
+        return hasConcreteAnswer || answeredFieldKeys.contains(field)
+    }
+
+    private var confirmedDetailCount: Int {
+        [
+            labelOrBrand,
+            sizeOrModel,
+            flaws,
+            included,
+            extraDetails
+        ]
+            .filter { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
+            .count + (isLargeOrFragile ? 1 : 0)
+    }
+
     private static func clean(_ value: String, maxLength: Int) -> String {
         let collapsedWhitespace = value
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
@@ -432,10 +493,57 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         return String(collapsedWhitespace.prefix(maxLength))
     }
 
+    private static func uniqueFieldKeys(_ values: [ItemDetailFieldKey]) -> [ItemDetailFieldKey] {
+        values.reduce(into: [ItemDetailFieldKey]()) { result, value in
+            guard result.contains(value) == false else { return }
+            result.append(value)
+        }
+    }
+
     private func appendDisplayValue(_ value: String, prefix: String, to values: inout [String]) {
         let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleanValue.isEmpty == false else { return }
         values.append("\(prefix): \(cleanValue)")
+    }
+
+    private func appendHandledValue(_ field: ItemDetailFieldKey, to values: inout [String]) {
+        guard hasConcreteValue(for: field) == false else { return }
+        let value = field == .largeOrFragile ? "No".localized : "I don't know".localized
+        values.append("\(displayPrefix(for: field)): \(value)")
+    }
+
+    private func hasConcreteValue(for field: ItemDetailFieldKey) -> Bool {
+        switch field {
+        case .labelOrBrand:
+            labelOrBrand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .sizeOrModel:
+            sizeOrModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .flaws:
+            flaws.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .included:
+            included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .extraDetails:
+            extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .largeOrFragile:
+            isLargeOrFragile
+        }
+    }
+
+    private func displayPrefix(for field: ItemDetailFieldKey) -> String {
+        switch field {
+        case .labelOrBrand:
+            "Brand"
+        case .sizeOrModel:
+            "Size/model"
+        case .flaws:
+            "Flaws"
+        case .included:
+            "Includes"
+        case .extraDetails:
+            "Other"
+        case .largeOrFragile:
+            "Large or fragile"
+        }
     }
 }
 
@@ -722,6 +830,7 @@ struct MarketplacePickerContext: Identifiable, Equatable {
     let item: DetectedItem
     let imageData: Data?
     let details: ItemDetailAnswers?
+    let analysis: AnalyzeIntelligence?
 }
 
 struct ListingContext: Identifiable, Equatable {

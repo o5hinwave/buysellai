@@ -260,9 +260,23 @@ final class AppStore {
         )
     }
 
-    func presentMarketplacePicker(item: DetectedItem, imageData: Data?, details: ItemDetailAnswers? = nil) {
+    func presentMarketplacePicker(
+        item: DetectedItem,
+        imageData: Data?,
+        details: ItemDetailAnswers? = nil,
+        analysis: AnalyzeIntelligence? = nil
+    ) {
         advanceFlowGeneration()
-        presentFlowSheet(.marketplacePicker(MarketplacePickerContext(item: item, imageData: imageData, details: details)))
+        presentFlowSheet(
+            .marketplacePicker(
+                MarketplacePickerContext(
+                    item: item,
+                    imageData: imageData,
+                    details: details,
+                    analysis: analysis
+                )
+            )
+        )
     }
 
     func presentListing(

@@ -126,10 +126,11 @@ actor APIClient {
             currentPrice: item.priceEstimate
         )
         let cleanDetails = details?.sanitizedForUse
+        let listingPayloadDetails = cleanDetails?.hasListingPayloadDetails == true ? cleanDetails : nil
         let payload = GenerateListingRequest(
             item: itemPayload,
             platform: marketplace.rawValue,
-            details: cleanDetails.map(ListingItemDetailsPayload.init(details:)),
+            details: listingPayloadDetails.map(ListingItemDetailsPayload.init(details:)),
             imageDataUrl: listingImageDataURL(from: imageData)
         )
         let request = try makeRequest(
