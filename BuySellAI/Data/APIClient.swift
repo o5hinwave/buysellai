@@ -387,6 +387,36 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
         )
     }
 
+    func acceptingLikelyMatch(_ match: AnalyzeLikelyMatch) -> AnalyzeIntelligence {
+        guard let cleanMatch = match.sanitizedForDisplay() else {
+            return self
+        }
+
+        let selectedFactLabel = "You picked".localized
+        let selectedFact = AnalyzeItemFact(
+            label: selectedFactLabel,
+            value: cleanMatch.name,
+            confidence: 1
+        )
+        let retainedFacts = itemFacts.filter { fact in
+            fact.label.localizedCaseInsensitiveCompare(selectedFactLabel) != .orderedSame
+        }
+        let cleanFacts = ([selectedFact] + retainedFacts)
+            .compactMap { $0.sanitizedForDisplay() }
+            .prefix(8)
+        let cleanLikelyMatches = likelyMatches
+            .compactMap { $0.sanitizedForDisplay() }
+            .filter { $0.name.localizedCaseInsensitiveCompare(cleanMatch.name) != .orderedSame }
+            .prefix(3)
+
+        return AnalyzeIntelligence(
+            itemFacts: Array(cleanFacts),
+            missingFacts: missingFacts,
+            photoPrompt: photoPrompt,
+            likelyMatches: Array(cleanLikelyMatches)
+        )
+    }
+
     var displayHint: String? {
         if let prompt = photoPrompt?.trimmingCharacters(in: .whitespacesAndNewlines), prompt.isEmpty == false {
             return prompt

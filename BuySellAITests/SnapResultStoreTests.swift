@@ -128,6 +128,51 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.item?.category, .art)
     }
 
+    func testSelectLikelyMatchCommitsNameAndRecordsUserChoiceAsAnalyzeFact() {
+        let selected = AnalyzeLikelyMatch(
+            name: " Nintendo Switch OLED ",
+            distinguishingQuestion: "Does the label say OLED?",
+            confidence: 0.86
+        )
+        let other = AnalyzeLikelyMatch(
+            name: "Nintendo Switch Lite",
+            distinguishingQuestion: "Are the controllers attached?",
+            confidence: 0.64
+        )
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Game console",
+            category: .electronics,
+            condition: .good,
+            priceEstimate: Decimal(180)
+        )
+        store.nameText = "Game console"
+        store.priceText = "180"
+        store.analysisDetails = AnalyzeIntelligence(
+            itemFacts: [AnalyzeItemFact(label: "Screen", value: "Handheld", confidence: 0.78)],
+            missingFacts: ["model"],
+            photoPrompt: nil,
+            likelyMatches: [selected, other]
+        )
+
+        store.selectLikelyMatch(selected)
+
+        XCTAssertEqual(store.item?.name, "Nintendo Switch OLED")
+        XCTAssertEqual(store.nameText, "Nintendo Switch OLED")
+        XCTAssertEqual(store.analysisDetails?.itemFacts.first, AnalyzeItemFact(
+            label: "You picked",
+            value: "Nintendo Switch OLED",
+            confidence: 1
+        ))
+        XCTAssertEqual(store.analysisDetails?.itemFacts.dropFirst().first, AnalyzeItemFact(
+            label: "Screen",
+            value: "Handheld",
+            confidence: 0.78
+        ))
+        XCTAssertEqual(store.analysisDetails?.missingFacts, ["model"])
+        XCTAssertEqual(store.analysisDetails?.likelyMatches, [other])
+    }
+
     func testCycleActionsDoNotUseOptionalChainedObservedMutation() throws {
         let source = try String(
             contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"),

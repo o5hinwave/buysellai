@@ -956,6 +956,8 @@
 	<string>Try a closer photo of any logo, label, or model number.</string>
 	<key>Which one looks closest?</key>
 	<string>Which one looks closest?</string>
+	<key>You picked</key>
+	<string>You picked</string>
 	<key>Likely</key>
 	<string>Likely</string>
 	<key>Possible</key>

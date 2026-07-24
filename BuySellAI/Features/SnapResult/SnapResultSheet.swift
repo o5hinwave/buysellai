@@ -388,8 +388,7 @@ struct SnapResultSheet: View {
     private func likelyMatchButton(_ match: AnalyzeLikelyMatch) -> some View {
         Button {
             Haptics.impact(.light)
-            store.nameText = match.name
-            store.commitEdits()
+            store.selectLikelyMatch(match)
             showsUncertaintyHelp = false
             showsDetailCorrection = true
         } label: {

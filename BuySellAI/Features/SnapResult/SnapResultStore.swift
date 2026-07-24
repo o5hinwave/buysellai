@@ -125,6 +125,16 @@ final class SnapResultStore {
         item = edited
     }
 
+    func selectLikelyMatch(_ match: AnalyzeLikelyMatch) {
+        guard let cleanMatch = match.sanitizedForDisplay() else { return }
+        nameText = cleanMatch.name
+        commitEdits()
+        if let details = analysisDetails {
+            analysisDetails = details.acceptingLikelyMatch(cleanMatch)
+            analysisGuidance = analysisDetails?.displayHint
+        }
+    }
+
     func commitEdits(priceLocale: Locale = .current) {
         guard var edited = item else { return }
         let trimmedName = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
