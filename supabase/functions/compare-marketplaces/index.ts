@@ -7,11 +7,13 @@ import {
 } from "../_shared/gemini.ts";
 import {
   errorResponse,
+  fetchWithTimeout,
   handleOptions,
   HttpError,
   jsonResponse,
   readJson,
   requirePost,
+  timeoutFromEnv,
 } from "../_shared/http.ts";
 
 serve(async (request) => {
@@ -26,10 +28,12 @@ serve(async (request) => {
     const candidateMarketplaces = requireCandidateMarketplaces(body.candidateMarketplaces);
     const result = await generateMarketplaceComparisonJson(item, details, candidateMarketplaces);
     const checkedAt = new Date().toISOString();
+    const comparisons = normalizeComparisons(result, item, candidateMarketplaces, checkedAt);
+    await saveComparisonResearchCache(item, details, result, comparisons);
 
     return jsonResponse({
       checkedAt,
-      comparisons: normalizeComparisons(result, item, candidateMarketplaces, checkedAt),
+      comparisons,
     });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -66,6 +70,41 @@ type StructuredEvidenceSource = {
   conditionAndVariant: string | null;
   comparability: string | null;
   price: number | null;
+};
+
+type NormalizedMarketplaceComparison = {
+  marketplace: MarketplaceId;
+  recommendationLabel: string | null;
+  marketplaceFitScore: number | null;
+  listPrice: number | null;
+  likelyRangeLow: number | null;
+  likelyRangeHigh: number | null;
+  takeHomeEstimate: number | null;
+  compLowPrice: number | null;
+  compMedianPrice: number | null;
+  compHighPrice: number | null;
+  expectedSpeed: string | null;
+  shippingExpectation: string | null;
+  feeSummary: string | null;
+  reason: string;
+  evidenceSummary: string | null;
+  evidenceStatus: string;
+  evidenceSources: StructuredEvidenceSource[];
+};
+
+type MarketplaceResearchPlan = {
+  cacheKey: string;
+  marketplace: MarketplaceId;
+  category: string;
+  condition: string;
+  searchQuestions: string[];
+  sourceTargets: string[];
+  reason: string;
+};
+
+type SupabaseServiceConfig = {
+  supabaseUrl: string;
+  serviceRoleKey: string;
 };
 
 const knownMarketplaceIds = [
@@ -284,17 +323,17 @@ function normalizeComparisons(
   item: ListingItem,
   candidates: MarketplaceId[],
   checkedAt: string,
-) {
+): NormalizedMarketplaceComparison[] {
   const rows = Array.isArray(result.comparisons) ? result.comparisons : [];
   const allowed = new Set(candidates);
   const seen = new Set<string>();
-  const normalized: Record<string, unknown>[] = [];
+  const normalized: NormalizedMarketplaceComparison[] = [];
 
   for (const row of rows) {
     const comparison = normalizeComparison(row, allowed, checkedAt);
     if (!comparison) continue;
-    const marketplace = optionalString(comparison.marketplace, 40);
-    if (!marketplace || seen.has(marketplace)) continue;
+    const marketplace = comparison.marketplace;
+    if (seen.has(marketplace)) continue;
     seen.add(marketplace);
     normalized.push(comparison);
   }
@@ -310,7 +349,7 @@ function normalizeComparison(
   value: unknown,
   allowed: Set<MarketplaceId>,
   checkedAt: string,
-): Record<string, unknown> | null {
+): NormalizedMarketplaceComparison | null {
   const row = recordOrNull(value);
   if (!row) return null;
   const marketplace = optionalString(row.marketplace, 40)?.toLowerCase() ?? "";
@@ -318,12 +357,13 @@ function normalizeComparison(
     return null;
   }
 
-  const evidenceSources = cleanEvidenceSources(row.evidenceSources, marketplace as MarketplaceId, checkedAt);
+  const platform = marketplace as MarketplaceId;
+  const evidenceSources = cleanEvidenceSources(row.evidenceSources, platform, checkedAt);
   const evidenceStatus = normalizeEvidenceStatus(row.evidenceStatus, evidenceSources.length);
   const hasSoldEvidence = evidenceSources.some((source) => source.listingStatus === "Sold");
 
   return {
-    marketplace,
+    marketplace: platform,
     recommendationLabel: normalizeRecommendationLabel(row.recommendationLabel),
     marketplaceFitScore: optionalScore(row.marketplaceFitScore),
     listPrice: optionalPositiveNumber(row.listPrice),
@@ -337,14 +377,17 @@ function normalizeComparison(
     shippingExpectation: optionalCleanText(row.shippingExpectation, 100),
     feeSummary: optionalCleanText(row.feeSummary, 180),
     reason: optionalCleanText(row.reason, 180) ??
-      `${marketplaceDisplayNames[marketplace as MarketplaceId]} may fit when price and photos are clear.`,
+      `${marketplaceDisplayNames[platform]} may fit when price and photos are clear.`,
     evidenceSummary: optionalCleanText(row.evidenceSummary, 220),
     evidenceStatus,
     evidenceSources,
   };
 }
 
-function deterministicLimitedComparisons(item: ListingItem, candidates: MarketplaceId[]) {
+function deterministicLimitedComparisons(
+  item: ListingItem,
+  candidates: MarketplaceId[],
+): NormalizedMarketplaceComparison[] {
   return candidates.map((marketplace, index) => {
     const displayName = marketplaceDisplayNames[marketplace] ?? marketplace;
     return {
@@ -367,6 +410,157 @@ function deterministicLimitedComparisons(item: ListingItem, candidates: Marketpl
       evidenceSources: [],
     };
   });
+}
+
+function createMarketplaceResearchPlan(
+  item: ListingItem,
+  platform: MarketplaceId,
+  details: ListingItemDetails | null,
+): MarketplaceResearchPlan {
+  const displayName = marketplaceDisplayNames[platform] ?? platform;
+  const currentYear = new Date().getUTCFullYear();
+  const category = normalizedIdentifier(item.category);
+  const condition = normalizedIdentifier(item.condition);
+  const identity = researchIdentity(item, details);
+  const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
+  const searchQuestions = [
+    `${displayName} official selling fees ${currentYear}`,
+    `${displayName} sold listings ${identity} used ${item.condition}`,
+    `${identity} resale sold price comparable`,
+  ];
+
+  return {
+    cacheKey: `${platform}:${category}:${condition}:${identityKey}`,
+    marketplace: platform,
+    category: item.category,
+    condition: item.condition,
+    searchQuestions: searchQuestions.slice(0, 3),
+    sourceTargets: [
+      "sold or completed listing pages when available",
+      "reputable resale price guides or marketplace sold-result pages",
+      "official marketplace help pages",
+      "official fee pages",
+      "public reference images only when the source and item match are clear",
+    ],
+    reason: `Reuse current rules, fee context, sold-price evidence, and marketplace fit notes before drafting the ${displayName} listing for ${identity}.`,
+  };
+}
+
+function researchIdentity(item: ListingItem, details: ListingItemDetails | null): string {
+  const parts = uniqueStrings([
+    details?.labelOrBrand ?? "",
+    details?.sizeOrModel ?? "",
+    item.name,
+  ], 5);
+  return parts.join(" ").slice(0, 160) || item.name;
+}
+
+async function saveComparisonResearchCache(
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  result: Record<string, unknown>,
+  comparisons: NormalizedMarketplaceComparison[],
+): Promise<void> {
+  const service = supabaseServiceConfig();
+  if (!service) return;
+
+  const searchedFor = uniqueStrings([
+    ...stringArray(result.searchedFor, 3),
+    ...stringArray(result[geminiGroundingSearchQueriesKey], 3),
+  ], 3);
+  const groundingSources = uniqueStrings([
+    ...stringArray(result.officialSources, 8),
+    ...stringArray(result[geminiGroundingSourcesKey], 8),
+  ], 8);
+  const globalResearchSummary = optionalCleanText(result.researchSummary, 360);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1_000);
+
+  for (const comparison of comparisons) {
+    if (comparison.evidenceStatus === "unavailable") continue;
+
+    const plan = createMarketplaceResearchPlan(item, comparison.marketplace, details);
+    const usefulFindings = comparisonUsefulFindings(comparison);
+    const officialSources = uniqueStrings([
+      ...groundingSources,
+      ...evidenceSourceReferenceStrings(comparison.evidenceSources),
+    ], 8);
+    const researchSummary = globalResearchSummary ?? comparison.evidenceSummary ?? comparison.reason;
+
+    if (!researchSummary && usefulFindings.length === 0 && officialSources.length === 0) continue;
+
+    const row = {
+      cache_key: plan.cacheKey,
+      marketplace: plan.marketplace,
+      category: plan.category,
+      condition: plan.condition,
+      search_queries: searchedFor.length > 0 ? searchedFor : plan.searchQuestions,
+      useful_findings: usefulFindings,
+      official_sources: officialSources,
+      research_summary: researchSummary || usefulFindings.join(" ") || officialSources.join(" "),
+      model: Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-2.5-flash",
+      updated_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    };
+
+    try {
+      const response = await fetchWithTimeout(
+        `${service.supabaseUrl}/rest/v1/marketplace_research_cache?on_conflict=cache_key`,
+        {
+          method: "POST",
+          headers: {
+            ...serviceHeaders(service.serviceRoleKey),
+            prefer: "resolution=merge-duplicates,return=minimal",
+          },
+          body: JSON.stringify(row),
+        },
+        supabaseServiceFetchOptions(),
+      );
+      if (!response.ok) continue;
+    } catch {
+      continue;
+    }
+  }
+}
+
+function comparisonUsefulFindings(comparison: NormalizedMarketplaceComparison): string[] {
+  const displayName = marketplaceDisplayNames[comparison.marketplace] ?? comparison.marketplace;
+  const findings = [
+    comparison.evidenceSummary,
+    comparison.reason,
+    comparison.feeSummary ? `${displayName} fee note: ${comparison.feeSummary}` : null,
+    comparison.expectedSpeed ? `${displayName} expected speed: ${comparison.expectedSpeed}` : null,
+    comparison.shippingExpectation ? `${displayName} fulfillment: ${comparison.shippingExpectation}` : null,
+    comparison.listPrice ? `${displayName} recommended list price: ${comparison.listPrice}` : null,
+    comparison.takeHomeEstimate ? `${displayName} estimated take-home: ${comparison.takeHomeEstimate}` : null,
+    comparison.likelyRangeLow && comparison.likelyRangeHigh
+      ? `${displayName} likely sale range: ${comparison.likelyRangeLow}-${comparison.likelyRangeHigh}`
+      : null,
+    comparison.compLowPrice && comparison.compMedianPrice && comparison.compHighPrice
+      ? `${displayName} sold comp range low/median/high: ${comparison.compLowPrice}/${comparison.compMedianPrice}/${comparison.compHighPrice}`
+      : null,
+    ...comparison.evidenceSources.map(evidenceSourceFinding),
+  ];
+  return uniqueStrings(findings, 8);
+}
+
+function evidenceSourceFinding(source: StructuredEvidenceSource): string | null {
+  const parts = [
+    source.sourceMarketplace,
+    source.listingStatus,
+    source.title,
+    source.conditionAndVariant,
+    source.comparability,
+    source.price ? `price ${source.price}` : "",
+  ].filter((part) => part && part.trim().length > 0);
+  return parts.length > 0 ? parts.join(" · ").slice(0, 260) : null;
+}
+
+function evidenceSourceReferenceStrings(sources: StructuredEvidenceSource[]): string[] {
+  return uniqueStrings(sources.map((source) => {
+    if (source.title && source.url) return `${source.title}: ${source.url}`;
+    return source.url ?? source.title;
+  }), 8);
 }
 
 function cleanEvidenceSources(
@@ -578,6 +772,30 @@ function optionalString(value: unknown, maxLength = 1_200): string | null {
   return trimmed.slice(0, maxLength);
 }
 
+function stringArray(value: unknown, maxItems = 6, maxLength = 260): string[] {
+  if (!Array.isArray(value)) return [];
+  const values: string[] = [];
+  for (const entry of value) {
+    const text = optionalString(entry, maxLength);
+    if (text && values.includes(text) === false) {
+      values.push(text);
+    }
+    if (values.length >= maxItems) break;
+  }
+  return values;
+}
+
+function uniqueStrings(values: Array<string | null | undefined>, maxItems: number): string[] {
+  const unique: string[] = [];
+  for (const value of values) {
+    const text = value?.trim();
+    if (!text || unique.includes(text)) continue;
+    unique.push(text);
+    if (unique.length >= maxItems) break;
+  }
+  return unique;
+}
+
 function optionalCleanText(value: unknown, maxLength: number): string | null {
   const text = optionalString(value, maxLength);
   if (!text || text.includes("```")) return null;
@@ -665,4 +883,29 @@ function cleanListingStatus(value: unknown): string | null {
 
 function normalizedIdentifier(value: string): string {
   return value.toLowerCase().replace(/[\s_-]+/g, "");
+}
+
+function supabaseServiceConfig(): SupabaseServiceConfig | null {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim().replace(/\/+$/, "");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
+  return { supabaseUrl, serviceRoleKey };
+}
+
+function serviceHeaders(serviceRoleKey: string): HeadersInit {
+  return {
+    authorization: `Bearer ${serviceRoleKey}`,
+    apikey: serviceRoleKey,
+    "content-type": "application/json",
+  };
+}
+
+function supabaseServiceFetchOptions() {
+  return {
+    timeoutMs: timeoutFromEnv("SUPABASE_SERVICE_TIMEOUT_MS", 8_000),
+    timeoutMessage: "Supabase service request timed out",
+    transportMessage: "Supabase service transport failed",
+  };
 }

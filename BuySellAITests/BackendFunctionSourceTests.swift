@@ -362,6 +362,24 @@ final class BackendFunctionSourceTests: XCTestCase {
         }
     }
 
+    func testCompareMarketplaceFunctionSavesGroundedResearchForListingStep() throws {
+        let source = try read("supabase/functions/compare-marketplaces/index.ts")
+
+        XCTAssertNotNil(source.range(of: "const comparisons = normalizeComparisons(result, item, candidateMarketplaces, checkedAt)"))
+        XCTAssertNotNil(source.range(of: "await saveComparisonResearchCache(item, details, result, comparisons)"))
+        XCTAssertNotNil(source.range(of: "function createMarketplaceResearchPlan("))
+        XCTAssertNotNil(source.range(of: "function comparisonUsefulFindings("))
+        XCTAssertNotNil(source.range(of: #"if (comparison.evidenceStatus === "unavailable") continue"#))
+        XCTAssertNotNil(source.range(of: "result[geminiGroundingSearchQueriesKey]"))
+        XCTAssertNotNil(source.range(of: "result[geminiGroundingSourcesKey]"))
+        XCTAssertNotNil(source.range(of: "marketplace_research_cache?on_conflict=cache_key"))
+        XCTAssertNotNil(source.range(of: "resolution=merge-duplicates,return=minimal"))
+        XCTAssertNotNil(source.range(of: "SUPABASE_SERVICE_ROLE_KEY"))
+        XCTAssertNotNil(source.range(of: "SUPABASE_SERVICE_TIMEOUT_MS"))
+        XCTAssertNotNil(source.range(of: "gemini-2.5-flash"))
+        XCTAssertNotNil(source.range(of: "expires_at: expiresAt.toISOString()"))
+    }
+
     func testSharedHttpHelperReturnsTypedMalformedJsonErrors() throws {
         let source = try read("supabase/functions/_shared/http.ts")
 

@@ -131,6 +131,26 @@ require_source_contains \
     "marketplaceNoteSummary(details.marketplaceNotes)" \
     "marketplace-note comparison context"
 require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "await saveComparisonResearchCache(item, details, result, comparisons)" \
+    "marketplace compare research cache save"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "marketplace_research_cache?on_conflict=cache_key" \
+    "marketplace compare research cache upsert"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "result[geminiGroundingSearchQueriesKey]" \
+    "marketplace compare saved Gemini grounding queries"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "result[geminiGroundingSourcesKey]" \
+    "marketplace compare saved Gemini grounding sources"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "SUPABASE_SERVICE_ROLE_KEY" \
+    "marketplace compare service-role cache access"
+require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "For every factual market result you rely on, add one evidenceSources object" \
     "structured evidence source instruction"
@@ -147,6 +167,7 @@ printf 'Supabase function Deno check passed\n'
 printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'listing research tools: google_search url_context gated-by-cache\n'
 printf 'marketplace compare: grounded candidate search before picker recommendation\n'
+printf 'marketplace compare cache: grounded findings saved for listing reuse\n'
 printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
 printf 'listing evidence sources: structured source/date/status/comparability\n'
