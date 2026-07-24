@@ -218,17 +218,23 @@ struct HomeView: View {
 private struct HomeCameraHeroMark: View {
     let startSnapFlow: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         Button {
             startSnapFlow()
         } label: {
             cardContent
-                .frame(maxWidth: .infinity, minHeight: 268)
+                .frame(maxWidth: .infinity, minHeight: heroMinHeight)
                 .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel("Snap to sell".localized)
         .accessibilityHint("Opens the camera".localized)
+    }
+
+    private var heroMinHeight: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 430 : 350
     }
 
     private var cardContent: some View {
@@ -245,10 +251,38 @@ private struct HomeCameraHeroMark: View {
                 .shadow(color: Color.brand.shadow.opacity(0.08), radius: 34, x: 0, y: 20)
                 .shadow(color: Color.brand.pearlPeach.opacity(0.22), radius: 18, x: -8, y: -8)
 
-            VStack(spacing: Spacing.lg) {
+            VStack(spacing: Spacing.md) {
                 Spacer(minLength: 0)
+                Text("Snap · Pick · Sell".localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+                    .textCase(.uppercase)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                    .accessibilityHidden(true)
+
                 HomeHeroCameraGlyph()
+                    .padding(.bottom, Spacing.xs)
+
+                Text("Sell anything in three taps.".localized)
+                    .font(.title.weight(.bold))
+                    .foregroundStyle(Color.brand.foreground)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+
+                Text("Snap a photo. Pick a marketplace. Copy your listing.".localized)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 cardBottomCopy
+                    .padding(.top, Spacing.xs)
+
+                HomeHeroPrimaryCue()
+
                 HomeHeroIconTrail()
                 Spacer(minLength: 0)
             }
@@ -258,20 +292,12 @@ private struct HomeCameraHeroMark: View {
     }
 
     private var cardBottomCopy: some View {
-        VStack(spacing: Spacing.xxs) {
-            Text("Snap to sell".localized)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.brand.foreground)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-
-            Text("Photo. Answer. Copy.".localized)
-                .font(.subheadline)
-                .foregroundStyle(Color.brand.foregroundSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-        }
-        .frame(maxWidth: .infinity)
+        Text("Photo. Answer. Copy.".localized)
+            .font(.subheadline)
+            .foregroundStyle(Color.brand.foregroundSecondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+            .frame(maxWidth: .infinity)
     }
 
     private var cardFill: LinearGradient {
@@ -288,6 +314,41 @@ private struct HomeCameraHeroMark: View {
         )
     }
 
+}
+
+private struct HomeHeroPrimaryCue: View {
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: AppSymbol.Flow.snapPhotoCompact)
+                .brandSymbol(.controlIcon)
+                .symbolRenderingMode(.hierarchical)
+                .accessibilityHidden(true)
+
+            Text("Snap to sell".localized)
+                .font(.headline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .foregroundStyle(Color.brand.primaryForeground)
+        .frame(maxWidth: .infinity, minHeight: 54)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color.brand.primaryText,
+                    Color.brand.primaryPressed
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: Capsule(style: .continuous)
+        )
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(Color.brand.surface.opacity(0.44), lineWidth: 1)
+        }
+        .shadow(color: Color.brand.primaryText.opacity(0.16), radius: 18, x: 0, y: 10)
+        .accessibilityHidden(true)
+    }
 }
 
 private struct HomePearlScreenBackground: View {
@@ -513,7 +574,7 @@ private struct EmptyHistoryView: View {
         ContentUnavailableView {
             Label("No listings yet".localized, systemImage: AppSymbol.Flow.savedListing)
         } description: {
-            Text("Copy a listing and it will appear here.".localized)
+            Text("Your past listings will show up here.".localized)
         }
         .frame(maxWidth: .infinity, minHeight: 116)
         .accessibilityElement(children: .combine)
