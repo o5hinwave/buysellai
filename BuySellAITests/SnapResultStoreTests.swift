@@ -152,7 +152,14 @@ final class SnapResultStoreTests: XCTestCase {
             itemFacts: [AnalyzeItemFact(label: "Screen", value: "Handheld", confidence: 0.78)],
             missingFacts: ["model"],
             photoPrompt: nil,
-            likelyMatches: [selected, other]
+            likelyMatches: [selected, other],
+            referenceImages: [
+                AnalyzeReferenceImage(
+                    title: "Switch OLED reference",
+                    url: "https://example.com/switch.jpg",
+                    source: "Visual search"
+                )
+            ]
         )
 
         store.selectLikelyMatch(selected)
@@ -171,6 +178,13 @@ final class SnapResultStoreTests: XCTestCase {
         ))
         XCTAssertEqual(store.analysisDetails?.missingFacts, ["model"])
         XCTAssertEqual(store.analysisDetails?.likelyMatches, [other])
+        XCTAssertEqual(store.analysisDetails?.referenceImages, [
+            AnalyzeReferenceImage(
+                title: "Switch OLED reference",
+                url: "https://example.com/switch.jpg",
+                source: "Visual search"
+            )
+        ])
     }
 
     func testCycleActionsDoNotUseOptionalChainedObservedMutation() throws {

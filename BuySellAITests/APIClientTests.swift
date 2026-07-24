@@ -92,6 +92,18 @@ final class APIClientTests: XCTestCase {
                         "distinguishingQuestion": "Ignored",
                         "confidence": 0.6
                       }
+                    ],
+                    "referenceImages": [
+                      {
+                        "title": "  Similar ceramic mug  ",
+                        "url": " https://example.com/mug.jpg ",
+                        "source": "  Visual search  "
+                      },
+                      {
+                        "title": "Invalid URL",
+                        "url": "file:///tmp/mug.jpg",
+                        "source": "Ignored"
+                      }
                     ]
                   }
                 }
@@ -111,6 +123,13 @@ final class APIClientTests: XCTestCase {
                 name: "Ceramic mug with maker mark",
                 distinguishingQuestion: "Is there a stamp on the bottom?",
                 confidence: 1
+            )
+        ])
+        XCTAssertEqual(response.analysis?.referenceImages, [
+            AnalyzeReferenceImage(
+                title: "Similar ceramic mug",
+                url: "https://example.com/mug.jpg",
+                source: "Visual search"
             )
         ])
         XCTAssertEqual(response.analysis?.displayHint, "Show the bottom mark.")

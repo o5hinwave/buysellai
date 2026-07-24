@@ -357,6 +357,10 @@ struct SnapResultSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if let referenceImages = details?.referenceImages, referenceImages.isEmpty == false {
+                referenceImagesSection(referenceImages)
+            }
+
             if let matches = details?.likelyMatches, matches.isEmpty == false {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Which one looks closest?".localized)
@@ -383,6 +387,100 @@ struct SnapResultSheet: View {
         }
         .padding(.vertical, Spacing.xs)
         .accessibilityElement(children: .contain)
+    }
+
+    private func referenceImagesSection(_ images: [AnalyzeReferenceImage]) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Reference images".localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+
+                Spacer(minLength: Spacing.sm)
+
+                Text("For checking only".localized)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    ForEach(Array(images.enumerated()), id: \.offset) { _, image in
+                        referenceImageCard(image)
+                    }
+                }
+                .padding(.vertical, Spacing.xxs)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func referenceImageCard(_ image: AnalyzeReferenceImage) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            ZStack(alignment: .bottomLeading) {
+                AsyncImage(url: image.urlValue) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .tint(Color.brand.primary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        Image(systemName: "photo.on.rectangle")
+                            .brandSymbol(.rowIcon)
+                            .foregroundStyle(Color.brand.foregroundSecondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+                .frame(width: 118, height: 92)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+
+                Text("For checking only".localized)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryForeground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.vertical, 3)
+                    .background(Color.brand.foreground.opacity(0.72), in: Capsule(style: .continuous))
+                    .padding(Spacing.xs)
+            }
+
+            Text(image.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let source = image.source {
+                Text(source)
+                    .font(.caption2)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(width: 118, alignment: .leading)
+        .padding(Spacing.xs)
+        .background(Color.brand.surface, in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.72), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(referenceImageAccessibilityLabel(image))
+    }
+
+    private func referenceImageAccessibilityLabel(_ image: AnalyzeReferenceImage) -> String {
+        if let source = image.source {
+            return String.localizedFormat("%@, %@, %@", "Reference image".localized, image.title, source)
+        }
+        return String.localizedFormat("%@, %@", "Reference image".localized, image.title)
     }
 
     private func likelyMatchButton(_ match: AnalyzeLikelyMatch) -> some View {

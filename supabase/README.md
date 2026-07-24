@@ -17,11 +17,13 @@ Optional backend tuning:
 # Optional: override the stable production default only after collecting fresh release evidence.
 supabase secrets set GEMINI_MODEL=gemini-2.5-flash
 supabase secrets set GEMINI_TIMEOUT_MS=18000
+supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=<vision-api-key>
+supabase secrets set GOOGLE_VISION_TIMEOUT_MS=8000
 supabase secrets set APPLE_TIMEOUT_MS=8000
 supabase secrets set SUPABASE_SERVICE_TIMEOUT_MS=8000
 ```
 
-The shared Gemini helper defaults to Google's stable `gemini-2.5-flash` model so final App Store evidence proves one exact model version while keeping listing research fast and low-cost. `compare-marketplaces` runs the minimal grounded search needed before the picker recommends a place to sell, then saves useful grounded findings to `marketplace_research_cache` for the selected listing step. `generate-listing` creates a minimal search plan, reuses fresh cache rows, and only enables live Google Search when saved research is missing or stale. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
+The shared Gemini helper defaults to Google's stable `gemini-2.5-flash` model so final App Store evidence proves one exact model version while keeping listing research fast and low-cost. `analyze-image` and `generate-listing` optionally use Google Vision web detection when `GOOGLE_CLOUD_VISION_API_KEY` is present; image results are passed to Gemini as identification evidence, and app UI labels returned images as references only. `compare-marketplaces` runs the minimal grounded search needed before the picker recommends a place to sell, then saves useful grounded findings to `marketplace_research_cache` for the selected listing step. `generate-listing` creates a minimal search plan, reuses fresh cache rows, and only enables live Google Search when saved research is missing or stale. Override `GEMINI_MODEL` only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
 
 Apply the bundled schema migrations before deploying functions:
 

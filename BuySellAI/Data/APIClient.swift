@@ -412,22 +412,53 @@ struct AnalyzeLikelyMatch: Codable, Equatable, Sendable {
     }
 }
 
+struct AnalyzeReferenceImage: Codable, Equatable, Sendable {
+    let title: String
+    let url: String
+    let source: String?
+
+    func sanitizedForDisplay() -> AnalyzeReferenceImage? {
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanSource = source?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard cleanTitle.isEmpty == false,
+              let parsedURL = URL(string: cleanURL),
+              ["http", "https"].contains(parsedURL.scheme?.lowercased() ?? "")
+        else {
+            return nil
+        }
+
+        return AnalyzeReferenceImage(
+            title: String(cleanTitle.prefix(80)),
+            url: cleanURL,
+            source: cleanSource.isEmpty ? nil : String(cleanSource.prefix(80))
+        )
+    }
+
+    var urlValue: URL? {
+        URL(string: url)
+    }
+}
+
 struct AnalyzeIntelligence: Codable, Equatable, Sendable {
     let itemFacts: [AnalyzeItemFact]
     let missingFacts: [String]
     let photoPrompt: String?
     let likelyMatches: [AnalyzeLikelyMatch]
+    let referenceImages: [AnalyzeReferenceImage]
 
     init(
         itemFacts: [AnalyzeItemFact],
         missingFacts: [String],
         photoPrompt: String?,
-        likelyMatches: [AnalyzeLikelyMatch] = []
+        likelyMatches: [AnalyzeLikelyMatch] = [],
+        referenceImages: [AnalyzeReferenceImage] = []
     ) {
         self.itemFacts = itemFacts
         self.missingFacts = missingFacts
         self.photoPrompt = photoPrompt
         self.likelyMatches = likelyMatches
+        self.referenceImages = referenceImages
     }
 
     enum CodingKeys: String, CodingKey {
@@ -435,6 +466,7 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
         case missingFacts
         case photoPrompt
         case likelyMatches
+        case referenceImages
     }
 
     init(from decoder: Decoder) throws {
@@ -443,6 +475,7 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
         missingFacts = try container.decodeIfPresent([String].self, forKey: .missingFacts) ?? []
         photoPrompt = try container.decodeIfPresent(String.self, forKey: .photoPrompt)
         likelyMatches = try container.decodeIfPresent([AnalyzeLikelyMatch].self, forKey: .likelyMatches) ?? []
+        referenceImages = try container.decodeIfPresent([AnalyzeReferenceImage].self, forKey: .referenceImages) ?? []
     }
 
     func sanitizedForDisplay() -> AnalyzeIntelligence? {
@@ -457,11 +490,15 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
         let cleanLikelyMatches = likelyMatches
             .compactMap { $0.sanitizedForDisplay() }
             .prefix(3)
+        let cleanReferenceImages = referenceImages
+            .compactMap { $0.sanitizedForDisplay() }
+            .prefix(3)
 
         guard cleanFacts.isEmpty == false
             || cleanMissingFacts.isEmpty == false
             || cleanPrompt != nil
             || cleanLikelyMatches.isEmpty == false
+            || cleanReferenceImages.isEmpty == false
         else {
             return nil
         }
@@ -470,7 +507,8 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
             itemFacts: Array(cleanFacts),
             missingFacts: Array(cleanMissingFacts),
             photoPrompt: cleanPrompt,
-            likelyMatches: Array(cleanLikelyMatches)
+            likelyMatches: Array(cleanLikelyMatches),
+            referenceImages: Array(cleanReferenceImages)
         )
     }
 
@@ -500,7 +538,8 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
             itemFacts: Array(cleanFacts),
             missingFacts: missingFacts,
             photoPrompt: photoPrompt,
-            likelyMatches: Array(cleanLikelyMatches)
+            likelyMatches: Array(cleanLikelyMatches),
+            referenceImages: referenceImages.compactMap { $0.sanitizedForDisplay() }
         )
     }
 
@@ -515,6 +554,9 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
     }
 
     var uncertaintyPrompt: String {
+        if referenceImages.isEmpty == false {
+            return "Compare these references, then pick what looks closest.".localized
+        }
         if likelyMatches.isEmpty == false {
             return "Pick what looks closest, or snap a clearer label.".localized
         }

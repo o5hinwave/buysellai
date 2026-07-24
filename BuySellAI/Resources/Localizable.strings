@@ -252,6 +252,8 @@
 	<string>Flash unavailable</string>
 	<key>For parts</key>
 	<string>For parts</string>
+	<key>For checking only</key>
+	<string>For checking only</string>
 	<key>Furniture</key>
 	<string>Furniture</string>
 	<key>GOAT</key>
@@ -1056,6 +1058,10 @@
 	<string>Pack carefully</string>
 	<key>Reference only</key>
 	<string>Reference only</string>
+	<key>Reference image</key>
+	<string>Reference image</string>
+	<key>Reference images</key>
+	<string>Reference images</string>
 	<key>Shipping okay</key>
 	<string>Shipping okay</string>
 	<key>Shows the checks behind this listing.</key>

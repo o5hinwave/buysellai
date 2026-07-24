@@ -107,6 +107,30 @@ require_source_contains \
     "marketplaceNotes: optionalMarketplaceNotes(details.marketplaceNotes)" \
     "marketplace-specific seller notes"
 require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "fetchVisionWebDetectionEvidence(imageDataUrl)" \
+    "analyze image visual web detection"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "GOOGLE_CLOUD_VISION_API_KEY" \
+    "analyze image Google Vision secret"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "WEB_DETECTION" \
+    "analyze image web detection feature"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "analysis.referenceImages" \
+    "analyze image reference image contract"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "identification checking only" \
+    "reference images identification-only instruction"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "normalizeReferenceImages" \
+    "reference image sanitizer"
+require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "{ google_search: {} }" \
     "marketplace compare Google Search tool"
