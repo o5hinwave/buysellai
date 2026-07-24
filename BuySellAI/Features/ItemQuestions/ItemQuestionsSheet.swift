@@ -208,7 +208,7 @@ struct ItemQuestionsSheet: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
-                .tint(choice.isUnknown ? Color.brand.foreground : Color.brand.primary)
+                .tint(Color.brand.foregroundSecondary)
                 .accessibilityLabel(choice.title.localized)
             }
         }

@@ -813,6 +813,11 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(source.range(of: #"ProgressView(value: questionProgress)"#))
         XCTAssertNotNil(source.range(of: #".accessibilityLabel("Question progress".localized)"#))
         XCTAssertNotNil(source.range(of: #"Text("I don't know".localized)"#))
+        let choiceGridStart = try XCTUnwrap(source.range(of: #"private func choiceGrid(for question: DetailQuestion) -> some View"#))
+        let choiceGridEnd = try XCTUnwrap(source.range(of: #"private var choiceColumns: [GridItem]"#, range: choiceGridStart.upperBound..<source.endIndex))
+        let choiceGridSource = source[choiceGridStart.lowerBound..<choiceGridEnd.lowerBound]
+        XCTAssertNotNil(choiceGridSource.range(of: #".tint(Color.brand.foregroundSecondary)"#))
+        XCTAssertNil(choiceGridSource.range(of: #"Color.brand.primary"#))
         XCTAssertNotNil(source.range(of: #"previousQuestionButton"#))
         XCTAssertNotNil(source.range(of: #"Section {"#))
         XCTAssertNotNil(source.range(of: #"Text("Saved so far".localized)"#))
