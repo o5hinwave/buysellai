@@ -1992,6 +1992,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(evidenceSource.range(of: #"title: "Market check""#))
         XCTAssertNotNil(evidenceSource.range(of: #"if let compRangeText"#))
         XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold range""#))
+        XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold comps""#))
+        XCTAssertNotNil(evidenceSource.range(of: #"detail: soldCompUnavailableText"#))
         XCTAssertNotNil(evidenceSource.range(of: #"if let evidenceSources = store.draft?.evidenceSources"#))
         XCTAssertNotNil(evidenceSource.range(of: #"ForEach(evidenceSources) { source in"#))
         XCTAssertNotNil(evidenceSource.range(of: #"evidenceSourceRow(source)"#))
@@ -2014,6 +2016,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"detail: sourceDetail.isEmpty ? "Source details".localized : sourceDetail"#))
         XCTAssertNotNil(listing.range(of: #"evidenceLink(title: "Open source", systemImage: "safari", url: url)"#))
         XCTAssertNotNil(listing.range(of: #"private var compRangeText: String?"#))
+        XCTAssertNotNil(listing.range(of: #"private var soldCompUnavailableText: String"#))
+        XCTAssertNotNil(listing.range(of: #"Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale."#))
         XCTAssertNotNil(listing.range(of: #"private var feeSourceURL: URL?"#))
         XCTAssertNotNil(listing.range(of: #"private var referenceImageURL: URL?"#))
     }

@@ -117,6 +117,30 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertFalse(estimates.contains { $0.id == .tradesy })
     }
 
+    func testMarketplaceComparisonNamesMissingSoldCompsWithoutInventingSales() {
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            listPrice: Decimal(100),
+            expectedSpeed: "Steady sale",
+            shippingExpectation: "Easy shipping",
+            evidenceStatus: .limited
+        )
+
+        XCTAssertNil(comparison.soldRange(currencyCode: "USD"))
+        XCTAssertEqual(comparison.soldCompSignal(currencyCode: "USD"), "Sold comps unavailable")
+        XCTAssertEqual(
+            comparison.rowSignal(currencyCode: "USD"),
+            "List around \(Decimal(100).currency(code: "USD")) · Sold comps unavailable · Steady sale"
+        )
+
+        let soldComparison = MarketplaceComparison(
+            marketplace: .ebay,
+            compMedianPrice: Decimal(84),
+            evidenceStatus: .grounded
+        )
+        XCTAssertEqual(soldComparison.soldCompSignal(currencyCode: "USD"), "Typical sold \(Decimal(84).currency(code: "USD"))")
+    }
+
     func testMarketplaceCatalogCopyHasLocalizationEntries() throws {
         let localizedStrings = try loadLocalizedStrings()
 
@@ -370,6 +394,8 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Evidence",
             "Market check",
             "Sold range",
+            "Sold comps",
+            "Sold comps unavailable",
             "Fee source",
             "Last checked",
             "Fee note",
@@ -392,9 +418,12 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Box, certificate, sleeve...",
             "Shows the checks behind this listing.",
             "Use this to check the item, not as a listing photo.",
+            "Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.",
+            "Sold %@-%@",
             "%@ to %@",
             "%@, typical %@",
             "Typical %@",
+            "Typical sold %@",
             "From %@",
             "Up to %@"
         ] {

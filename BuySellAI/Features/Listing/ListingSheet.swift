@@ -356,6 +356,12 @@ struct ListingSheet: View {
                         systemImage: "chart.line.uptrend.xyaxis",
                         detail: compRangeText
                     )
+                } else {
+                    evidenceDetailRow(
+                        title: "Sold comps",
+                        systemImage: "chart.line.uptrend.xyaxis",
+                        detail: soldCompUnavailableText
+                    )
                 }
                 if let evidenceSources = store.draft?.evidenceSources {
                     ForEach(evidenceSources) { source in
@@ -857,6 +863,10 @@ struct ListingSheet: View {
             return String.localizedFormat("Up to %@", high.currency(code: context.item.currencyCode))
         }
         return nil
+    }
+
+    private var soldCompUnavailableText: String {
+        "Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.".localized
     }
 
     private var feeSourceURL: URL? {
