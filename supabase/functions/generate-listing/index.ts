@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
+  type GeminiTool,
   geminiGroundingSearchQueriesKey,
   geminiGroundingSourcesKey,
   generateJsonWithGemini,
@@ -35,9 +36,7 @@ serve(async (request) => {
     const cachedResearch = await fetchMarketplaceResearchCache(researchPlan);
     const usesCachedResearch = cachedResearch !== null;
 
-    const result = await generateJsonWithGemini(
-      listingSystemInstruction(profile, usesCachedResearch),
-      [{
+    const promptParts = [{
         text: [
           `Marketplace: ${platform}`,
           `Marketplace title formula: ${profile.titleFormula}`,
@@ -54,70 +53,14 @@ serve(async (request) => {
           `Current price: ${item.currentPrice}`,
           `Seller details: ${detailsForPrompt(details)}`,
         ].join("\n"),
-      }],
-      {
-        type: "OBJECT",
-        properties: {
-          title: { type: "STRING" },
-          description: { type: "STRING" },
-          listPrice: { type: "NUMBER", minimum: 1 },
-          likelySalePrice: { type: "NUMBER", minimum: 1 },
-          takeHomeEstimate: { type: "NUMBER", minimum: 1 },
-          firstPhoto: { type: "STRING" },
-          missingPhotoPrompt: { type: "STRING" },
-          fitReason: { type: "STRING" },
-          postingNotes: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-          itemSpecifics: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-          tags: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-          compLowPrice: { type: "NUMBER", minimum: 1 },
-          compHighPrice: { type: "NUMBER", minimum: 1 },
-          compMedianPrice: { type: "NUMBER", minimum: 1 },
-          feeSummary: { type: "STRING" },
-          pricingStrategy: { type: "STRING" },
-          evidenceSummary: { type: "STRING" },
-          referenceImageURL: { type: "STRING" },
-          publicImageQuery: { type: "STRING" },
-          researchSummary: { type: "STRING" },
-          usefulFindings: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-          officialSources: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-          searchedFor: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-          },
-        },
-        required: [
-          "title",
-          "description",
-          "listPrice",
-          "likelySalePrice",
-          "takeHomeEstimate",
-          "firstPhoto",
-          "fitReason",
-        ],
-      },
-      {
-        tools: usesCachedResearch ? [] : [
-          { url_context: {} },
-          { google_search: {} },
-        ],
-        maxOutputTokens: 4_096,
-      },
-    );
+      }];
+    const result = await generateListingDraftJson({
+      profile,
+      usesCachedResearch,
+      promptParts,
+      item,
+      platform,
+    });
 
     const draft = requireStructuredListingDraft(result, item, platform, profile);
     const listing = formatListingDraft(draft);
@@ -198,6 +141,14 @@ type StructuredListingDraft = {
   evidenceSummary: string | null;
   referenceImageURL: string | null;
   publicImageQuery: string | null;
+};
+
+type GenerateListingDraftJsonInput = {
+  profile: MarketplaceListingProfile;
+  usesCachedResearch: boolean;
+  promptParts: Array<{ text: string }>;
+  item: ListingItem;
+  platform: MarketplaceId;
 };
 
 const knownMarketplaceIds = [
@@ -304,6 +255,167 @@ function listingSystemInstruction(
     "Do not add tax language or follow-up questions.",
     "Keep the tone warm, direct, and useful for a person selling one thing.",
   ].join(" ");
+}
+
+async function generateListingDraftJson(
+  input: GenerateListingDraftJsonInput,
+): Promise<Record<string, unknown>> {
+  const responseSchema = listingDraftResponseSchema();
+  const tools: GeminiTool[] = input.usesCachedResearch ? [] : [
+    { url_context: {} },
+    { google_search: {} },
+  ];
+
+  try {
+    return await generateJsonWithGemini(
+      listingSystemInstruction(input.profile, input.usesCachedResearch),
+      input.promptParts,
+      responseSchema,
+      {
+        tools,
+        maxOutputTokens: 4_096,
+      },
+    );
+  } catch (error) {
+    if (!isRecoverableDraftProviderError(error)) throw error;
+    if (isRateLimitedProviderError(error)) throw error;
+  }
+
+  if (tools.length > 0) {
+    try {
+      return await generateJsonWithGemini(
+        listingSystemInstruction(input.profile, true),
+        [
+          ...input.promptParts,
+          {
+            text: [
+              "Grounded research returned no final draft text.",
+              "Create the listing from only the item facts, marketplace profile guidance, and saved research shown above.",
+              "Do not claim current fees, sold prices, public image URLs, rarity, brand, model, size, or defects unless those facts are already provided.",
+              "Leave unsupported comp, fee, evidence, referenceImageURL, and publicImageQuery fields empty.",
+            ].join(" "),
+          },
+        ],
+        responseSchema,
+        {
+          tools: [],
+          maxOutputTokens: 2_048,
+          temperature: 0.1,
+        },
+      );
+    } catch (error) {
+      if (!isRecoverableDraftProviderError(error)) throw error;
+      if (isRateLimitedProviderError(error)) throw error;
+    }
+  }
+
+  return deterministicListingDraft(input.item, input.platform, input.profile);
+}
+
+function listingDraftResponseSchema(): Record<string, unknown> {
+  return {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      description: { type: "STRING" },
+      listPrice: { type: "NUMBER", minimum: 1 },
+      likelySalePrice: { type: "NUMBER", minimum: 1 },
+      takeHomeEstimate: { type: "NUMBER", minimum: 1 },
+      firstPhoto: { type: "STRING" },
+      missingPhotoPrompt: { type: "STRING" },
+      fitReason: { type: "STRING" },
+      postingNotes: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+      itemSpecifics: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+      tags: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+      compLowPrice: { type: "NUMBER", minimum: 1 },
+      compHighPrice: { type: "NUMBER", minimum: 1 },
+      compMedianPrice: { type: "NUMBER", minimum: 1 },
+      feeSummary: { type: "STRING" },
+      pricingStrategy: { type: "STRING" },
+      evidenceSummary: { type: "STRING" },
+      referenceImageURL: { type: "STRING" },
+      publicImageQuery: { type: "STRING" },
+      researchSummary: { type: "STRING" },
+      usefulFindings: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+      officialSources: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+      searchedFor: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
+    },
+    required: [
+      "title",
+      "description",
+      "listPrice",
+      "likelySalePrice",
+      "takeHomeEstimate",
+      "firstPhoto",
+      "fitReason",
+    ],
+  };
+}
+
+function deterministicListingDraft(
+  item: ListingItem,
+  platform: MarketplaceId,
+  profile: MarketplaceListingProfile,
+): Record<string, unknown> {
+  const displayName = marketplaceDisplayNames[platform] ?? platform;
+  const condition = displayCondition(item.condition);
+  const listPrice = positiveNumberOrFallback(item.currentPrice, item.originalPrice);
+  const likelySalePrice = positiveNumberOrFallback(listPrice * 0.9, listPrice);
+  const takeHomeEstimate = positiveNumberOrFallback(likelySalePrice * 0.85, likelySalePrice);
+  const title = `${item.name} - ${condition}`.slice(0, profile.titleMaxCharacters).trim();
+
+  return {
+    title,
+    description: [
+      `${item.name} in ${condition.toLowerCase()} condition.`,
+      `Asking $${formatPlainPrice(listPrice)}.`,
+      "Please check the photos for condition, scale, and any visible wear.",
+    ].join(" "),
+    listPrice,
+    likelySalePrice,
+    takeHomeEstimate,
+    firstPhoto: profile.photoGuidance,
+    fitReason: `${displayName} can work for this item when the photos and details are clear.`,
+    postingNotes: [
+      "Use the generated copy with your actual photos.",
+      "Mention any flaws you can see before posting.",
+    ],
+    itemSpecifics: [],
+    tags: [],
+    evidenceSummary: "Current marketplace research returned no final draft, so this uses only the item facts provided.",
+  };
+}
+
+function isRecoverableDraftProviderError(error: unknown): boolean {
+  if (!(error instanceof HttpError)) return false;
+  return [
+    "Provider returned an empty response",
+    "Provider request timed out",
+    "Provider transport failed",
+    "Provider response was not valid model JSON",
+  ].includes(error.message);
+}
+
+function isRateLimitedProviderError(error: unknown): boolean {
+  return error instanceof HttpError && error.status === 429;
 }
 
 function createMarketplaceResearchPlan(
@@ -998,6 +1110,23 @@ function positiveNumberOrFallback(value: unknown, fallback: number): number {
     return Math.round(number * 100) / 100;
   }
   return Math.round(Math.max(fallback, 1) * 100) / 100;
+}
+
+function displayCondition(value: string): string {
+  switch (normalizedIdentifier(value)) {
+    case "likenew":
+      return "Like New";
+    case "forparts":
+      return "For Parts";
+    default:
+      return value
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+}
+
+function formatPlainPrice(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 function optionalPositiveNumber(value: unknown): number | null {

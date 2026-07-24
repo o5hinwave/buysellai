@@ -63,7 +63,7 @@ require_source_contains \
     "Gemini grounding source marker export"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
-    "tools: usesCachedResearch ? [] : [" \
+    "const tools: GeminiTool[] = input.usesCachedResearch ? [] : [" \
     "cached-research tool gating"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
