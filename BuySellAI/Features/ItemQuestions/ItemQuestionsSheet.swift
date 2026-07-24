@@ -644,7 +644,9 @@ struct ItemQuestionsSheet: View {
         if shouldAskSpecs(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(specQuestion(for: context.item.category, marketplace: context.preferredMarketplace))
         }
-        add(flawQuestion)
+        if shouldAskFlaws(missingFacts: missingFacts, knownFacts: knownFacts) {
+            add(flawQuestion)
+        }
         if shouldAskIncluded(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(includedQuestion(for: context.item.category))
         }
@@ -654,7 +656,7 @@ struct ItemQuestionsSheet: View {
 
         let limit = context.preferredMarketplace == nil ? 4 : 5
         let limitedQuestions = Array(questions.prefix(limit))
-        return limitedQuestions.isEmpty ? [flawQuestion] : limitedQuestions
+        return limitedQuestions
     }
 
     private static func analysisQuestion(for context: ItemQuestionsContext) -> DetailQuestion? {
@@ -713,6 +715,17 @@ struct ItemQuestionsSheet: View {
             return true
         }
         return [.electronics, .tools, .music, .collectibles, .toys, .sports, .media].contains(category)
+    }
+
+    private static func shouldAskFlaws(
+        missingFacts: [String],
+        knownFacts: [AnalyzeItemFact]
+    ) -> Bool {
+        let conditionNeedles = ["flaw", "damage", "scratch", "stain", "wear", "working", "works", "condition", "missing part"]
+        if missingFacts.containsFact(namedLike: conditionNeedles) {
+            return true
+        }
+        return knownFacts.containsFact(namedLike: conditionNeedles) == false
     }
 
     private static func shouldAskLargeOrFragile(for category: Category, marketplace: Marketplace?) -> Bool {
