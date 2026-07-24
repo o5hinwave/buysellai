@@ -121,7 +121,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertFalse(estimates.contains { $0.id == .tradesy })
     }
 
-    func testMarketplaceComparisonNamesMissingSoldCompsWithoutInventingSales() {
+    func testMarketplaceComparisonNamesMissingSoldPricesWithoutInventingSales() {
         let comparison = MarketplaceComparison(
             marketplace: .ebay,
             listPrice: Decimal(100),
@@ -130,11 +130,15 @@ final class MarketplaceEstimatorTests: XCTestCase {
             evidenceStatus: .limited
         )
 
-        XCTAssertNil(comparison.soldRange(currencyCode: "USD"))
-        XCTAssertEqual(comparison.soldCompSignal(currencyCode: "USD"), "Sold comps unavailable")
+        XCTAssertNil(comparison.soldPriceRange(currencyCode: "USD"))
+        XCTAssertEqual(comparison.soldPriceSignal(currencyCode: "USD"), "No sold prices found")
         XCTAssertEqual(
             comparison.rowSignal(currencyCode: "USD"),
-            "List around \(Decimal(100).currency(code: "USD")) · Sold comps unavailable · Steady sale"
+            "List around \(Decimal(100).currency(code: "USD")) · No sold prices found · Steady sale"
+        )
+        XCTAssertEqual(
+            comparison.accessibilitySignal(currencyCode: "USD"),
+            "List around \(Decimal(100).currency(code: "USD")), No sold prices found, Steady sale"
         )
 
         let soldComparison = MarketplaceComparison(
@@ -142,7 +146,18 @@ final class MarketplaceEstimatorTests: XCTestCase {
             compMedianPrice: Decimal(84),
             evidenceStatus: .grounded
         )
-        XCTAssertEqual(soldComparison.soldCompSignal(currencyCode: "USD"), "Typical sold \(Decimal(84).currency(code: "USD"))")
+        XCTAssertEqual(soldComparison.soldPriceSignal(currencyCode: "USD"), "Typical sold price \(Decimal(84).currency(code: "USD"))")
+
+        let soldRangeComparison = MarketplaceComparison(
+            marketplace: .ebay,
+            compLowPrice: Decimal(70),
+            compHighPrice: Decimal(120),
+            evidenceStatus: .grounded
+        )
+        XCTAssertEqual(
+            soldRangeComparison.soldPriceSignal(currencyCode: "USD"),
+            "Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD"))"
+        )
     }
 
     func testMarketplaceCatalogCopyHasLocalizationEntries() throws {
@@ -397,9 +412,9 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Shipping okay",
             "Evidence",
             "Market check",
-            "Sold range",
-            "Sold comps",
-            "Sold comps unavailable",
+            "Sold price range",
+            "Sold prices",
+            "No sold prices found",
             "Fee source",
             "Last checked",
             "Fee note",
@@ -422,12 +437,12 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Box, certificate, sleeve...",
             "Shows the checks behind this listing.",
             "Use this to check the item, not as a listing photo.",
-            "Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.",
-            "Sold %@-%@",
+            "Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.",
+            "Sold prices %@ to %@",
             "%@ to %@",
             "%@, typical %@",
             "Typical %@",
-            "Typical sold %@",
+            "Typical sold price %@",
             "From %@",
             "Up to %@"
         ] {

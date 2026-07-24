@@ -416,7 +416,7 @@ struct MarketplaceComparison: Decodable, Identifiable, Equatable, Sendable, Hash
     func rowSignal(currencyCode: String) -> String? {
         guard evidenceStatus != .unavailable else { return nil }
         let price = listPrice.map { String.localizedFormat("List around %@", $0.currency(code: currencyCode)) }
-        let range = soldCompSignal(currencyCode: currencyCode)
+        let range = soldPriceSignal(currencyCode: currencyCode)
         let speed = clean(expectedSpeed, maxLength: 80)
         let shipping = clean(shippingExpectation, maxLength: 100)
         let parts = [price, range, speed, shipping].compactMap { $0 }
@@ -424,18 +424,22 @@ struct MarketplaceComparison: Decodable, Identifiable, Equatable, Sendable, Hash
         return parts.prefix(3).joined(separator: " · ")
     }
 
-    func soldCompSignal(currencyCode: String) -> String {
-        soldRange(currencyCode: currencyCode) ?? "Sold comps unavailable".localized
+    func soldPriceSignal(currencyCode: String) -> String {
+        soldPriceRange(currencyCode: currencyCode) ?? "No sold prices found".localized
     }
 
-    func soldRange(currencyCode: String) -> String? {
+    func soldPriceRange(currencyCode: String) -> String? {
         if let low = compLowPrice, let high = compHighPrice {
-            return String.localizedFormat("Sold %@-%@", low.currency(code: currencyCode), high.currency(code: currencyCode))
+            return String.localizedFormat("Sold prices %@ to %@", low.currency(code: currencyCode), high.currency(code: currencyCode))
         }
         if let median = compMedianPrice {
-            return String.localizedFormat("Typical sold %@", median.currency(code: currencyCode))
+            return String.localizedFormat("Typical sold price %@", median.currency(code: currencyCode))
         }
         return nil
+    }
+
+    func accessibilitySignal(currencyCode: String) -> String? {
+        rowSignal(currencyCode: currencyCode)?.replacingOccurrences(of: " · ", with: ", ")
     }
 
     private func clean(_ value: String?, maxLength: Int) -> String? {

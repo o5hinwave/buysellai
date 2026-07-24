@@ -1096,8 +1096,8 @@
 	<string>Reference image</string>
 	<key>Reference images</key>
 	<string>Reference images</string>
-	<key>Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.</key>
-	<string>Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.</string>
+	<key>Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.</key>
+	<string>Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.</string>
 	<key>Shipping okay</key>
 	<string>Shipping okay</string>
 	<key>Shows the checks behind this listing.</key>
@@ -1108,20 +1108,20 @@
 	<string>Source</string>
 	<key>Source details</key>
 	<string>Source details</string>
-	<key>Sold comps</key>
-	<string>Sold comps</string>
-	<key>Sold comps unavailable</key>
-	<string>Sold comps unavailable</string>
-	<key>Sold range</key>
-	<string>Sold range</string>
-	<key>Sold %@-%@</key>
-	<string>Sold %@-%@</string>
+	<key>No sold prices found</key>
+	<string>No sold prices found</string>
+	<key>Sold price range</key>
+	<string>Sold price range</string>
+	<key>Sold prices</key>
+	<string>Sold prices</string>
+	<key>Sold prices %@ to %@</key>
+	<string>Sold prices %@ to %@</string>
 	<key>Steady sale</key>
 	<string>Steady sale</string>
 	<key>Typical %@</key>
 	<string>Typical %@</string>
-	<key>Typical sold %@</key>
-	<string>Typical sold %@</string>
+	<key>Typical sold price %@</key>
+	<string>Typical sold price %@</string>
 	<key>Up to %@</key>
 	<string>Up to %@</string>
 	<key>Use this to check the item, not as a listing photo.</key>

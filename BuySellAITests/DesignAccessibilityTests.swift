@@ -486,6 +486,23 @@ final class DesignAccessibilityTests: XCTestCase {
             MarketplaceAccessibilityText.summaryLabel("Best overall", for: strongFit),
             "Best overall, Reverb, strong fit, estimated payout 560 dollars, 6 percent above average"
         )
+
+        let item = DetectedItem(
+            name: "Lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(100)
+        )
+        let limitedComparison = MarketplaceComparison(
+            marketplace: .ebay,
+            listPrice: Decimal(100),
+            expectedSpeed: "Steady sale",
+            evidenceStatus: .limited
+        )
+        XCTAssertEqual(
+            MarketplaceAccessibilityText.estimateLabel(for: below, item: item, comparison: limitedComparison),
+            "eBay, estimated payout 41 dollars, 8 percent below average, List around \(Decimal(100).currency(code: "USD")), No sold prices found, Steady sale, \(Marketplace.ebay.recommendationReason(for: item))"
+        )
     }
 
     func testHistoryAccessibilityLabelIncludesDecodedThumbnailStatus() {
@@ -1212,7 +1229,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(marketplace.range(of: #"recommendedButton(pick: recommendedPick)"#))
         XCTAssertNotNil(marketplace.range(of: #"private struct RecommendedMarketplaceButton: View"#))
         XCTAssertNotNil(marketplace.range(of: #"Text("We found the best place to sell this".localized)"#))
-        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))"#))
+        XCTAssertNotNil(marketplace.range(of: #".accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item, comparison: comparison))"#))
         XCTAssertNotNil(marketplace.range(of: #".accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")"#))
         XCTAssertNotNil(marketplace.range(of: #"Section("Compare".localized) {"#))
         XCTAssertNotNil(marketplace.range(of: #"let otherPicks = Array(picks.dropFirst())"#))
@@ -2006,9 +2023,9 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(evidenceSource.range(of: #"store.draft?.evidenceSummary"#))
         XCTAssertNotNil(evidenceSource.range(of: #"title: "Market check""#))
         XCTAssertNotNil(evidenceSource.range(of: #"if let compRangeText"#))
-        XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold range""#))
-        XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold comps""#))
-        XCTAssertNotNil(evidenceSource.range(of: #"detail: soldCompUnavailableText"#))
+        XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold price range""#))
+        XCTAssertNotNil(evidenceSource.range(of: #"title: "Sold prices""#))
+        XCTAssertNotNil(evidenceSource.range(of: #"detail: soldPriceUnavailableText"#))
         XCTAssertNotNil(evidenceSource.range(of: #"if let evidenceSources = store.draft?.evidenceSources"#))
         XCTAssertNotNil(evidenceSource.range(of: #"ForEach(evidenceSources) { source in"#))
         XCTAssertNotNil(evidenceSource.range(of: #"evidenceSourceRow(source)"#))
@@ -2031,8 +2048,8 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(listing.range(of: #"detail: sourceDetail.isEmpty ? "Source details".localized : sourceDetail"#))
         XCTAssertNotNil(listing.range(of: #"evidenceLink(title: "Open source", systemImage: "safari", url: url)"#))
         XCTAssertNotNil(listing.range(of: #"private var compRangeText: String?"#))
-        XCTAssertNotNil(listing.range(of: #"private var soldCompUnavailableText: String"#))
-        XCTAssertNotNil(listing.range(of: #"Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale."#))
+        XCTAssertNotNil(listing.range(of: #"private var soldPriceUnavailableText: String"#))
+        XCTAssertNotNil(listing.range(of: #"Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale."#))
         XCTAssertNotNil(listing.range(of: #"private var feeSourceURL: URL?"#))
         XCTAssertNotNil(listing.range(of: #"private var referenceImageURL: URL?"#))
     }

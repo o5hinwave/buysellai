@@ -223,7 +223,7 @@ private struct RecommendedMarketplaceButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item, comparison: comparison))
         .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
         .accessibilitySortPriority(2)
     }
@@ -399,7 +399,7 @@ private struct SummaryButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item))
+        .accessibilityLabel(MarketplaceAccessibilityText.summaryLabel(pick.kind.label, for: pick.estimate, item: item, comparison: comparison))
         .accessibilityIdentifier("MarketplaceSummary.\(pick.kind.rawValue).\(pick.estimate.id.rawValue)")
         .accessibilitySortPriority(isRecommended ? 2 : 1)
     }

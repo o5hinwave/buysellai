@@ -129,6 +129,7 @@
 - Native icon continuation: Home and the first-use guide now use the same familiar iPhone-style symbols for the core loop: camera/viewfinder for taking the photo, message for answering, overlapping documents for copying, document text for saved listings, and info for the guide entry.
 - Familiar icon vocabulary continuation: the app now routes the core selling-flow, category, condition, marketplace, copy, retry, retake, and compose symbols through `AppSymbol`, keeping the visible icon set close to common iPhone actions like camera, message, copy, cart, map pin, bag, phone, tag, and square-and-pencil. Guardrails now verify category and marketplace symbols stay inside that shared familiar set.
 - Sold-comp evidence continuation: the `generate-listing` and `compare-marketplaces` Edge Functions now infer Sold versus Active status from structured evidence fields and only preserve comp low/median/high prices when sold or completed-price evidence is present. Active listings and asking prices can still support context, but they cannot populate sold-history price fields.
+- Sold-price wording continuation: marketplace rows and listing evidence now use plain `sold prices` language instead of resale shorthand, including `No sold prices found`, `Sold prices X to Y`, and `Typical sold price X`. Marketplace row and summary VoiceOver labels now include the same grounded or limited sold-price cue that is visible on screen.
 
 ## Proposed System Direction
 

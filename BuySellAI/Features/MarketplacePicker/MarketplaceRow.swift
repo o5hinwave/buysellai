@@ -202,7 +202,7 @@ struct MarketplaceRow: View {
     }
 
     private var accessibilityLabel: String {
-        MarketplaceAccessibilityText.estimateLabel(for: estimate, item: item)
+        MarketplaceAccessibilityText.estimateLabel(for: estimate, item: item, comparison: comparison)
     }
 }
 
@@ -294,32 +294,48 @@ struct MarketplaceFallbackRow: View {
 }
 
 enum MarketplaceAccessibilityText {
-    static func estimateLabel(for estimate: MarketplaceEstimate, item: DetectedItem? = nil) -> String {
+    static func estimateLabel(
+        for estimate: MarketplaceEstimate,
+        item: DetectedItem? = nil,
+        comparison: MarketplaceComparison? = nil
+    ) -> String {
         let dollars = Int(estimate.payout.doubleValue.rounded())
         let delta = Int(estimate.deltaPct.rounded())
         let nameAndFit = nameAndFitLabel(for: estimate)
         let baseLabel: String
         guard delta != 0 else {
             baseLabel = String.localizedFormat("%@, estimated payout %d dollars, average payout", nameAndFit, dollars)
-            return labelWithReason(baseLabel, estimate: estimate, item: item)
+            return labelWithReason(baseLabel, estimate: estimate, item: item, comparison: comparison)
         }
         let direction = (delta > 0 ? "above" : "below").localized
         baseLabel = String.localizedFormat("%@, estimated payout %d dollars, %d percent %@ average", nameAndFit, dollars, abs(delta), direction)
-        return labelWithReason(baseLabel, estimate: estimate, item: item)
+        return labelWithReason(baseLabel, estimate: estimate, item: item, comparison: comparison)
     }
 
-    static func summaryLabel(_ label: String, for estimate: MarketplaceEstimate, item: DetectedItem? = nil) -> String {
-        String.localizedFormat("%@, %@", label.localized, estimateLabel(for: estimate, item: item))
+    static func summaryLabel(
+        _ label: String,
+        for estimate: MarketplaceEstimate,
+        item: DetectedItem? = nil,
+        comparison: MarketplaceComparison? = nil
+    ) -> String {
+        String.localizedFormat("%@, %@", label.localized, estimateLabel(for: estimate, item: item, comparison: comparison))
     }
 
-    private static func labelWithReason(_ label: String, estimate: MarketplaceEstimate, item: DetectedItem?) -> String {
+    private static func labelWithReason(
+        _ label: String,
+        estimate: MarketplaceEstimate,
+        item: DetectedItem?,
+        comparison: MarketplaceComparison?
+    ) -> String {
         guard let item else {
             return label
         }
+        let marketSignal = comparison?.accessibilitySignal(currencyCode: item.currencyCode)
+            ?? estimate.comparisonSignals(for: item).accessibilitySummary
         return String.localizedFormat(
             "%@, %@, %@",
             label,
-            estimate.comparisonSignals(for: item).accessibilitySummary,
+            marketSignal,
             estimate.id.recommendationReason(for: item)
         )
     }

@@ -352,15 +352,15 @@ struct ListingSheet: View {
                 }
                 if let compRangeText {
                     evidenceDetailRow(
-                        title: "Sold range",
+                        title: "Sold price range",
                         systemImage: "chart.line.uptrend.xyaxis",
                         detail: compRangeText
                     )
                 } else {
                     evidenceDetailRow(
-                        title: "Sold comps",
+                        title: "Sold prices",
                         systemImage: "chart.line.uptrend.xyaxis",
-                        detail: soldCompUnavailableText
+                        detail: soldPriceUnavailableText
                     )
                 }
                 if let evidenceSources = store.draft?.evidenceSources {
@@ -865,8 +865,8 @@ struct ListingSheet: View {
         return nil
     }
 
-    private var soldCompUnavailableText: String {
-        "Reliable sold comps were not available. Use the price plan as an estimate, not a confirmed sale.".localized
+    private var soldPriceUnavailableText: String {
+        "Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.".localized
     }
 
     private var feeSourceURL: URL? {
