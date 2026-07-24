@@ -314,6 +314,8 @@
 	<string>Listing</string>
 	<key>List at</key>
 	<string>List at</string>
+	<key>Lowest to take</key>
+	<string>Lowest to take</string>
 	<key>Live-stream selling</key>
 	<string>Live-stream selling</string>
 	<key>Local pickup, mobile-first</key>
@@ -668,6 +670,8 @@
 	<string>Helps prefer local pickup when shipping would be a pain.</string>
 	<key>Highest sold</key>
 	<string>Highest sold</string>
+	<key>If someone offers less</key>
+	<string>If someone offers less</string>
 	<key>iPhone 15, 128 GB, unlocked...</key>
 	<string>iPhone 15, 128 GB, unlocked...</string>
 	<key>1 · 2 · 3</key>

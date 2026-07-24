@@ -143,6 +143,11 @@ struct ListingSheet: View {
                     value: pricePlan.takeHomeEstimate,
                     detail: "What you may keep"
                 )
+                listingPriceRow(
+                    title: "Lowest to take",
+                    value: pricePlan.negotiationFloor,
+                    detail: "If someone offers less"
+                )
             }
             if hasCompRange {
                 Section("What it sells for".localized) {
@@ -550,6 +555,11 @@ struct ListingSheet: View {
             value: pricePlan.listAt.currency(code: context.item.currencyCode),
             systemImage: "tag.fill"
         ))
+        fields.append(ListingCopyField(
+            title: "Lowest to take",
+            value: pricePlan.negotiationFloor.currency(code: context.item.currencyCode),
+            systemImage: "arrow.down.circle.fill"
+        ))
         fields.appendIfPresent(
             title: "Details",
             value: joinedDraftValues(draft?.itemSpecifics),
@@ -867,8 +877,10 @@ private struct ListingPricePlan {
     let listAt: Decimal
     let likelySellsFor: Decimal
     let takeHomeEstimate: Decimal
+    let negotiationFloor: Decimal
 
     private static let likelySaleMultiplier = Decimal(9) / Decimal(10)
+    private static let negotiationFloorMultiplier = Decimal(17) / Decimal(20)
 
     init(item: DetectedItem, marketplace: Marketplace, details: ItemDetailAnswers?, draft: GeneratedListingDraft?) {
         let localTakeHomeEstimate = MarketplaceEstimator.estimates(for: item, details: details)
@@ -881,6 +893,13 @@ private struct ListingPricePlan {
             Decimal(1)
         )
         takeHomeEstimate = max((draft?.takeHomeEstimate ?? localTakeHomeEstimate).rounded(scale: 0), Decimal(1))
+        negotiationFloor = max(
+            min(
+                listAt * Self.negotiationFloorMultiplier,
+                likelySellsFor
+            ).rounded(scale: 0),
+            Decimal(1)
+        )
     }
 }
 
