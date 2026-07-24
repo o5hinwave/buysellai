@@ -99,6 +99,14 @@ require_source_contains \
     "cleanEvidenceSources(result.evidenceSources, platform)" \
     "structured evidence source validation"
 require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "detailsForPrompt(details, platform)" \
+    "selected-marketplace seller detail prompt"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "marketplaceNotes: optionalMarketplaceNotes(details.marketplaceNotes)" \
+    "marketplace-specific seller notes"
+require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "{ google_search: {} }" \
     "marketplace compare Google Search tool"
@@ -118,6 +126,10 @@ require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "candidateMarketplaces" \
     "minimal marketplace candidate input"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "marketplaceNoteSummary(details.marketplaceNotes)" \
+    "marketplace-note comparison context"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "For every factual market result you rely on, add one evidenceSources object" \

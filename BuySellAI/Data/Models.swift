@@ -591,6 +591,7 @@ enum ItemDetailFieldKey: String, Codable, Sendable, Hashable {
     case flaws
     case included
     case extraDetails
+    case marketplaceNotes
     case largeOrFragile
 }
 
@@ -600,8 +601,10 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
     var flaws: String
     var included: String
     var extraDetails: String
+    var marketplaceNotes: [Marketplace: String]
     var isLargeOrFragile: Bool
     var answeredFieldKeys: [ItemDetailFieldKey]
+    var answeredMarketplaces: [Marketplace]
 
     init(
         labelOrBrand: String = "",
@@ -609,16 +612,56 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         flaws: String = "",
         included: String = "",
         extraDetails: String = "",
+        marketplaceNotes: [Marketplace: String] = [:],
         isLargeOrFragile: Bool = false,
-        answeredFieldKeys: [ItemDetailFieldKey] = []
+        answeredFieldKeys: [ItemDetailFieldKey] = [],
+        answeredMarketplaces: [Marketplace] = []
     ) {
         self.labelOrBrand = labelOrBrand
         self.sizeOrModel = sizeOrModel
         self.flaws = flaws
         self.included = included
         self.extraDetails = extraDetails
+        self.marketplaceNotes = Self.cleanedMarketplaceNotes(marketplaceNotes)
         self.isLargeOrFragile = isLargeOrFragile
         self.answeredFieldKeys = Self.uniqueFieldKeys(answeredFieldKeys)
+        self.answeredMarketplaces = Self.uniqueMarketplaces(answeredMarketplaces)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedMarketplaceNotes = Self.cleanedMarketplaceNotes(
+            try container.decodeIfPresent([Marketplace: String].self, forKey: .marketplaceNotes) ?? [:]
+        )
+        let decodedAnsweredMarketplaces = try container.decodeIfPresent([Marketplace].self, forKey: .answeredMarketplaces) ?? []
+        let answerMarketplaces = decodedAnsweredMarketplaces.isEmpty
+            ? Array(decodedMarketplaceNotes.keys)
+            : decodedAnsweredMarketplaces
+
+        self.init(
+            labelOrBrand: try container.decodeIfPresent(String.self, forKey: .labelOrBrand) ?? "",
+            sizeOrModel: try container.decodeIfPresent(String.self, forKey: .sizeOrModel) ?? "",
+            flaws: try container.decodeIfPresent(String.self, forKey: .flaws) ?? "",
+            included: try container.decodeIfPresent(String.self, forKey: .included) ?? "",
+            extraDetails: try container.decodeIfPresent(String.self, forKey: .extraDetails) ?? "",
+            marketplaceNotes: decodedMarketplaceNotes,
+            isLargeOrFragile: try container.decodeIfPresent(Bool.self, forKey: .isLargeOrFragile) ?? false,
+            answeredFieldKeys: try container.decodeIfPresent([ItemDetailFieldKey].self, forKey: .answeredFieldKeys) ?? [],
+            answeredMarketplaces: answerMarketplaces
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(labelOrBrand, forKey: .labelOrBrand)
+        try container.encode(sizeOrModel, forKey: .sizeOrModel)
+        try container.encode(flaws, forKey: .flaws)
+        try container.encode(included, forKey: .included)
+        try container.encode(extraDetails, forKey: .extraDetails)
+        try container.encode(marketplaceNotes, forKey: .marketplaceNotes)
+        try container.encode(isLargeOrFragile, forKey: .isLargeOrFragile)
+        try container.encode(answeredFieldKeys, forKey: .answeredFieldKeys)
+        try container.encode(answeredMarketplaces, forKey: .answeredMarketplaces)
     }
 
     var sanitizedForUse: ItemDetailAnswers? {
@@ -628,8 +671,10 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             flaws: Self.clean(flaws, maxLength: 140),
             included: Self.clean(included, maxLength: 120),
             extraDetails: Self.clean(extraDetails, maxLength: 180),
+            marketplaceNotes: Self.cleanedMarketplaceNotes(marketplaceNotes),
             isLargeOrFragile: isLargeOrFragile,
-            answeredFieldKeys: Self.uniqueFieldKeys(answeredFieldKeys)
+            answeredFieldKeys: Self.uniqueFieldKeys(answeredFieldKeys),
+            answeredMarketplaces: Self.uniqueMarketplaces(answeredMarketplaces)
         )
         return clean.hasUsefulDetails ? clean : nil
     }
@@ -645,7 +690,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             sizeOrModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
             flaws.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
             included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
-            extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            marketplaceNotes.values.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
     }
 
     var displayValues: [String] {
@@ -655,6 +701,7 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         appendDisplayValue(flaws, prefix: "Flaws", to: &values)
         appendDisplayValue(included, prefix: "Includes", to: &values)
         appendDisplayValue(extraDetails, prefix: "Other", to: &values)
+        appendMarketplaceNotes(to: &values)
         if isLargeOrFragile {
             values.append("Large or fragile")
         }
@@ -685,6 +732,22 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         answeredFieldKeys.removeAll { $0 == field }
     }
 
+    mutating func setMarketplaceNote(_ value: String, for marketplace: Marketplace) {
+        let cleanValue = Self.clean(value, maxLength: 220)
+        if cleanValue.isEmpty {
+            marketplaceNotes[marketplace] = nil
+            answeredMarketplaces.removeAll { $0 == marketplace }
+        } else {
+            marketplaceNotes[marketplace] = cleanValue
+            markMarketplaceAnswered(marketplace)
+        }
+    }
+
+    mutating func markMarketplaceAnswered(_ marketplace: Marketplace) {
+        guard answeredMarketplaces.contains(marketplace) == false else { return }
+        answeredMarketplaces.append(marketplace)
+    }
+
     func hasAnsweredOrSkipped(_ field: ItemDetailFieldKey) -> Bool {
         let hasConcreteAnswer: Bool
         switch field {
@@ -698,10 +761,21 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             hasConcreteAnswer = included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         case .extraDetails:
             hasConcreteAnswer = extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .marketplaceNotes:
+            hasConcreteAnswer = marketplaceNotes.values.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         case .largeOrFragile:
             hasConcreteAnswer = false
         }
         return hasConcreteAnswer || answeredFieldKeys.contains(field)
+    }
+
+    func marketplaceNote(for marketplace: Marketplace) -> String {
+        marketplaceNotes[marketplace] ?? ""
+    }
+
+    func hasMarketplaceNoteOrSkipped(_ marketplace: Marketplace) -> Bool {
+        marketplaceNote(for: marketplace).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            answeredMarketplaces.contains(marketplace)
     }
 
     private var confirmedDetailCount: Int {
@@ -713,7 +787,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             extraDetails
         ]
             .filter { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
-            .count + (isLargeOrFragile ? 1 : 0)
+            .count + marketplaceNotes.values.filter { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }.count +
+            (isLargeOrFragile ? 1 : 0)
     }
 
     private static func clean(_ value: String, maxLength: Int) -> String {
@@ -730,10 +805,36 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         }
     }
 
+    private static func uniqueMarketplaces(_ values: [Marketplace]) -> [Marketplace] {
+        values.reduce(into: [Marketplace]()) { result, value in
+            guard result.contains(value) == false else { return }
+            result.append(value)
+        }
+    }
+
+    private static func cleanedMarketplaceNotes(_ values: [Marketplace: String]) -> [Marketplace: String] {
+        values.reduce(into: [Marketplace: String]()) { result, entry in
+            let cleanValue = clean(entry.value, maxLength: 220)
+            guard cleanValue.isEmpty == false else { return }
+            result[entry.key] = cleanValue
+        }
+    }
+
     private func appendDisplayValue(_ value: String, prefix: String, to values: inout [String]) {
         let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleanValue.isEmpty == false else { return }
         values.append("\(prefix): \(cleanValue)")
+    }
+
+    private func appendMarketplaceNotes(to values: inout [String]) {
+        Marketplace.allCases.forEach { marketplace in
+            let cleanValue = marketplaceNote(for: marketplace).trimmingCharacters(in: .whitespacesAndNewlines)
+            if cleanValue.isEmpty == false {
+                values.append("\(marketplace.displayName): \(cleanValue)")
+            } else if answeredMarketplaces.contains(marketplace) {
+                values.append("\(marketplace.displayName): \("I don't know".localized)")
+            }
+        }
     }
 
     private func appendHandledValue(_ field: ItemDetailFieldKey, to values: inout [String]) {
@@ -754,6 +855,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             included.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         case .extraDetails:
             extraDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .marketplaceNotes:
+            marketplaceNotes.values.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         case .largeOrFragile:
             isLargeOrFragile
         }
@@ -771,9 +874,23 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             "Includes"
         case .extraDetails:
             "Other"
+        case .marketplaceNotes:
+            "Marketplace"
         case .largeOrFragile:
             "Large or fragile"
         }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case labelOrBrand
+        case sizeOrModel
+        case flaws
+        case included
+        case extraDetails
+        case marketplaceNotes
+        case isLargeOrFragile
+        case answeredFieldKeys
+        case answeredMarketplaces
     }
 }
 

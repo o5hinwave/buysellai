@@ -7,6 +7,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         for path in [
             "supabase/config.toml",
             "supabase/functions/analyze-image/index.ts",
+            "supabase/functions/compare-marketplaces/index.ts",
             "supabase/functions/generate-listing/index.ts",
             "supabase/functions/store-apple-token/index.ts",
             "supabase/functions/delete-account/index.ts",
@@ -226,6 +227,9 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(source.range(of: "referenceImageURL must be a public image URL"))
         XCTAssertNotNil(source.range(of: "Visual web evidence"))
         XCTAssertNotNil(source.range(of: "Seller details"))
+        XCTAssertNotNil(source.range(of: "detailsForPrompt(details, platform)"))
+        XCTAssertNotNil(source.range(of: "marketplaceNotes: optionalMarketplaceNotes(details.marketplaceNotes)"))
+        XCTAssertNotNil(source.range(of: "marketplaceNoteSummary(details.marketplaceNotes, platform)"))
         XCTAssertNotNil(source.range(of: "Saved marketplace research"))
         XCTAssertNotNil(source.range(of: "result[geminiGroundingSourcesKey]"))
         XCTAssertNotNil(source.range(of: "result[geminiGroundingSearchQueriesKey]"))

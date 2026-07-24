@@ -373,6 +373,8 @@ struct ItemQuestionsSheet: View {
             answers.included
         case .extraDetails:
             answers.extraDetails
+        case .marketplaceNote(let marketplace):
+            answers.marketplaceNote(for: marketplace)
         }
     }
 
@@ -388,6 +390,9 @@ struct ItemQuestionsSheet: View {
             answers.included = value
         case .extraDetails:
             answers.extraDetails = value
+        case .marketplaceNote(let marketplace):
+            answers.setMarketplaceNote(value, for: marketplace)
+            return
         }
         if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             answers.clearAnswered(field.detailKey)
@@ -445,7 +450,12 @@ struct ItemQuestionsSheet: View {
     private func markQuestionHandled(_ question: DetailQuestion) {
         switch question.kind {
         case .text(let field):
-            answers.markAnswered(field.detailKey)
+            switch field {
+            case .marketplaceNote(let marketplace):
+                answers.markMarketplaceAnswered(marketplace)
+            default:
+                answers.markAnswered(field.detailKey)
+            }
         case .largeOrFragile:
             answers.markAnswered(.largeOrFragile)
         }
@@ -776,7 +786,7 @@ struct ItemQuestionsSheet: View {
                 detail: "eBay works better when model details and shipping basics are clear.",
                 placeholder: "Model number, shipping weight, fixed price...",
                 systemImage: "number",
-                kind: .text(.extraDetails),
+                kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Fixed price", value: .text("Prefer fixed price")),
                     DetailChoice(title: "Auction", value: .text("Open to auction")),
@@ -791,7 +801,7 @@ struct ItemQuestionsSheet: View {
                 detail: "A pickup area or delivery note keeps local messages easier.",
                 placeholder: "Near downtown, porch pickup, can deliver...",
                 systemImage: "mappin.and.ellipse",
-                kind: .text(.extraDetails),
+                kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Local pickup", value: .text("Local pickup")),
                     DetailChoice(title: "Can deliver", value: .text("Can deliver nearby")),
@@ -820,7 +830,7 @@ struct ItemQuestionsSheet: View {
                 detail: "Age, materials, signature, or maker marks matter on this marketplace.",
                 placeholder: "Vintage, handmade, signed, materials...",
                 systemImage: "sparkles",
-                kind: .text(.extraDetails),
+                kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
                     DetailChoice(title: "Signed or marked", value: .text("Signed or marked")),
@@ -864,7 +874,7 @@ struct ItemQuestionsSheet: View {
                 detail: "Music gear listings need working condition, model, serial, and accessories.",
                 placeholder: "Works, serial, case, cables, power supply...",
                 systemImage: "music.note",
-                kind: .text(.extraDetails),
+                kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Works", value: .text("Works")),
                     DetailChoice(title: "Untested", value: .text("Untested")),
@@ -893,7 +903,7 @@ struct ItemQuestionsSheet: View {
                 detail: "Add one detail a person on this marketplace would expect.",
                 placeholder: "Pickup, shipping, size, model, or material...",
                 systemImage: "list.bullet.rectangle",
-                kind: .text(.extraDetails),
+                kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "No extra detail", value: .text("No extra detail")),
                     DetailChoice(title: "I don't know", value: .unknown)
@@ -1059,6 +1069,7 @@ struct ItemQuestionsSheet: View {
         case flaws
         case included
         case extraDetails
+        case marketplaceNote(Marketplace)
 
         var detailKey: ItemDetailFieldKey {
             switch self {
@@ -1072,6 +1083,8 @@ struct ItemQuestionsSheet: View {
                 .included
             case .extraDetails:
                 .extraDetails
+            case .marketplaceNote:
+                .marketplaceNotes
             }
         }
     }
@@ -1090,6 +1103,9 @@ private struct DetailQuestion: Identifiable, Hashable {
     func isAnswered(in answers: ItemDetailAnswers) -> Bool {
         switch kind {
         case .text(let field):
+            if case .marketplaceNote(let marketplace) = field {
+                return answers.hasMarketplaceNoteOrSkipped(marketplace)
+            }
             return answers.hasAnsweredOrSkipped(field.detailKey)
         case .largeOrFragile:
             return answers.hasAnsweredOrSkipped(.largeOrFragile)

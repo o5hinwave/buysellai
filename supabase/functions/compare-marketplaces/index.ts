@@ -53,6 +53,7 @@ type ListingItemDetails = {
   flaws: string | null;
   included: string | null;
   extraDetails: string | null;
+  marketplaceNotes: Record<string, string>;
   isLargeOrFragile: boolean;
 };
 
@@ -453,6 +454,7 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
     flaws: optionalString(details.flaws, 140),
     included: optionalString(details.included, 120),
     extraDetails: optionalString(details.extraDetails, 180),
+    marketplaceNotes: optionalMarketplaceNotes(details.marketplaceNotes),
     isLargeOrFragile: details.isLargeOrFragile === true,
   };
 
@@ -462,12 +464,28 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
     cleanDetails.flaws === null &&
     cleanDetails.included === null &&
     cleanDetails.extraDetails === null &&
+    Object.keys(cleanDetails.marketplaceNotes).length === 0 &&
     cleanDetails.isLargeOrFragile === false
   ) {
     return null;
   }
 
   return cleanDetails;
+}
+
+function optionalMarketplaceNotes(value: unknown): Record<string, string> {
+  const record = recordOrNull(value);
+  if (!record) return {};
+
+  const notes: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(record)) {
+    const marketplace = key.toLowerCase();
+    if (!knownMarketplaceIdSet.has(marketplace)) continue;
+    const text = optionalString(entry, 220);
+    if (!text) continue;
+    notes[marketplace] = text;
+  }
+  return notes;
 }
 
 function requireCandidateMarketplaces(value: unknown): MarketplaceId[] {
@@ -497,8 +515,19 @@ function detailsForPrompt(details: ListingItemDetails | null): string {
     details.flaws ? `Flaws or damage: ${details.flaws}` : "",
     details.included ? `Included items: ${details.included}` : "",
     details.extraDetails ? `Extra seller note: ${details.extraDetails}` : "",
+    marketplaceNoteSummary(details.marketplaceNotes),
     details.isLargeOrFragile ? "Shipping note: big, heavy, or fragile" : "",
   ].filter((line) => line.length > 0).join("; ") || "none";
+}
+
+function marketplaceNoteSummary(notes: Record<string, string>): string {
+  const values = Object.entries(notes)
+    .slice(0, 4)
+    .map(([marketplace, value]) => {
+      const displayName = marketplaceDisplayNames[marketplace as MarketplaceId] ?? marketplace;
+      return `${displayName}: ${value}`;
+    });
+  return values.length > 0 ? `Marketplace notes: ${values.join(" | ")}` : "";
 }
 
 function requireCategory(value: unknown): string {

@@ -51,7 +51,7 @@ serve(async (request) => {
           `Condition: ${item.condition}`,
           `Original price: ${item.originalPrice}`,
           `Current price: ${item.currentPrice}`,
-          `Seller details: ${detailsForPrompt(details)}`,
+          `Seller details: ${detailsForPrompt(details, platform)}`,
         ].join("\n"),
       }];
     const result = await generateListingDraftJson({
@@ -107,6 +107,7 @@ type ListingItemDetails = {
   flaws: string | null;
   included: string | null;
   extraDetails: string | null;
+  marketplaceNotes: Record<string, string>;
   isLargeOrFragile: boolean;
 };
 
@@ -499,7 +500,7 @@ function researchIdentity(
   return parts.join(" ").slice(0, 160) || item.name;
 }
 
-function detailsForPrompt(details: ListingItemDetails | null): string {
+function detailsForPrompt(details: ListingItemDetails | null, platform: MarketplaceId): string {
   if (!details) return "none";
   const lines = [
     details.labelOrBrand ? `Brand or maker: ${details.labelOrBrand}` : "",
@@ -507,9 +508,24 @@ function detailsForPrompt(details: ListingItemDetails | null): string {
     details.flaws ? `Flaws or damage: ${details.flaws}` : "",
     details.included ? `Included items: ${details.included}` : "",
     details.extraDetails ? `Extra seller note: ${details.extraDetails}` : "",
+    details.marketplaceNotes[platform]
+      ? `${marketplaceDisplayNames[platform] ?? platform} seller note: ${details.marketplaceNotes[platform]}`
+      : "",
+    marketplaceNoteSummary(details.marketplaceNotes, platform),
     details.isLargeOrFragile ? "Shipping note: big, heavy, or fragile" : "",
   ].filter((value) => value.length > 0);
   return lines.length ? lines.join("; ") : "none";
+}
+
+function marketplaceNoteSummary(notes: Record<string, string>, currentPlatform: MarketplaceId): string {
+  const values = Object.entries(notes)
+    .filter(([marketplace, value]) => marketplace !== currentPlatform && value.trim().length > 0)
+    .slice(0, 3)
+    .map(([marketplace, value]) => {
+      const displayName = marketplaceDisplayNames[marketplace as MarketplaceId] ?? marketplace;
+      return `${displayName}: ${value}`;
+    });
+  return values.length > 0 ? `Other marketplace notes: ${values.join(" | ")}` : "";
 }
 
 async function fetchVisionWebDetectionEvidence(
@@ -938,6 +954,7 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
     flaws: optionalString(details.flaws, 140),
     included: optionalString(details.included, 120),
     extraDetails: optionalString(details.extraDetails, 180),
+    marketplaceNotes: optionalMarketplaceNotes(details.marketplaceNotes),
     isLargeOrFragile: details.isLargeOrFragile === true,
   };
 
@@ -947,12 +964,28 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
     cleanDetails.flaws === null &&
     cleanDetails.included === null &&
     cleanDetails.extraDetails === null &&
+    Object.keys(cleanDetails.marketplaceNotes).length === 0 &&
     cleanDetails.isLargeOrFragile === false
   ) {
     return null;
   }
 
   return cleanDetails;
+}
+
+function optionalMarketplaceNotes(value: unknown): Record<string, string> {
+  const record = recordOrNull(value);
+  if (!record) return {};
+
+  const notes: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(record)) {
+    const marketplace = key.toLowerCase();
+    if (!knownMarketplaceIdSet.has(marketplace)) continue;
+    const text = optionalString(entry, 220);
+    if (!text) continue;
+    notes[marketplace] = text;
+  }
+  return notes;
 }
 
 function optionalImageDataUrl(value: unknown): ImageDataUrl | null {

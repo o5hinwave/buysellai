@@ -636,6 +636,7 @@ private struct ListingItemDetailsPayload: Encodable {
     let flaws: String?
     let included: String?
     let extraDetails: String?
+    let marketplaceNotes: [String: String]?
     let isLargeOrFragile: Bool
 
     init(details: ItemDetailAnswers) {
@@ -644,12 +645,21 @@ private struct ListingItemDetailsPayload: Encodable {
         flaws = Self.optional(details.flaws)
         included = Self.optional(details.included)
         extraDetails = Self.optional(details.extraDetails)
+        marketplaceNotes = Self.marketplaceNotes(details.marketplaceNotes)
         isLargeOrFragile = details.isLargeOrFragile
     }
 
     private static func optional(_ value: String) -> String? {
         let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return cleanValue.isEmpty ? nil : cleanValue
+    }
+
+    private static func marketplaceNotes(_ values: [Marketplace: String]) -> [String: String]? {
+        let cleanValues = values.reduce(into: [String: String]()) { result, entry in
+            guard let cleanValue = optional(entry.value) else { return }
+            result[entry.key.rawValue] = cleanValue
+        }
+        return cleanValues.isEmpty ? nil : cleanValues
     }
 }
 

@@ -86,4 +86,63 @@ final class ModelFormattingTests: XCTestCase {
         XCTAssertEqual(confirmed.marketplaceFactQualityBonus, 4)
         XCTAssertEqual(confirmed.displayValues, ["Brand: Stiffel", "Large or fragile: No"])
     }
+
+    func testItemDetailAnswersKeepMarketplaceNotesSeparate() throws {
+        var answers = ItemDetailAnswers(extraDetails: "Brass finish")
+
+        answers.setMarketplaceNote("Prefer fixed price", for: .ebay)
+        answers.markMarketplaceAnswered(.facebook)
+
+        let sanitized = try XCTUnwrap(answers.sanitizedForUse)
+        XCTAssertEqual(sanitized.extraDetails, "Brass finish")
+        XCTAssertEqual(sanitized.marketplaceNote(for: .ebay), "Prefer fixed price")
+        XCTAssertTrue(sanitized.hasMarketplaceNoteOrSkipped(.ebay))
+        XCTAssertTrue(sanitized.hasMarketplaceNoteOrSkipped(.facebook))
+        XCTAssertFalse(sanitized.hasMarketplaceNoteOrSkipped(.poshmark))
+        XCTAssertEqual(sanitized.marketplaceFactQualityBonus, 8)
+        XCTAssertEqual(
+            sanitized.displayValues,
+            [
+                "Other: Brass finish",
+                "eBay: Prefer fixed price",
+                "Facebook: I don't know"
+            ]
+        )
+    }
+
+    func testItemDetailAnswersDecodeOldPayloadWithoutMarketplaceNotes() throws {
+        let data = Data(
+            """
+            {
+              "labelOrBrand": "Stiffel",
+              "sizeOrModel": "",
+              "flaws": "",
+              "included": "",
+              "extraDetails": "",
+              "isLargeOrFragile": false,
+              "answeredFieldKeys": ["labelOrBrand"]
+            }
+            """.utf8
+        )
+
+        let decoded = try JSONDecoder().decode(ItemDetailAnswers.self, from: data)
+        XCTAssertEqual(decoded.labelOrBrand, "Stiffel")
+        XCTAssertTrue(decoded.marketplaceNotes.isEmpty)
+        XCTAssertTrue(decoded.answeredMarketplaces.isEmpty)
+    }
+
+    func testItemDetailAnswersRoundTripMarketplaceNotes() throws {
+        let answers = ItemDetailAnswers(
+            marketplaceNotes: [.ebay: "Prefer fixed price", .facebook: "Can deliver nearby"],
+            answeredMarketplaces: [.ebay, .facebook]
+        )
+
+        let data = try JSONEncoder().encode(answers)
+        let decoded = try JSONDecoder().decode(ItemDetailAnswers.self, from: data)
+
+        XCTAssertEqual(decoded.marketplaceNote(for: .ebay), "Prefer fixed price")
+        XCTAssertEqual(decoded.marketplaceNote(for: .facebook), "Can deliver nearby")
+        XCTAssertTrue(decoded.hasMarketplaceNoteOrSkipped(.ebay))
+        XCTAssertTrue(decoded.hasMarketplaceNoteOrSkipped(.facebook))
+    }
 }

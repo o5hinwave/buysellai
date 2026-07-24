@@ -184,6 +184,8 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(details["flaws"] as? String, "Small scratch")
             XCTAssertEqual(details["included"] as? String, "Shade")
             XCTAssertEqual(details["extraDetails"] as? String, "Brass finish")
+            let marketplaceNotes = try XCTUnwrap(details["marketplaceNotes"] as? [String: String])
+            XCTAssertEqual(marketplaceNotes, ["ebay": "Prefer fixed price"])
             XCTAssertEqual(details["isLargeOrFragile"] as? Bool, true)
             let imageDataURL = try XCTUnwrap(json["imageDataUrl"] as? String)
             XCTAssertTrue(imageDataURL.hasPrefix("data:image/jpeg;base64,"))
@@ -202,6 +204,7 @@ final class APIClientTests: XCTestCase {
                 flaws: "Small scratch",
                 included: "Shade",
                 extraDetails: "Brass finish",
+                marketplaceNotes: [.ebay: "Prefer fixed price"],
                 isLargeOrFragile: true
             ),
             imageData: ImageTools.sampleJPEG(),
