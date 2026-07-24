@@ -197,6 +197,11 @@ struct ListingSheet: View {
                     systemImage: "lightbulb.fill",
                     detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
                 )
+                marketplaceTipRow(
+                    title: "Shipping or pickup",
+                    systemImage: "shippingbox.fill",
+                    detail: fulfillmentRecommendation
+                )
                 if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
                     marketplaceTipRow(
                         title: "Details to include",
@@ -560,6 +565,11 @@ struct ListingSheet: View {
             value: pricePlan.negotiationFloor.currency(code: context.item.currencyCode),
             systemImage: "arrow.down.circle.fill"
         ))
+        fields.append(ListingCopyField(
+            title: "Shipping or pickup",
+            value: fulfillmentRecommendation,
+            systemImage: "shippingbox.fill"
+        ))
         fields.appendIfPresent(
             title: "Details",
             value: joinedDraftValues(draft?.itemSpecifics),
@@ -789,6 +799,30 @@ struct ListingSheet: View {
         store.draft?.firstPhoto ?? context.marketplace.optimizationProfile.photoGuidance
     }
 
+    private var fulfillmentRecommendation: String {
+        let userNote = context.marketplace.savedFulfillmentNote(in: context.details)
+        if userNote.isEmpty == false {
+            return userNote
+        }
+
+        let profile = context.marketplace.optimizationProfile
+        let localFit = profile.localPickupFit(for: context.item)
+        let shippingFit = profile.shippingFit(for: context.item)
+        let isLocalMarketplace = context.marketplace.prefersLocalPickup
+        let needsPickup = (context.details?.isLargeOrFragile ?? false) || context.item.localPickupNeedScore >= 72
+
+        if isLocalMarketplace || (needsPickup && localFit >= shippingFit) {
+            return "Use local pickup. Add your pickup area and whether delivery is available.".localized
+        }
+        if shippingFit <= 48 {
+            return "Prefer pickup. Shipping may be risky for this item.".localized
+        }
+        if shippingFit >= 76 {
+            return "Shipping should work. Pack it well and show any flaws in the photos.".localized
+        }
+        return "Shipping is okay. Offer pickup too if it is easy.".localized
+    }
+
     private var pricePlan: ListingPricePlan {
         ListingPricePlan(item: context.item, marketplace: context.marketplace, details: context.details, draft: store.draft)
     }
@@ -900,6 +934,21 @@ private struct ListingPricePlan {
             ).rounded(scale: 0),
             Decimal(1)
         )
+    }
+}
+
+private extension Marketplace {
+    var prefersLocalPickup: Bool {
+        switch self {
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            true
+        default:
+            false
+        }
+    }
+
+    func savedFulfillmentNote(in details: ItemDetailAnswers?) -> String {
+        details?.marketplaceNote(for: self).trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 }
 

@@ -576,6 +576,8 @@
 	<string>Type DELETE to confirm.</string>
 	<key>Use back camera</key>
 	<string>Use back camera</string>
+	<key>Use local pickup. Add your pickup area and whether delivery is available.</key>
+	<string>Use local pickup. Add your pickup area and whether delivery is available.</string>
 	<key>Use front camera</key>
 	<string>Use front camera</string>
 	<key>Use the ready listing wherever you sell.</key>
@@ -904,6 +906,8 @@
 	<string>Phones and tech need working condition, storage, carrier, and battery notes.</string>
 	<key>Pickup, shipping, size, model, or material...</key>
 	<string>Pickup, shipping, size, model, or material...</string>
+	<key>Prefer pickup. Shipping may be risky for this item.</key>
+	<string>Prefer pickup. Shipping may be risky for this item.</string>
 	<key>Price clue</key>
 	<string>Price clue</string>
 	<key>Question progress</key>
@@ -920,6 +924,12 @@
 	<string>Set, card number, foil, condition...</string>
 	<key>Shipping</key>
 	<string>Shipping</string>
+	<key>Shipping is okay. Offer pickup too if it is easy.</key>
+	<string>Shipping is okay. Offer pickup too if it is easy.</string>
+	<key>Shipping or pickup</key>
+	<string>Shipping or pickup</string>
+	<key>Shipping should work. Pack it well and show any flaws in the photos.</key>
+	<string>Shipping should work. Pack it well and show any flaws in the photos.</string>
 	<key>Signed or marked</key>
 	<string>Signed or marked</string>
 	<key>Signed, numbered, framed...</key>
