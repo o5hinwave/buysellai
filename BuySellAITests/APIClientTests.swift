@@ -242,7 +242,29 @@ final class APIClientTests: XCTestCase {
                         "pricingStrategy": "List at $45 and accept $38 or more if pickup is easy.",
                         "evidenceSummary": "Checked sold and active comparable brass lamps.",
                         "referenceImageURL": "https://example.com/lamp.jpg",
-                        "publicImageQuery": "vintage brass table lamp"
+                        "publicImageQuery": "vintage brass table lamp",
+                        "evidenceSources": [
+                          {
+                            "sourceMarketplace": "eBay",
+                            "title": "Sold brass table lamp",
+                            "url": "https://example.com/sold-lamp",
+                            "dateChecked": "2026-07-24",
+                            "listingStatus": "sold",
+                            "conditionAndVariant": "Good brass lamp",
+                            "comparability": "Close match",
+                            "price": 42
+                          },
+                          {
+                            "sourceMarketplace": "eBay",
+                            "title": "Sold brass table lamp",
+                            "url": "https://example.com/sold-lamp",
+                            "dateChecked": "2026-07-24",
+                            "listingStatus": "sold",
+                            "conditionAndVariant": "Good brass lamp",
+                            "comparability": "Close match",
+                            "price": 42
+                          }
+                        ]
                       }
                     }
                     """.utf8
@@ -273,6 +295,16 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(payload.draft?.evidenceSummary, "Checked sold and active comparable brass lamps.")
         XCTAssertEqual(payload.draft?.referenceImageURL, "https://example.com/lamp.jpg")
         XCTAssertEqual(payload.draft?.publicImageQuery, "vintage brass table lamp")
+        XCTAssertEqual(payload.draft?.evidenceSources?.count, 1)
+        let evidenceSource = try XCTUnwrap(payload.draft?.evidenceSources?.first)
+        XCTAssertEqual(evidenceSource.sourceMarketplace, "eBay")
+        XCTAssertEqual(evidenceSource.title, "Sold brass table lamp")
+        XCTAssertEqual(evidenceSource.url, "https://example.com/sold-lamp")
+        XCTAssertEqual(evidenceSource.dateChecked, "2026-07-24")
+        XCTAssertEqual(evidenceSource.listingStatus, "sold")
+        XCTAssertEqual(evidenceSource.conditionAndVariant, "Good brass lamp")
+        XCTAssertEqual(evidenceSource.comparability, "Close match")
+        XCTAssertEqual(evidenceSource.price, Decimal(42))
     }
 
     func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {

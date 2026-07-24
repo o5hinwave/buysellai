@@ -264,6 +264,97 @@ struct GeneratedListing: Sendable, Equatable {
     }
 }
 
+struct ListingEvidenceSource: Codable, Identifiable, Sendable, Equatable, Hashable {
+    var sourceMarketplace: String? = nil
+    var title: String? = nil
+    var url: String? = nil
+    var dateChecked: String? = nil
+    var listingStatus: String? = nil
+    var conditionAndVariant: String? = nil
+    var comparability: String? = nil
+    var price: Decimal? = nil
+
+    var id: String {
+        [
+            sourceMarketplace,
+            title,
+            url,
+            dateChecked,
+            listingStatus,
+            conditionAndVariant,
+            comparability,
+            price.map { NSDecimalNumber(decimal: $0).stringValue }
+        ]
+            .compactMap { $0 }
+            .joined(separator: "|")
+    }
+
+    func sanitizedForDisplay() -> ListingEvidenceSource? {
+        let sanitized = ListingEvidenceSource(
+            sourceMarketplace: clean(sourceMarketplace, maxLength: 48),
+            title: clean(title, maxLength: 120),
+            url: cleanReferenceURL(url),
+            dateChecked: clean(dateChecked, maxLength: 32),
+            listingStatus: clean(listingStatus, maxLength: 32),
+            conditionAndVariant: clean(conditionAndVariant, maxLength: 100),
+            comparability: clean(comparability, maxLength: 72),
+            price: positive(price)
+        )
+
+        guard sanitized.sourceMarketplace != nil ||
+            sanitized.title != nil ||
+            sanitized.url != nil ||
+            sanitized.dateChecked != nil ||
+            sanitized.listingStatus != nil ||
+            sanitized.conditionAndVariant != nil ||
+            sanitized.comparability != nil ||
+            sanitized.price != nil
+        else {
+            return nil
+        }
+
+        return sanitized
+    }
+
+    func detailLine(currencyCode: String) -> String {
+        [
+            listingStatus,
+            price.map { $0.currency(code: currencyCode) },
+            conditionAndVariant,
+            comparability,
+            dateChecked.map { String.localizedFormat("Checked %@", $0) }
+        ]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+    }
+
+    private func clean(_ value: String?, maxLength: Int) -> String? {
+        guard let value else { return nil }
+        let collapsedWhitespace = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard collapsedWhitespace.isEmpty == false,
+              collapsedWhitespace.contains("```") == false
+        else { return nil }
+        return String(collapsedWhitespace.prefix(maxLength))
+    }
+
+    private func positive(_ value: Decimal?) -> Decimal? {
+        guard let value, value > 0 else { return nil }
+        return value.rounded(scale: 2)
+    }
+
+    private func cleanReferenceURL(_ value: String?) -> String? {
+        guard let cleanURL = clean(value, maxLength: 500),
+              let url = URL(string: cleanURL),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http",
+              url.host?.isEmpty == false
+        else { return nil }
+        return cleanURL
+    }
+}
+
 struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
     var labelOrBrand: String
     var sizeOrModel: String
@@ -368,6 +459,7 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
     var evidenceSummary: String? = nil
     var referenceImageURL: String? = nil
     var publicImageQuery: String? = nil
+    var evidenceSources: [ListingEvidenceSource]? = nil
 
     var copyableListingText: String? {
         guard let title = clean(title, maxLength: 120),
@@ -402,7 +494,8 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
             pricingStrategy: clean(pricingStrategy, maxLength: 220),
             evidenceSummary: clean(evidenceSummary, maxLength: 260),
             referenceImageURL: cleanReferenceURL(referenceImageURL),
-            publicImageQuery: clean(publicImageQuery, maxLength: 140)
+            publicImageQuery: clean(publicImageQuery, maxLength: 140),
+            evidenceSources: cleanEvidenceSources(evidenceSources)
         )
 
         if sanitized.title == nil,
@@ -421,6 +514,7 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
            sanitized.evidenceSummary == nil,
            sanitized.referenceImageURL == nil,
            sanitized.publicImageQuery == nil,
+           sanitized.evidenceSources?.isEmpty ?? true,
            sanitized.postingNotes?.isEmpty ?? true,
            sanitized.itemSpecifics?.isEmpty ?? true,
            sanitized.tags?.isEmpty ?? true {
@@ -447,6 +541,16 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
             .compactMap { clean($0, maxLength: maxLength) }
             .reduce(into: [String]()) { result, value in
                 guard result.contains(value) == false, result.count < maxItems else { return }
+                result.append(value)
+        }
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
+    private func cleanEvidenceSources(_ values: [ListingEvidenceSource]?) -> [ListingEvidenceSource]? {
+        let cleaned = (values ?? [])
+            .compactMap { $0.sanitizedForDisplay() }
+            .reduce(into: [ListingEvidenceSource]()) { result, value in
+                guard result.contains(where: { $0.id == value.id }) == false, result.count < 4 else { return }
                 result.append(value)
             }
         return cleaned.isEmpty ? nil : cleaned

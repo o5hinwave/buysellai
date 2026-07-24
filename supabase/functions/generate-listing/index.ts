@@ -141,6 +141,18 @@ type StructuredListingDraft = {
   evidenceSummary: string | null;
   referenceImageURL: string | null;
   publicImageQuery: string | null;
+  evidenceSources: StructuredEvidenceSource[];
+};
+
+type StructuredEvidenceSource = {
+  sourceMarketplace: string | null;
+  title: string | null;
+  url: string | null;
+  dateChecked: string | null;
+  listingStatus: string | null;
+  conditionAndVariant: string | null;
+  comparability: string | null;
+  price: number | null;
 };
 
 type GenerateListingDraftJsonInput = {
@@ -234,7 +246,7 @@ function listingSystemInstruction(
     "Do not return a listing field, markdown, preambles, watermarks, or section headings.",
     "Required fields: title, description, listPrice, likelySalePrice, takeHomeEstimate, firstPhoto, fitReason.",
     "Optional fields: missingPhotoPrompt, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
-    "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery.",
+    "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery, evidenceSources.",
     "title must be body text only and description must be body text only.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
     usesCachedResearch
@@ -244,6 +256,8 @@ function listingSystemInstruction(
     "After the item identity is known, use grounded search for real marketplace fees, sold/completed comps, comparable price history, and marketplace rules.",
     "Distinguish sold/completed comps from active asking prices. Use compLowPrice, compHighPrice, and compMedianPrice only when grounded evidence supports them.",
     "If only active listings or weak matches are available, explain the limitation in evidenceSummary and leave unsupported comp price fields empty.",
+    "For every factual market result you rely on, add one evidenceSources object with sourceMarketplace, title, url when available, dateChecked, listingStatus sold/active/official/reference, conditionAndVariant, comparability, and price when grounded.",
+    "Do not add evidenceSources entries for guessed prices, unsupported comps, or unverified marketplace claims.",
     "Use seller details and visual web evidence when present. Never invent brand, model, size, defects, sold prices, fees, or public image URLs.",
     "referenceImageURL must be a public image URL from visual web evidence or grounded search that is clearly the same or a close comparable item. Leave it empty if uncertain.",
     "pricingStrategy should be a plain instruction for a non-expert seller: where to list, what offer range to accept, and why.",
@@ -292,7 +306,7 @@ async function generateListingDraftJson(
               "Grounded research returned no final draft text.",
               "Create the listing from only the item facts, marketplace profile guidance, and saved research shown above.",
               "Do not claim current fees, sold prices, public image URLs, rarity, brand, model, size, or defects unless those facts are already provided.",
-              "Leave unsupported comp, fee, evidence, referenceImageURL, and publicImageQuery fields empty.",
+              "Leave unsupported comp, fee, evidence, evidenceSources, referenceImageURL, and publicImageQuery fields empty.",
             ].join(" "),
           },
         ],
@@ -344,6 +358,22 @@ function listingDraftResponseSchema(): Record<string, unknown> {
       evidenceSummary: { type: "STRING" },
       referenceImageURL: { type: "STRING" },
       publicImageQuery: { type: "STRING" },
+      evidenceSources: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            sourceMarketplace: { type: "STRING" },
+            title: { type: "STRING" },
+            url: { type: "STRING" },
+            dateChecked: { type: "STRING" },
+            listingStatus: { type: "STRING" },
+            conditionAndVariant: { type: "STRING" },
+            comparability: { type: "STRING" },
+            price: { type: "NUMBER", minimum: 1 },
+          },
+        },
+      },
       researchSummary: { type: "STRING" },
       usefulFindings: {
         type: "ARRAY",
@@ -401,6 +431,7 @@ function deterministicListingDraft(
     itemSpecifics: [],
     tags: [],
     evidenceSummary: "Current marketplace research returned no final draft, so this uses only the item facts provided.",
+    evidenceSources: [],
   };
 }
 
@@ -1036,6 +1067,7 @@ function requireStructuredListingDraft(
   const compLowPrice = optionalPositiveNumber(result.compLowPrice);
   const compHighPrice = optionalPositiveNumber(result.compHighPrice);
   const compMedianPrice = optionalPositiveNumber(result.compMedianPrice);
+  const evidenceSources = cleanEvidenceSources(result.evidenceSources, platform);
 
   return {
     title,
@@ -1057,6 +1089,7 @@ function requireStructuredListingDraft(
     evidenceSummary: optionalCleanDraftText(result.evidenceSummary, 260),
     referenceImageURL: optionalReferenceImageURL(result.referenceImageURL),
     publicImageQuery: optionalCleanDraftText(result.publicImageQuery, 140),
+    evidenceSources,
   };
 }
 
@@ -1146,6 +1179,97 @@ function optionalReferenceImageURL(value: unknown): string | null {
     return url.toString();
   } catch {
     return null;
+  }
+}
+
+function cleanEvidenceSources(value: unknown, platform: MarketplaceId): StructuredEvidenceSource[] {
+  if (!Array.isArray(value)) return [];
+  const sources: StructuredEvidenceSource[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of value) {
+    const record = recordOrNull(entry);
+    if (!record) continue;
+
+    const url = optionalReferenceImageURL(record.url ?? record.sourceUrl ?? record.sourceURL);
+    const rawSourceMarketplace = optionalCleanDraftText(
+      record.sourceMarketplace ?? record.marketplace,
+      48,
+    );
+    const title = optionalCleanDraftText(record.title ?? record.sourceTitle, 120);
+    const dateChecked = optionalCleanDraftText(record.dateChecked ?? record.checkedDate, 32);
+    const listingStatus = cleanListingStatus(record.listingStatus ?? record.status ?? record.sourceType);
+    const conditionAndVariant = optionalCleanDraftText(
+      record.conditionAndVariant ?? record.conditionVariant ?? record.variant,
+      100,
+    );
+    const comparability = optionalCleanDraftText(record.comparability ?? record.confidence, 72);
+    const price = optionalPositiveNumber(record.price ?? record.soldPrice ?? record.activePrice);
+
+    if (
+      !rawSourceMarketplace &&
+      !title &&
+      !url &&
+      !dateChecked &&
+      !listingStatus &&
+      !conditionAndVariant &&
+      !comparability &&
+      price === null
+    ) {
+      continue;
+    }
+
+    const sourceMarketplace = rawSourceMarketplace ?? marketplaceDisplayNames[platform] ?? platform;
+    const key = [
+      sourceMarketplace,
+      title,
+      url,
+      dateChecked,
+      listingStatus,
+      conditionAndVariant,
+      comparability,
+      price?.toString() ?? "",
+    ].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    sources.push({
+      sourceMarketplace,
+      title,
+      url,
+      dateChecked,
+      listingStatus,
+      conditionAndVariant,
+      comparability,
+      price,
+    });
+
+    if (sources.length >= 4) break;
+  }
+
+  return sources;
+}
+
+function cleanListingStatus(value: unknown): string | null {
+  const text = optionalCleanDraftText(value, 32);
+  if (!text) return null;
+  switch (normalizedIdentifier(text)) {
+    case "sold":
+    case "completed":
+    case "soldcompleted":
+      return "Sold";
+    case "active":
+    case "asking":
+      return "Active";
+    case "official":
+    case "officialmarketplace":
+      return "Official";
+    case "reference":
+    case "image":
+    case "referenceimage":
+      return "Reference";
+    default:
+      return text;
   }
 }
 

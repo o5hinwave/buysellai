@@ -127,6 +127,9 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "listing research tools: google_search url_context gated-by-cache"))
         XCTAssertNotNil(script.range(of: "listing research cache: Gemini grounding saved"))
         XCTAssertNotNil(script.range(of: "listing draft: structured fields formatted deterministically"))
+        XCTAssertNotNil(script.range(of: "listing evidence sources: structured source/date/status/comparability"))
+        XCTAssertNotNil(script.range(of: "cleanEvidenceSources(result.evidenceSources, platform)"))
+        XCTAssertNotNil(script.range(of: "For every factual market result you rely on, add one evidenceSources object"))
     }
 
     func testSupabaseSchemaStaticCheckScriptCoversRLSGrantsIndexesAndSwiftParity() throws {

@@ -338,6 +338,11 @@ struct ListingSheet: View {
                         detail: compRangeText
                     )
                 }
+                if let evidenceSources = store.draft?.evidenceSources {
+                    ForEach(evidenceSources) { source in
+                        evidenceSourceRow(source)
+                    }
+                }
                 evidenceDetailRow(
                     title: "Fee source",
                     systemImage: "doc.text.magnifyingglass",
@@ -475,6 +480,27 @@ struct ListingSheet: View {
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }
         .accessibilityLabel(title.localized)
+    }
+
+    private func evidenceSourceRow(_ source: ListingEvidenceSource) -> some View {
+        let detail = source.detailLine(currencyCode: context.item.currencyCode)
+        let sourceDetail = [
+            source.title,
+            detail.isEmpty ? nil : detail
+        ]
+            .compactMap { $0 }
+            .joined(separator: "\n")
+        return VStack(alignment: .leading, spacing: Spacing.xs) {
+            evidenceDetailRow(
+                title: source.sourceMarketplace ?? "Source",
+                systemImage: "list.clipboard",
+                detail: sourceDetail.isEmpty ? "Source details".localized : sourceDetail
+            )
+            if let urlString = source.url, let url = URL(string: urlString) {
+                evidenceLink(title: "Open source", systemImage: "safari", url: url)
+                    .padding(.leading, dynamicTypeSize.isAccessibilitySize ? 0 : 28)
+            }
+        }
     }
 
     private func joinedDraftValues(_ values: [String]?) -> String? {

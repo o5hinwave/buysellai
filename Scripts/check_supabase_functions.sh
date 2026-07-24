@@ -93,6 +93,14 @@ require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "return jsonResponse({ listing, draft })" \
     "structured draft response"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "cleanEvidenceSources(result.evidenceSources, platform)" \
+    "structured evidence source validation"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "For every factual market result you rely on, add one evidenceSources object" \
+    "structured evidence source instruction"
 require_source_not_contains \
     "supabase/functions/generate-listing/index.ts" \
     "List at:" \
@@ -107,3 +115,4 @@ printf 'functions: analyze-image generate-listing store-apple-token delete-accou
 printf 'listing research tools: google_search url_context gated-by-cache\n'
 printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
+printf 'listing evidence sources: structured source/date/status/comparability\n'
