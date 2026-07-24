@@ -960,23 +960,57 @@
 	<string>Best overall</string>
 	<key>Easy shipping</key>
 	<string>Easy shipping</string>
+	<key>Evidence</key>
+	<string>Evidence</string>
 	<key>Easiest option</key>
 	<string>Easiest option</string>
+	<key>Fee note</key>
+	<string>Fee note</string>
+	<key>Fee source</key>
+	<string>Fee source</string>
 	<key>Fast sale</key>
 	<string>Fast sale</string>
 	<key>Fastest sale</key>
 	<string>Fastest sale</string>
+	<key>From %@</key>
+	<string>From %@</string>
+	<key>Image search</key>
+	<string>Image search</string>
+	<key>Last checked</key>
+	<string>Last checked</string>
 	<key>List around %@</key>
 	<string>List around %@</string>
+	<key>Market check</key>
+	<string>Market check</string>
 	<key>Most money</key>
 	<string>Most money</string>
+	<key>Open fee source</key>
+	<string>Open fee source</string>
+	<key>Open reference image</key>
+	<string>Open reference image</string>
 	<key>Pack carefully</key>
 	<string>Pack carefully</string>
+	<key>Reference only</key>
+	<string>Reference only</string>
 	<key>Shipping okay</key>
 	<string>Shipping okay</string>
+	<key>Shows the checks behind this listing.</key>
+	<string>Shows the checks behind this listing.</string>
 	<key>Slower sale</key>
 	<string>Slower sale</string>
+	<key>Sold range</key>
+	<string>Sold range</string>
 	<key>Steady sale</key>
 	<string>Steady sale</string>
+	<key>Typical %@</key>
+	<string>Typical %@</string>
+	<key>Up to %@</key>
+	<string>Up to %@</string>
+	<key>Use this to check the item, not as a listing photo.</key>
+	<string>Use this to check the item, not as a listing photo.</string>
+	<key>%@ to %@</key>
+	<string>%@ to %@</string>
+	<key>%@, typical %@</key>
+	<string>%@, typical %@</string>
 </dict>
 </plist>

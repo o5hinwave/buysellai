@@ -365,7 +365,24 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Local pickup",
             "Easy shipping",
             "Pack carefully",
-            "Shipping okay"
+            "Shipping okay",
+            "Evidence",
+            "Market check",
+            "Sold range",
+            "Fee source",
+            "Last checked",
+            "Fee note",
+            "Image search",
+            "Reference only",
+            "Open reference image",
+            "Open fee source",
+            "Shows the checks behind this listing.",
+            "Use this to check the item, not as a listing photo.",
+            "%@ to %@",
+            "%@, typical %@",
+            "Typical %@",
+            "From %@",
+            "Up to %@"
         ] {
             XCTAssertEqual(localizedStrings[cue], cue)
         }

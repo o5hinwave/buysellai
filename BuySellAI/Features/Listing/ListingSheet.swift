@@ -10,6 +10,7 @@ struct ListingSheet: View {
     @State private var store: ListingStore
     @State private var generationTask: Task<Void, Never>?
     @State private var generationTaskID = UUID()
+    @State private var isEvidenceExpanded = false
 
     init(context: ListingContext) {
         self.context = context
@@ -147,6 +148,9 @@ struct ListingSheet: View {
                     }
                 }
             }
+            Section {
+                evidenceDisclosure
+            }
             Section("Quick tips".localized) {
                 if let feeSummary = store.draft?.feeSummary {
                     marketplaceTipRow(
@@ -198,13 +202,6 @@ struct ListingSheet: View {
                         title: "Tags",
                         systemImage: "tag",
                         detail: tags
-                    )
-                }
-                if let evidenceSummary = store.draft?.evidenceSummary {
-                    marketplaceTipRow(
-                        title: "Checked",
-                        systemImage: "magnifyingglass",
-                        detail: evidenceSummary
                     )
                 }
             }
@@ -324,6 +321,68 @@ struct ListingSheet: View {
             store.draft?.compHighPrice != nil
     }
 
+    private var evidenceDisclosure: some View {
+        DisclosureGroup(isExpanded: $isEvidenceExpanded) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                if let evidenceSummary = store.draft?.evidenceSummary {
+                    evidenceDetailRow(
+                        title: "Market check",
+                        systemImage: "magnifyingglass",
+                        detail: evidenceSummary
+                    )
+                }
+                if let compRangeText {
+                    evidenceDetailRow(
+                        title: "Sold range",
+                        systemImage: "chart.line.uptrend.xyaxis",
+                        detail: compRangeText
+                    )
+                }
+                evidenceDetailRow(
+                    title: "Fee source",
+                    systemImage: "doc.text.magnifyingglass",
+                    detail: context.marketplace.playbookEvidence.feeModelSourceTitle
+                )
+                evidenceDetailRow(
+                    title: "Last checked",
+                    systemImage: "calendar",
+                    detail: context.marketplace.playbookEvidence.feeModelLastChecked
+                )
+                evidenceDetailRow(
+                    title: "Fee note",
+                    systemImage: "percent",
+                    detail: context.marketplace.playbookEvidence.feeModelSummary
+                )
+                if let publicImageQuery = store.draft?.publicImageQuery {
+                    evidenceDetailRow(
+                        title: "Image search",
+                        systemImage: "photo.on.rectangle",
+                        detail: publicImageQuery
+                    )
+                }
+                if let referenceImageURL {
+                    evidenceDetailRow(
+                        title: "Reference only",
+                        systemImage: "photo.badge.checkmark",
+                        detail: "Use this to check the item, not as a listing photo.".localized
+                    )
+                    evidenceLink(title: "Open reference image", systemImage: "safari", url: referenceImageURL)
+                }
+                if let feeSourceURL {
+                    evidenceLink(title: "Open fee source", systemImage: "safari", url: feeSourceURL)
+                }
+            }
+            .padding(.top, Spacing.sm)
+        } label: {
+            Label("Evidence".localized, systemImage: "checkmark.shield")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.EvidenceDisclosure")
+        .accessibilityLabel("Evidence".localized)
+        .accessibilityHint("Shows the checks behind this listing.".localized)
+    }
+
     private var listingText: some View {
         Text(store.listingText)
             .font(.body)
@@ -374,6 +433,48 @@ struct ListingSheet: View {
         .padding(.vertical, Spacing.xxs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+    }
+
+    @ViewBuilder
+    private func evidenceDetailRow(title: String, systemImage: String, detail: String) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Label(title.localized, systemImage: systemImage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.md) {
+                Label(title.localized, systemImage: systemImage)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                    .frame(minWidth: 112, alignment: .leading)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+        }
+    }
+
+    private func evidenceLink(title: String, systemImage: String, url: URL) -> some View {
+        Link(destination: url) {
+            Label(title.localized, systemImage: systemImage)
+                .font(.body)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+        .accessibilityLabel(title.localized)
     }
 
     private func joinedDraftValues(_ values: [String]?) -> String? {
@@ -561,6 +662,47 @@ struct ListingSheet: View {
 
     private var pricePlan: ListingPricePlan {
         ListingPricePlan(item: context.item, marketplace: context.marketplace, details: context.details, draft: store.draft)
+    }
+
+    private var compRangeText: String? {
+        let draft = store.draft
+        let low = draft?.compLowPrice
+        let median = draft?.compMedianPrice
+        let high = draft?.compHighPrice
+        if let low, let high {
+            let range = String.localizedFormat(
+                "%@ to %@",
+                low.currency(code: context.item.currencyCode),
+                high.currency(code: context.item.currencyCode)
+            )
+            if let median {
+                return String.localizedFormat(
+                    "%@, typical %@",
+                    range,
+                    median.currency(code: context.item.currencyCode)
+                )
+            }
+            return range
+        }
+        if let median {
+            return String.localizedFormat("Typical %@", median.currency(code: context.item.currencyCode))
+        }
+        if let low {
+            return String.localizedFormat("From %@", low.currency(code: context.item.currencyCode))
+        }
+        if let high {
+            return String.localizedFormat("Up to %@", high.currency(code: context.item.currencyCode))
+        }
+        return nil
+    }
+
+    private var feeSourceURL: URL? {
+        URL(string: context.marketplace.playbookEvidence.feeModelSourceURL)
+    }
+
+    private var referenceImageURL: URL? {
+        guard let referenceImageURL = store.draft?.referenceImageURL else { return nil }
+        return URL(string: referenceImageURL)
     }
 
     private var sheetContentMaxWidth: CGFloat {
