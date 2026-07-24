@@ -1205,6 +1205,12 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(row.range(of: #"payoutCircle(size: MarketplaceRowLayout.accessibilityPayoutCircleSize)"#))
         XCTAssertNotNil(row.range(of: #".padding(.leading, MarketplaceRowLayout.iconSize + Spacing.md)"#))
         XCTAssertNotNil(row.range(of: #".frame(minHeight: 44)"#))
+        let payoutStart = try XCTUnwrap(row.range(of: #"private func payoutCircle(size: CGFloat) -> some View"#))
+        let payoutEnd = try XCTUnwrap(row.range(of: #"private var regularDeltaLabel: some View"#, range: payoutStart.upperBound..<row.endIndex))
+        let payoutSource = row[payoutStart.lowerBound..<payoutEnd.lowerBound]
+        XCTAssertNotNil(payoutSource.range(of: #".foregroundStyle(Color.brand.foreground)"#))
+        XCTAssertNotNil(payoutSource.range(of: #".background(Circle().stroke(Color.brand.borderStrong.opacity(0.82), lineWidth: 1))"#))
+        XCTAssertNil(payoutSource.range(of: #"Color.brand.primary"#))
         XCTAssertNotNil(row.range(of: #"NativeMaterialRoundedBackground("#))
         XCTAssertNotNil(row.range(of: #"tintOpacity: 0.7"#))
         XCTAssertNotNil(row.range(of: #"dynamicTypeSize.isAccessibilitySize ? MarketplaceRowLayout.accessibilityRowMinHeight : MarketplaceRowLayout.rowMinHeight"#))

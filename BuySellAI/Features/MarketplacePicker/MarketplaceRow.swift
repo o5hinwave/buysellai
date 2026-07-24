@@ -155,11 +155,11 @@ struct MarketplaceRow: View {
     private func payoutCircle(size: CGFloat) -> some View {
         Text(estimate.payout.currency())
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.brand.primaryText)
+            .foregroundStyle(Color.brand.foreground)
             .lineLimit(1)
             .minimumScaleFactor(0.72)
             .frame(width: size, height: size)
-            .background(Circle().stroke(Color.brand.primary, lineWidth: 1.5))
+            .background(Circle().stroke(Color.brand.borderStrong.opacity(0.82), lineWidth: 1))
     }
 
     private var regularDeltaLabel: some View {
