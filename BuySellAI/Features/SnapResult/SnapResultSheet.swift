@@ -102,7 +102,7 @@ struct SnapResultSheet: View {
                         Haptics.impact(.light)
                         retryAnalysis()
                     } label: {
-                        Label("Retry".localized, systemImage: "arrow.clockwise")
+                        Label("Retry".localized, systemImage: AppSymbol.Action.retry)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
@@ -524,7 +524,7 @@ struct SnapResultSheet: View {
 
     private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
-            Image(systemName: "magnifyingglass.circle.fill")
+            Image(systemName: AppSymbol.Flow.complete)
                 .foregroundStyle(Color.brand.primaryText)
                 .accessibilityHidden(true)
 
@@ -660,7 +660,7 @@ struct SnapResultSheet: View {
             Haptics.impact(.light)
             appStore.retakePhoto(keeping: context.preferredMarketplace)
         } label: {
-            Label("Wrong item — retake".localized, systemImage: "camera.rotate")
+            Label("Wrong item — retake".localized, systemImage: AppSymbol.Action.retakePhoto)
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
@@ -673,7 +673,7 @@ struct SnapResultSheet: View {
             Haptics.impact(.light)
             retryAnalysis()
         } label: {
-            Label("Try again".localized, systemImage: "arrow.clockwise")
+            Label("Try again".localized, systemImage: AppSymbol.Action.retry)
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
@@ -721,7 +721,7 @@ struct SnapResultSheet: View {
                 .accessibilityLabel(category.display)
             }
         } label: {
-            SnapResultMenuLabel(title: "Change category", systemImage: "tag.fill", maxWidth: sheetContentMaxWidth)
+            SnapResultMenuLabel(title: "Change category", systemImage: AppSymbol.Action.category, maxWidth: sheetContentMaxWidth)
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
@@ -776,11 +776,11 @@ struct SnapResultSheet: View {
 
     private func conditionMenuItemIcon(for condition: Condition) -> String {
         switch condition {
-        case .new: "checkmark.seal.fill"
-        case .likeNew: "checkmark.circle.fill"
-        case .good: "hand.thumbsup.fill"
-        case .fair: "exclamationmark.circle.fill"
-        case .forParts: "wrench.fill"
+        case .new: AppSymbol.Condition.newItem
+        case .likeNew: AppSymbol.Condition.likeNew
+        case .good: AppSymbol.Condition.good
+        case .fair: AppSymbol.Condition.fair
+        case .forParts: AppSymbol.Condition.forParts
         }
     }
 
@@ -877,7 +877,7 @@ struct SnapResultSheet: View {
                 Haptics.impact(.light)
                 appStore.retakePhoto(keeping: context.preferredMarketplace)
             } label: {
-                Label("Retake photo".localized, systemImage: "camera.rotate")
+                Label("Retake photo".localized, systemImage: AppSymbol.Action.retakePhoto)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -888,7 +888,7 @@ struct SnapResultSheet: View {
                 Haptics.impact(.light)
                 retryAnalysis()
             } label: {
-                Label("Try again".localized, systemImage: "arrow.clockwise")
+                Label("Try again".localized, systemImage: AppSymbol.Action.retry)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -1079,7 +1079,7 @@ struct PhotoThumbnail: View {
             )
 
             VStack(spacing: placeholderSpacing) {
-                Image(systemName: category?.placeholderSystemImage ?? "camera.fill")
+                Image(systemName: category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact)
                     .font(.system(size: iconSize, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.brand.primaryText)

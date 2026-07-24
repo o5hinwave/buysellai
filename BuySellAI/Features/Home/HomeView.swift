@@ -20,9 +20,9 @@ struct HomeView: View {
                 }
 
                 Section {
-                    HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.fill")
-                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "message.fill")
-                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc.fill")
+                    HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: AppSymbol.Flow.snapPhotoCompact)
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: AppSymbol.Flow.answer)
+                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: AppSymbol.Flow.copy)
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
                         appStore.presentTutorial()
@@ -370,7 +370,7 @@ private struct HomeHeroCameraGlyph: View {
                         .stroke(Color.brand.border.opacity(0.82), lineWidth: 1)
                 }
 
-            Image(systemName: "camera.viewfinder")
+            Image(systemName: AppSymbol.Flow.snapPhoto)
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.foreground)
@@ -417,11 +417,11 @@ private struct HomeHeroLoopBadge: View {
 private struct HomeHeroIconTrail: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
-            HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
+            HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.snapPhotoCompact, isPrimary: true)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "message.fill", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.answer, isPrimary: false)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "doc.on.doc.fill", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.copy, isPrimary: false)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Photo. Answer. Copy.".localized)
@@ -511,7 +511,7 @@ private struct HomeStepRow: View {
 private struct EmptyHistoryView: View {
     var body: some View {
         ContentUnavailableView {
-            Label("No listings yet".localized, systemImage: "doc.text.fill")
+            Label("No listings yet".localized, systemImage: AppSymbol.Flow.savedListing)
         } description: {
             Text("Copy a listing and it will appear here.".localized)
         }
@@ -591,7 +591,7 @@ private struct HomeHowItWorksRow: View {
             showTutorial()
         } label: {
             HStack(spacing: Spacing.md) {
-                Image(systemName: "info.circle.fill")
+                Image(systemName: AppSymbol.Flow.help)
                     .brandSymbol(.controlIcon)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.brand.foreground)

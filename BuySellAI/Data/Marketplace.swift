@@ -233,33 +233,33 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
     var iconSystemName: String {
         switch self {
         case .ebay, .amazon, .shopify, .bonanza:
-            "cart.fill"
+            AppSymbol.Marketplace.cart
         case .craigslist, .offerup, .nextdoor:
-            "mappin.circle.fill"
+            AppSymbol.Marketplace.local
         case .facebook:
-            "person.2.fill"
+            AppSymbol.Marketplace.people
         case .poshmark, .depop, .grailed, .kidizen, .vinted, .curtsy:
-            "tshirt.fill"
+            AppSymbol.Marketplace.fashion
         case .mercari:
-            "shippingbox.fill"
+            AppSymbol.Marketplace.package
         case .whatnot:
-            "play.rectangle.fill"
+            AppSymbol.Marketplace.video
         case .reverb:
-            "music.note"
+            AppSymbol.Marketplace.music
         case .etsy:
-            "paintpalette.fill"
+            AppSymbol.Marketplace.art
         case .stockx, .goat:
-            "checkmark.seal.fill"
+            AppSymbol.Marketplace.verified
         case .vestiaire, .therealreal, .tradesy:
-            "handbag.fill"
+            AppSymbol.Marketplace.luxury
         case .swappa:
-            "iphone"
+            AppSymbol.Marketplace.phone
         case .chairish:
-            "house.fill"
+            AppSymbol.Marketplace.home
         case .rubylane:
-            "building.columns.fill"
+            AppSymbol.Marketplace.vintage
         case .tcgplayer:
-            "rectangle.stack.fill"
+            AppSymbol.Marketplace.cards
         }
     }
 

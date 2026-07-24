@@ -113,13 +113,13 @@ struct ListingSheet: View {
             Section("Photos to take".localized) {
                 photoChecklistRow(
                     title: "First photo",
-                    systemImage: "camera.fill",
+                    systemImage: AppSymbol.Flow.snapPhotoCompact,
                     detail: primaryPhotoGuidance
                 )
                 if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
                     photoChecklistRow(
                         title: "Add one more photo",
-                        systemImage: "plus.viewfinder",
+                        systemImage: AppSymbol.Action.addPhoto,
                         detail: missingPhotoPrompt
                     )
                 }
@@ -199,7 +199,7 @@ struct ListingSheet: View {
                 )
                 marketplaceTipRow(
                     title: "Shipping or pickup",
-                    systemImage: "shippingbox.fill",
+                    systemImage: AppSymbol.Marketplace.package,
                     detail: fulfillmentRecommendation
                 )
                 if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
@@ -219,7 +219,7 @@ struct ListingSheet: View {
                 if let tags = joinedDraftValues(store.draft?.tags) {
                     marketplaceTipRow(
                         title: "Tags",
-                        systemImage: "tag.fill",
+                        systemImage: AppSymbol.Action.category,
                         detail: tags
                     )
                 }
@@ -233,7 +233,7 @@ struct ListingSheet: View {
 
     private var loading: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            Label("Writing your listing…".localized, systemImage: "pencil.and.outline")
+            Label("Writing your listing…".localized, systemImage: AppSymbol.Action.composeListing)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
 
@@ -346,7 +346,7 @@ struct ListingSheet: View {
                 if let evidenceSummary = store.draft?.evidenceSummary {
                     evidenceDetailRow(
                         title: "Market check",
-                        systemImage: "magnifyingglass",
+                    systemImage: AppSymbol.Action.search,
                         detail: evidenceSummary
                     )
                 }
@@ -370,7 +370,7 @@ struct ListingSheet: View {
                 }
                 evidenceDetailRow(
                     title: "Fee source",
-                    systemImage: "doc.text.fill",
+                    systemImage: AppSymbol.Flow.savedListing,
                     detail: context.marketplace.playbookEvidence.feeModelSourceTitle
                 )
                 evidenceDetailRow(
@@ -437,7 +437,7 @@ struct ListingSheet: View {
 
                 Spacer(minLength: Spacing.sm)
 
-                Label("Copy".localized, systemImage: "doc.on.doc.fill")
+                Label("Copy".localized, systemImage: AppSymbol.Flow.copy)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.brand.primaryText)
                     .labelStyle(.titleAndIcon)
@@ -564,7 +564,7 @@ struct ListingSheet: View {
         fields.append(ListingCopyField(
             title: "Price",
             value: pricePlan.listAt.currency(code: context.item.currencyCode),
-            systemImage: "tag.fill"
+            systemImage: AppSymbol.Action.category
         ))
         fields.append(ListingCopyField(
             title: "Lowest to take",
@@ -574,7 +574,7 @@ struct ListingSheet: View {
         fields.append(ListingCopyField(
             title: "Shipping or pickup",
             value: fulfillmentRecommendation,
-            systemImage: "shippingbox.fill"
+            systemImage: AppSymbol.Marketplace.package
         ))
         fields.appendIfPresent(
             title: "Details",
@@ -635,7 +635,7 @@ struct ListingSheet: View {
                 Haptics.impact(.light)
                 regenerateListing()
             } label: {
-                Label("Regenerate".localized, systemImage: "arrow.clockwise")
+                Label("Regenerate".localized, systemImage: AppSymbol.Action.retry)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
@@ -647,7 +647,7 @@ struct ListingSheet: View {
                 Haptics.impact(.light)
                 retakePhoto()
             } label: {
-                Label("Wrong item — retake".localized, systemImage: "camera.rotate")
+                Label("Wrong item — retake".localized, systemImage: AppSymbol.Action.retakePhoto)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
@@ -677,7 +677,7 @@ struct ListingSheet: View {
             Button {
                 copyListing()
             } label: {
-                Label("Copy listing".localized, systemImage: "doc.on.doc.fill")
+                Label("Copy listing".localized, systemImage: AppSymbol.Flow.copy)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
@@ -694,20 +694,20 @@ struct ListingSheet: View {
 
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: Spacing.sm) {
-                    secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
+                    secondaryActionButton(title: "Wrong item — retake", systemImage: AppSymbol.Action.retakePhoto) {
                         retakePhoto()
                     }
-                    secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise") {
+                    secondaryActionButton(title: "Regenerate", systemImage: AppSymbol.Action.retry) {
                         regenerateListing()
                     }
                 }
                 .accessibilitySortPriority(2)
             } else {
                 HStack(spacing: Spacing.sm) {
-                    secondaryActionButton(title: "Wrong item — retake", systemImage: "camera.rotate") {
+                    secondaryActionButton(title: "Wrong item — retake", systemImage: AppSymbol.Action.retakePhoto) {
                         retakePhoto()
                     }
-                    secondaryActionButton(title: "Regenerate", systemImage: "arrow.clockwise") {
+                    secondaryActionButton(title: "Regenerate", systemImage: AppSymbol.Action.retry) {
                         regenerateListing()
                     }
                 }

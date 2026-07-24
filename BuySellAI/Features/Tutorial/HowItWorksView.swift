@@ -150,7 +150,7 @@ private struct CompactGuideGraphic: View {
                 }
                 .modifier(AppShadow.raised())
 
-            Image(systemName: "camera.viewfinder")
+            Image(systemName: AppSymbol.Flow.snapPhoto)
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.primaryText)
@@ -158,15 +158,15 @@ private struct CompactGuideGraphic: View {
 
             VStack {
                 HStack {
-                    Image(systemName: "message.fill")
+                    Image(systemName: AppSymbol.Flow.answer)
                     Spacer()
-                    Image(systemName: "doc.on.doc.fill")
+                    Image(systemName: AppSymbol.Flow.copy)
                 }
                 Spacer()
                 HStack {
-                    Image(systemName: "tag.fill")
+                    Image(systemName: AppSymbol.Action.category)
                     Spacer()
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: AppSymbol.Flow.complete)
                 }
             }
             .font(.caption.weight(.semibold))
@@ -263,19 +263,19 @@ private struct TutorialStep: Identifiable {
     static let steps = [
         TutorialStep(
             id: 1,
-            systemImage: "camera.fill",
+            systemImage: AppSymbol.Flow.snapPhotoCompact,
             title: "Take a clear photo",
             detail: "Fit the whole item in the frame."
         ),
         TutorialStep(
             id: 2,
-            systemImage: "message.fill",
+            systemImage: AppSymbol.Flow.answer,
             title: "Answer a few questions",
             detail: "Tap I don't know anytime."
         ),
         TutorialStep(
             id: 3,
-            systemImage: "doc.on.doc.fill",
+            systemImage: AppSymbol.Flow.copy,
             title: "Copy the listing",
             detail: "Paste it into the marketplace when you are ready."
         )

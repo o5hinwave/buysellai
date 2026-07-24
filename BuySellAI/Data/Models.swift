@@ -89,37 +89,37 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
     var placeholderSystemImage: String {
         switch self {
         case .electronics:
-            "iphone"
+            AppSymbol.Item.electronics
         case .furniture, .home:
-            "house.fill"
+            AppSymbol.Item.home
         case .clothing:
-            "tshirt.fill"
+            AppSymbol.Item.clothing
         case .shoes:
-            "shoeprints.fill"
+            AppSymbol.Item.shoes
         case .bags:
-            "handbag.fill"
+            AppSymbol.Item.bags
         case .jewelry:
-            "diamond.fill"
+            AppSymbol.Item.jewelry
         case .toys:
-            "gamecontroller.fill"
+            AppSymbol.Item.toys
         case .kids:
-            "teddybear.fill"
+            AppSymbol.Item.kids
         case .tools:
-            "wrench.and.screwdriver.fill"
+            AppSymbol.Item.tools
         case .sports:
-            "basketball.fill"
+            AppSymbol.Item.sports
         case .books:
-            "books.vertical.fill"
+            AppSymbol.Item.books
         case .media:
-            "play.rectangle.fill"
+            AppSymbol.Item.media
         case .music:
-            "music.note"
+            AppSymbol.Item.music
         case .collectibles:
-            "star.fill"
+            AppSymbol.Item.collectibles
         case .art:
-            "paintpalette.fill"
+            AppSymbol.Item.art
         case .other:
-            "shippingbox.fill"
+            AppSymbol.Item.other
         }
     }
 

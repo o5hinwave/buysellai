@@ -262,18 +262,18 @@ struct ItemQuestionsSheet: View {
 
     private var savedDetailRows: [SavedDetailRow] {
         var rows: [SavedDetailRow] = []
-        appendSavedTextRow(title: "Brand", value: answers.labelOrBrand, field: .labelOrBrand, systemImage: "tag.fill", to: &rows)
+        appendSavedTextRow(title: "Brand", value: answers.labelOrBrand, field: .labelOrBrand, systemImage: AppSymbol.Action.category, to: &rows)
         appendSavedTextRow(title: "Size/model", value: answers.sizeOrModel, field: .sizeOrModel, systemImage: "ruler", to: &rows)
-        appendSavedTextRow(title: "Flaws", value: answers.flaws, field: .flaws, systemImage: "exclamationmark.circle.fill", to: &rows)
-        appendSavedTextRow(title: "Includes", value: answers.included, field: .included, systemImage: "shippingbox.fill", to: &rows)
-        appendSavedTextRow(title: "Other", value: answers.extraDetails, field: .extraDetails, systemImage: "text.bubble.fill", to: &rows)
+        appendSavedTextRow(title: "Flaws", value: answers.flaws, field: .flaws, systemImage: AppSymbol.Condition.fair, to: &rows)
+        appendSavedTextRow(title: "Includes", value: answers.included, field: .included, systemImage: AppSymbol.Marketplace.package, to: &rows)
+        appendSavedTextRow(title: "Other", value: answers.extraDetails, field: .extraDetails, systemImage: AppSymbol.Flow.answer, to: &rows)
         appendSavedMarketplaceRows(to: &rows)
 
         if answers.isLargeOrFragile || answers.answeredFieldKeys.contains(.largeOrFragile) {
             rows.append(SavedDetailRow(
                 title: "Large or fragile",
                 value: answers.isLargeOrFragile ? "Yes".localized : "No".localized,
-                systemImage: "shippingbox.fill",
+                systemImage: AppSymbol.Marketplace.package,
                 target: .largeOrFragile
             ))
         }
@@ -420,7 +420,7 @@ struct ItemQuestionsSheet: View {
 
     private var primaryActionSystemImage: String {
         if isLastQuestion {
-            return context.preferredMarketplace == nil ? "magnifyingglass" : "pencil.and.outline"
+            return context.preferredMarketplace == nil ? AppSymbol.Action.search : AppSymbol.Action.composeListing
         }
         return "chevron.right"
     }
@@ -736,7 +736,7 @@ struct ItemQuestionsSheet: View {
                 fact
             ),
             placeholder: brandPlaceholder(for: category),
-            systemImage: "tag.fill",
+            systemImage: AppSymbol.Action.category,
             kind: .text(.labelOrBrand),
             choices: [
                 DetailChoice(title: "No visible label", value: .text("No visible label")),
@@ -791,7 +791,7 @@ struct ItemQuestionsSheet: View {
                 fact
             ),
             placeholder: includedPlaceholder(for: category),
-            systemImage: "shippingbox.fill",
+            systemImage: AppSymbol.Marketplace.package,
             kind: .text(.included),
             choices: [
                 DetailChoice(title: "Item only", value: .text("Item only")),
@@ -808,7 +808,7 @@ struct ItemQuestionsSheet: View {
             title: "Do you see a brand, maker, or label?",
             detail: "A name on a tag, sticker, stamp, or logo can change the search and price.",
             placeholder: brandPlaceholder(for: category),
-            systemImage: "tag.fill",
+            systemImage: AppSymbol.Action.category,
             kind: .text(.labelOrBrand),
             choices: [
                 DetailChoice(title: "No label", value: .text("No visible label")),
@@ -837,7 +837,7 @@ struct ItemQuestionsSheet: View {
             title: "Any flaws someone should see?",
             detail: "Scratches, stains, missing parts, or wear keep the listing honest.",
             placeholder: "Scratch, stain, missing piece...",
-            systemImage: "exclamationmark.circle.fill",
+            systemImage: AppSymbol.Condition.fair,
             kind: .text(.flaws),
             choices: [
                 DetailChoice(title: "No visible flaws", value: .text("No visible flaws")),
@@ -854,7 +854,7 @@ struct ItemQuestionsSheet: View {
             title: "What comes with it?",
             detail: includedQuestionDetail(for: category),
             placeholder: includedPlaceholder(for: category),
-            systemImage: "shippingbox.fill",
+            systemImage: AppSymbol.Marketplace.package,
             kind: .text(.included),
             choices: [
                 DetailChoice(title: "Item only", value: .text("Item only")),
@@ -871,7 +871,7 @@ struct ItemQuestionsSheet: View {
             title: "Anything else worth saying?",
             detail: "Only add what someone can see, measure, or trust.",
             placeholder: extraDetailPlaceholder(for: category),
-            systemImage: "text.bubble.fill",
+            systemImage: AppSymbol.Flow.answer,
             kind: .text(.extraDetails),
             choices: [
                 DetailChoice(title: "No extra detail", value: .text("No extra detail")),
@@ -915,7 +915,7 @@ struct ItemQuestionsSheet: View {
             title: largeOrFragileTitle(for: category),
             detail: "This helps BuySell decide whether local pickup beats shipping.",
             placeholder: "",
-            systemImage: "shippingbox.fill",
+            systemImage: AppSymbol.Marketplace.package,
             kind: .largeOrFragile,
             choices: [
                 DetailChoice(title: "Yes", value: .largeFragile(true)),
@@ -949,7 +949,7 @@ struct ItemQuestionsSheet: View {
                 title: "How should pickup work?",
                 detail: "A pickup area or delivery note keeps local messages easier.",
                 placeholder: "Near downtown, porch pickup, can deliver...",
-                systemImage: "mappin.and.ellipse",
+                systemImage: AppSymbol.Marketplace.local,
                 kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Local pickup", value: .text("Local pickup")),
@@ -964,7 +964,7 @@ struct ItemQuestionsSheet: View {
                 title: "What size or material is on the tag?",
                 detail: "Fashion listings need the tag, fit, and any fabric details people can trust.",
                 placeholder: "Women's M, leather, 32 x 30...",
-                systemImage: "tag.fill",
+                systemImage: AppSymbol.Action.category,
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "No size tag", value: .text("No visible size tag")),
@@ -978,7 +978,7 @@ struct ItemQuestionsSheet: View {
                 title: "Is it vintage, handmade, or signed?",
                 detail: "Age, materials, signature, or maker marks matter on this marketplace.",
                 placeholder: "Vintage, handmade, signed, materials...",
-                systemImage: "paintpalette.fill",
+                systemImage: AppSymbol.Marketplace.art,
                 kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Looks vintage", value: .text("Looks vintage")),
@@ -993,7 +993,7 @@ struct ItemQuestionsSheet: View {
                 title: "Do you know the SKU, size, or box condition?",
                 detail: "Exact model, size, box, and authenticity details matter here.",
                 placeholder: "SKU, size, original box, box damage...",
-                systemImage: "checkmark.seal.fill",
+                systemImage: AppSymbol.Marketplace.verified,
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "Original box", value: .text("Original box included")),
@@ -1008,7 +1008,7 @@ struct ItemQuestionsSheet: View {
                 title: "Does it turn on and is it unlocked?",
                 detail: "Phones and tech need working condition, storage, carrier, and battery notes.",
                 placeholder: "Turns on, unlocked, 128 GB, battery health...",
-                systemImage: "iphone",
+                systemImage: AppSymbol.Marketplace.phone,
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "Turns on", value: .text("Turns on")),
@@ -1022,7 +1022,7 @@ struct ItemQuestionsSheet: View {
                 title: "Does it work, and what comes with it?",
                 detail: "Music gear listings need working condition, model, serial, and accessories.",
                 placeholder: "Works, serial, case, cables, power supply...",
-                systemImage: "music.note",
+                systemImage: AppSymbol.Marketplace.music,
                 kind: .text(.marketplaceNote(marketplace)),
                 choices: [
                     DetailChoice(title: "Works", value: .text("Works")),
@@ -1037,7 +1037,7 @@ struct ItemQuestionsSheet: View {
                 title: "What set, number, or card condition do you know?",
                 detail: "Trading cards need exact set and condition before price is reliable.",
                 placeholder: "Set, card number, foil, condition...",
-                systemImage: "rectangle.stack.fill",
+                systemImage: AppSymbol.Marketplace.cards,
                 kind: .text(.sizeOrModel),
                 choices: [
                     DetailChoice(title: "Sleeved", value: .text("Sleeved")),
@@ -1141,13 +1141,13 @@ struct ItemQuestionsSheet: View {
     private static func specQuestionSymbol(for category: Category) -> String {
         switch category {
         case .electronics:
-            return "iphone"
+            return AppSymbol.Item.electronics
         case .furniture, .home, .art:
             return "ruler"
         case .clothing, .shoes, .bags, .jewelry, .kids:
-            return "tag.fill"
+            return AppSymbol.Action.category
         case .music:
-            return "music.note"
+            return AppSymbol.Item.music
         case .collectibles:
             return "number.circle.fill"
         default:

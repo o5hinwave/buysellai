@@ -5,7 +5,7 @@ final class HapticRoutingTests: XCTestCase {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Listing/ListingSheet.swift"), encoding: .utf8)
 
         XCTAssertTrue(
-            source.contains(#"Label("Copy listing".localized, systemImage: "doc.on.doc.fill")"#)
+            source.contains(#"Label("Copy listing".localized, systemImage: AppSymbol.Flow.copy)"#)
                 && source.contains(".disabled(copyableListingText.isEmpty)")
                 && source.contains("copyListing()"),
             "Copy listing should stay a native action wired to the validated copy path."

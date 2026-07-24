@@ -9,6 +9,7 @@ repo_root="$(cd "${script_dir}/.." && pwd)"
 material_source="${repo_root}/BuySellAI/Design/NativeMaterialSurface.swift"
 buttons_source="${repo_root}/BuySellAI/Design/Buttons.swift"
 chips_source="${repo_root}/BuySellAI/Design/Chips.swift"
+app_symbol_source="${repo_root}/BuySellAI/Design/AppSymbol.swift"
 home_source="${repo_root}/BuySellAI/Features/Home/HomeView.swift"
 camera_source="${repo_root}/BuySellAI/Features/Camera/CameraView.swift"
 auth_source="${repo_root}/BuySellAI/Features/Auth/AuthView.swift"
@@ -65,6 +66,12 @@ require_chips_marker() {
     local marker="$1"
 
     grep -Fq "$marker" "$chips_source" || fail "Chips.swift is missing '$marker'"
+}
+
+require_app_symbol_marker() {
+    local marker="$1"
+
+    grep -Fq "$marker" "$app_symbol_source" || fail "AppSymbol.swift is missing '$marker'"
 }
 
 require_home_marker() {
@@ -176,22 +183,27 @@ reject_buttons_marker "struct SecondaryPillButton"
 reject_buttons_marker "struct GhostButton"
 require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
+require_app_symbol_marker "enum AppSymbol"
+require_app_symbol_marker "static let familiarSellingSymbols"
+require_app_symbol_marker 'static let snapPhoto = "camera.viewfinder"'
+require_app_symbol_marker 'static let answer = "message.fill"'
+require_app_symbol_marker 'static let copy = "doc.on.doc.fill"'
 require_home_marker ".listStyle(.insetGrouped)"
 require_home_marker "HomeCameraHeroMark(startSnapFlow: startSnapFlow)"
 require_home_marker "HomePearlCardSheen(cornerRadius: Radius.xl)"
 require_home_marker "HomeHeroIconTrail()"
 require_home_marker "HomeHeroLoopBadge()"
-require_home_marker 'HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)'
-require_home_marker 'HomeHeroTrailSymbol(systemImage: "message.fill", isPrimary: false)'
-require_home_marker 'HomeHeroTrailSymbol(systemImage: "doc.on.doc.fill", isPrimary: false)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.snapPhotoCompact, isPrimary: true)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.answer, isPrimary: false)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: AppSymbol.Flow.copy, isPrimary: false)'
 require_home_marker 'Section("Recent listings".localized)'
-require_home_marker 'Label("No listings yet".localized, systemImage: "doc.text.fill")'
+require_home_marker 'Label("No listings yet".localized, systemImage: AppSymbol.Flow.savedListing)'
 require_home_marker "HomeStepRow(number: 1"
 require_home_marker "HomeStepRow(number: 2"
 require_home_marker "HomeStepRow(number: 3"
-require_home_marker 'systemImage: "message.fill"'
-require_home_marker 'systemImage: "doc.on.doc.fill"'
-require_home_marker 'Image(systemName: "info.circle.fill")'
+require_home_marker "systemImage: AppSymbol.Flow.answer"
+require_home_marker "systemImage: AppSymbol.Flow.copy"
+require_home_marker "Image(systemName: AppSymbol.Flow.help)"
 require_home_marker ".symbolRenderingMode(.hierarchical)"
 require_home_marker "HomeHowItWorksRow"
 require_home_marker ".toolbar {"

@@ -92,7 +92,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             .nextdoor: "mappin.circle.fill",
             .amazon: "cart.fill",
             .shopify: "cart.fill",
-            .rubylane: "building.columns.fill",
+            .rubylane: "clock.fill",
             .tcgplayer: "rectangle.stack.fill"
         ]
 
@@ -101,6 +101,10 @@ final class MarketplaceEstimatorTests: XCTestCase {
         for marketplace in Marketplace.allCases {
             XCTAssertEqual(marketplace.iconSystemName, expectedSymbols[marketplace], marketplace.displayName)
             XCTAssertFalse(marketplace.iconSystemName.isEmpty, marketplace.displayName)
+            XCTAssertTrue(
+                AppSymbol.familiarSellingSymbols.contains(marketplace.iconSystemName),
+                "\(marketplace.displayName) should use the shared familiar icon vocabulary."
+            )
         }
     }
 

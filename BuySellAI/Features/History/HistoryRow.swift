@@ -100,7 +100,7 @@ private struct HistoryPhotoPlaceholder: View {
             .frame(width: HistoryRowLayout.thumbnailSize, height: HistoryRowLayout.thumbnailSize)
             .overlay {
                 VStack(spacing: 1) {
-                    Image(systemName: category?.placeholderSystemImage ?? "camera.fill")
+                    Image(systemName: category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact)
                         .font(.system(size: 19, weight: .semibold))
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(Color.brand.primaryText)
