@@ -403,6 +403,11 @@ struct SnapResultSheet: View {
                     .foregroundStyle(Color.brand.primaryText)
             }
 
+            Text("Use these to check the item. Keep your own photos for the listing.".localized)
+                .font(.caption)
+                .foregroundStyle(Color.brand.foregroundSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
                     ForEach(Array(images.enumerated()), id: \.offset) { _, image in
@@ -474,13 +479,14 @@ struct SnapResultSheet: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(referenceImageAccessibilityLabel(image))
+        .accessibilityHint("Use this to check the item, not as a listing photo.".localized)
     }
 
     private func referenceImageAccessibilityLabel(_ image: AnalyzeReferenceImage) -> String {
         if let source = image.source {
-            return String.localizedFormat("%@, %@, %@", "Reference image".localized, image.title, source)
+            return String.localizedFormat("%@, %@, %@, %@", "Reference image".localized, "For checking only".localized, image.title, source)
         }
-        return String.localizedFormat("%@, %@", "Reference image".localized, image.title)
+        return String.localizedFormat("%@, %@, %@", "Reference image".localized, "For checking only".localized, image.title)
     }
 
     private func likelyMatchButton(_ match: AnalyzeLikelyMatch) -> some View {

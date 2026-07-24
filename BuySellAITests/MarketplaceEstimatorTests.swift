@@ -469,6 +469,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Near downtown, pickup only, can help load...",
             "Shows the checks behind this listing.",
             "Use this to check the item, not as a listing photo.",
+            "Use these to check the item. Keep your own photos for the listing.",
             "Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.",
             "Sold prices %@ to %@",
             "%@ to %@",

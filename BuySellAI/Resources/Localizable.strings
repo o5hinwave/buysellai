@@ -18,6 +18,8 @@
 	<string>%@, %@</string>
 	<key>%@, %@, %@</key>
 	<string>%@, %@, %@</string>
+	<key>%@, %@, %@, %@</key>
+	<string>%@, %@, %@, %@</string>
 	<key>%@, estimated payout %d dollars, %d percent %@ average</key>
 	<string>%@, estimated payout %d dollars, %d percent %@ average</string>
 	<key>%@, estimated payout %d dollars, average payout</key>
@@ -1190,6 +1192,8 @@
 	<string>Up to %@</string>
 	<key>Use this to check the item, not as a listing photo.</key>
 	<string>Use this to check the item, not as a listing photo.</string>
+	<key>Use these to check the item. Keep your own photos for the listing.</key>
+	<string>Use these to check the item. Keep your own photos for the listing.</string>
 	<key>%@ to %@</key>
 	<string>%@ to %@</string>
 	<key>%@, typical %@</key>
