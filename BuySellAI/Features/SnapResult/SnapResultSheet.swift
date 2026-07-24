@@ -300,6 +300,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .accessibilityLabel("Not sure".localized)
         .accessibilityHint("Shows simple ways to check the item".localized)
     }
@@ -317,6 +318,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .accessibilityLabel("Change details".localized)
         .accessibilityHint("Lets you edit the name, category, condition, or price".localized)
     }
@@ -689,6 +691,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .accessibilityLabel("Wrong item — retake".localized)
     }
 
@@ -702,6 +705,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .accessibilityLabel("Try again".localized)
     }
 
@@ -749,6 +753,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
         })
@@ -777,6 +782,7 @@ struct SnapResultSheet: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
         .simultaneousGesture(TapGesture().onEnded {
             Haptics.impact(.light)
         })
