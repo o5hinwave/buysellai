@@ -947,6 +947,7 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
     var takeHomeEstimate: Decimal?
     var firstPhoto: String?
     var missingPhotoPrompt: String?
+    var missingInfoWarnings: [String]? = nil
     var fitReason: String?
     var postingNotes: [String]?
     var itemSpecifics: [String]?
@@ -983,6 +984,7 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
             takeHomeEstimate: positive(takeHomeEstimate),
             firstPhoto: clean(firstPhoto, maxLength: 180),
             missingPhotoPrompt: clean(missingPhotoPrompt, maxLength: 140),
+            missingInfoWarnings: cleanList(missingInfoWarnings, maxItems: 4, maxLength: 120),
             fitReason: clean(fitReason, maxLength: 220),
             postingNotes: cleanList(postingNotes, maxItems: 3, maxLength: 160),
             itemSpecifics: cleanList(itemSpecifics, maxItems: 6, maxLength: 80),
@@ -1008,6 +1010,7 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
            sanitized.compMedianPrice == nil,
            sanitized.firstPhoto == nil,
            sanitized.missingPhotoPrompt == nil,
+           sanitized.missingInfoWarnings?.isEmpty ?? true,
            sanitized.fitReason == nil,
            sanitized.feeSummary == nil,
            sanitized.pricingStrategy == nil,

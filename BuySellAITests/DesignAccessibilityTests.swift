@@ -2028,6 +2028,11 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(photosSource.range(of: #"detail: missingPhotoPrompt"#))
         XCTAssertNotNil(listing.range(of: #"private func photoChecklistRow(title: String, systemImage: String, detail: String) -> some View"#))
         XCTAssertNotNil(listing.range(of: #"private var primaryPhotoGuidance: String"#))
+        XCTAssertNotNil(listing.range(of: #"if let missingInfoWarnings = joinedDraftValues(store.draft?.missingInfoWarnings)"#))
+        XCTAssertNotNil(listing.range(of: #"Section("Check before posting".localized) {"#))
+        XCTAssertNotNil(listing.range(of: #"title: "Missing details""#))
+        XCTAssertNotNil(listing.range(of: #"systemImage: "exclamationmark.triangle.fill""#))
+        XCTAssertNotNil(listing.range(of: #"detail: missingInfoWarnings"#))
         XCTAssertNotNil(quickTipsSource.range(of: #"marketplaceTipRow("#))
         XCTAssertNotNil(quickTipsSource.range(of: #"title: "Shipping or pickup""#))
         XCTAssertNotNil(quickTipsSource.range(of: #"systemImage: AppSymbol.Marketplace.package"#))
@@ -2207,6 +2212,7 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNil(copySource.range(of: "store.draft?.itemSpecifics"))
         XCTAssertNil(copySource.range(of: "store.draft?.postingNotes"))
         XCTAssertNil(copySource.range(of: "store.draft?.tags"))
+        XCTAssertNil(copySource.range(of: "store.draft?.missingInfoWarnings"))
     }
 
     private func projectURL(_ path: String) -> URL {

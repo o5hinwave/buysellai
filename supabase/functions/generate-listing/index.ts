@@ -130,6 +130,7 @@ type StructuredListingDraft = {
   takeHomeEstimate: number;
   firstPhoto: string;
   missingPhotoPrompt: string | null;
+  missingInfoWarnings: string[];
   fitReason: string;
   postingNotes: string[];
   itemSpecifics: string[];
@@ -246,7 +247,7 @@ function listingSystemInstruction(
     "Return structured draft fields only; BuySell formats the final listing text.",
     "Do not return a listing field, markdown, preambles, watermarks, or section headings.",
     "Required fields: title, description, listPrice, likelySalePrice, takeHomeEstimate, firstPhoto, fitReason.",
-    "Optional fields: missingPhotoPrompt, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
+    "Optional fields: missingPhotoPrompt, missingInfoWarnings, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
     "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery, evidenceSources.",
     "title must be body text only and description must be body text only.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
@@ -261,6 +262,7 @@ function listingSystemInstruction(
     "For every factual market result you rely on, add one evidenceSources object with sourceMarketplace, title, url when available, dateChecked, listingStatus sold/active/official/reference, conditionAndVariant, comparability, and price when grounded.",
     "Do not add evidenceSources entries for guessed prices, unsupported comps, or unverified marketplace claims.",
     "Use seller details and visual web evidence when present. Never invent brand, model, size, defects, sold prices, fees, or public image URLs.",
+    "Set missingInfoWarnings to short plain warnings for any unverified fact that could affect trust, price, marketplace fit, shipping, or posting. Leave it empty when nothing important is missing.",
     "referenceImageURL must be a public image URL from visual web evidence or grounded search that is clearly the same or a close comparable item. Leave it empty if uncertain.",
     "pricingStrategy should be a plain instruction for a non-expert seller: where to list, what offer range to accept, and why.",
     "feeSummary should be short and grounded in official marketplace fee guidance when available.",
@@ -339,6 +341,10 @@ function listingDraftResponseSchema(): Record<string, unknown> {
       takeHomeEstimate: { type: "NUMBER", minimum: 1 },
       firstPhoto: { type: "STRING" },
       missingPhotoPrompt: { type: "STRING" },
+      missingInfoWarnings: {
+        type: "ARRAY",
+        items: { type: "STRING" },
+      },
       fitReason: { type: "STRING" },
       postingNotes: {
         type: "ARRAY",
@@ -425,6 +431,8 @@ function deterministicListingDraft(
     likelySalePrice,
     takeHomeEstimate,
     firstPhoto: profile.photoGuidance,
+    missingPhotoPrompt: null,
+    missingInfoWarnings: [],
     fitReason: `${displayName} can work for this item when the photos and details are clear.`,
     postingNotes: [
       "Use the generated copy with your actual photos.",
@@ -1112,6 +1120,7 @@ function requireStructuredListingDraft(
     takeHomeEstimate,
     firstPhoto,
     missingPhotoPrompt,
+    missingInfoWarnings: cleanStringList(result.missingInfoWarnings, 4, 120),
     fitReason,
     postingNotes: cleanStringList(result.postingNotes, 3, 160),
     itemSpecifics: cleanStringList(result.itemSpecifics, 6, 80),

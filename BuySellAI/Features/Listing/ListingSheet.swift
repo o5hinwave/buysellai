@@ -110,6 +110,15 @@ struct ListingSheet: View {
                     }
                 }
             }
+            if let missingInfoWarnings = joinedDraftValues(store.draft?.missingInfoWarnings) {
+                Section("Check before posting".localized) {
+                    marketplaceTipRow(
+                        title: "Missing details",
+                        systemImage: "exclamationmark.triangle.fill",
+                        detail: missingInfoWarnings
+                    )
+                }
+            }
             Section("Photos to take".localized) {
                 photoChecklistRow(
                     title: "First photo",

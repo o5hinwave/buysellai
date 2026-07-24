@@ -314,6 +314,7 @@ final class APIClientTests: XCTestCase {
                         "takeHomeEstimate": 35,
                         "firstPhoto": "Show the full lamp.",
                         "missingPhotoPrompt": "Show the cord.",
+                        "missingInfoWarnings": ["Confirm the brand before posting.", "Confirm the brand before posting."],
                         "fitReason": "Good broad fit.",
                         "postingNotes": ["Keep pickup details clear.", "Keep pickup details clear."],
                         "itemSpecifics": ["Brass", "Table lamp"],
@@ -366,6 +367,7 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(payload.draft?.takeHomeEstimate, Decimal(35))
         XCTAssertEqual(payload.draft?.firstPhoto, "Show the full lamp.")
         XCTAssertEqual(payload.draft?.missingPhotoPrompt, "Show the cord.")
+        XCTAssertEqual(payload.draft?.missingInfoWarnings, ["Confirm the brand before posting."])
         XCTAssertEqual(payload.draft?.fitReason, "Good broad fit.")
         XCTAssertEqual(payload.draft?.postingNotes, ["Keep pickup details clear."])
         XCTAssertEqual(payload.draft?.itemSpecifics, ["Brass", "Table lamp"])
