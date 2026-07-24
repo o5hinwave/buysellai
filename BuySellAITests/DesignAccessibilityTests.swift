@@ -1527,6 +1527,27 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(settings.components(separatedBy: #"Haptics.impact(.light)"#).count - 1, 3)
     }
 
+    func testSettingsLetsPeopleReviewAndClearRememberedSellingPreferences() throws {
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+        let appRouter = try String(contentsOf: projectURL("BuySellAI/App/AppRouter.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(appRouter.range(of: #"var hasRememberedSellingPreferences: Bool"#))
+        XCTAssertNotNil(appRouter.range(of: #"func forgetSellingPreference(for marketplace: Marketplace)"#))
+        XCTAssertNotNil(appRouter.range(of: #"func clearRememberedSellingPreferences()"#))
+        XCTAssertNotNil(settings.range(of: #"@State private var showSellingPreferences = false"#))
+        XCTAssertNotNil(settings.range(of: #"if appStore.hasRememberedSellingPreferences"#))
+        XCTAssertNotNil(settings.range(of: #"title: "Selling preferences""#))
+        XCTAssertNotNil(settings.range(of: #"accessibilityIdentifier: "Settings.SellingPreferences""#))
+        XCTAssertNotNil(settings.range(of: #".navigationDestination(isPresented: $showSellingPreferences)"#))
+        XCTAssertNotNil(settings.range(of: #"private struct SellingPreferencesView: View"#))
+        XCTAssertNotNil(settings.range(of: #"private struct SellingPreferenceRow: View"#))
+        XCTAssertNotNil(settings.range(of: #"Text("BuySell uses these only to avoid asking the same marketplace question again.".localized)"#))
+        XCTAssertNotNil(settings.range(of: #"appStore.forgetSellingPreference(for: row.marketplace)"#))
+        XCTAssertNotNil(settings.range(of: #"appStore.clearRememberedSellingPreferences()"#))
+        XCTAssertNotNil(settings.range(of: #"accessibilityLabel(String.localizedFormat("Forget %@ preference", row.marketplace.displayName))"#))
+        XCTAssertNotNil(settings.range(of: #"accessibilityIdentifier("Settings.ClearSellingPreferences")"#))
+    }
+
     func testSettingsAboutLinksUseInAppSafari() throws {
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
 

@@ -31,6 +31,9 @@ final class AppStore {
         didSet { defaults.set(reduceMotion, forKey: Keys.reduceMotion) }
     }
     var rememberedSellingPreferences: ItemDetailAnswers?
+    var hasRememberedSellingPreferences: Bool {
+        rememberedSellingPreferences?.marketplaceNotes.isEmpty == false
+    }
 
     var isShowingCamera = false
     var isShowingTutorial = false
@@ -309,6 +312,21 @@ final class AppStore {
                 )
             )
         )
+    }
+
+    func forgetSellingPreference(for marketplace: Marketplace) {
+        guard var updatedPreferences = rememberedSellingPreferences else { return }
+        updatedPreferences.setMarketplaceNote("", for: marketplace)
+        rememberedSellingPreferences = Self.marketplacePreferenceSnapshot(from: updatedPreferences)
+        persistRememberedSellingPreferences()
+        showToast("Selling preference cleared.".localized, style: .success)
+    }
+
+    func clearRememberedSellingPreferences() {
+        guard hasRememberedSellingPreferences else { return }
+        rememberedSellingPreferences = nil
+        defaults.removeObject(forKey: Keys.sellingPreferences)
+        showToast("Selling preferences cleared.".localized, style: .success)
     }
 
     func retakePhoto(keeping marketplace: Marketplace? = nil) {

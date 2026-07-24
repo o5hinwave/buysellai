@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showClearConfirmation = false
     @State private var showDeleteAccount = false
+    @State private var showSellingPreferences = false
     @State private var safariDestination: SafariDestination?
     private let reviewPromptGate = ReviewPromptGate()
 
@@ -72,6 +73,17 @@ struct SettingsView: View {
                         accessibilityIdentifier: "Settings.HowItWorks"
                     ) {
                         appStore.presentTutorialAfterSettingsDismissal()
+                    }
+
+                    if appStore.hasRememberedSellingPreferences {
+                        SettingsActionRow(
+                            title: "Selling preferences",
+                            systemImage: AppSymbol.Action.condition,
+                            iconTint: Color.brand.primaryText,
+                            accessibilityIdentifier: "Settings.SellingPreferences"
+                        ) {
+                            showSellingPreferences = true
+                        }
                     }
 
                     SettingsActionRow(
@@ -154,6 +166,9 @@ struct SettingsView: View {
             }
             .navigationDestination(isPresented: $showDeleteAccount) {
                 DeleteAccountView()
+            }
+            .navigationDestination(isPresented: $showSellingPreferences) {
+                SellingPreferencesView()
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -306,6 +321,130 @@ private struct SettingsRowLabel: View {
             .foregroundStyle(Color.brand.mutedForeground)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
             .minimumScaleFactor(0.82)
+    }
+}
+
+private struct SellingPreferencesView: View {
+    @Environment(AppStore.self) private var appStore
+    @State private var showClearAllConfirmation = false
+
+    var body: some View {
+        List {
+            Section {
+                if preferenceRows.isEmpty {
+                    ContentUnavailableView {
+                        Label("No selling preferences".localized, systemImage: AppSymbol.Action.condition)
+                    } description: {
+                        Text("BuySell will ask again when it needs one.".localized)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 180)
+                    .accessibilityElement(children: .combine)
+                } else {
+                    ForEach(preferenceRows) { row in
+                        SellingPreferenceRow(row: row) {
+                            appStore.forgetSellingPreference(for: row.marketplace)
+                        }
+                    }
+                }
+            } footer: {
+                Text("BuySell uses these only to avoid asking the same marketplace question again.".localized)
+            }
+
+            if preferenceRows.isEmpty == false {
+                Section {
+                    Button(role: .destructive) {
+                        Haptics.impact(.light)
+                        showClearAllConfirmation = true
+                    } label: {
+                        SettingsRowLabel(
+                            title: "Clear selling preferences",
+                            systemImage: "trash.fill",
+                            iconTint: Color.brand.destructive,
+                            titleTint: Color.brand.destructive
+                        )
+                    }
+                    .buttonStyle(.automatic)
+                    .accessibilityLabel("Clear selling preferences".localized)
+                    .accessibilityIdentifier("Settings.ClearSellingPreferences")
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .navigationTitle("Selling preferences".localized)
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Clear selling preferences?".localized, isPresented: $showClearAllConfirmation, titleVisibility: .visible) {
+            Button("Clear all".localized, role: .destructive) {
+                appStore.clearRememberedSellingPreferences()
+            }
+            .accessibilityLabel("Clear all".localized)
+
+            Button("Cancel".localized, role: .cancel) {}
+                .accessibilityLabel("Cancel".localized)
+        } message: {
+            Text("BuySell will ask again when it needs one.".localized)
+        }
+    }
+
+    private var preferenceRows: [RememberedSellingPreferenceRow] {
+        let notes = appStore.rememberedSellingPreferences?.marketplaceNotes ?? [:]
+        return Marketplace.activeRecommendationCases.compactMap { marketplace in
+            guard let note = notes[marketplace]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  note.isEmpty == false
+            else {
+                return nil
+            }
+            return RememberedSellingPreferenceRow(marketplace: marketplace, note: note)
+        }
+    }
+}
+
+private struct RememberedSellingPreferenceRow: Identifiable {
+    let marketplace: Marketplace
+    let note: String
+
+    var id: Marketplace {
+        marketplace
+    }
+}
+
+private struct SellingPreferenceRow: View {
+    let row: RememberedSellingPreferenceRow
+    let forget: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Spacing.md) {
+            MarketplaceIcon(marketplace: row.marketplace, size: 36)
+
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text(row.marketplace.displayName)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                    .lineLimit(2)
+
+                Text(row.note)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: Spacing.sm)
+
+            Button(role: .destructive) {
+                Haptics.impact(.light)
+                forget()
+            } label: {
+                Text("Forget".localized)
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .accessibilityLabel(String.localizedFormat("Forget %@ preference", row.marketplace.displayName))
+        }
+        .frame(minHeight: 56)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String.localizedFormat("%@, %@", row.marketplace.displayName, row.note))
     }
 }
 

@@ -80,6 +80,10 @@
 	<string>BuySell.</string>
 	<key>BuySell AI</key>
 	<string>BuySell AI</string>
+	<key>BuySell uses these only to avoid asking the same marketplace question again.</key>
+	<string>BuySell uses these only to avoid asking the same marketplace question again.</string>
+	<key>BuySell will ask again when it needs one.</key>
+	<string>BuySell will ask again when it needs one.</string>
 	<key>BuySell got an answer it couldn't read.</key>
 	<string>BuySell got an answer it couldn't read.</string>
 	<key>BuySell is having trouble. Try again.</key>
@@ -122,10 +126,16 @@
 	<string>Check %@ if you know it.</string>
 	<key>Choose Photo</key>
 	<string>Choose Photo</string>
+	<key>Clear all</key>
+	<string>Clear all</string>
 	<key>Clear all listing history? This can't be undone.</key>
 	<string>Clear all listing history? This can't be undone.</string>
 	<key>Clear history</key>
 	<string>Clear history</string>
+	<key>Clear selling preferences</key>
+	<string>Clear selling preferences</string>
+	<key>Clear selling preferences?</key>
+	<string>Clear selling preferences?</string>
 	<key>Close</key>
 	<string>Close</string>
 	<key>Close camera</key>
@@ -242,6 +252,10 @@
 	<string>Facebook Marketplace — free local reach</string>
 	<key>Fair</key>
 	<string>Fair</string>
+	<key>Forget</key>
+	<string>Forget</string>
+	<key>Forget %@ preference</key>
+	<string>Forget %@ preference</string>
 	<key>Fashion &amp; closet items</key>
 	<string>Fashion &amp; closet items</string>
 	<key>Fashion, no listing fees</key>
@@ -362,6 +376,8 @@
 	<string>No account required.</string>
 	<key>No saved listings yet</key>
 	<string>No saved listings yet</string>
+	<key>No selling preferences</key>
+	<string>No selling preferences</string>
 	<key>No listings yet</key>
 	<string>No listings yet</string>
 	<key>Not signed in</key>
@@ -446,6 +462,12 @@
 	<string>Second</string>
 	<key>Settings</key>
 	<string>Settings</string>
+	<key>Selling preference cleared.</key>
+	<string>Selling preference cleared.</string>
+	<key>Selling preferences</key>
+	<string>Selling preferences</string>
+	<key>Selling preferences cleared.</key>
+	<string>Selling preferences cleared.</string>
 	<key>Shoes</key>
 	<string>Shoes</string>
 	<key>Shopify</key>

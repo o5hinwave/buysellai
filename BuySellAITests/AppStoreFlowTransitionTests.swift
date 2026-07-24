@@ -139,6 +139,41 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         XCTAssertNil(thirdStore.itemQuestionsContext?.answers)
     }
 
+    func testRememberedMarketplacePreferencesCanForgetOneOrClearAll() throws {
+        let suiteName = "AppStoreRememberedSellingPreferenceControls-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        let firstStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        firstStore.presentListing(
+            item: lamp,
+            imageData: nil,
+            marketplace: .ebay,
+            details: ItemDetailAnswers(marketplaceNotes: [
+                .ebay: "Prefer fixed price",
+                .facebook: "Can deliver nearby"
+            ])
+        )
+
+        XCTAssertTrue(firstStore.hasRememberedSellingPreferences)
+
+        firstStore.forgetSellingPreference(for: .facebook)
+
+        let secondStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .ebay)
+        XCTAssertEqual(secondStore.itemQuestionsContext?.answers?.marketplaceNote(for: .ebay), "Prefer fixed price")
+
+        secondStore.closeFlow()
+        secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .facebook)
+        XCTAssertNil(secondStore.itemQuestionsContext?.answers)
+
+        secondStore.clearRememberedSellingPreferences()
+
+        let thirdStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
+        thirdStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .ebay)
+        XCTAssertNil(thirdStore.itemQuestionsContext?.answers)
+        XCTAssertFalse(thirdStore.hasRememberedSellingPreferences)
+    }
+
     func testCloseFlowCancelsPendingMarketplacePickerPresentation() async {
         let store = makeStore()
 
