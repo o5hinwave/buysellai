@@ -937,20 +937,26 @@ final class BuySellAIUITests: XCTestCase {
     ) -> XCUIElement {
         let row = app.buttons["MarketplaceRow.\(rawValue)"]
 
-        var revealAttempts = 0
-        while row.waitForExistence(timeout: revealAttempts == 0 ? 3 : 0.5) == false && revealAttempts < 8 {
+        if row.waitForExistence(timeout: 3), row.isHittable {
+            return row
+        }
+
+        for _ in 0..<8 {
             app.swipeUp()
-            revealAttempts += 1
+            if row.waitForExistence(timeout: 0.5), row.isHittable {
+                return row
+            }
+        }
+
+        for _ in 0..<10 {
+            app.swipeDown()
+            if row.waitForExistence(timeout: 0.5), row.isHittable {
+                return row
+            }
         }
 
         XCTAssertTrue(row.exists, "Missing marketplace row: \(rawValue)", file: file, line: line)
-
-        var hittableAttempts = 0
-        while row.isHittable == false && hittableAttempts < 8 {
-            app.swipeUp()
-            hittableAttempts += 1
-        }
-
+        XCTAssertTrue(row.isHittable, "Marketplace row was not hittable: \(rawValue)", file: file, line: line)
         return row
     }
 
