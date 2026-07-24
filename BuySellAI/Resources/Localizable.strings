@@ -328,8 +328,6 @@
 	<string>Lowest</string>
 	<key>Luxury pre-owned</key>
 	<string>Luxury pre-owned</string>
-	<key>Main photo</key>
-	<string>Main photo</string>
 	<key>Marketplace choices</key>
 	<string>Marketplace choices</string>
 	<key>Media</key>
@@ -388,8 +386,8 @@
 	<string>Photo couldn't be imported.</string>
 	<key>Photo couldn't be captured.</key>
 	<string>Photo couldn't be captured.</string>
-	<key>Photo to add</key>
-	<string>Photo to add</string>
+	<key>Photos to take</key>
+	<string>Photos to take</string>
 	<key>Pick where to sell</key>
 	<string>Pick where to sell</string>
 	<key>Pick where to sell.</key>
@@ -656,6 +654,8 @@
 	<string>Fender, Yamaha, Gibson...</string>
 	<key>Find best place</key>
 	<string>Find best place</string>
+	<key>First photo</key>
+	<string>First photo</string>
 	<key>Find edition, set, or serial number</key>
 	<string>Find edition, set, or serial number</string>
 	<key>Find model, serial, and working condition</key>
@@ -778,6 +778,8 @@
 	<string>Accessories, packaging, and manuals can help the listing.</string>
 	<key>Add one detail a person on this marketplace would expect.</key>
 	<string>Add one detail a person on this marketplace would expect.</string>
+	<key>Add one more photo</key>
+	<string>Add one more photo</string>
 	<key>Age, materials, signature, or maker marks matter on this marketplace.</key>
 	<string>Age, materials, signature, or maker marks matter on this marketplace.</string>
 	<key>Answer if you know it. Skip if you don't.</key>

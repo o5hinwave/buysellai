@@ -110,6 +110,20 @@ struct ListingSheet: View {
                     }
                 }
             }
+            Section("Photos to take".localized) {
+                photoChecklistRow(
+                    title: "First photo",
+                    systemImage: "camera.fill",
+                    detail: primaryPhotoGuidance
+                )
+                if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
+                    photoChecklistRow(
+                        title: "Add one more photo",
+                        systemImage: "plus.viewfinder",
+                        detail: missingPhotoPrompt
+                    )
+                }
+            }
             Section {
                 listingRecommendationSummary
             }
@@ -171,18 +185,6 @@ struct ListingSheet: View {
                         title: "Price move",
                         systemImage: "slider.horizontal.3",
                         detail: pricingStrategy
-                    )
-                }
-                marketplaceTipRow(
-                    title: "Main photo",
-                    systemImage: "photo",
-                    detail: store.draft?.firstPhoto ?? context.marketplace.optimizationProfile.photoGuidance
-                )
-                if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
-                    marketplaceTipRow(
-                        title: "Photo to add",
-                        systemImage: "plus.viewfinder",
-                        detail: missingPhotoPrompt
                     )
                 }
                 marketplaceTipRow(
@@ -463,6 +465,24 @@ struct ListingSheet: View {
         } label: {
             Label(title.localized, systemImage: systemImage)
                 .font(.body)
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .padding(.vertical, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String.localizedFormat("%@, %@", title.localized, detail))
+    }
+
+    private func photoChecklistRow(title: String, systemImage: String, detail: String) -> some View {
+        LabeledContent {
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(Color.brand.mutedForeground)
+                .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 5 : 3)
+                .fixedSize(horizontal: false, vertical: true)
+        } label: {
+            Label(title.localized, systemImage: systemImage)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
         }
         .padding(.vertical, Spacing.xxs)
@@ -753,6 +773,10 @@ struct ListingSheet: View {
 
     private var copyableListingText: String {
         (try? ListingTextContract.validatedGenerated(store.listingText)) ?? ""
+    }
+
+    private var primaryPhotoGuidance: String {
+        store.draft?.firstPhoto ?? context.marketplace.optimizationProfile.photoGuidance
     }
 
     private var pricePlan: ListingPricePlan {
