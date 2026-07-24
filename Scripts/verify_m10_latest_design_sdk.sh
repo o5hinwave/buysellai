@@ -14,6 +14,8 @@ camera_source="${repo_root}/BuySellAI/Features/Camera/CameraView.swift"
 auth_source="${repo_root}/BuySellAI/Features/Auth/AuthView.swift"
 snap_result_source="${repo_root}/BuySellAI/Features/SnapResult/SnapResultSheet.swift"
 tutorial_source="${repo_root}/BuySellAI/Features/Tutorial/HowItWorksView.swift"
+marketplace_row_source="${repo_root}/BuySellAI/Features/MarketplacePicker/MarketplaceRow.swift"
+marketplace_estimator_source="${repo_root}/BuySellAI/Features/MarketplacePicker/MarketplaceEstimator.swift"
 info_plist="${repo_root}/BuySellAI/Info.plist"
 
 pending_items=()
@@ -101,6 +103,18 @@ require_tutorial_marker() {
     grep -Fq "$marker" "$tutorial_source" || fail "HowItWorksView.swift is missing '$marker'"
 }
 
+require_marketplace_row_marker() {
+    local marker="$1"
+
+    grep -Fq "$marker" "$marketplace_row_source" || fail "MarketplaceRow.swift is missing '$marker'"
+}
+
+require_marketplace_estimator_marker() {
+    local marker="$1"
+
+    grep -Fq "$marker" "$marketplace_estimator_source" || fail "MarketplaceEstimator.swift is missing '$marker'"
+}
+
 reject_tutorial_marker() {
     local marker="$1"
 
@@ -115,6 +129,8 @@ reject_tutorial_marker() {
 [[ -f "$auth_source" ]] || fail "missing AuthView.swift"
 [[ -f "$snap_result_source" ]] || fail "missing SnapResultSheet.swift"
 [[ -f "$tutorial_source" ]] || fail "missing HowItWorksView.swift"
+[[ -f "$marketplace_row_source" ]] || fail "missing MarketplaceRow.swift"
+[[ -f "$marketplace_estimator_source" ]] || fail "missing MarketplaceEstimator.swift"
 [[ -f "$info_plist" ]] || fail "missing Info.plist"
 
 require_source_marker "#if compiler(>=6.2)"
@@ -165,11 +181,18 @@ require_home_marker "HomeCameraHeroMark(startSnapFlow: startSnapFlow)"
 require_home_marker "HomePearlCardSheen(cornerRadius: Radius.xl)"
 require_home_marker "HomeHeroIconTrail()"
 require_home_marker "HomeHeroLoopBadge()"
+require_home_marker 'HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: "checklist", isPrimary: false)'
+require_home_marker 'HomeHeroTrailSymbol(systemImage: "tag.fill", isPrimary: false)'
 require_home_marker 'Section("Recent listings".localized)'
 require_home_marker 'Label("No listings yet".localized, systemImage: "clock.arrow.circlepath")'
 require_home_marker "HomeStepRow(number: 1"
 require_home_marker "HomeStepRow(number: 2"
 require_home_marker "HomeStepRow(number: 3"
+require_home_marker 'systemImage: "checklist"'
+require_home_marker 'systemImage: "tag.fill"'
+require_home_marker 'Image(systemName: "questionmark.circle.fill")'
+require_home_marker ".symbolRenderingMode(.hierarchical)"
 require_home_marker "HomeHowItWorksRow"
 require_home_marker ".toolbar {"
 require_home_marker 'ToolbarItem(placement: .principal)'
@@ -196,6 +219,11 @@ require_snap_result_marker "private func conditionMenuItemIcon(for condition: Co
 require_snap_result_marker "systemImage: categoryMenuItemIcon(for: category)"
 require_snap_result_marker "systemImage: conditionMenuItemIcon(for: condition)"
 require_snap_result_marker 'Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)'
+require_marketplace_row_marker ".symbolVariant(.fill)"
+require_marketplace_estimator_marker '"checkmark.seal.fill"'
+require_marketplace_estimator_marker '"bolt.fill"'
+require_marketplace_estimator_marker '"dollarsign.circle.fill"'
+require_marketplace_estimator_marker '"hand.tap.fill"'
 require_tutorial_marker "private struct CompactGuideGraphic"
 require_tutorial_marker "private struct TutorialStepRow"
 require_tutorial_marker "TutorialStep.steps"
@@ -244,6 +272,7 @@ if (( ${#pending_items[@]} > 0 )); then
         printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
         printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
         printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
+        printf 'marketplace icons: filled SF Symbols for marketplace rows and recommendation labels\n'
         printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
         printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'
         exit 0
@@ -267,5 +296,6 @@ printf 'camera setup: native top controls, tap focus, camera switching, scene-ph
 printf 'auth setup: native inset grouped list, NavigationLink email push, and system bottom bars\n'
 printf 'tutorial setup: concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager\n'
 printf 'menu item icons: category and condition menus use SF Symbols with selected checkmarks\n'
+printf 'marketplace icons: filled SF Symbols for marketplace rows and recommendation labels\n'
 printf 'system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback\n'
 printf 'system design: current presentation, no UIDesignRequiresCompatibility\n'

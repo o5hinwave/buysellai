@@ -355,6 +355,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
             .easiestOption
         ] {
             XCTAssertEqual(localizedStrings[kind.label], kind.label)
+            XCTAssertTrue(kind.systemImage.hasSuffix(".fill"), "\(kind.label) should use a filled native symbol.")
         }
 
         for cue in [

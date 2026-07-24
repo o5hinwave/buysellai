@@ -21,8 +21,8 @@ struct HomeView: View {
 
                 Section {
                     HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.viewfinder")
-                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "questionmark.bubble")
-                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc")
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "checklist")
+                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "tag.fill")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
                         appStore.presentTutorial()
@@ -372,6 +372,7 @@ private struct HomeHeroCameraGlyph: View {
 
             Image(systemName: "camera.fill")
                 .brandSymbol(.heroIcon)
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.foreground)
                 .accessibilityHidden(true)
         }
@@ -418,9 +419,9 @@ private struct HomeHeroIconTrail: View {
         HStack(spacing: Spacing.sm) {
             HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "questionmark.bubble", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "checklist", isPrimary: false)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "doc.on.doc", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "tag.fill", isPrimary: false)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Photo. Questions. Listing.".localized)
@@ -434,6 +435,7 @@ private struct HomeHeroTrailSymbol: View {
     var body: some View {
         Image(systemName: systemImage)
             .brandSymbol(.rowIcon)
+            .symbolRenderingMode(.hierarchical)
             .foregroundStyle(isPrimary ? Color.brand.primaryText : Color.brand.foregroundSecondary)
             .frame(width: 34, height: 34)
             .background {
@@ -495,6 +497,7 @@ private struct HomeStepRow: View {
 
             Image(systemName: systemImage)
                 .brandSymbol(.controlIcon)
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.primaryText)
                 .frame(width: 28, height: 28)
                 .accessibilityHidden(true)
@@ -588,8 +591,9 @@ private struct HomeHowItWorksRow: View {
             showTutorial()
         } label: {
             HStack(spacing: Spacing.md) {
-                Image(systemName: "questionmark.circle")
+                Image(systemName: "questionmark.circle.fill")
                     .brandSymbol(.controlIcon)
+                    .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.brand.foreground)
                     .frame(width: 34, height: 34)
                     .background(Color(uiColor: .tertiarySystemFill), in: Circle())

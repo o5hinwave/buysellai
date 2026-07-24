@@ -223,13 +223,13 @@ enum MarketplaceSummaryKind: String, Sendable, Hashable {
     var systemImage: String {
         switch self {
         case .bestOverall:
-            "checkmark.seal"
+            "checkmark.seal.fill"
         case .fastestSale:
-            "bolt"
+            "bolt.fill"
         case .mostMoney:
-            "dollarsign.circle"
+            "dollarsign.circle.fill"
         case .easiestOption:
-            "hand.tap"
+            "hand.tap.fill"
         }
     }
 }

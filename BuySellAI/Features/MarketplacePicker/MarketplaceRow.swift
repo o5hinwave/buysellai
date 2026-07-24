@@ -41,6 +41,7 @@ struct MarketplaceIcon: View {
             .overlay {
                 Image(systemName: marketplace.iconSystemName)
                     .brandSymbol(.controlIcon)
+                    .symbolVariant(.fill)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(marketplace.brandTint)
                     .frame(width: size * 0.72, height: size * 0.72)

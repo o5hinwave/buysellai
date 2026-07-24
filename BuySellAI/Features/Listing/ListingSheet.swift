@@ -240,7 +240,7 @@ struct ListingSheet: View {
 
     private var listingRecommendationSummary: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Label(recommendationLabel.localized, systemImage: "checkmark.seal")
+            Label(recommendationLabel.localized, systemImage: "checkmark.seal.fill")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.primaryText)
 
@@ -419,7 +419,7 @@ struct ListingSheet: View {
 
                 Spacer(minLength: Spacing.sm)
 
-                Label("Copy".localized, systemImage: "doc.on.doc")
+                Label("Copy".localized, systemImage: "doc.on.doc.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.brand.primaryText)
                     .labelStyle(.titleAndIcon)
