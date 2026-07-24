@@ -11,14 +11,14 @@ struct HomeView: View {
                 Section {
                     HomeCameraHeroMark(startSnapFlow: startSnapFlow)
                 }
-                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
+                .listRowInsets(EdgeInsets(top: Spacing.xl, leading: Spacing.lg, bottom: Spacing.lg, trailing: Spacing.lg))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
                 Section {
-                    HomeStepRow(number: 1, title: "Snap it", detail: "Take one photo.", systemImage: "camera.viewfinder")
-                    HomeStepRow(number: 2, title: "Answer tiny questions", detail: "Only what you know.", systemImage: "text.bubble")
-                    HomeStepRow(number: 3, title: "Copy the post", detail: "BuySell picks the place and writes it.", systemImage: "doc.on.doc")
+                    HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.viewfinder")
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "text.bubble")
+                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
                         appStore.presentTutorial()
@@ -37,7 +37,7 @@ struct HomeView: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(HomePearlScreenBackground())
             .contentMargins(.bottom, Spacing.xxxl, for: .scrollContent)
             .navigationTitle("BuySell.".localized)
             .navigationBarTitleDisplayMode(.inline)
@@ -229,8 +229,8 @@ private struct HomeCameraHeroMark: View {
             startSnapFlow()
         } label: {
             cardContent
-            .frame(maxWidth: .infinity, minHeight: 178)
-            .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
+                .frame(maxWidth: .infinity, minHeight: 258)
+                .contentShape(RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
         }
         .buttonStyle(PressButtonStyle())
         .accessibilityLabel("Snap to sell".localized)
@@ -241,69 +241,153 @@ private struct HomeCameraHeroMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
                 .fill(cardFill)
+                .overlay {
+                    HomePearlTopHighlight(cornerRadius: Radius.xl)
+                }
                 .overlay(alignment: .topLeading) {
                     cardTopLine
                         .padding(Spacing.lg)
                 }
                 .overlay(alignment: .center) {
-                    Image(systemName: "camera.viewfinder")
-                        .brandSymbol(.heroIcon)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(Color.brand.foreground)
-                        .accessibilityHidden(true)
+                    HomeHeroCameraGlyph()
                 }
-                .overlay(alignment: .bottomLeading) {
-                    VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text("Snap to sell".localized)
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(Color.brand.foreground)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-
-                        Text("Point. Shoot. Done.".localized)
-                            .font(.subheadline)
-                            .foregroundStyle(Color.brand.foregroundSecondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                    }
-                    .padding(Spacing.lg)
+                .overlay(alignment: .bottom) {
+                    cardBottomCopy
+                        .padding(.horizontal, Spacing.lg)
+                        .padding(.bottom, Spacing.lg)
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
-                        .stroke(Color(uiColor: .separator).opacity(0.12), lineWidth: 1)
+                        .stroke(Color.brand.border.opacity(0.76), lineWidth: 1)
                 }
-                .shadow(color: Color.black.opacity(0.06), radius: 22, y: 10)
+                .shadow(color: Color.brand.shadow.opacity(0.07), radius: 30, x: 0, y: 18)
+                .shadow(color: Color.brand.primaryMuted.opacity(0.32), radius: 18, x: -8, y: -8)
         }
+    }
+
+    private var cardBottomCopy: some View {
+        VStack(spacing: Spacing.xxs) {
+            Text("Snap to sell".localized)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+
+            Text("Photo. Questions. Listing.".localized)
+                .font(.subheadline)
+                .foregroundStyle(Color.brand.foregroundSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var cardTopLine: some View {
         HStack(alignment: .center, spacing: Spacing.xs) {
-            Text("BuySell".localized)
+            BrandWordmark(size: .regular, periodColor: Color.brand.primaryText)
+                .foregroundStyle(Color.brand.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+
+            Spacer(minLength: 0)
+
+            Text("1 2 3".localized)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.foregroundSecondary)
-            Circle()
-                .fill(Color.brand.primary)
-                .frame(width: 7, height: 7)
-                .accessibilityHidden(true)
-            Spacer(minLength: 0)
-            Image(systemName: "sparkles")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.brand.primaryText)
-                .accessibilityHidden(true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .overlay(alignment: .center) {
+                    Capsule(style: .continuous)
+                        .stroke(Color.brand.border.opacity(0.78), lineWidth: 1)
+                        .padding(.horizontal, -Spacing.sm)
+                        .padding(.vertical, -Spacing.xs)
+                }
         }
     }
 
     private var cardFill: LinearGradient {
         LinearGradient(
-            colors: [
-                Color(uiColor: .systemBackground),
-                Color(uiColor: .secondarySystemGroupedBackground)
+            stops: [
+                .init(color: Color.brand.surface, location: 0),
+                .init(color: Color.brand.primaryMuted.opacity(0.32), location: 0.46),
+                .init(color: Color.brand.backgroundSubtle, location: 1)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
 
+}
+
+private struct HomePearlScreenBackground: View {
+    var body: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Color.brand.background, location: 0),
+                .init(color: Color.brand.primaryMuted.opacity(0.18), location: 0.42),
+                .init(color: Color(uiColor: .systemGroupedBackground), location: 1)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+}
+
+private struct HomePearlTopHighlight: View {
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .strokeBorder(
+                LinearGradient(
+                    colors: [
+                        Color.brand.surface.opacity(0.92),
+                        Color.brand.surface.opacity(0.18),
+                        Color.brand.border.opacity(0.36)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
+    }
+}
+
+private struct HomeHeroCameraGlyph: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(glyphFill)
+                .overlay {
+                    HomePearlTopHighlight(cornerRadius: Radius.xl)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color.brand.border.opacity(0.82), lineWidth: 1)
+                }
+
+            Image(systemName: "camera.aperture")
+                .brandSymbol(.heroIcon)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.brand.foreground)
+                .accessibilityHidden(true)
+        }
+        .frame(width: 112, height: 112)
+        .shadow(color: Color.brand.shadow.opacity(0.08), radius: 24, x: 0, y: 14)
+    }
+
+    private var glyphFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.brand.surface.opacity(0.98),
+                Color.brand.backgroundSubtle.opacity(0.94),
+                Color.brand.primaryMuted.opacity(0.28)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 }
 
 private struct HomeStepRow: View {

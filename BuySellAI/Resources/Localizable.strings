@@ -962,8 +962,22 @@
 	<string>Possible</string>
 	<key>Maybe</key>
 	<string>Maybe</string>
+	<key>1 2 3</key>
+	<string>1 2 3</string>
+	<key>Answer what you know</key>
+	<string>Answer what you know</string>
+	<key>Fit the whole thing.</key>
+	<string>Fit the whole thing.</string>
 	<key>Photo check</key>
 	<string>Photo check</string>
+	<key>Photo. Questions. Listing.</key>
+	<string>Photo. Questions. Listing.</string>
+	<key>Price, place, and post are ready.</key>
+	<string>Price, place, and post are ready.</string>
+	<key>Skip anything you're unsure about.</key>
+	<string>Skip anything you're unsure about.</string>
+	<key>Snap a photo</key>
+	<string>Snap a photo</string>
 	<key>The photo did not clearly show %@. Add it only if you can see it.</key>
 	<string>The photo did not clearly show %@. Add it only if you can see it.</string>
 	<key>What does the label say?</key>
