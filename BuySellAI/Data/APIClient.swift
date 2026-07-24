@@ -49,7 +49,14 @@ actor APIClient {
                         AnalyzeItemFact(label: "Material", value: "Brass", confidence: 0.82)
                     ],
                     missingFacts: ["maker mark"],
-                    photoPrompt: "Show the maker mark if there is one."
+                    photoPrompt: "Show the maker mark if there is one.",
+                    likelyMatches: [
+                        AnalyzeLikelyMatch(
+                            name: "Vintage brass table lamp",
+                            distinguishingQuestion: "Does the base have a maker mark?",
+                            confidence: 0.72
+                        )
+                    ]
                 )
             )
         }
@@ -287,10 +294,68 @@ struct AnalyzeItemFact: Codable, Equatable, Sendable {
     }
 }
 
+struct AnalyzeLikelyMatch: Codable, Equatable, Sendable {
+    let name: String
+    let distinguishingQuestion: String
+    let confidence: Double
+
+    func sanitizedForDisplay() -> AnalyzeLikelyMatch? {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanQuestion = distinguishingQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanName.isEmpty == false else {
+            return nil
+        }
+        return AnalyzeLikelyMatch(
+            name: String(cleanName.prefix(80)),
+            distinguishingQuestion: String(cleanQuestion.prefix(120)),
+            confidence: min(max(confidence, 0), 1)
+        )
+    }
+
+    var closenessLabel: String {
+        switch confidence {
+        case 0.8...:
+            "Likely".localized
+        case 0.55..<0.8:
+            "Possible".localized
+        default:
+            "Maybe".localized
+        }
+    }
+}
+
 struct AnalyzeIntelligence: Codable, Equatable, Sendable {
     let itemFacts: [AnalyzeItemFact]
     let missingFacts: [String]
     let photoPrompt: String?
+    let likelyMatches: [AnalyzeLikelyMatch]
+
+    init(
+        itemFacts: [AnalyzeItemFact],
+        missingFacts: [String],
+        photoPrompt: String?,
+        likelyMatches: [AnalyzeLikelyMatch] = []
+    ) {
+        self.itemFacts = itemFacts
+        self.missingFacts = missingFacts
+        self.photoPrompt = photoPrompt
+        self.likelyMatches = likelyMatches
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case itemFacts
+        case missingFacts
+        case photoPrompt
+        case likelyMatches
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        itemFacts = try container.decodeIfPresent([AnalyzeItemFact].self, forKey: .itemFacts) ?? []
+        missingFacts = try container.decodeIfPresent([String].self, forKey: .missingFacts) ?? []
+        photoPrompt = try container.decodeIfPresent(String.self, forKey: .photoPrompt)
+        likelyMatches = try container.decodeIfPresent([AnalyzeLikelyMatch].self, forKey: .likelyMatches) ?? []
+    }
 
     func sanitizedForDisplay() -> AnalyzeIntelligence? {
         let cleanFacts = itemFacts.compactMap { $0.sanitizedForDisplay() }.prefix(8)
@@ -301,15 +366,23 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
             .prefix(5)
         let trimmedPrompt = photoPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let cleanPrompt = trimmedPrompt.isEmpty ? nil : String(trimmedPrompt.prefix(120))
+        let cleanLikelyMatches = likelyMatches
+            .compactMap { $0.sanitizedForDisplay() }
+            .prefix(3)
 
-        guard cleanFacts.isEmpty == false || cleanMissingFacts.isEmpty == false || cleanPrompt != nil else {
+        guard cleanFacts.isEmpty == false
+            || cleanMissingFacts.isEmpty == false
+            || cleanPrompt != nil
+            || cleanLikelyMatches.isEmpty == false
+        else {
             return nil
         }
 
         return AnalyzeIntelligence(
             itemFacts: Array(cleanFacts),
             missingFacts: Array(cleanMissingFacts),
-            photoPrompt: cleanPrompt
+            photoPrompt: cleanPrompt,
+            likelyMatches: Array(cleanLikelyMatches)
         )
     }
 
@@ -321,6 +394,16 @@ struct AnalyzeIntelligence: Codable, Equatable, Sendable {
               firstMissing.isEmpty == false
         else { return nil }
         return String.localizedFormat("Check %@ if you know it.".localized, firstMissing)
+    }
+
+    var uncertaintyPrompt: String {
+        if likelyMatches.isEmpty == false {
+            return "Pick what looks closest, or snap a clearer label.".localized
+        }
+        if let displayHint {
+            return displayHint
+        }
+        return "Try a closer photo of any logo, label, or model number.".localized
     }
 }
 

@@ -80,7 +80,19 @@ final class APIClientTests: XCTestCase {
                       { "label": " ", "value": "Ignored", "confidence": 0.7 }
                     ],
                     "missingFacts": [" maker ", ""],
-                    "photoPrompt": " Show the bottom mark. "
+                    "photoPrompt": " Show the bottom mark. ",
+                    "likelyMatches": [
+                      {
+                        "name": "  Ceramic mug with maker mark  ",
+                        "distinguishingQuestion": " Is there a stamp on the bottom? ",
+                        "confidence": 1.3
+                      },
+                      {
+                        "name": " ",
+                        "distinguishingQuestion": "Ignored",
+                        "confidence": 0.6
+                      }
+                    ]
                   }
                 }
                 """.utf8
@@ -94,6 +106,13 @@ final class APIClientTests: XCTestCase {
         ])
         XCTAssertEqual(response.analysis?.missingFacts, ["maker"])
         XCTAssertEqual(response.analysis?.photoPrompt, "Show the bottom mark.")
+        XCTAssertEqual(response.analysis?.likelyMatches, [
+            AnalyzeLikelyMatch(
+                name: "Ceramic mug with maker mark",
+                distinguishingQuestion: "Is there a stamp on the bottom?",
+                confidence: 1
+            )
+        ])
         XCTAssertEqual(response.analysis?.displayHint, "Show the bottom mark.")
     }
 

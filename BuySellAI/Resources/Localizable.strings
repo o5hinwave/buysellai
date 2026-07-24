@@ -922,5 +922,37 @@
 	<string>Would shipping be risky?</string>
 	<key>Yes</key>
 	<string>Yes</string>
+	<key>Confirm item</key>
+	<string>Confirm item</string>
+	<key>Fix this</key>
+	<string>Fix this</string>
+	<key>Worth around</key>
+	<string>Worth around</string>
+	<key>Not sure</key>
+	<string>Not sure</string>
+	<key>Shows simple ways to check the item</key>
+	<string>Shows simple ways to check the item</string>
+	<key>Change details</key>
+	<string>Change details</string>
+	<key>Lets you edit the name, category, condition, or price</key>
+	<string>Lets you edit the name, category, condition, or price</string>
+	<key>No problem</key>
+	<string>No problem</string>
+	<key>Pick what looks closest, or snap a clearer label.</key>
+	<string>Pick what looks closest, or snap a clearer label.</string>
+	<key>Try a closer photo of any logo, label, or model number.</key>
+	<string>Try a closer photo of any logo, label, or model number.</string>
+	<key>Which one looks closest?</key>
+	<string>Which one looks closest?</string>
+	<key>Likely</key>
+	<string>Likely</string>
+	<key>Possible</key>
+	<string>Possible</string>
+	<key>Maybe</key>
+	<string>Maybe</string>
+	<key>Yes, that's it</key>
+	<string>Yes, that's it</string>
+	<key>Next: a few easy questions.</key>
+	<string>Next: a few easy questions.</string>
 </dict>
 </plist>

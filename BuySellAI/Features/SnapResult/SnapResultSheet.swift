@@ -13,6 +13,8 @@ struct SnapResultSheet: View {
     @State private var analysisTask: Task<Void, Never>?
     @State private var analysisTaskID = UUID()
     @State private var isSheetVisible = true
+    @State private var showsUncertaintyHelp = false
+    @State private var showsDetailCorrection = false
     @FocusState private var focusedField: Field?
 
     init(context: SnapResultContext) {
@@ -42,7 +44,7 @@ struct SnapResultSheet: View {
             .listSectionSpacing(.compact)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, listBottomContentInset, for: .scrollContent)
-            .navigationTitle("Item details".localized)
+            .navigationTitle("Confirm item".localized)
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 if case .success = store.phase, let item = store.item {
@@ -50,7 +52,7 @@ struct SnapResultSheet: View {
                 }
             }
         }
-        .background(Color.clear)
+        .background(pearlSheetBackground)
         .task {
             isSheetVisible = true
             await store.analyzeIfNeeded(accessToken: await appStore.authenticatedAccessToken())
@@ -133,42 +135,202 @@ struct SnapResultSheet: View {
     @ViewBuilder
     private func resultView(item: DetectedItem) -> some View {
         Section {
-            resultHeader
+            confirmationCard(item: item)
                 .frame(maxWidth: sheetContentMaxWidth, alignment: .leading)
                 .accessibilitySortPriority(5)
+                .listRowInsets(EdgeInsets(top: Spacing.md, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
 
-        Section {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.sm) {
-                    ChipButton(
-                        title: item.category.display,
-                        accessibilityLabel: ChipAccessibilityText.valueLabel("Category", value: item.category.display),
-                        accessibilityHint: "Changes the category"
-                    ) {
-                        store.cycleCategory()
-                    }
-                    ChipButton(
-                        title: item.condition.display,
-                        accessibilityLabel: ChipAccessibilityText.valueLabel("Condition", value: item.condition.display),
-                        accessibilityHint: "Changes the condition"
-                    ) {
-                        store.cycleCondition()
-                    }
-                }
+        if showsUncertaintyHelp {
+            Section {
+                uncertaintyHelp(details: store.analysisDetails)
+                    .accessibilitySortPriority(4)
             }
-            .accessibilitySortPriority(4)
+        }
 
-            secondaryActions(item: item)
-                .accessibilitySortPriority(2)
+        if showsDetailCorrection {
+            Section("Fix this".localized) {
+                correctionControls(item: item)
+                    .accessibilitySortPriority(3)
+            }
         }
 
         if let details = store.analysisDetails {
             Section("What we found".localized) {
                 analysisDetailRows(details)
             }
-            .accessibilitySortPriority(3)
+            .accessibilitySortPriority(2)
         }
+    }
+
+    private var pearlSheetBackground: some View {
+        LinearGradient(
+            colors: [
+                Color.brand.background,
+                Color.brand.backgroundSubtle,
+                Color.brand.primaryMuted.opacity(0.18)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+
+    private func confirmationCard(item: DetectedItem) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            confirmationHero(item: item)
+            itemFactPills(item: item)
+            confirmationChoiceRow
+        }
+        .padding(Spacing.lg)
+        .background {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .fill(confirmationCardFill)
+                .overlay(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                        .stroke(Color.brand.primaryForeground.opacity(0.64), lineWidth: 1)
+                        .blendMode(.plusLighter)
+                        .frame(height: 1)
+                        .padding(.horizontal, Spacing.lg)
+                }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.xl, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.72), lineWidth: 1)
+        }
+        .shadow(color: Color.brand.shadow.opacity(0.055), radius: 24, x: 0, y: 12)
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func confirmationHero(item: DetectedItem) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                PhotoThumbnail(data: context.imageData, size: 112)
+                confirmationSummary(item: item)
+            }
+        } else {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                PhotoThumbnail(data: context.imageData, size: 96)
+                confirmationSummary(item: item)
+            }
+        }
+    }
+
+    private func confirmationSummary(item: DetectedItem) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("We think this is".localized)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.mutedForeground)
+                .lineLimit(1)
+
+            itemNameControl
+
+            HStack(spacing: Spacing.xs) {
+                Text("Worth around".localized)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                priceEditor
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
+    }
+
+    private func itemFactPills(item: DetectedItem) -> some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    itemCategoryPill(item)
+                    itemConditionPill(item)
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    itemCategoryPill(item)
+                    itemConditionPill(item)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func itemCategoryPill(_ item: DetectedItem) -> SnapResultFactPill {
+        SnapResultFactPill(
+            label: "Category",
+            value: item.category.display,
+            systemImage: categoryMenuItemIcon(for: item.category)
+        )
+    }
+
+    private func itemConditionPill(_ item: DetectedItem) -> SnapResultFactPill {
+        SnapResultFactPill(
+            label: "Condition",
+            value: item.condition.display,
+            systemImage: conditionMenuItemIcon(for: item.condition)
+        )
+    }
+
+    @ViewBuilder
+    private var confirmationChoiceRow: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: Spacing.sm) {
+                notSureButton
+                changeDetailsButton
+            }
+        } else {
+            HStack(spacing: Spacing.sm) {
+                notSureButton
+                changeDetailsButton
+            }
+        }
+    }
+
+    private var notSureButton: some View {
+        Button {
+            Haptics.impact(.light)
+            showsUncertaintyHelp = true
+            showsDetailCorrection = false
+        } label: {
+            Label("Not sure".localized, systemImage: "questionmark.circle")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .accessibilityLabel("Not sure".localized)
+        .accessibilityHint("Shows simple ways to check the item".localized)
+    }
+
+    private var changeDetailsButton: some View {
+        Button {
+            Haptics.impact(.light)
+            showsDetailCorrection = true
+            showsUncertaintyHelp = false
+            isEditingName = true
+            focusedField = .name
+        } label: {
+            Label("Change details".localized, systemImage: "slider.horizontal.3")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .accessibilityLabel("Change details".localized)
+        .accessibilityHint("Lets you edit the name, category, condition, or price".localized)
+    }
+
+    private var confirmationCardFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.brand.surface,
+                Color.brand.surfaceElevated,
+                Color.brand.primaryMuted.opacity(0.24)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     @ViewBuilder
@@ -180,6 +342,87 @@ struct SnapResultSheet: View {
         if let guidance = details.displayHint {
             analysisGuidanceRow(guidance)
         }
+    }
+
+    private func uncertaintyHelp(details: AnalyzeIntelligence?) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("No problem".localized)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+
+                Text(details?.uncertaintyPrompt ?? "Try a closer photo of any logo, label, or model number.".localized)
+                    .font(.body)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let matches = details?.likelyMatches, matches.isEmpty == false {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text("Which one looks closest?".localized)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.brand.mutedForeground)
+
+                    ForEach(Array(matches.enumerated()), id: \.offset) { _, match in
+                        likelyMatchButton(match)
+                    }
+                }
+            }
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    retryButton
+                    retakeButton
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    retryButton
+                    retakeButton
+                }
+            }
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func likelyMatchButton(_ match: AnalyzeLikelyMatch) -> some View {
+        Button {
+            Haptics.impact(.light)
+            store.nameText = match.name
+            store.commitEdits()
+            showsUncertaintyHelp = false
+            showsDetailCorrection = true
+        } label: {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text(match.name)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.brand.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if match.distinguishingQuestion.isEmpty == false {
+                        Text(match.distinguishingQuestion)
+                            .font(.caption)
+                            .foregroundStyle(Color.brand.foregroundSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Spacer(minLength: Spacing.sm)
+
+                Text(match.closenessLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, Spacing.xxs)
+                    .background(Color.brand.primaryMuted, in: Capsule(style: .continuous))
+            }
+            .padding(.vertical, Spacing.xs)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressButtonStyle())
+        .accessibilityLabel(String.localizedFormat("%@, %@", match.closenessLabel, match.name))
+        .optionalAccessibilityHint(match.distinguishingQuestion.isEmpty ? nil : match.distinguishingQuestion)
     }
 
     private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View {
@@ -233,24 +476,26 @@ struct SnapResultSheet: View {
             Button {
                 proceedWithItem(item)
             } label: {
-                Label("Looks right — add details".localized, systemImage: "checkmark.circle.fill")
+                Label("Yes, that's it".localized, systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(Color.brand.primary)
-            .accessibilityLabel("Looks right — add details".localized)
+            .accessibilityLabel("Yes, that's it".localized)
             .accessibilitySortPriority(3)
+
+            Text("Next: a few easy questions.".localized)
+                .font(.caption)
+                .foregroundStyle(Color.brand.foregroundSecondary)
+                .multilineTextAlignment(.center)
         }
         .padding(.horizontal, Spacing.md)
         .padding(.top, Spacing.sm)
         .padding(.bottom, Spacing.sm)
         .frame(maxWidth: sheetContentMaxWidth)
         .frame(maxWidth: .infinity)
-        .background {
-            Color.brand.background
-                .ignoresSafeArea()
-        }
+        .nativeMaterialBar(tintOpacity: 0.9, showsTopDivider: true)
     }
 
     private func proceedWithItem(_ fallbackItem: DetectedItem) {
@@ -263,6 +508,33 @@ struct SnapResultSheet: View {
             preferredMarketplace: context.preferredMarketplace,
             analysis: store.analysisDetails
         )
+    }
+
+    @ViewBuilder
+    private func correctionControls(item: DetectedItem) -> some View {
+        VStack(spacing: Spacing.md) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    ChipButton(
+                        title: item.category.display,
+                        accessibilityLabel: ChipAccessibilityText.valueLabel("Category", value: item.category.display),
+                        accessibilityHint: "Changes the category"
+                    ) {
+                        store.cycleCategory()
+                    }
+                    ChipButton(
+                        title: item.condition.display,
+                        accessibilityLabel: ChipAccessibilityText.valueLabel("Condition", value: item.condition.display),
+                        accessibilityHint: "Changes the condition"
+                    ) {
+                        store.cycleCondition()
+                    }
+                }
+            }
+            .accessibilitySortPriority(4)
+
+            secondaryActions(item: item)
+        }
     }
 
     @ViewBuilder
@@ -310,30 +582,6 @@ struct SnapResultSheet: View {
         .buttonStyle(.bordered)
         .controlSize(.large)
         .accessibilityLabel("Try again".localized)
-    }
-
-    @ViewBuilder
-    private var resultHeader: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                PhotoThumbnail(data: context.imageData, size: 64)
-                itemSummaryControls
-            }
-        } else {
-            HStack(alignment: .center, spacing: Spacing.md) {
-                PhotoThumbnail(data: context.imageData, size: 64)
-                itemSummaryControls
-            }
-        }
-    }
-
-    private var itemSummaryControls: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            itemNameControl
-            priceEditor
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .layoutPriority(1)
     }
 
     private var priceEditor: some View {
@@ -676,6 +924,46 @@ private struct SnapResultMenuLabel: View {
 
     private var minimumScaleFactor: CGFloat {
         dynamicTypeSize.isAccessibilitySize ? 0.82 : 0.8
+    }
+}
+
+private struct SnapResultFactPill: View {
+    let label: String
+    let value: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: Spacing.xs) {
+            Image(systemName: systemImage)
+                .imageScale(.small)
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label.localized)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .lineLimit(1)
+
+                Text(value.localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .frame(maxWidth: .infinity, minHeight: 50)
+        .background(Color.brand.primaryMuted.opacity(0.54), in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .stroke(Color.brand.primaryText.opacity(0.12), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(ChipAccessibilityText.valueLabel(label, value: value))
     }
 }
 
