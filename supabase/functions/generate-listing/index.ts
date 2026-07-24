@@ -77,6 +77,7 @@ serve(async (request) => {
 
 type MarketplaceResearchPlan = {
   cacheKey: string;
+  cacheLookupKeys: string[];
   marketplace: MarketplaceId;
   category: string;
   condition: string;
@@ -472,6 +473,13 @@ function createMarketplaceResearchPlan(
   const condition = normalizedIdentifier(item.condition);
   const identity = researchIdentity(item, details, imageEvidence);
   const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
+  const noImageIdentity = researchIdentity(item, details, null);
+  const noImageIdentityKey = normalizedIdentifier(noImageIdentity).slice(0, 90) || "unknownitem";
+  const cacheKey = `${platform}:${category}:${condition}:${identityKey}`;
+  const cacheLookupKeys = uniqueStrings([
+    cacheKey,
+    `${platform}:${category}:${condition}:${noImageIdentityKey}`,
+  ], 2);
   const searchQuestions = [
     `${displayName} official selling fees ${currentYear}`,
     `${displayName} sold listings ${identity} used ${item.condition}`,
@@ -479,7 +487,8 @@ function createMarketplaceResearchPlan(
   ];
 
   return {
-    cacheKey: `${platform}:${category}:${condition}:${identityKey}`,
+    cacheKey,
+    cacheLookupKeys,
     marketplace: platform,
     category: item.category,
     condition: item.condition,
@@ -627,36 +636,44 @@ async function fetchMarketplaceResearchCache(
 
   try {
     const now = encodeURIComponent(new Date().toISOString());
-    const cacheKey = encodeURIComponent(plan.cacheKey);
     const select = "research_summary,useful_findings,official_sources,search_queries,updated_at";
-    const response = await fetchWithTimeout(
-      `${service.supabaseUrl}/rest/v1/marketplace_research_cache?cache_key=eq.${cacheKey}&expires_at=gt.${now}&select=${select}&limit=1`,
-      { headers: serviceHeaders(service.serviceRoleKey) },
-      supabaseServiceFetchOptions(),
-    );
-    if (!response.ok) return null;
+    for (const lookupKey of plan.cacheLookupKeys) {
+      const cacheKey = encodeURIComponent(lookupKey);
+      const response = await fetchWithTimeout(
+        `${service.supabaseUrl}/rest/v1/marketplace_research_cache?cache_key=eq.${cacheKey}&expires_at=gt.${now}&select=${select}&limit=1`,
+        { headers: serviceHeaders(service.serviceRoleKey) },
+        supabaseServiceFetchOptions(),
+      );
+      if (!response.ok) continue;
 
-    const rows = requireJsonArray(
-      await readResponseJson(response, "Marketplace research cache response was not valid JSON"),
-      "Marketplace research cache response was not a JSON array",
-    );
-    const row = rows[0];
-    if (row === undefined) return null;
+      const rows = requireJsonArray(
+        await readResponseJson(response, "Marketplace research cache response was not valid JSON"),
+        "Marketplace research cache response was not a JSON array",
+      );
+      const row = rows[0];
+      if (row === undefined) continue;
 
-    const payload = requireJsonObject(row, "Marketplace research cache row was not a JSON object");
-    const researchSummary = optionalString(payload.research_summary);
-    if (!researchSummary) return null;
-
-    return {
-      researchSummary,
-      usefulFindings: stringArray(payload.useful_findings),
-      officialSources: stringArray(payload.official_sources),
-      searchQuestions: stringArray(payload.search_queries),
-      updatedAt: optionalString(payload.updated_at) ?? "",
-    };
+      const cachedResearch = marketplaceResearchCacheFromRow(row);
+      if (cachedResearch) return cachedResearch;
+    }
+    return null;
   } catch {
     return null;
   }
+}
+
+function marketplaceResearchCacheFromRow(row: unknown): MarketplaceResearchCache | null {
+  const payload = requireJsonObject(row, "Marketplace research cache row was not a JSON object");
+  const researchSummary = optionalString(payload.research_summary);
+  if (!researchSummary) return null;
+
+  return {
+    researchSummary,
+    usefulFindings: stringArray(payload.useful_findings),
+    officialSources: stringArray(payload.official_sources),
+    searchQuestions: stringArray(payload.search_queries),
+    updatedAt: optionalString(payload.updated_at) ?? "",
+  };
 }
 
 async function saveMarketplaceResearchCache(
