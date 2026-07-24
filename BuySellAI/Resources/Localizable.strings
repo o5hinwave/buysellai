@@ -168,6 +168,8 @@
 	<string>Copy pieces</string>
 	<key>Copy the listing</key>
 	<string>Copy the listing</string>
+	<key>Current market check unavailable. Showing quick estimates.</key>
+	<string>Current market check unavailable. Showing quick estimates.</string>
 	<key>Current step</key>
 	<string>Current step</string>
 	<key>Couldn't clear history.</key>

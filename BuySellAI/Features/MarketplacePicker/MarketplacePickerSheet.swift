@@ -5,6 +5,8 @@ struct MarketplacePickerSheet: View {
 
     @Environment(AppStore.self) private var appStore
     @State private var computedEstimates: [MarketplaceEstimate]?
+    @State private var marketplaceComparisons: [Marketplace: MarketplaceComparison] = [:]
+    @State private var marketCheckMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -15,6 +17,13 @@ struct MarketplacePickerSheet: View {
                         item: context.item,
                         details: context.details
                     ))
+                }
+
+                if let marketCheckMessage {
+                    Section {
+                        marketCheckNotice(marketCheckMessage)
+                    }
+                    .accessibilitySortPriority(2.8)
                 }
 
                 Section("All places".localized) {
@@ -32,8 +41,7 @@ struct MarketplacePickerSheet: View {
         .background(Color.clear)
         .task {
             guard computedEstimates == nil else { return }
-            try? await Task.sleep(nanoseconds: 180_000_000)
-            computedEstimates = MarketplaceEstimator.estimates(for: context.item, details: context.details)
+            await loadMarketplaceCheck()
         }
     }
 
@@ -52,7 +60,11 @@ struct MarketplacePickerSheet: View {
 
     private func estimateRows(_ estimates: [MarketplaceEstimate]) -> some View {
         ForEach(estimates) { estimate in
-            MarketplaceRow(estimate: estimate, item: context.item) {
+            MarketplaceRow(
+                estimate: estimate,
+                item: context.item,
+                comparison: displayComparison(for: estimate.id)
+            ) {
                 chooseMarketplace(estimate.id)
             }
         }
@@ -83,15 +95,32 @@ struct MarketplacePickerSheet: View {
     }
 
     private func summaryButton(pick: MarketplaceSummaryPick, isRecommended: Bool) -> some View {
-        SummaryButton(pick: pick, item: context.item, isRecommended: isRecommended) {
+        SummaryButton(
+            pick: pick,
+            item: context.item,
+            comparison: displayComparison(for: pick.estimate.id),
+            isRecommended: isRecommended
+        ) {
             chooseMarketplace(pick.estimate.id)
         }
     }
 
     private func recommendedButton(pick: MarketplaceSummaryPick) -> some View {
-        RecommendedMarketplaceButton(pick: pick, item: context.item) {
+        RecommendedMarketplaceButton(
+            pick: pick,
+            item: context.item,
+            comparison: displayComparison(for: pick.estimate.id)
+        ) {
             chooseMarketplace(pick.estimate.id)
         }
+    }
+
+    private func marketCheckNotice(_ message: String) -> some View {
+        Label(message.localized, systemImage: "exclamationmark.magnifyingglass")
+            .font(.caption)
+            .foregroundStyle(Color.brand.mutedForeground)
+            .padding(.vertical, Spacing.xxs)
+            .accessibilityLabel(message.localized)
     }
 
     private var skeletonRows: some View {
@@ -138,11 +167,48 @@ struct MarketplacePickerSheet: View {
             answers: context.details
         )
     }
+
+    private func displayComparison(for marketplace: Marketplace) -> MarketplaceComparison? {
+        guard let comparison = marketplaceComparisons[marketplace],
+              comparison.evidenceStatus != .unavailable
+        else {
+            return nil
+        }
+        return comparison
+    }
+
+    private func loadMarketplaceCheck() async {
+        let localEstimates = MarketplaceEstimator.estimates(for: context.item, details: context.details)
+        let candidates = Array(localEstimates.prefix(10).map(\.id))
+
+        do {
+            let response = try await APIClient.shared.compareMarketplaces(
+                item: context.item,
+                details: context.details,
+                candidateMarketplaces: candidates,
+                accessToken: await appStore.authenticatedAccessToken()
+            )
+            let comparisons = response.comparisonByMarketplace
+            marketplaceComparisons = comparisons
+            computedEstimates = MarketplaceEstimator.estimates(
+                for: context.item,
+                details: context.details,
+                comparisons: comparisons
+            )
+            if comparisons.values.allSatisfy({ $0.evidenceStatus == .unavailable }) {
+                marketCheckMessage = "Current market check unavailable. Showing quick estimates."
+            }
+        } catch {
+            marketCheckMessage = "Current market check unavailable. Showing quick estimates."
+            computedEstimates = localEstimates
+        }
+    }
 }
 
 private struct RecommendedMarketplaceButton: View {
     let pick: MarketplaceSummaryPick
     let item: DetectedItem
+    let comparison: MarketplaceComparison?
     let action: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -215,7 +281,7 @@ private struct RecommendedMarketplaceButton: View {
     }
 
     private var reasonCopy: some View {
-        Text(pick.estimate.id.recommendationReason(for: item))
+        Text((comparison?.reason ?? pick.estimate.id.recommendationReason(for: item)).localized)
             .font(.callout)
             .foregroundStyle(Color.brand.foregroundSecondary)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
@@ -223,7 +289,7 @@ private struct RecommendedMarketplaceButton: View {
     }
 
     private var comparisonCue: some View {
-        Text(pick.estimate.comparisonSignals(for: item).summaryLine)
+        Text(comparison?.rowSignal(currencyCode: item.currencyCode) ?? pick.estimate.comparisonSignals(for: item).summaryLine)
             .font(.caption.weight(.semibold))
             .foregroundStyle(Color.brand.foregroundSecondary)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
@@ -231,7 +297,7 @@ private struct RecommendedMarketplaceButton: View {
     }
 
     private var recommendationKindLabel: some View {
-        Label(pick.kind.label.localized, systemImage: pick.kind.systemImage)
+        Label((comparison?.recommendationLabel ?? pick.kind.label).localized, systemImage: pick.kind.systemImage)
             .font(.caption.weight(.semibold))
             .foregroundStyle(Color.brand.success)
             .lineLimit(2)
@@ -265,6 +331,7 @@ private struct RecommendedMarketplaceButton: View {
 private struct SummaryButton: View {
     let pick: MarketplaceSummaryPick
     let item: DetectedItem
+    let comparison: MarketplaceComparison?
     let isRecommended: Bool
     let action: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -287,7 +354,7 @@ private struct SummaryButton: View {
                         .lineLimit(summaryLineLimit)
                         .minimumScaleFactor(0.82)
 
-                    Text(pick.estimate.comparisonSignals(for: item).summaryLine)
+                    Text(comparison?.rowSignal(currencyCode: item.currencyCode) ?? pick.estimate.comparisonSignals(for: item).summaryLine)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Color.brand.foregroundSecondary)
                         .lineLimit(reasonLineLimit)

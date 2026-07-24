@@ -21,7 +21,7 @@ struct HomeView: View {
 
                 Section {
                     HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.viewfinder")
-                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "text.bubble")
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "questionmark.bubble")
                     HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
@@ -418,7 +418,7 @@ private struct HomeHeroIconTrail: View {
         HStack(spacing: Spacing.sm) {
             HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "text.bubble", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "questionmark.bubble", isPrimary: false)
             HomeHeroTrailConnector()
             HomeHeroTrailSymbol(systemImage: "doc.on.doc", isPrimary: false)
         }

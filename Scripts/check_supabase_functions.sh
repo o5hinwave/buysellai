@@ -6,6 +6,7 @@ cd "$repo_root"
 
 entrypoints=(
     "supabase/functions/analyze-image/index.ts"
+    "supabase/functions/compare-marketplaces/index.ts"
     "supabase/functions/generate-listing/index.ts"
     "supabase/functions/store-apple-token/index.ts"
     "supabase/functions/delete-account/index.ts"
@@ -98,6 +99,26 @@ require_source_contains \
     "cleanEvidenceSources(result.evidenceSources, platform)" \
     "structured evidence source validation"
 require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "{ google_search: {} }" \
+    "marketplace compare Google Search tool"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "{ url_context: {} }" \
+    "marketplace compare URL Context tool"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "Prioritize sold/completed listing evidence over active asking prices." \
+    "sold-comps-first marketplace compare instruction"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "Do not invent sold listings, prices, fees, dates, demand, restrictions, or source URLs." \
+    "no-invented marketplace evidence instruction"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "candidateMarketplaces" \
+    "minimal marketplace candidate input"
+require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "For every factual market result you rely on, add one evidenceSources object" \
     "structured evidence source instruction"
@@ -111,8 +132,9 @@ require_source_not_contains \
     "copyable listing photo guidance rows"
 
 printf 'Supabase function Deno check passed\n'
-printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
+printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'listing research tools: google_search url_context gated-by-cache\n'
+printf 'marketplace compare: grounded candidate search before picker recommendation\n'
 printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
 printf 'listing evidence sources: structured source/date/status/comparability\n'

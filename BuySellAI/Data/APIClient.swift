@@ -90,6 +90,93 @@ actor APIClient {
         ).listing
     }
 
+    func compareMarketplaces(
+        item: DetectedItem,
+        details: ItemDetailAnswers? = nil,
+        candidateMarketplaces: [Marketplace],
+        accessToken: String? = nil
+    ) async throws -> MarketplaceComparisonResponse {
+        let itemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard itemName.isEmpty == false, item.priceEstimate > 0 else {
+            throw APIError.decoding
+        }
+
+        let candidates = Array(candidateMarketplaces.prefix(10))
+        guard candidates.isEmpty == false else {
+            throw APIError.decoding
+        }
+
+#if DEBUG
+        if isUITesting {
+            try await Task.sleep(nanoseconds: 250_000_000)
+            return MarketplaceComparisonResponse(
+                checkedAt: "2026-07-24T00:00:00Z",
+                comparisons: candidates.enumerated().map { index, marketplace in
+                    MarketplaceComparison(
+                        marketplace: marketplace,
+                        recommendationLabel: index == 0 ? "Best overall" : nil,
+                        marketplaceFitScore: max(90 - index * 6, 48),
+                        listPrice: item.priceEstimate,
+                        likelyRangeLow: item.priceEstimate * Decimal(8) / Decimal(10),
+                        likelyRangeHigh: item.priceEstimate * Decimal(11) / Decimal(10),
+                        takeHomeEstimate: MarketplaceEstimator.estimates(for: item, details: details).first { $0.id == marketplace }?.payout,
+                        compLowPrice: item.priceEstimate * Decimal(7) / Decimal(10),
+                        compMedianPrice: item.priceEstimate,
+                        compHighPrice: item.priceEstimate * Decimal(12) / Decimal(10),
+                        expectedSpeed: "Steady sale",
+                        shippingExpectation: marketplace.optimizationProfile.shippingEaseScore >= marketplace.optimizationProfile.localPickupScore ? "Easy shipping" : "Local pickup",
+                        feeSummary: marketplace.playbookEvidence.feeModelSummary,
+                        reason: marketplace.recommendationReason(for: item),
+                        evidenceSummary: "Checked recent comparable sales and marketplace guidance.",
+                        evidenceStatus: .grounded,
+                        evidenceSources: [
+                            ListingEvidenceSource(
+                                sourceMarketplace: marketplace.displayName,
+                                title: "Comparable sold listing",
+                                url: marketplace.playbookEvidence.feeModelSourceURL,
+                                dateChecked: "2026-07-24",
+                                listingStatus: "Sold",
+                                conditionAndVariant: item.condition.display,
+                                comparability: "Similar",
+                                price: item.priceEstimate
+                            )
+                        ]
+                    )
+                }
+            )
+        }
+#endif
+
+        let config = try loadConfig()
+        let itemPayload = ListingItemPayload(
+            name: itemName,
+            category: item.category.apiValue,
+            condition: item.condition.apiValue,
+            originalPrice: item.priceEstimate,
+            currentPrice: item.priceEstimate
+        )
+        let cleanDetails = details?.sanitizedForUse
+        let detailsPayload: ListingItemDetailsPayload?
+        if let cleanDetails, cleanDetails.hasListingPayloadDetails {
+            detailsPayload = ListingItemDetailsPayload(details: cleanDetails)
+        } else {
+            detailsPayload = nil
+        }
+        let payload = CompareMarketplacesRequest(
+            item: itemPayload,
+            details: detailsPayload,
+            candidateMarketplaces: candidates.map(\.rawValue)
+        )
+        let request = try makeRequest(
+            path: "compare-marketplaces",
+            config: config,
+            accessToken: accessToken,
+            body: payload
+        )
+        return try await perform(request, decoding: MarketplaceComparisonResponse.self)
+            .sanitizedForDisplay()
+    }
+
     func generateListingPayload(
         item: DetectedItem,
         marketplace: Marketplace,
@@ -527,6 +614,12 @@ private struct GenerateListingRequest: Encodable {
     let platform: String
     let details: ListingItemDetailsPayload?
     let imageDataUrl: String?
+}
+
+private struct CompareMarketplacesRequest: Encodable {
+    let item: ListingItemPayload
+    let details: ListingItemDetailsPayload?
+    let candidateMarketplaces: [String]
 }
 
 private struct ListingItemPayload: Encodable {

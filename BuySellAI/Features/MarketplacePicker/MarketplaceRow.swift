@@ -56,6 +56,7 @@ struct MarketplaceIcon: View {
 struct MarketplaceRow: View {
     let estimate: MarketplaceEstimate
     let item: DetectedItem
+    var comparison: MarketplaceComparison?
     let action: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -134,7 +135,7 @@ struct MarketplaceRow: View {
                 .lineLimit(blurbLineLimit)
                 .multilineTextAlignment(.leading)
 
-            Text(estimate.comparisonSignals(for: item).rowLine)
+            Text(comparison?.rowSignal(currencyCode: item.currencyCode) ?? estimate.comparisonSignals(for: item).rowLine)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color.brand.foregroundSecondary)
                 .lineLimit(fitLineLimit)

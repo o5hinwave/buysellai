@@ -23,7 +23,7 @@ print_pending_and_exit() {
         printf 'config: %s\n' "$config_path"
         printf 'project: %s\n' "$supabase_url"
         printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
-        printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
+        printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
         printf 'protected functions: store-apple-token delete-account\n'
         printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
     fi
@@ -86,6 +86,54 @@ if price <= 0:
     raise SystemExit("currentPrice must be greater than zero")
 
 print(str(data["name"]).strip())
+PY
+}
+
+validate_compare_response() {
+    local response_file="$1"
+
+    python3 - "$response_file" <<'PY'
+import json
+import sys
+from decimal import Decimal, InvalidOperation
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    data = json.load(handle)
+
+comparisons = data.get("comparisons")
+if not isinstance(comparisons, list) or not comparisons:
+    raise SystemExit("comparisons is missing or empty")
+
+supported = {"ebay", "craigslist", "facebook", "mercari", "offerup", "poshmark"}
+seen = set()
+for row in comparisons:
+    if not isinstance(row, dict):
+        raise SystemExit("comparison row is not an object")
+    marketplace = row.get("marketplace")
+    if marketplace not in supported:
+        raise SystemExit("unsupported marketplace in comparison response")
+    if marketplace in seen:
+        raise SystemExit("duplicate marketplace in comparison response")
+    seen.add(marketplace)
+    if not isinstance(row.get("reason"), str) or not row["reason"].strip():
+        raise SystemExit("comparison reason is missing")
+    status = row.get("evidenceStatus")
+    if status not in ("grounded", "limited", "unavailable"):
+        raise SystemExit("comparison evidenceStatus is invalid")
+    for field in ("listPrice", "likelyRangeLow", "likelyRangeHigh", "takeHomeEstimate", "compLowPrice", "compMedianPrice", "compHighPrice"):
+        if row.get(field) in (None, ""):
+            continue
+        try:
+            value = Decimal(str(row[field]))
+        except (InvalidOperation, ValueError):
+            raise SystemExit(f"{field} is not numeric")
+        if value <= 0:
+            raise SystemExit(f"{field} must be greater than zero")
+    sources = row.get("evidenceSources", [])
+    if sources is not None and not isinstance(sources, list):
+        raise SystemExit("evidenceSources is not an array")
+
+print(len(comparisons))
 PY
 }
 
@@ -339,6 +387,22 @@ cat > "$work_dir/listing-payload.json" <<'JSON'
   "platform": "ebay"
 }
 JSON
+cat > "$work_dir/compare-payload.json" <<'JSON'
+{
+  "item": {
+    "name": "Vintage brass table lamp",
+    "category": "Home",
+    "condition": "good",
+    "originalPrice": 45,
+    "currentPrice": 45
+  },
+  "details": {
+    "labelOrBrand": "unknown",
+    "isLargeOrFragile": false
+  },
+  "candidateMarketplaces": ["ebay", "craigslist", "facebook", "mercari", "offerup", "poshmark"]
+}
+JSON
 cat > "$work_dir/invalid-listing-platform-payload.json" <<'JSON'
 {
   "item": {
@@ -384,6 +448,7 @@ JSON
 printf '{}\n' > "$work_dir/delete-account-probe.json"
 
 call_function "analyze-image" "${functions_base}/analyze-image" "$work_dir/analyze-payload.json" "$work_dir/analyze-response.json"
+call_function "compare-marketplaces" "${functions_base}/compare-marketplaces" "$work_dir/compare-payload.json" "$work_dir/compare-response.json"
 call_function "generate-listing" "${functions_base}/generate-listing" "$work_dir/listing-payload.json" "$work_dir/listing-response.json"
 call_rejected_function "analyze-image missing image" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-missing-image-payload.json"
 call_rejected_function "analyze-image non-JPEG image" "${functions_base}/analyze-image" "$work_dir/invalid-analyze-png-payload.json"
@@ -399,17 +464,19 @@ probe_protected_table "apple_auth_tokens" "${rest_base}/apple_auth_tokens?select
 probe_protected_table "marketplace_research_cache" "${rest_base}/marketplace_research_cache?select=cache_key&limit=1"
 
 analyze_item="$(validate_analyze_response "$work_dir/analyze-response.json")" || fail "analyze-image response shape is invalid"
+validate_compare_response "$work_dir/compare-response.json" || fail "compare-marketplaces response shape is invalid"
 listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" || fail "generate-listing response shape is invalid"
 
 printf 'M10 backend preflight passed\n'
 printf 'config: %s\n' "$config_path"
 printf 'project: %s\n' "$supabase_url"
 printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
-printf 'functions: analyze-image generate-listing store-apple-token delete-account\n'
+printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'protected functions: store-apple-token delete-account\n'
 printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
 printf 'analyze item: %s\n' "$analyze_item"
 printf 'analyze rejection contract: missing jpeg base64\n'
+printf 'marketplace compare contract: grounded candidates with evidence status\n'
 printf 'listing contract: title-description-plain-text\n'
 printf 'listing rejection contract: platform category condition\n'
 printf 'listing bytes: %s\n' "$listing_bytes"

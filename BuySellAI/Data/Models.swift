@@ -214,6 +214,236 @@ struct MarketplaceEstimate: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+struct MarketplaceComparisonResponse: Decodable, Equatable, Sendable {
+    let checkedAt: String?
+    let comparisons: [MarketplaceComparison]
+
+    var comparisonByMarketplace: [Marketplace: MarketplaceComparison] {
+        comparisons.reduce(into: [Marketplace: MarketplaceComparison]()) { result, comparison in
+            result[comparison.marketplace] = comparison
+        }
+    }
+
+    func sanitizedForDisplay() -> MarketplaceComparisonResponse {
+        MarketplaceComparisonResponse(
+            checkedAt: clean(checkedAt, maxLength: 32),
+            comparisons: Array(comparisons.compactMap { $0.sanitizedForDisplay() }.prefix(10))
+        )
+    }
+
+    private func clean(_ value: String?, maxLength: Int) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else { return nil }
+        return String(trimmed.prefix(maxLength))
+    }
+}
+
+struct MarketplaceComparison: Decodable, Identifiable, Equatable, Sendable, Hashable {
+    let marketplace: Marketplace
+    let recommendationLabel: String?
+    let marketplaceFitScore: Int?
+    let listPrice: Decimal?
+    let likelyRangeLow: Decimal?
+    let likelyRangeHigh: Decimal?
+    let takeHomeEstimate: Decimal?
+    let compLowPrice: Decimal?
+    let compMedianPrice: Decimal?
+    let compHighPrice: Decimal?
+    let expectedSpeed: String?
+    let shippingExpectation: String?
+    let feeSummary: String?
+    let reason: String?
+    let evidenceSummary: String?
+    let evidenceStatus: EvidenceStatus
+    let evidenceSources: [ListingEvidenceSource]?
+
+    enum EvidenceStatus: String, Decodable, Sendable, Hashable {
+        case grounded
+        case limited
+        case unavailable
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let value = (try? container.decode(String.self))?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+            switch value {
+            case "grounded", "verified":
+                self = .grounded
+            case "limited", "partial":
+                self = .limited
+            default:
+                self = .unavailable
+            }
+        }
+    }
+
+    var id: Marketplace { marketplace }
+
+    init(
+        marketplace: Marketplace,
+        recommendationLabel: String? = nil,
+        marketplaceFitScore: Int? = nil,
+        listPrice: Decimal? = nil,
+        likelyRangeLow: Decimal? = nil,
+        likelyRangeHigh: Decimal? = nil,
+        takeHomeEstimate: Decimal? = nil,
+        compLowPrice: Decimal? = nil,
+        compMedianPrice: Decimal? = nil,
+        compHighPrice: Decimal? = nil,
+        expectedSpeed: String? = nil,
+        shippingExpectation: String? = nil,
+        feeSummary: String? = nil,
+        reason: String? = nil,
+        evidenceSummary: String? = nil,
+        evidenceStatus: EvidenceStatus = .unavailable,
+        evidenceSources: [ListingEvidenceSource]? = nil
+    ) {
+        self.marketplace = marketplace
+        self.recommendationLabel = recommendationLabel
+        self.marketplaceFitScore = marketplaceFitScore.map { min(max($0, 1), 100) }
+        self.listPrice = listPrice
+        self.likelyRangeLow = likelyRangeLow
+        self.likelyRangeHigh = likelyRangeHigh
+        self.takeHomeEstimate = takeHomeEstimate
+        self.compLowPrice = compLowPrice
+        self.compMedianPrice = compMedianPrice
+        self.compHighPrice = compHighPrice
+        self.expectedSpeed = expectedSpeed
+        self.shippingExpectation = shippingExpectation
+        self.feeSummary = feeSummary
+        self.reason = reason
+        self.evidenceSummary = evidenceSummary
+        self.evidenceStatus = evidenceStatus
+        self.evidenceSources = evidenceSources
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let marketplaceValue = try container.decode(String.self, forKey: .marketplace)
+        guard let marketplace = Marketplace(rawValue: marketplaceValue) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .marketplace,
+                in: container,
+                debugDescription: "Unsupported marketplace"
+            )
+        }
+        self.marketplace = marketplace
+        recommendationLabel = try container.decodeIfPresent(String.self, forKey: .recommendationLabel)
+        marketplaceFitScore = try container.decodeIfPresent(Int.self, forKey: .marketplaceFitScore)
+        listPrice = try container.decodeIfPresent(Decimal.self, forKey: .listPrice)
+        likelyRangeLow = try container.decodeIfPresent(Decimal.self, forKey: .likelyRangeLow)
+        likelyRangeHigh = try container.decodeIfPresent(Decimal.self, forKey: .likelyRangeHigh)
+        takeHomeEstimate = try container.decodeIfPresent(Decimal.self, forKey: .takeHomeEstimate)
+        compLowPrice = try container.decodeIfPresent(Decimal.self, forKey: .compLowPrice)
+        compMedianPrice = try container.decodeIfPresent(Decimal.self, forKey: .compMedianPrice)
+        compHighPrice = try container.decodeIfPresent(Decimal.self, forKey: .compHighPrice)
+        expectedSpeed = try container.decodeIfPresent(String.self, forKey: .expectedSpeed)
+        shippingExpectation = try container.decodeIfPresent(String.self, forKey: .shippingExpectation)
+        feeSummary = try container.decodeIfPresent(String.self, forKey: .feeSummary)
+        reason = try container.decodeIfPresent(String.self, forKey: .reason)
+        evidenceSummary = try container.decodeIfPresent(String.self, forKey: .evidenceSummary)
+        evidenceStatus = try container.decodeIfPresent(EvidenceStatus.self, forKey: .evidenceStatus) ?? .unavailable
+        evidenceSources = try container.decodeIfPresent([ListingEvidenceSource].self, forKey: .evidenceSources)
+    }
+
+    func sanitizedForDisplay() -> MarketplaceComparison? {
+        let sanitizedSources = cleanEvidenceSources(evidenceSources)
+        let displayEvidenceStatus: EvidenceStatus
+        if evidenceStatus == .grounded, sanitizedSources?.isEmpty != false {
+            displayEvidenceStatus = .limited
+        } else {
+            displayEvidenceStatus = evidenceStatus
+        }
+
+        return MarketplaceComparison(
+            marketplace: marketplace,
+            recommendationLabel: clean(recommendationLabel, maxLength: 32),
+            marketplaceFitScore: marketplaceFitScore.map { min(max($0, 1), 100) },
+            listPrice: positive(listPrice),
+            likelyRangeLow: positive(likelyRangeLow),
+            likelyRangeHigh: positive(likelyRangeHigh),
+            takeHomeEstimate: positive(takeHomeEstimate),
+            compLowPrice: positive(compLowPrice),
+            compMedianPrice: positive(compMedianPrice),
+            compHighPrice: positive(compHighPrice),
+            expectedSpeed: clean(expectedSpeed, maxLength: 80),
+            shippingExpectation: clean(shippingExpectation, maxLength: 100),
+            feeSummary: clean(feeSummary, maxLength: 180),
+            reason: clean(reason, maxLength: 180),
+            evidenceSummary: clean(evidenceSummary, maxLength: 220),
+            evidenceStatus: displayEvidenceStatus,
+            evidenceSources: sanitizedSources
+        )
+    }
+
+    func rowSignal(currencyCode: String) -> String? {
+        guard evidenceStatus != .unavailable else { return nil }
+        let price = listPrice.map { String.localizedFormat("List around %@", $0.currency(code: currencyCode)) }
+        let range = soldRange(currencyCode: currencyCode)
+        let speed = clean(expectedSpeed, maxLength: 80)
+        let shipping = clean(shippingExpectation, maxLength: 100)
+        let parts = [price, range, speed, shipping].compactMap { $0 }
+        guard parts.isEmpty == false else { return nil }
+        return parts.prefix(3).joined(separator: " · ")
+    }
+
+    func soldRange(currencyCode: String) -> String? {
+        if let low = compLowPrice, let high = compHighPrice {
+            return String.localizedFormat("Sold %@-%@", low.currency(code: currencyCode), high.currency(code: currencyCode))
+        }
+        if let median = compMedianPrice {
+            return String.localizedFormat("Typical %@", median.currency(code: currencyCode))
+        }
+        return nil
+    }
+
+    private func clean(_ value: String?, maxLength: Int) -> String? {
+        guard let value else { return nil }
+        let collapsed = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard collapsed.isEmpty == false,
+              collapsed.contains("```") == false
+        else { return nil }
+        return String(collapsed.prefix(maxLength))
+    }
+
+    private func positive(_ value: Decimal?) -> Decimal? {
+        guard let value, value > 0 else { return nil }
+        return value.rounded(scale: 2)
+    }
+
+    private func cleanEvidenceSources(_ values: [ListingEvidenceSource]?) -> [ListingEvidenceSource]? {
+        let cleaned = (values ?? [])
+            .compactMap { $0.sanitizedForDisplay() }
+            .reduce(into: [ListingEvidenceSource]()) { result, value in
+                guard result.contains(where: { $0.id == value.id }) == false, result.count < 4 else { return }
+                result.append(value)
+            }
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case marketplace
+        case recommendationLabel
+        case marketplaceFitScore
+        case listPrice
+        case likelyRangeLow
+        case likelyRangeHigh
+        case takeHomeEstimate
+        case compLowPrice
+        case compMedianPrice
+        case compHighPrice
+        case expectedSpeed
+        case shippingExpectation
+        case feeSummary
+        case reason
+        case evidenceSummary
+        case evidenceStatus
+        case evidenceSources
+    }
+}
+
 enum EstimateBadge: String, Codable, Sendable {
     case best
     case lowest

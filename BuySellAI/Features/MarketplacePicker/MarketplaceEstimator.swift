@@ -78,6 +78,64 @@ enum MarketplaceEstimator {
         }
     }
 
+    static func estimates(
+        for item: DetectedItem,
+        details: ItemDetailAnswers? = nil,
+        comparisons: [Marketplace: MarketplaceComparison]
+    ) -> [MarketplaceEstimate] {
+        let localEstimates = estimates(for: item, details: details)
+        guard comparisons.isEmpty == false else {
+            return localEstimates
+        }
+
+        let merged = localEstimates.map { estimate -> MarketplaceEstimate in
+            guard let comparison = comparisons[estimate.id] else {
+                return estimate
+            }
+            return MarketplaceEstimate(
+                id: estimate.id,
+                payout: (comparison.takeHomeEstimate ?? estimate.payout).rounded(scale: 0),
+                deltaPct: estimate.deltaPct,
+                badge: .none,
+                fitScore: comparison.marketplaceFitScore ?? estimate.fitScore
+            )
+        }
+        let average = merged.map(\.payout.doubleValue).reduce(0, +) / Double(max(merged.count, 1))
+        let catalogOrder = Dictionary(uniqueKeysWithValues: Marketplace.activeRecommendationCases.enumerated().map { index, marketplace in
+            (marketplace, index)
+        })
+        let sorted = merged
+            .map { estimate in
+                MarketplaceEstimate(
+                    id: estimate.id,
+                    payout: estimate.payout,
+                    deltaPct: average == 0 ? 0 : ((estimate.payout.doubleValue - average) / average) * 100,
+                    badge: .none,
+                    fitScore: estimate.fitScore
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.fitScore != rhs.fitScore {
+                    return lhs.fitScore > rhs.fitScore
+                }
+                if lhs.payout != rhs.payout {
+                    return lhs.payout > rhs.payout
+                }
+                return (catalogOrder[lhs.id] ?? Int.max) < (catalogOrder[rhs.id] ?? Int.max)
+            }
+
+        let lowestPayoutMarketplace = sorted.min { $0.payout < $1.payout }?.id
+        return sorted.enumerated().map { index, estimate in
+            var copy = estimate
+            if index == 0 {
+                copy.badge = .best
+            } else if estimate.id == lowestPayoutMarketplace {
+                copy.badge = .lowest
+            }
+            return copy
+        }
+    }
+
     static func recommendationComponents(
         for item: DetectedItem,
         details: ItemDetailAnswers? = nil,
