@@ -246,6 +246,8 @@
 	<string>Email</string>
 	<key>Estimated price</key>
 	<string>Estimated price</string>
+	<key>Exact item name or model...</key>
+	<string>Exact item name or model...</string>
 	<key>Etsy</key>
 	<string>Etsy</string>
 	<key>Easy shipping for everyday items</key>
@@ -1192,6 +1194,8 @@
 	<string>Fit the whole thing.</string>
 	<key>Photo check</key>
 	<string>Photo check</string>
+	<key>Pick only if it matches what you can see. If not, skip it.</key>
+	<string>Pick only if it matches what you can see. If not, skip it.</string>
 	<key>Photo</key>
 	<string>Photo</string>
 	<key>Photo. Answer. Copy.</key>

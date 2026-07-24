@@ -200,7 +200,7 @@ struct ItemQuestionsSheet: View {
                 Button {
                     applyChoice(choice, for: question)
                 } label: {
-                    Text(choice.title.localized)
+                    Text(choice.displayTitle)
                         .font(.body.weight(.semibold))
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
@@ -209,7 +209,7 @@ struct ItemQuestionsSheet: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .tint(Color.brand.foregroundSecondary)
-                .accessibilityLabel(choice.title.localized)
+                .accessibilityLabel(choice.displayTitle)
             }
         }
     }
@@ -648,6 +648,7 @@ struct ItemQuestionsSheet: View {
         }
 
         if let marketplace = context.preferredMarketplace {
+            add(likelyMatchQuestion(for: context, answers: answers))
             marketplaceQuestions(for: marketplace, item: context.item, answers: answers).forEach { add($0) }
             add(analysisQuestion(for: context))
             if shouldAskLargeOrFragile(for: context.item.category, marketplace: marketplace) {
@@ -655,6 +656,7 @@ struct ItemQuestionsSheet: View {
             }
             return Array(questions.prefix(3))
         }
+        add(likelyMatchQuestion(for: context, answers: answers))
         add(analysisQuestion(for: context))
         if shouldAskBrand(for: context.item.category, missingFacts: missingFacts, knownFacts: knownFacts) {
             add(brandQuestion(for: context.item.category))
@@ -675,6 +677,48 @@ struct ItemQuestionsSheet: View {
         let limit = context.preferredMarketplace == nil ? 4 : 5
         let limitedQuestions = Array(questions.prefix(limit))
         return limitedQuestions
+    }
+
+    private static func likelyMatchQuestion(for context: ItemQuestionsContext, answers: ItemDetailAnswers) -> DetailQuestion? {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false else { return nil }
+        let matches = uniqueLikelyMatches(from: context.analysis?.likelyMatches ?? [])
+        guard shouldAskLikelyMatchQuestion(matches: matches, item: context.item) else { return nil }
+        let choices = matches.prefix(3).map { match in
+            DetailChoice(title: match.name, value: .text(match.name), localizesTitle: false)
+        } + [
+            DetailChoice(title: "I don't know", value: .unknown)
+        ]
+
+        return DetailQuestion(
+            id: "analysis-likely-match",
+            contextLabel: "Photo check",
+            title: "Which one looks closest?",
+            detail: "Pick only if it matches what you can see. If not, skip it.",
+            placeholder: "Exact item name or model...",
+            systemImage: AppSymbol.Action.search,
+            kind: .text(.sizeOrModel),
+            choices: choices
+        )
+    }
+
+    private static func uniqueLikelyMatches(from matches: [AnalyzeLikelyMatch]) -> [AnalyzeLikelyMatch] {
+        matches.compactMap { $0.sanitizedForDisplay() }
+            .reduce(into: [AnalyzeLikelyMatch]()) { result, match in
+                let alreadyIncluded = result.contains {
+                    $0.name.localizedCaseInsensitiveCompare(match.name) == .orderedSame
+                }
+                guard alreadyIncluded == false else { return }
+                result.append(match)
+            }
+    }
+
+    private static func shouldAskLikelyMatchQuestion(matches: [AnalyzeLikelyMatch], item: DetectedItem) -> Bool {
+        guard let firstMatch = matches.first else { return false }
+        if matches.count > 1 {
+            return true
+        }
+        let matchesCurrentItem = firstMatch.name.localizedCaseInsensitiveCompare(item.name) == .orderedSame
+        return matchesCurrentItem == false || firstMatch.confidence < 0.82
     }
 
     private static func analysisQuestion(for context: ItemQuestionsContext) -> DetailQuestion? {
@@ -1786,8 +1830,19 @@ private enum SavedDetailTarget: Hashable {
 private struct DetailChoice: Identifiable, Hashable {
     let title: String
     let value: DetailChoiceValue
+    let localizesTitle: Bool
 
-    var id: String { "\(title)-\(value)" }
+    init(title: String, value: DetailChoiceValue, localizesTitle: Bool = true) {
+        self.title = title
+        self.value = value
+        self.localizesTitle = localizesTitle
+    }
+
+    var id: String { "\(title)-\(value)-\(localizesTitle)" }
+
+    var displayTitle: String {
+        localizesTitle ? title.localized : title
+    }
 
     var isUnknown: Bool {
         if case .unknown = value {
