@@ -233,33 +233,33 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
     var iconSystemName: String {
         switch self {
         case .ebay, .amazon, .shopify, .bonanza:
-            "cart"
+            "cart.fill"
         case .craigslist, .offerup, .nextdoor:
-            "mappin.and.ellipse"
+            "mappin.circle.fill"
         case .facebook:
-            "person.2"
+            "person.2.fill"
         case .poshmark, .depop, .grailed, .kidizen, .vinted, .curtsy:
-            "tshirt"
+            "tshirt.fill"
         case .mercari:
-            "shippingbox"
+            "shippingbox.fill"
         case .whatnot:
-            "play.rectangle"
+            "play.rectangle.fill"
         case .reverb:
             "music.note"
         case .etsy:
-            "paintpalette"
+            "paintpalette.fill"
         case .stockx, .goat:
-            "checkmark.seal"
+            "checkmark.seal.fill"
         case .vestiaire, .therealreal, .tradesy:
-            "handbag"
+            "handbag.fill"
         case .swappa:
             "iphone"
         case .chairish:
-            "house"
+            "house.fill"
         case .rubylane:
-            "sparkles"
+            "building.columns.fill"
         case .tcgplayer:
-            "rectangle.stack"
+            "rectangle.stack.fill"
         }
     }
 

@@ -20,9 +20,9 @@ struct HomeView: View {
                 }
 
                 Section {
-                    HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.viewfinder")
-                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "checklist")
-                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "tag.fill")
+                    HomeStepRow(number: 1, title: "Snap a photo", detail: "Fit the whole thing.", systemImage: "camera.fill")
+                    HomeStepRow(number: 2, title: "Answer what you know", detail: "Skip anything you're unsure about.", systemImage: "questionmark.bubble.fill")
+                    HomeStepRow(number: 3, title: "Copy the listing", detail: "Price, place, and post are ready.", systemImage: "doc.on.doc.fill")
                     HomeHowItWorksRow {
                         Haptics.impact(.light)
                         appStore.presentTutorial()
@@ -419,9 +419,9 @@ private struct HomeHeroIconTrail: View {
         HStack(spacing: Spacing.sm) {
             HomeHeroTrailSymbol(systemImage: "camera.fill", isPrimary: true)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "checklist", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "questionmark.bubble.fill", isPrimary: false)
             HomeHeroTrailConnector()
-            HomeHeroTrailSymbol(systemImage: "tag.fill", isPrimary: false)
+            HomeHeroTrailSymbol(systemImage: "doc.on.doc.fill", isPrimary: false)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Photo. Questions. Listing.".localized)
@@ -511,7 +511,7 @@ private struct HomeStepRow: View {
 private struct EmptyHistoryView: View {
     var body: some View {
         ContentUnavailableView {
-            Label("No listings yet".localized, systemImage: "clock.arrow.circlepath")
+            Label("No listings yet".localized, systemImage: "tray.fill")
         } description: {
             Text("Copy a listing and it will appear here.".localized)
         }

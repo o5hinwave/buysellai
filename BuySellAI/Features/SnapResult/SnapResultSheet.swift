@@ -295,7 +295,7 @@ struct SnapResultSheet: View {
             showsUncertaintyHelp = true
             showsDetailCorrection = false
         } label: {
-            Label("Not sure".localized, systemImage: "questionmark.circle")
+            Label("Not sure".localized, systemImage: "questionmark.circle.fill")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
@@ -312,7 +312,7 @@ struct SnapResultSheet: View {
             isEditingName = true
             focusedField = .name
         } label: {
-            Label("Change details".localized, systemImage: "slider.horizontal.3")
+            Label("Change details".localized, systemImage: "pencil.circle.fill")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)

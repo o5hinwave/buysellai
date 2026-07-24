@@ -40,6 +40,8 @@
 	<string>Analyzing your photo…</string>
 	<key>Answer</key>
 	<string>Answer</string>
+	<key>Answer a few questions</key>
+	<string>Answer a few questions</string>
 	<key>Antiques &amp; fine art</key>
 	<string>Antiques &amp; fine art</string>
 	<key>All places</key>
@@ -524,6 +526,8 @@
 	<string>Take a photo. Pick a place. Copy the listing.</string>
 	<key>Take photo, pick place, copy listing.</key>
 	<string>Take photo, pick place, copy listing.</string>
+	<key>Tap I don't know anytime.</key>
+	<string>Tap I don't know anytime.</string>
 	<key>Tap the item to set focus and exposure.</key>
 	<string>Tap the item to set focus and exposure.</string>
 	<key>Terms</key>

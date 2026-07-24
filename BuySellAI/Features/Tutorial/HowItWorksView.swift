@@ -150,7 +150,7 @@ private struct CompactGuideGraphic: View {
                 }
                 .modifier(AppShadow.raised())
 
-            Image(systemName: "camera.viewfinder")
+            Image(systemName: "camera.fill")
                 .brandSymbol(.heroIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.brand.primaryText)
@@ -158,15 +158,15 @@ private struct CompactGuideGraphic: View {
 
             VStack {
                 HStack {
-                    Image(systemName: "sparkles")
+                    Image(systemName: "questionmark.bubble.fill")
                     Spacer()
-                    Image(systemName: "doc.on.clipboard")
+                    Image(systemName: "doc.on.doc.fill")
                 }
                 Spacer()
                 HStack {
-                    Image(systemName: "tag")
+                    Image(systemName: "tag.fill")
                     Spacer()
-                    Image(systemName: "checkmark.circle")
+                    Image(systemName: "checkmark.circle.fill")
                 }
             }
             .font(.caption.weight(.semibold))
@@ -263,19 +263,19 @@ private struct TutorialStep: Identifiable {
     static let steps = [
         TutorialStep(
             id: 1,
-            systemImage: "camera",
+            systemImage: "camera.fill",
             title: "Take a clear photo",
             detail: "Fit the whole item in the frame."
         ),
         TutorialStep(
             id: 2,
-            systemImage: "list.bullet.rectangle",
-            title: "Choose where to sell",
-            detail: "We suggest the best place first."
+            systemImage: "questionmark.bubble.fill",
+            title: "Answer a few questions",
+            detail: "Tap I don't know anytime."
         ),
         TutorialStep(
             id: 3,
-            systemImage: "doc.on.clipboard",
+            systemImage: "doc.on.doc.fill",
             title: "Copy the listing",
             detail: "Paste it into the marketplace when you are ready."
         )
