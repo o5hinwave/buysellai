@@ -140,6 +140,14 @@ final class MarketplaceEstimatorTests: XCTestCase {
             comparison.accessibilitySignal(currencyCode: "USD"),
             "List around \(Decimal(100).currency(code: "USD")), No sold prices found, Steady sale"
         )
+        XCTAssertEqual(
+            comparison.marketEvidenceFacts(currencyCode: "USD"),
+            [
+                MarketplaceEvidenceFact(label: "Sold", value: "No sold prices found"),
+                MarketplaceEvidenceFact(label: "Speed", value: "Steady sale"),
+                MarketplaceEvidenceFact(label: "Shipping", value: "Easy shipping")
+            ]
+        )
 
         let soldComparison = MarketplaceComparison(
             marketplace: .ebay,
@@ -157,6 +165,36 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertEqual(
             soldRangeComparison.soldPriceSignal(currencyCode: "USD"),
             "Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD"))"
+        )
+    }
+
+    func testMarketplaceComparisonBuildsCompactEvidenceFactsForPickerRows() {
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            listPrice: Decimal(100),
+            likelyRangeLow: Decimal(85),
+            likelyRangeHigh: Decimal(115),
+            compLowPrice: Decimal(70),
+            compHighPrice: Decimal(120),
+            expectedSpeed: "Steady sale",
+            shippingExpectation: "Easy shipping",
+            feeSummary: "Final value fee applies.",
+            evidenceStatus: .grounded
+        )
+
+        XCTAssertEqual(
+            comparison.marketEvidenceFacts(currencyCode: "USD"),
+            [
+                MarketplaceEvidenceFact(label: "Range", value: "\(Decimal(85).currency(code: "USD")) to \(Decimal(115).currency(code: "USD"))"),
+                MarketplaceEvidenceFact(label: "Sold", value: "Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD"))"),
+                MarketplaceEvidenceFact(label: "Fees", value: "Final value fee applies."),
+                MarketplaceEvidenceFact(label: "Speed", value: "Steady sale"),
+                MarketplaceEvidenceFact(label: "Shipping", value: "Easy shipping")
+            ]
+        )
+        XCTAssertEqual(
+            comparison.marketEvidenceAccessibilityText(currencyCode: "USD"),
+            "Range: \(Decimal(85).currency(code: "USD")) to \(Decimal(115).currency(code: "USD")), Sold: Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD")), Fees: Final value fee applies., Speed: Steady sale, Shipping: Easy shipping"
         )
     }
 

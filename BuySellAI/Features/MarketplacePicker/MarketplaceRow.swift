@@ -6,8 +6,8 @@ enum MarketplaceRowLayout {
     static let accessibilityPayoutCircleSize: CGFloat = 64
     static let payoutStackWidth: CGFloat = 66
     static let deltaReservedHeight: CGFloat = 14
-    static let rowMinHeight: CGFloat = 104
-    static let accessibilityRowMinHeight: CGFloat = 148
+    static let rowMinHeight: CGFloat = 128
+    static let accessibilityRowMinHeight: CGFloat = 196
     static let fallbackRowMinHeight: CGFloat = 72
     static let fallbackAccessibilityRowMinHeight: CGFloat = 112
 }
@@ -27,6 +27,19 @@ struct MarketplaceComparisonSignals: Sendable, Hashable {
 
     var accessibilitySummary: String {
         String.localizedFormat("%@, %@, %@", listPrice, speed, fulfillment)
+    }
+}
+
+struct MarketplaceEvidenceFact: Identifiable, Sendable, Hashable {
+    let label: String
+    let value: String
+
+    var id: String {
+        "\(label)-\(value)"
+    }
+
+    var line: String {
+        String.localizedFormat("%@: %@", label.localized, value)
     }
 }
 
@@ -149,7 +162,26 @@ struct MarketplaceRow: View {
                     .lineLimit(fitLineLimit)
                     .multilineTextAlignment(.leading)
             }
+
+            if let comparison {
+                marketEvidenceStrip(comparison, lineLimit: fitLineLimit)
+                    .padding(.top, 2)
+            }
         }
+    }
+
+    private func marketEvidenceStrip(_ comparison: MarketplaceComparison, lineLimit: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(comparison.marketEvidenceFacts(currencyCode: item.currencyCode).prefix(evidenceFactLimit))) { fact in
+                Text(fact.line)
+                    .font(.caption2)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .lineLimit(lineLimit)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(comparison.marketEvidenceAccessibilityText(currencyCode: item.currencyCode) ?? "")
     }
 
     private func payoutCircle(size: CGFloat) -> some View {
@@ -199,6 +231,10 @@ struct MarketplaceRow: View {
 
     private var fitColor: Color {
         estimate.fitScore >= 82 ? Color.brand.success : Color.brand.mutedForeground
+    }
+
+    private var evidenceFactLimit: Int {
+        dynamicTypeSize.isAccessibilitySize ? 4 : 3
     }
 
     private var accessibilityLabel: String {
@@ -332,10 +368,11 @@ enum MarketplaceAccessibilityText {
         }
         let marketSignal = comparison?.accessibilitySignal(currencyCode: item.currencyCode)
             ?? estimate.comparisonSignals(for: item).accessibilitySummary
+        let evidenceDetails = comparison?.marketEvidenceAccessibilityText(currencyCode: item.currencyCode)
         return String.localizedFormat(
             "%@, %@, %@",
             label,
-            marketSignal,
+            [marketSignal, evidenceDetails].compactMap { $0 }.joined(separator: ", "),
             estimate.id.recommendationReason(for: item)
         )
     }
@@ -345,6 +382,50 @@ enum MarketplaceAccessibilityText {
             return estimate.id.displayName
         }
         return String.localizedFormat("%@, %@", estimate.id.displayName, fitSummary.localized.lowercased())
+    }
+}
+
+extension MarketplaceComparison {
+    func marketEvidenceFacts(currencyCode: String) -> [MarketplaceEvidenceFact] {
+        var facts: [MarketplaceEvidenceFact] = []
+        appendLikelyRangeFact(currencyCode: currencyCode, to: &facts)
+        appendSoldFact(currencyCode: currencyCode, to: &facts)
+        appendCleanTextFact(label: "Fees", value: feeSummary, to: &facts)
+        appendCleanTextFact(label: "Speed", value: expectedSpeed, to: &facts)
+        appendCleanTextFact(label: "Shipping", value: shippingExpectation, to: &facts)
+        appendListPriceFallback(currencyCode: currencyCode, to: &facts)
+        return facts
+    }
+
+    func marketEvidenceAccessibilityText(currencyCode: String) -> String? {
+        let facts = marketEvidenceFacts(currencyCode: currencyCode)
+        guard facts.isEmpty == false else { return nil }
+        return facts.map(\.line).joined(separator: ", ")
+    }
+
+    private func appendLikelyRangeFact(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
+        guard let low = likelyRangeLow, let high = likelyRangeHigh else { return }
+        facts.append(MarketplaceEvidenceFact(
+            label: "Range",
+            value: String.localizedFormat("%@ to %@", low.currency(code: currencyCode), high.currency(code: currencyCode))
+        ))
+    }
+
+    private func appendSoldFact(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
+        facts.append(MarketplaceEvidenceFact(label: "Sold", value: soldPriceSignal(currencyCode: currencyCode)))
+    }
+
+    private func appendCleanTextFact(label: String, value: String?, to facts: inout [MarketplaceEvidenceFact]) {
+        let cleanValue = value?
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard cleanValue.isEmpty == false else { return }
+        facts.append(MarketplaceEvidenceFact(label: label, value: cleanValue))
+    }
+
+    private func appendListPriceFallback(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
+        guard facts.isEmpty, let listPrice else { return }
+        facts.append(MarketplaceEvidenceFact(label: "List", value: listPrice.currency(code: currencyCode)))
     }
 }
 

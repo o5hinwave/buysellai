@@ -20,6 +20,8 @@
 	<string>%@, %@, %@</string>
 	<key>%@, %@, %@, %@</key>
 	<string>%@, %@, %@, %@</string>
+	<key>%@: %@</key>
+	<string>%@: %@</string>
 	<key>%@, estimated payout %d dollars, %d percent %@ average</key>
 	<string>%@, estimated payout %d dollars, %d percent %@ average</string>
 	<key>%@, estimated payout %d dollars, average payout</key>
@@ -268,6 +270,8 @@
 	<string>Fashion &amp; closet items</string>
 	<key>Fashion, no listing fees</key>
 	<string>Fashion, no listing fees</string>
+	<key>Fees</key>
+	<string>Fees</string>
 	<key>Fit the whole item in the frame</key>
 	<string>Fit the whole item in the frame</string>
 	<key>Fit the whole item in the frame.</key>
@@ -328,6 +332,8 @@
 	<string>Light</string>
 	<key>Like New</key>
 	<string>Like New</string>
+	<key>List</key>
+	<string>List</string>
 	<key>Likely sells for</key>
 	<string>Likely sells for</string>
 	<key>Listing draft</key>
@@ -1026,6 +1032,8 @@
 	<string>Price clue</string>
 	<key>Question progress</key>
 	<string>Question progress</string>
+	<key>Range</key>
+	<string>Range</string>
 	<key>Ready to write</key>
 	<string>Ready to write</string>
 	<key>Saved so far</key>
@@ -1274,6 +1282,8 @@
 	<string>Shows the checks behind this listing.</string>
 	<key>Slower sale</key>
 	<string>Slower sale</string>
+	<key>Sold</key>
+	<string>Sold</string>
 	<key>Source</key>
 	<string>Source</string>
 	<key>Source details</key>
@@ -1288,6 +1298,8 @@
 	<string>Sold prices</string>
 	<key>Sold prices %@ to %@</key>
 	<string>Sold prices %@ to %@</string>
+	<key>Speed</key>
+	<string>Speed</string>
 	<key>Steady sale</key>
 	<string>Steady sale</string>
 	<key>Typical %@</key>
