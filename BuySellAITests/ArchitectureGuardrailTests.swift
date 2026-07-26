@@ -125,7 +125,8 @@ final class ArchitectureGuardrailTests: XCTestCase {
         try assertNoMatches([
             #"\b[Ff]ree during early access\b"#,
             #"\b[Ee]arly access\b"#,
-            #"\b[Ff]ull access right now\b"#
+            #"\b[Ff]ull access right now\b"#,
+            #"\b[Ss]hort break before the next scan\b"#
         ], in: flowFiles)
 
         let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)

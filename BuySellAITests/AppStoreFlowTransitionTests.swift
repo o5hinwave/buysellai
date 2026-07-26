@@ -586,13 +586,22 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         XCTAssertEqual(store.latestEntitlementSnapshot, entitlement)
         XCTAssertEqual(store.earlyAccessStatusValue, "12 analyses left today")
 
+        store.updateEntitlementSnapshot(EntitlementSnapshot(
+            state: .earlyAccess,
+            completeFeatureAccess: true,
+            futurePaidAccessEnabled: false,
+            remainingAnalyses: 0,
+            remainingAiActions: 3
+        ))
+
+        XCTAssertEqual(store.earlyAccessStatusValue, "Short break before the next scan")
+
         let reopenedStore = AppStore(
             defaults: defaults,
             flowTransitionDelayNanoseconds: transitionDelay
         )
 
-        XCTAssertEqual(reopenedStore.latestEntitlementSnapshot, entitlement)
-        XCTAssertEqual(reopenedStore.earlyAccessStatusValue, "12 analyses left today")
+        XCTAssertEqual(reopenedStore.earlyAccessStatusValue, "Short break before the next scan")
     }
 
     private var lamp: DetectedItem {

@@ -1382,6 +1382,8 @@
 	<string>Free during early access</string>
 	<key>Full access right now</key>
 	<string>Full access right now</string>
+	<key>Short break before the next scan</key>
+	<string>Short break before the next scan</string>
 	<key>Full listing</key>
 	<string>Full listing</string>
 	<key>Only what changes the price.</key>

@@ -12,6 +12,7 @@ final class SettingsViewLifecycleTests: XCTestCase {
         XCTAssertNotNil(settings.range(of: #"title: "Free during early access""#))
         XCTAssertNotNil(settings.range(of: #"value: appStore.earlyAccessStatusValue"#))
         XCTAssertNotNil(settings.range(of: #"BuySell is free during early access while we improve item identification, pricing research, and marketplace recommendations."#))
+        XCTAssertNil(settings.range(of: #"cooldown"#, options: .caseInsensitive))
         XCTAssertNil(settings.range(of: #"paywall"#, options: .caseInsensitive))
         XCTAssertNil(settings.range(of: #"subscription"#, options: .caseInsensitive))
         XCTAssertNil(settings.range(of: #"trial"#, options: .caseInsensitive))

@@ -69,7 +69,7 @@ final class AppStore {
         )
         return remaining > 0
             ? String.localizedFormat("%d analyses left today".localized, remaining)
-            : "Protected cooldown active".localized
+            : "Short break before the next scan".localized
     }
 
     var isShowingCamera = false
