@@ -61,12 +61,12 @@ struct HowItWorksView: View {
                         .frame(width: graphicWidth(in: geometry), height: graphicHeight)
 
                     VStack(spacing: Spacing.md) {
-                        Text("Snap · Pick · Sell".localized)
+                        Text("Snap it. Price it. Sell it.".localized)
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(Color.brand.primaryText)
                             .multilineTextAlignment(.center)
 
-                        Text("Sell anything in three taps.".localized)
+                        Text("Take a picture of anything.".localized)
                             .font(.largeTitle.weight(.bold))
                             .foregroundStyle(Color.brand.foreground)
                             .multilineTextAlignment(.center)
@@ -74,7 +74,7 @@ struct HowItWorksView: View {
                             .minimumScaleFactor(0.78)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text("Take a photo. We suggest where to sell and write the listing.".localized)
+                        Text("BuySell figures out what it is, what it's worth, and where to sell it.".localized)
                             .font(.body)
                             .foregroundStyle(Color.brand.foregroundSecondary)
                             .multilineTextAlignment(.center)

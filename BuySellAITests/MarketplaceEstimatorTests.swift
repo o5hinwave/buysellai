@@ -65,6 +65,59 @@ final class MarketplaceEstimatorTests: XCTestCase {
         }
     }
 
+    func testActiveMarketplacePostingDestinationsAreValidOfficialHTTPSLinks() {
+        for marketplace in Marketplace.activeRecommendationCases {
+            let destination = marketplace.postingDestination
+            let postURL = destination.postURL
+            let howToURL = destination.howToURL
+
+            XCTAssertEqual(postURL?.scheme, "https", marketplace.displayName)
+            XCTAssertEqual(howToURL?.scheme, "https", marketplace.displayName)
+            XCTAssertNotNil(postURL?.host, marketplace.displayName)
+            XCTAssertNotNil(howToURL?.host, marketplace.displayName)
+            XCTAssertFalse(destination.sourceTitle.isEmpty, marketplace.displayName)
+            XCTAssertEqual(destination.lastChecked, "2026-07-25", marketplace.displayName)
+            XCTAssertNotEqual(destination.postingSurface, .unavailable, marketplace.displayName)
+        }
+
+        XCTAssertEqual(Marketplace.kidizen.postingDestination.postingSurface, .unavailable)
+        XCTAssertEqual(Marketplace.tradesy.postingDestination.postingSurface, .unavailable)
+    }
+
+    func testActiveMarketplaceListingPlaybooksAreStructuredAndVersioned() {
+        for marketplace in Marketplace.activeRecommendationCases {
+            let playbook = marketplace.listingPlaybook
+
+            XCTAssertEqual(playbook.marketplace, marketplace)
+            XCTAssertGreaterThan(playbook.titleCharacterLimit, 0, marketplace.displayName)
+            XCTAssertEqual(playbook.titleCharacterLimit, marketplace.optimizationProfile.titleMaxCharacters, marketplace.displayName)
+            XCTAssertFalse(playbook.titleFormula.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.descriptionGuidance.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.requiredFields.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.highImpactOptionalFields.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.recommendedPhotoSequence.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.pricingFormat.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.shippingOrPickupGuidance.isEmpty, marketplace.displayName)
+            XCTAssertFalse(playbook.feeModelSourceTitle.isEmpty, marketplace.displayName)
+            XCTAssertEqual(playbook.feeModelLastChecked, "2026-07-23", marketplace.displayName)
+            XCTAssertEqual(playbook.ruleSourceLastVerified, "2026-07-25", marketplace.displayName)
+            XCTAssertNotEqual(playbook.postingSurface, .unavailable, marketplace.displayName)
+            XCTAssertEqual(URL(string: playbook.officialPostURLString)?.scheme, "https", marketplace.displayName)
+            XCTAssertEqual(URL(string: playbook.officialHowToURLString)?.scheme, "https", marketplace.displayName)
+            XCTAssertGreaterThanOrEqual(playbook.ruleSourceURLs.count, 2, marketplace.displayName)
+            for sourceURL in playbook.ruleSourceURLs {
+                XCTAssertEqual(URL(string: sourceURL)?.scheme, "https", "\(marketplace.displayName): \(sourceURL)")
+            }
+        }
+    }
+
+    func testRetiredMarketplaceListingPlaybooksRemainUnavailable() {
+        XCTAssertEqual(Marketplace.kidizen.listingPlaybook.postingSurface, .unavailable)
+        XCTAssertEqual(Marketplace.tradesy.listingPlaybook.postingSurface, .unavailable)
+        XCTAssertEqual(Marketplace.kidizen.listingPlaybook.requiredFields, ["Marketplace unavailable"])
+        XCTAssertEqual(Marketplace.tradesy.listingPlaybook.requiredFields, ["Marketplace unavailable"])
+    }
+
     func testMarketplaceCatalogProvidesNativeSystemIconSymbols() {
         let expectedSymbols: [Marketplace: String] = [
             .ebay: "cart.fill",
@@ -143,6 +196,7 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertEqual(
             comparison.marketEvidenceFacts(currencyCode: "USD"),
             [
+                MarketplaceEvidenceFact(label: "Evidence", value: "No verified sold comps"),
                 MarketplaceEvidenceFact(label: "Sold", value: "No sold prices found"),
                 MarketplaceEvidenceFact(label: "Speed", value: "Steady sale"),
                 MarketplaceEvidenceFact(label: "Shipping", value: "Easy shipping")
@@ -155,6 +209,32 @@ final class MarketplaceEstimatorTests: XCTestCase {
             evidenceStatus: .grounded
         )
         XCTAssertEqual(soldComparison.soldPriceSignal(currencyCode: "USD"), "Typical sold price \(Decimal(84).currency(code: "USD"))")
+        XCTAssertEqual(soldComparison.verifiedSoldPriceSignal(currencyCode: "USD"), "No sold prices found")
+        XCTAssertEqual(
+            soldComparison.marketEvidenceFacts(currencyCode: "USD"),
+            [
+                MarketplaceEvidenceFact(label: "Evidence", value: "No verified sold comps"),
+                MarketplaceEvidenceFact(label: "Sold", value: "No sold prices found")
+            ]
+        )
+
+        let groundedWithoutSoldPrices = MarketplaceComparison(
+            marketplace: .ebay,
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Active lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "active",
+                    price: Decimal(99)
+                )
+            ]
+        )
+        XCTAssertEqual(
+            groundedWithoutSoldPrices.marketEvidenceFacts(currencyCode: "USD").first,
+            MarketplaceEvidenceFact(label: "Evidence", value: "No verified sold comps")
+        )
 
         let soldRangeComparison = MarketplaceComparison(
             marketplace: .ebay,
@@ -179,12 +259,26 @@ final class MarketplaceEstimatorTests: XCTestCase {
             expectedSpeed: "Steady sale",
             shippingExpectation: "Easy shipping",
             feeSummary: "Final value fee applies.",
-            evidenceStatus: .grounded
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold brass lamp",
+                    url: "https://example.com/sold-brass-lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    conditionAndVariant: "Good brass lamp",
+                    comparability: "Close match",
+                    price: Decimal(90)
+                )
+            ]
         )
 
         XCTAssertEqual(
             comparison.marketEvidenceFacts(currencyCode: "USD"),
             [
+                MarketplaceEvidenceFact(label: "Evidence", value: "Sold comps checked"),
+                MarketplaceEvidenceFact(label: "Sources", value: "1 source(s) · Checked 2026-07-25"),
                 MarketplaceEvidenceFact(label: "Range", value: "\(Decimal(85).currency(code: "USD")) to \(Decimal(115).currency(code: "USD"))"),
                 MarketplaceEvidenceFact(label: "Sold", value: "Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD"))"),
                 MarketplaceEvidenceFact(label: "Fees", value: "Final value fee applies."),
@@ -194,7 +288,84 @@ final class MarketplaceEstimatorTests: XCTestCase {
         )
         XCTAssertEqual(
             comparison.marketEvidenceAccessibilityText(currencyCode: "USD"),
-            "Range: \(Decimal(85).currency(code: "USD")) to \(Decimal(115).currency(code: "USD")), Sold: Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD")), Fees: Final value fee applies., Speed: Steady sale, Shipping: Easy shipping"
+            "Evidence: Sold comps checked, Sources: 1 source(s) · Checked 2026-07-25, Range: \(Decimal(85).currency(code: "USD")) to \(Decimal(115).currency(code: "USD")), Sold: Sold prices \(Decimal(70).currency(code: "USD")) to \(Decimal(120).currency(code: "USD")), Fees: Final value fee applies., Speed: Steady sale, Shipping: Easy shipping"
+        )
+    }
+
+    func testMarketplaceComparisonEvidenceFactsRequireVerifiedSoldSourceForSoldComps() {
+        let missingDate = MarketplaceComparison(
+            marketplace: .ebay,
+            compMedianPrice: Decimal(84),
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold lamp",
+                    url: "https://example.com/sold-lamp",
+                    listingStatus: "sold",
+                    price: Decimal(84)
+                )
+            ]
+        )
+
+        XCTAssertEqual(missingDate.verifiedSoldPriceSignal(currencyCode: "USD"), "No sold prices found")
+        XCTAssertEqual(missingDate.verifiedRowSignal(currencyCode: "USD"), "No sold prices found")
+        XCTAssertEqual(
+            missingDate.marketEvidenceFacts(currencyCode: "USD").first,
+            MarketplaceEvidenceFact(label: "Evidence", value: "No verified sold comps")
+        )
+
+        let missingReference = MarketplaceComparison(
+            marketplace: .ebay,
+            compMedianPrice: Decimal(84),
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    price: Decimal(84)
+                )
+            ]
+        )
+
+        XCTAssertEqual(missingReference.verifiedSoldPriceSignal(currencyCode: "USD"), "No sold prices found")
+    }
+
+    func testMarketplaceComparisonEvidenceFactsIncludeSourceCountAndSharedCheckedDate() {
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            compMedianPrice: Decimal(84),
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    conditionAndVariant: "Good brass lamp",
+                    comparability: "Close match",
+                    price: Decimal(80)
+                ),
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Another sold lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    conditionAndVariant: "Good brass lamp",
+                    comparability: "Similar",
+                    price: Decimal(88)
+                )
+            ]
+        )
+
+        XCTAssertEqual(
+            Array(comparison.marketEvidenceFacts(currencyCode: "USD").prefix(3)),
+            [
+                MarketplaceEvidenceFact(label: "Evidence", value: "Sold comps checked"),
+                MarketplaceEvidenceFact(label: "Sources", value: "2 source(s) · Checked 2026-07-25"),
+                MarketplaceEvidenceFact(label: "Sold", value: "Typical sold price \(Decimal(84).currency(code: "USD"))")
+            ]
         )
     }
 
@@ -411,6 +582,82 @@ final class MarketplaceEstimatorTests: XCTestCase {
         XCTAssertEqual(Set(picks.map(\.estimate.id)).count, picks.count)
     }
 
+    func testSummaryPlannerUsesGroundedRecommendationLabelsBeforeLocalHeuristics() {
+        let lamp = DetectedItem(
+            name: "Vintage brass table lamp",
+            category: .home,
+            condition: .good,
+            priceEstimate: Decimal(45)
+        )
+        let estimates = MarketplaceEstimator.estimates(for: lamp)
+        let comparisons: [Marketplace: MarketplaceComparison] = [
+            .ebay: MarketplaceComparison(
+                marketplace: .ebay,
+                recommendationLabel: "Best overall",
+                marketplaceFitScore: 96,
+                evidenceStatus: .limited
+            ),
+            .mercari: MarketplaceComparison(
+                marketplace: .mercari,
+                recommendationLabel: "Most money",
+                marketplaceFitScore: 88,
+                evidenceStatus: .limited
+            ),
+            .facebook: MarketplaceComparison(
+                marketplace: .facebook,
+                recommendationLabel: "Fastest sale",
+                marketplaceFitScore: 91,
+                evidenceStatus: .limited
+            ),
+            .nextdoor: MarketplaceComparison(
+                marketplace: .nextdoor,
+                recommendationLabel: "Easiest option",
+                marketplaceFitScore: 84,
+                evidenceStatus: .limited
+            )
+        ]
+
+        let picks = MarketplaceSummaryPlanner.picks(
+            from: estimates,
+            item: lamp,
+            comparisons: comparisons
+        )
+
+        XCTAssertEqual(picks.map(\.kind), [.bestOverall, .mostMoney, .fastestSale, .easiestOption])
+        XCTAssertEqual(picks.map(\.estimate.id), [.ebay, .mercari, .facebook, .nextdoor])
+        XCTAssertEqual(Set(picks.map(\.estimate.id)).count, picks.count)
+    }
+
+    func testSummaryPlannerIgnoresUnavailableGroundedRecommendationLabels() {
+        let phone = DetectedItem(
+            name: "iPhone 15 128 GB",
+            category: .electronics,
+            condition: .good,
+            priceEstimate: Decimal(520)
+        )
+        let estimates = MarketplaceEstimator.estimates(for: phone)
+        let localBest = estimates.first?.id
+        let comparisons: [Marketplace: MarketplaceComparison] = [
+            .craigslist: MarketplaceComparison(
+                marketplace: .craigslist,
+                recommendationLabel: "Best overall",
+                marketplaceFitScore: 99,
+                evidenceStatus: .unavailable
+            )
+        ]
+
+        let picks = MarketplaceSummaryPlanner.picks(
+            from: estimates,
+            item: phone,
+            comparisons: comparisons
+        )
+
+        XCTAssertEqual(picks.first?.kind, .bestOverall)
+        XCTAssertEqual(picks.first?.estimate.id, localBest)
+        XCTAssertNotEqual(picks.first?.estimate.id, Marketplace.craigslist)
+        XCTAssertEqual(Set(picks.map(\.estimate.id)).count, picks.count)
+    }
+
     func testMarketplaceRecommendationScoringInputsStayBoundedAndLocalized() throws {
         let localizedStrings = try loadLocalizedStrings()
         let item = DetectedItem(name: "Generic household clutter box", category: .other, condition: .fair, priceEstimate: Decimal(18))
@@ -449,6 +696,13 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Pack carefully",
             "Shipping okay",
             "Evidence",
+            "Estimate only",
+            "Grounded check",
+            "No verified sold comps",
+            "Sold comps checked",
+            "Sources",
+            "%d source(s)",
+            "%@ · Checked %@",
             "Market check",
             "Sold price range",
             "Sold prices",
@@ -506,6 +760,10 @@ final class MarketplaceEstimatorTests: XCTestCase {
             "Works, case, cables, power supply...",
             "Near downtown, pickup only, can help load...",
             "Shows the checks behind this listing.",
+            "Show proof",
+            "Hide proof",
+            "Shows the market checks behind this recommendation.",
+            "Proof",
             "Use this to check the item, not as a listing photo.",
             "Use these to check the item. Keep your own photos for the listing.",
             "Reliable sold prices were not available. Use the price plan as an estimate, not a confirmed sale.",

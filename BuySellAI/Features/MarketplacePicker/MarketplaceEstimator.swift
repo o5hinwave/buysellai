@@ -207,14 +207,32 @@ enum MarketplaceSummaryKind: String, Sendable, Hashable {
     case mostMoney
     case easiestOption
 
+    init?(recommendationLabel: String?) {
+        let label = recommendationLabel?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? ""
+        switch label {
+        case "best overall":
+            self = .bestOverall
+        case "fastest sale":
+            self = .fastestSale
+        case "most money":
+            self = .mostMoney
+        case "easiest option":
+            self = .easiestOption
+        default:
+            return nil
+        }
+    }
+
     var label: String {
         switch self {
         case .bestOverall:
-            "Best chance to sell"
+            "Best overall"
         case .fastestSale:
-            "Fastest local sale"
+            "Fastest sale"
         case .mostMoney:
-            "Most money back"
+            "Most money"
         case .easiestOption:
             "Easiest option"
         }
@@ -253,30 +271,45 @@ enum MarketplaceSummaryPlanner {
         item: DetectedItem,
         details: ItemDetailAnswers? = nil
     ) -> [MarketplaceSummaryPick] {
-        plannedPicks(from: estimates, item: item, details: details)
+        plannedPicks(from: estimates, item: item, details: details, comparisons: [:])
+    }
+
+    static func picks(
+        from estimates: [MarketplaceEstimate],
+        item: DetectedItem,
+        details: ItemDetailAnswers? = nil,
+        comparisons: [Marketplace: MarketplaceComparison]
+    ) -> [MarketplaceSummaryPick] {
+        plannedPicks(from: estimates, item: item, details: details, comparisons: comparisons)
     }
 
     private static func plannedPicks(
         from estimates: [MarketplaceEstimate],
         item: DetectedItem?,
-        details: ItemDetailAnswers?
+        details: ItemDetailAnswers?,
+        comparisons: [Marketplace: MarketplaceComparison] = [:]
     ) -> [MarketplaceSummaryPick] {
         guard let bestOverall = estimates.first else { return [] }
 
         let components = item.map { componentsByMarketplace(for: estimates, item: $0, details: details) } ?? [:]
-        var picks = [MarketplaceSummaryPick(kind: .bestOverall, estimate: bestOverall)]
+        var picks = [
+            comparisonPick(kind: .bestOverall, estimates: estimates, comparisons: comparisons, excluding: [])
+                ?? MarketplaceSummaryPick(kind: .bestOverall, estimate: bestOverall)
+        ]
 
-        appendBestDistinct(
+        appendComparisonOrBestDistinct(
             kind: .mostMoney,
             estimates: estimates,
+            comparisons: comparisons,
             into: &picks
         ) { estimate in
             estimate.payout.doubleValue
         }
 
-        appendBestDistinct(
+        appendComparisonOrBestDistinct(
             kind: .fastestSale,
             estimates: estimates,
+            comparisons: comparisons,
             into: &picks
         ) { estimate in
             if let component = components[estimate.id] {
@@ -285,9 +318,10 @@ enum MarketplaceSummaryPlanner {
             return Double(estimate.id.optimizationProfile.speedScore)
         }
 
-        appendBestDistinct(
+        appendComparisonOrBestDistinct(
             kind: .easiestOption,
             estimates: estimates,
+            comparisons: comparisons,
             into: &picks
         ) { estimate in
             if let component = components[estimate.id] {
@@ -302,6 +336,56 @@ enum MarketplaceSummaryPlanner {
         }
 
         return picks
+    }
+
+    private static func appendComparisonOrBestDistinct(
+        kind: MarketplaceSummaryKind,
+        estimates: [MarketplaceEstimate],
+        comparisons: [Marketplace: MarketplaceComparison],
+        into picks: inout [MarketplaceSummaryPick],
+        score: (MarketplaceEstimate) -> Double
+    ) {
+        if let pick = comparisonPick(
+            kind: kind,
+            estimates: estimates,
+            comparisons: comparisons,
+            excluding: Set(picks.map(\.estimate.id))
+        ) {
+            picks.append(pick)
+            return
+        }
+
+        appendBestDistinct(kind: kind, estimates: estimates, into: &picks, score: score)
+    }
+
+    private static func comparisonPick(
+        kind: MarketplaceSummaryKind,
+        estimates: [MarketplaceEstimate],
+        comparisons: [Marketplace: MarketplaceComparison],
+        excluding excludedMarketplaces: Set<Marketplace>
+    ) -> MarketplaceSummaryPick? {
+        estimates
+            .filter { estimate in
+                guard excludedMarketplaces.contains(estimate.id) == false,
+                      let comparison = comparisons[estimate.id],
+                      comparison.evidenceStatus != .unavailable
+                else {
+                    return false
+                }
+                return MarketplaceSummaryKind(recommendationLabel: comparison.recommendationLabel) == kind
+            }
+            .max { lhs, rhs in
+                let lhsFit = comparisons[lhs.id]?.marketplaceFitScore ?? lhs.fitScore
+                let rhsFit = comparisons[rhs.id]?.marketplaceFitScore ?? rhs.fitScore
+                if lhsFit != rhsFit {
+                    return lhsFit < rhsFit
+                }
+                if lhs.payout != rhs.payout {
+                    return lhs.payout < rhs.payout
+                }
+                return catalogIndex(lhs.id) > catalogIndex(rhs.id)
+            }
+            .map { MarketplaceSummaryPick(kind: kind, estimate: $0) }
     }
 
     private static func catalogIndex(_ marketplace: Marketplace) -> Int {

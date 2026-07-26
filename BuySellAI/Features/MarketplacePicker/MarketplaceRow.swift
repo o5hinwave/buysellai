@@ -74,22 +74,30 @@ struct MarketplaceRow: View {
     let action: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.appReduceMotion) private var reduceMotion
+    @State private var isProofExpanded = false
 
     var body: some View {
-        Button {
-            MarketplaceSelectionFeedback.perform {
-                action()
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Button {
+                MarketplaceSelectionFeedback.perform {
+                    action()
+                }
+            } label: {
+                rowContent
+                    .padding(.vertical, Spacing.sm)
+                    .frame(minHeight: rowMinHeight)
+                    .contentShape(Rectangle())
             }
-        } label: {
-            rowContent
-                .padding(.vertical, Spacing.sm)
-                .frame(minHeight: rowMinHeight)
-                .contentShape(Rectangle())
+            .buttonStyle(PressButtonStyle())
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityIdentifier("MarketplaceRow.\(estimate.id.rawValue)")
+            .accessibilitySortPriority(1)
+
+            if let comparison, comparison.hasMarketplaceProofDetails(currencyCode: item.currencyCode) {
+                proofDisclosure(comparison)
+            }
         }
-        .buttonStyle(PressButtonStyle())
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityIdentifier("MarketplaceRow.\(estimate.id.rawValue)")
-        .accessibilitySortPriority(1)
     }
 
     @ViewBuilder
@@ -149,7 +157,7 @@ struct MarketplaceRow: View {
                 .lineLimit(blurbLineLimit)
                 .multilineTextAlignment(.leading)
 
-            Text(comparison?.rowSignal(currencyCode: item.currencyCode) ?? estimate.comparisonSignals(for: item).rowLine)
+            Text(comparison?.verifiedRowSignal(currencyCode: item.currencyCode) ?? estimate.comparisonSignals(for: item).rowLine)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color.brand.foregroundSecondary)
                 .lineLimit(fitLineLimit)
@@ -174,7 +182,7 @@ struct MarketplaceRow: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(Array(comparison.marketEvidenceFacts(currencyCode: item.currencyCode).prefix(evidenceFactLimit))) { fact in
                 Text(fact.line)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
                     .lineLimit(lineLimit)
                     .multilineTextAlignment(.leading)
@@ -182,6 +190,72 @@ struct MarketplaceRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(comparison.marketEvidenceAccessibilityText(currencyCode: item.currencyCode) ?? "")
+    }
+
+    private func proofDisclosure(_ comparison: MarketplaceComparison) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Button {
+                withAnimation(AppMotion.animation(reduceMotion: reduceMotion)) {
+                    isProofExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: Spacing.xs) {
+                    Image(systemName: "checkmark.shield")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.brand.primaryText)
+                        .accessibilityHidden(true)
+
+                    Text(isProofExpanded ? "Hide proof".localized : "Show proof".localized)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.brand.mutedForeground)
+                        .rotationEffect(.degrees(isProofExpanded ? 180 : 0))
+                        .accessibilityHidden(true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressButtonStyle())
+            .accessibilityLabel(isProofExpanded ? "Hide proof".localized : "Show proof".localized)
+            .accessibilityHint("Shows the market checks behind this recommendation.".localized)
+
+            if isProofExpanded {
+                proofDetails(comparison)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.bottom, Spacing.xs)
+    }
+
+    private func proofDetails(_ comparison: MarketplaceComparison) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            ForEach(comparison.marketEvidenceFacts(currencyCode: item.currencyCode)) { fact in
+                Text(fact.line)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ForEach(comparison.marketplaceProofSources(currencyCode: item.currencyCode).prefix(3), id: \.self) { line in
+                Text(line)
+                    .font(.caption2)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(Spacing.sm)
+        .background(Color.brand.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.72), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(comparison.marketplaceProofAccessibilityText(currencyCode: item.currencyCode))
     }
 
     private func payoutCircle(size: CGFloat) -> some View {
@@ -366,7 +440,7 @@ enum MarketplaceAccessibilityText {
         guard let item else {
             return label
         }
-        let marketSignal = comparison?.accessibilitySignal(currencyCode: item.currencyCode)
+        let marketSignal = comparison?.verifiedAccessibilitySignal(currencyCode: item.currencyCode)
             ?? estimate.comparisonSignals(for: item).accessibilitySummary
         let evidenceDetails = comparison?.marketEvidenceAccessibilityText(currencyCode: item.currencyCode)
         return String.localizedFormat(
@@ -388,6 +462,8 @@ enum MarketplaceAccessibilityText {
 extension MarketplaceComparison {
     func marketEvidenceFacts(currencyCode: String) -> [MarketplaceEvidenceFact] {
         var facts: [MarketplaceEvidenceFact] = []
+        appendEvidenceStatusFact(to: &facts)
+        appendEvidenceSourceFact(to: &facts)
         appendLikelyRangeFact(currencyCode: currencyCode, to: &facts)
         appendSoldFact(currencyCode: currencyCode, to: &facts)
         appendCleanTextFact(label: "Fees", value: feeSummary, to: &facts)
@@ -403,6 +479,86 @@ extension MarketplaceComparison {
         return facts.map(\.line).joined(separator: ", ")
     }
 
+    func hasMarketplaceProofDetails(currencyCode: String) -> Bool {
+        marketEvidenceFacts(currencyCode: currencyCode).isEmpty == false ||
+            marketplaceProofSources(currencyCode: currencyCode).isEmpty == false
+    }
+
+    func marketplaceProofSources(currencyCode: String) -> [String] {
+        (evidenceSources ?? [])
+            .compactMap { $0.sanitizedForDisplay()?.marketplaceProofLine(currencyCode: currencyCode) }
+    }
+
+    func marketplaceProofAccessibilityText(currencyCode: String) -> String {
+        let facts = marketEvidenceFacts(currencyCode: currencyCode).map(\.line)
+        let sources = marketplaceProofSources(currencyCode: currencyCode)
+        return ([String(localized: "Proof")] + facts + sources).joined(separator: ", ")
+    }
+
+    func verifiedRowSignal(currencyCode: String) -> String? {
+        guard evidenceStatus != .unavailable else { return nil }
+        let price = listPrice.map { String.localizedFormat("List around %@", $0.currency(code: currencyCode)) }
+        let sold = verifiedSoldPriceSignal(currencyCode: currencyCode)
+        let speed = cleanEvidenceText(expectedSpeed, maxLength: 80)
+        let shipping = cleanEvidenceText(shippingExpectation, maxLength: 100)
+        let parts = [price, sold, speed, shipping].compactMap { $0 }
+        guard parts.isEmpty == false else { return nil }
+        return parts.prefix(3).joined(separator: " · ")
+    }
+
+    func verifiedAccessibilitySignal(currencyCode: String) -> String? {
+        verifiedRowSignal(currencyCode: currencyCode)?.replacingOccurrences(of: " · ", with: ", ")
+    }
+
+    func verifiedSoldPriceSignal(currencyCode: String) -> String {
+        hasVerifiedSoldCompEvidence ? soldPriceSignal(currencyCode: currencyCode) : "No sold prices found".localized
+    }
+
+    private func appendEvidenceStatusFact(to facts: inout [MarketplaceEvidenceFact]) {
+        switch evidenceStatus {
+        case .grounded:
+            let value = hasVerifiedSoldCompEvidence ? "Sold comps checked" : "No verified sold comps"
+            facts.append(MarketplaceEvidenceFact(label: "Evidence", value: value.localized))
+        case .limited:
+            facts.append(MarketplaceEvidenceFact(label: "Evidence", value: "No verified sold comps".localized))
+        case .unavailable:
+            break
+        }
+    }
+
+    private var hasVerifiedSoldCompEvidence: Bool {
+        hasSoldCompPriceFields && hasVerifiedSoldEvidenceSource
+    }
+
+    private var hasSoldCompPriceFields: Bool {
+        compLowPrice != nil || compMedianPrice != nil || compHighPrice != nil
+    }
+
+    private var hasVerifiedSoldEvidenceSource: Bool {
+        (evidenceSources ?? []).contains { source in
+            guard let cleanSource = source.sanitizedForDisplay(),
+                  cleanSource.price != nil,
+                  cleanSource.dateChecked != nil,
+                  cleanSource.hasSourceReference,
+                  cleanSource.isSoldOrCompleted
+            else {
+                return false
+            }
+            return true
+        }
+    }
+
+    private func appendEvidenceSourceFact(to facts: inout [MarketplaceEvidenceFact]) {
+        let sources = (evidenceSources ?? []).compactMap { $0.sanitizedForDisplay() }
+        guard sources.isEmpty == false else { return }
+        let checkedDates = Set(sources.compactMap(\.dateChecked))
+        let sourceCount = String.localizedFormat("%d source(s)", sources.count)
+        let value = checkedDates.count == 1
+            ? String.localizedFormat("%@ · Checked %@", sourceCount, checkedDates.first ?? "")
+            : sourceCount
+        facts.append(MarketplaceEvidenceFact(label: "Sources", value: value))
+    }
+
     private func appendLikelyRangeFact(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
         guard let low = likelyRangeLow, let high = likelyRangeHigh else { return }
         facts.append(MarketplaceEvidenceFact(
@@ -412,7 +568,7 @@ extension MarketplaceComparison {
     }
 
     private func appendSoldFact(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
-        facts.append(MarketplaceEvidenceFact(label: "Sold", value: soldPriceSignal(currencyCode: currencyCode)))
+        facts.append(MarketplaceEvidenceFact(label: "Sold", value: verifiedSoldPriceSignal(currencyCode: currencyCode)))
     }
 
     private func appendCleanTextFact(label: String, value: String?, to facts: inout [MarketplaceEvidenceFact]) {
@@ -426,6 +582,47 @@ extension MarketplaceComparison {
     private func appendListPriceFallback(currencyCode: String, to facts: inout [MarketplaceEvidenceFact]) {
         guard facts.isEmpty, let listPrice else { return }
         facts.append(MarketplaceEvidenceFact(label: "List", value: listPrice.currency(code: currencyCode)))
+    }
+
+    private func cleanEvidenceText(_ value: String?, maxLength: Int) -> String? {
+        let cleanValue = value?
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard cleanValue.isEmpty == false else { return nil }
+        return String(cleanValue.prefix(maxLength))
+    }
+}
+
+private extension ListingEvidenceSource {
+    var hasSourceReference: Bool {
+        let reference = url ?? title
+        return reference?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    var isSoldOrCompleted: Bool {
+        let status = listingStatus?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        return status == "sold" ||
+            status == "completed" ||
+            status == "ended" ||
+            status.contains("sold")
+    }
+
+    func marketplaceProofLine(currencyCode: String) -> String? {
+        let priceText = price.map { $0.currency(code: currencyCode) }
+        let parts = [
+            sourceMarketplace,
+            listingStatus,
+            title,
+            priceText,
+            conditionAndVariant,
+            comparability,
+            dateChecked.map { String.localizedFormat("Checked %@", $0) }
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.isEmpty == false }
+
+        guard parts.isEmpty == false else { return nil }
+        return parts.joined(separator: " · ")
     }
 }
 

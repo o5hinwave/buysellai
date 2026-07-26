@@ -25,6 +25,754 @@ struct DetectedItem: Codable, Identifiable, Sendable, Hashable {
     }
 }
 
+enum ItemPhotoSource: String, Codable, CaseIterable, Sendable, Hashable {
+    case camera
+    case photoLibrary
+    case unknownUserPhoto
+    case internetReference
+    case aiEdited
+}
+
+enum ItemPhotoRole: String, Codable, CaseIterable, Sendable, Hashable {
+    case cover
+    case fullItem
+    case label
+    case condition
+    case included
+    case reference
+
+    var displayTitle: String {
+        switch self {
+        case .cover:
+            "Cover photo"
+        case .fullItem:
+            "Full item"
+        case .label:
+            "Label or model"
+        case .condition:
+            "Condition detail"
+        case .included:
+            "Included items"
+        case .reference:
+            "Reference only"
+        }
+    }
+
+    var exportSlug: String {
+        switch self {
+        case .cover:
+            "Cover"
+        case .fullItem:
+            "Full-Item"
+        case .label:
+            "Label"
+        case .condition:
+            "Condition"
+        case .included:
+            "Included"
+        case .reference:
+            "Reference"
+        }
+    }
+
+    var listingPriority: Int {
+        switch self {
+        case .cover:
+            0
+        case .fullItem:
+            1
+        case .label:
+            2
+        case .included:
+            3
+        case .condition:
+            4
+        case .reference:
+            99
+        }
+    }
+
+    var utilityBase: Int {
+        switch self {
+        case .cover:
+            92
+        case .label:
+            88
+        case .fullItem:
+            84
+        case .condition:
+            82
+        case .included:
+            76
+        case .reference:
+            0
+        }
+    }
+}
+
+struct ItemPhotoAsset: Codable, Identifiable, Sendable, Hashable {
+    let id: UUID
+    let itemID: UUID
+    var imageData: Data?
+    var source: ItemPhotoSource
+    var role: ItemPhotoRole
+    var dateAdded: Date
+    var verifies: String
+    var isListingSafe: Bool
+    var isAIEdited: Bool
+    var relatedOriginalID: UUID?
+
+    init(
+        id: UUID = UUID(),
+        itemID: UUID,
+        imageData: Data?,
+        source: ItemPhotoSource,
+        role: ItemPhotoRole,
+        dateAdded: Date = Date(),
+        verifies: String,
+        isListingSafe: Bool,
+        isAIEdited: Bool = false,
+        relatedOriginalID: UUID? = nil
+    ) {
+        self.id = id
+        self.itemID = itemID
+        self.imageData = imageData
+        self.source = source
+        self.role = role
+        self.dateAdded = dateAdded
+        self.verifies = Self.clean(verifies, fallback: role.displayTitle)
+        self.isListingSafe = isListingSafe
+        self.isAIEdited = isAIEdited
+        self.relatedOriginalID = relatedOriginalID
+    }
+
+    var canExportToListing: Bool {
+        isListingSafe &&
+            imageData?.isEmpty == false &&
+            source != .internetReference &&
+            role != .reference
+    }
+
+    var photoUtilityScore: Int {
+        guard canExportToListing else { return 0 }
+        var score = role.utilityBase
+        if source == .aiEdited, relatedOriginalID != nil {
+            score += 6
+        }
+        if isAIEdited {
+            score += 2
+        }
+        let lowerVerification = verifies.lowercased()
+        if role == .condition,
+           lowerVerification.contains("flaw") ||
+            lowerVerification.contains("scratch") ||
+            lowerVerification.contains("wear") ||
+            lowerVerification.contains("damage") {
+            score += 8
+        }
+        if role == .label,
+           lowerVerification.contains("model") ||
+            lowerVerification.contains("serial") ||
+            lowerVerification.contains("tag") ||
+            lowerVerification.contains("authentic") {
+            score += 6
+        }
+        return min(max(score, 0), 100)
+    }
+
+    func listingPhotoUtility(for marketplace: Marketplace, duplicationPenalty: Int = 0) -> ListingPhotoUtility {
+        ListingPhotoIntelligence.utility(
+            for: listingPhotoCandidate,
+            marketplace: marketplace,
+            duplicationPenalty: duplicationPenalty
+        )
+    }
+
+    func listingPhotoUtilityScore(for marketplace: Marketplace, duplicationPenalty: Int = 0) -> Int {
+        listingPhotoUtility(for: marketplace, duplicationPenalty: duplicationPenalty).total
+    }
+
+    var listingPhotoCandidate: ListingPhotoCandidate {
+        ListingPhotoCandidate(
+            id: id,
+            imageData: imageData ?? Data(),
+            role: ListingPhotoRole(itemPhotoRole: role, source: source, verifies: verifies),
+            source: ListingPhotoSource(itemPhotoSource: source),
+            dateAdded: dateAdded,
+            verifies: verifies
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { $0.isEmpty == false },
+            isListingSafe: isListingSafe,
+            isAIEdited: isAIEdited || source == .aiEdited,
+            relatedOriginalID: relatedOriginalID,
+            quality: ListingPhotoQuality(itemPhotoAsset: self),
+            visualFingerprint: duplicateSignature
+        )
+    }
+
+    var duplicateSignature: String? {
+        guard let imageData, imageData.isEmpty == false else { return nil }
+        let prefix = imageData.prefix(32).map { String(format: "%02x", $0) }.joined()
+        return "\(imageData.count)-\(prefix)"
+    }
+
+    func exportFileName(for item: DetectedItem, index: Int) -> String {
+        let itemName = Self.fileSlug(item.name, fallback: item.category.display)
+        let number = String(format: "%02d", index)
+        return "\(itemName)-\(number)-\(role.exportSlug).jpg"
+    }
+
+    static func originalUserPhoto(item: DetectedItem, imageData: Data?) -> ItemPhotoAsset? {
+        guard let imageData, imageData.isEmpty == false else { return nil }
+        return ItemPhotoAsset(
+            itemID: item.id,
+            imageData: imageData,
+            source: .unknownUserPhoto,
+            role: .cover,
+            verifies: "The actual item photo.",
+            isListingSafe: true
+        )
+    }
+
+    static func targetedScan(
+        item: DetectedItem,
+        imageData: Data,
+        request: TargetedScanRequest,
+        evidence: NativeScanEvidence? = nil
+    ) -> ItemPhotoAsset? {
+        guard imageData.isEmpty == false else { return nil }
+        let role = ItemPhotoRole(scanRole: request.role)
+        return ItemPhotoAsset(
+            itemID: item.id,
+            imageData: imageData,
+            source: .camera,
+            role: role,
+            verifies: Self.targetedScanVerificationSummary(request: request, evidence: evidence),
+            isListingSafe: role != .reference
+        )
+    }
+
+    private static func targetedScanVerificationSummary(
+        request: TargetedScanRequest,
+        evidence: NativeScanEvidence?
+    ) -> String {
+        guard let evidence else { return request.title }
+        switch request.role {
+        case .barcode:
+            let payloads = evidence.barcodes.map(\.payload).filter { $0.isEmpty == false }
+            guard payloads.isEmpty == false else { return request.title }
+            return "Barcode: \(payloads.prefix(2).joined(separator: ", "))"
+        case .label, .serial, .sizeTag, .authenticity:
+            let candidates = evidence.modelOrSerialCandidates.isEmpty
+                ? evidence.recognizedText
+                : evidence.modelOrSerialCandidates
+            guard let first = candidates.first, first.isEmpty == false else { return request.title }
+            return "\(request.title): \(first)"
+        case .accessories:
+            return "Included items photo attached."
+        case .condition:
+            return "Condition detail photo attached."
+        case .fullItem:
+            return "Full item photo attached."
+        }
+    }
+
+    private static func clean(_ value: String, fallback: String) -> String {
+        let cleanValue = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleanValue.isEmpty ? fallback : String(cleanValue.prefix(120))
+    }
+
+    private static func fileSlug(_ value: String, fallback: String) -> String {
+        let cleanValue = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty ? fallback : value
+        let allowed = CharacterSet.alphanumerics
+        let parts = cleanValue.unicodeScalars.reduce(into: [String]()) { result, scalar in
+            if allowed.contains(scalar) {
+                result.append(String(scalar))
+            } else if result.last != "-" {
+                result.append("-")
+            }
+        }
+        let slug = parts
+            .joined()
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return slug.isEmpty ? "BuySell-Item" : String(slug.prefix(64))
+    }
+}
+
+struct ListingPhotoPackage: Codable, Sendable, Hashable {
+    let itemID: UUID
+    let marketplace: Marketplace
+    var photos: [ItemPhotoAsset]
+    var excludedReferenceImageURL: String?
+
+    var listingReadyPhotos: [ItemPhotoAsset] {
+        let validPhotos = photos
+            .filter { $0.itemID == itemID && $0.canExportToListing }
+        var uniquePhotos: [String: ItemPhotoAsset] = [:]
+
+        for photo in validPhotos {
+            let key = photo.duplicateSignature ?? photo.id.uuidString
+            guard let existingPhoto = uniquePhotos[key] else {
+                uniquePhotos[key] = photo
+                continue
+            }
+
+            if photo.isBetterListingPhoto(than: existingPhoto, marketplace: marketplace) {
+                uniquePhotos[key] = photo
+            }
+        }
+
+        return uniquePhotos.values.sorted { lhs, rhs in
+            if lhs.role.listingPriority != rhs.role.listingPriority {
+                return lhs.role.listingPriority < rhs.role.listingPriority
+            }
+            let lhsUtility = lhs.listingPhotoUtilityScore(for: marketplace)
+            let rhsUtility = rhs.listingPhotoUtilityScore(for: marketplace)
+            if lhsUtility != rhsUtility {
+                return lhsUtility > rhsUtility
+            }
+            if lhs.dateAdded != rhs.dateAdded {
+                return lhs.dateAdded < rhs.dateAdded
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
+    var recommendedListingPhotos: [ItemPhotoAsset] {
+        let readyPhotos = listingReadyPhotos
+        guard readyPhotos.isEmpty == false else { return [] }
+
+        let recommendedRoles = marketplace.listingPlaybook.recommendedPhotoSequence
+        var selectedPhotos: [ItemPhotoAsset] = []
+        var selectedIDs = Set<UUID>()
+
+        for role in recommendedRoles {
+            guard let photo = bestPhoto(for: role, in: readyPhotos, excluding: selectedIDs) else { continue }
+            selectedPhotos.append(photo)
+            selectedIDs.insert(photo.id)
+        }
+
+        return selectedPhotos.isEmpty ? Array(readyPhotos.prefix(1)) : selectedPhotos
+    }
+
+    var missingRecommendedPhotoRole: ItemPhotoRole? {
+        let roles = Set(listingReadyPhotos.map(\.role))
+        return marketplace.listingPlaybook.recommendedPhotoSequence.first { role in
+            hasEquivalentPhoto(for: role, in: roles) == false
+        }
+    }
+
+    var hasReferenceOnlyImage: Bool {
+        excludedReferenceImageURL != nil ||
+            photos.contains { $0.source == .internetReference || $0.role == .reference }
+    }
+
+    var statusTitle: String {
+        switch recommendedListingPhotos.count {
+        case 0:
+            "No listing photos ready"
+        case 1:
+            "Your photo is ready"
+        default:
+            String.localizedFormat("Your %d best photos are ready", recommendedListingPhotos.count)
+        }
+    }
+
+    var recommendation: String {
+        if recommendedListingPhotos.isEmpty {
+            if hasReferenceOnlyImage {
+                return "Reference image stays out. Add a real item photo before posting.".localized
+            }
+            return "Add a real item photo before posting.".localized
+        }
+        if let missingRecommendedPhotoRole {
+            return String.localizedFormat(
+                "Add one %@ photo for a stronger listing.".localized,
+                missingRecommendedPhotoRole.displayTitle.localized.lowercased()
+            )
+        }
+        if hasReferenceOnlyImage {
+            return "Reference images stay out of your listing photos.".localized
+        }
+        if recommendedListingPhotos.count >= 3 {
+            return String.localizedFormat("These %d photos are enough to post.".localized, recommendedListingPhotos.count)
+        }
+        return "This photo set is ready to save.".localized
+    }
+
+    static func makeForListing(
+        item: DetectedItem,
+        marketplace: Marketplace,
+        originalImageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
+        referenceImageURL: String?
+    ) -> ListingPhotoPackage {
+        var photos: [ItemPhotoAsset] = []
+        if let original = ItemPhotoAsset.originalUserPhoto(item: item, imageData: originalImageData) {
+            photos.append(original)
+        }
+        photos.append(contentsOf: supplementalPhotos.filter { $0.itemID == item.id })
+        return ListingPhotoPackage(
+            itemID: item.id,
+            marketplace: marketplace,
+            photos: photos,
+            excludedReferenceImageURL: referenceImageURL
+        )
+    }
+
+    func exportFiles(
+        for item: DetectedItem,
+        scope: ListingPhotoExportScope = .recommended
+    ) -> [ListingPhotoExport] {
+        let selectedPhotos: [ItemPhotoAsset]
+        switch scope {
+        case .recommended:
+            selectedPhotos = recommendedListingPhotos
+        case .allListingReady:
+            selectedPhotos = listingReadyPhotos
+        }
+
+        return selectedPhotos.enumerated().compactMap { index, photo in
+            guard let imageData = photo.imageData, imageData.isEmpty == false else { return nil }
+            return ListingPhotoExport(
+                imageData: imageData,
+                fileName: photo.exportFileName(for: item, index: index + 1),
+                role: photo.role,
+                verifies: photo.verifies
+            )
+        }
+    }
+
+    private func bestPhoto(
+        for role: ItemPhotoRole,
+        in photos: [ItemPhotoAsset],
+        excluding selectedIDs: Set<UUID>
+    ) -> ItemPhotoAsset? {
+        photos.first { photo in
+            selectedIDs.contains(photo.id) == false && photo.role == role
+        }
+    }
+
+    private func hasEquivalentPhoto(for role: ItemPhotoRole, in roles: Set<ItemPhotoRole>) -> Bool {
+        if roles.contains(role) {
+            return true
+        }
+        switch role {
+        case .cover:
+            return roles.contains(.fullItem)
+        case .fullItem:
+            return roles.contains(.cover)
+        default:
+            return false
+        }
+    }
+}
+
+enum ListingPhotoExportScope: String, Codable, Sendable, Hashable {
+    case recommended
+    case allListingReady
+}
+
+struct ListingPhotoExport: Codable, Sendable, Hashable {
+    let imageData: Data
+    let fileName: String
+    let role: ItemPhotoRole
+    let verifies: String
+}
+
+enum MarketplacePhotoScanPlaybook {
+    static func targetedScanRequest(
+        for marketplace: Marketplace,
+        item: DetectedItem,
+        answers: ItemDetailAnswers,
+        supplementalPhotos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        let currentPhotos = supplementalPhotos.filter { $0.itemID == item.id }
+
+        switch marketplace {
+        case .ebay, .mercari, .amazon, .bonanza, .shopify:
+            return productIdentifierScanIfNeeded(for: item, answers: answers, photos: currentPhotos)
+                ?? accessoriesScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            return localConditionScanIfNeeded(for: item, answers: answers, photos: currentPhotos)
+        case .poshmark, .depop, .vinted, .vestiaire, .therealreal, .grailed, .curtsy, .kidizen, .tradesy:
+            return fashionTagScanIfNeeded(for: item, answers: answers, photos: currentPhotos)
+                ?? conditionScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .stockx, .goat:
+            return authenticityScanIfNeeded(for: item, answers: answers, photos: currentPhotos)
+        case .swappa:
+            return swappaModelScanIfNeeded(answers: answers, photos: currentPhotos)
+                ?? conditionScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .reverb:
+            return serialPlateScanIfNeeded(answers: answers, photos: currentPhotos)
+                ?? conditionScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .etsy, .chairish, .rubylane:
+            return makerMarkScanIfNeeded(for: item, answers: answers, photos: currentPhotos)
+                ?? conditionScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .whatnot:
+            return accessoriesScanIfNeeded(answers: answers, photos: currentPhotos)
+                ?? conditionScanIfNeeded(answers: answers, photos: currentPhotos)
+        case .tcgplayer:
+            return cardDetailScanIfNeeded(answers: answers, photos: currentPhotos)
+        }
+    }
+
+    private static func productIdentifierScanIfNeeded(
+        for item: DetectedItem,
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        let prompt = item.category == .electronics ? "Scan the model label" : "Scan the barcode"
+        return TargetedScanRequest(
+            prompt: prompt,
+            benefit: "This can confirm the exact model.",
+            role: prompt.localizedCaseInsensitiveContains("barcode") ? .barcode : .label
+        )
+    }
+
+    private static func fashionTagScanIfNeeded(
+        for item: DetectedItem,
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard [.clothing, .shoes, .bags].contains(item.category),
+              answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Scan the size tag",
+            benefit: "This helps buyers trust the fit.",
+            role: .sizeTag
+        )
+    }
+
+    private static func authenticityScanIfNeeded(
+        for item: DetectedItem,
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard [.shoes, .clothing, .bags, .jewelry].contains(item.category),
+              answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Show the box label or authenticity mark",
+            benefit: "This helps us find closer sold listings.",
+            role: .authenticity
+        )
+    }
+
+    private static func swappaModelScanIfNeeded(
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Show the settings model screen",
+            benefit: "This can confirm the exact model.",
+            role: .label
+        )
+    }
+
+    private static func serialPlateScanIfNeeded(
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Scan the serial plate",
+            benefit: "This can confirm the exact model.",
+            role: .serial
+        )
+    }
+
+    private static func makerMarkScanIfNeeded(
+        for item: DetectedItem,
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard [.art, .home, .furniture, .jewelry, .collectibles].contains(item.category),
+              answers.hasAnsweredOrSkipped(.labelOrBrand) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Scan the maker mark",
+            benefit: "This can confirm who made it.",
+            role: .label
+        )
+    }
+
+    private static func localConditionScanIfNeeded(
+        for item: DetectedItem,
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        if [.furniture, .home, .tools].contains(item.category),
+           photos.containsPhoto(role: .fullItem) == false {
+            return TargetedScanRequest(
+                prompt: "Show the whole item",
+                benefit: "Buyers will want to see this.",
+                role: .fullItem
+            )
+        }
+        return conditionScanIfNeeded(answers: answers, photos: photos)
+    }
+
+    private static func accessoriesScanIfNeeded(
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.included) == false,
+              photos.containsPhoto(role: .included) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Show everything included",
+            benefit: "This may improve your price estimate.",
+            role: .accessories
+        )
+    }
+
+    private static func conditionScanIfNeeded(
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.flaws) == false,
+              photos.containsPhoto(role: .condition) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Show the damaged area",
+            benefit: "Buyers will want to see this.",
+            role: .condition
+        )
+    }
+
+    private static func cardDetailScanIfNeeded(
+        answers: ItemDetailAnswers,
+        photos: [ItemPhotoAsset]
+    ) -> TargetedScanRequest? {
+        guard answers.hasAnsweredOrSkipped(.sizeOrModel) == false,
+              photos.containsPhoto(role: .label) == false
+        else { return nil }
+        return TargetedScanRequest(
+            prompt: "Scan the card number and set symbol",
+            benefit: "This can confirm the exact card.",
+            role: .label
+        )
+    }
+}
+
+private extension Array where Element == ItemPhotoAsset {
+    func containsPhoto(role: ItemPhotoRole) -> Bool {
+        contains { $0.role == role && $0.canExportToListing }
+    }
+}
+
+private extension ItemPhotoAsset {
+    func isBetterListingPhoto(than other: ItemPhotoAsset, marketplace: Marketplace) -> Bool {
+        if role.listingPriority != other.role.listingPriority {
+            return role.listingPriority < other.role.listingPriority
+        }
+        let utilityScore = listingPhotoUtilityScore(for: marketplace)
+        let otherUtilityScore = other.listingPhotoUtilityScore(for: marketplace)
+        if utilityScore != otherUtilityScore {
+            return utilityScore > otherUtilityScore
+        }
+        if source == .aiEdited, other.source != .aiEdited {
+            return true
+        }
+        if source != .aiEdited, other.source == .aiEdited {
+            return false
+        }
+        if dateAdded != other.dateAdded {
+            return dateAdded < other.dateAdded
+        }
+        return id.uuidString < other.id.uuidString
+    }
+}
+
+private extension ListingPhotoRole {
+    init(itemPhotoRole: ItemPhotoRole, source: ItemPhotoSource, verifies: String) {
+        let lowerVerification = verifies.lowercased()
+        switch itemPhotoRole {
+        case .cover:
+            self = source == .aiEdited ? .enhancedCover : .fullItem
+        case .fullItem:
+            self = .fullItem
+        case .label:
+            self = lowerVerification.contains("authentic") ? .authenticityMark : .labelOrModel
+        case .condition:
+            self = lowerVerification.contains("flaw") ||
+                lowerVerification.contains("scratch") ||
+                lowerVerification.contains("wear") ||
+                lowerVerification.contains("damage")
+                ? .flaw
+                : .conditionDetail
+        case .included:
+            self = lowerVerification.contains("box") || lowerVerification.contains("packaging")
+                ? .packaging
+                : .includedAccessories
+        case .reference:
+            self = .referenceOnly
+        }
+    }
+}
+
+private extension ListingPhotoSource {
+    init(itemPhotoSource: ItemPhotoSource) {
+        switch itemPhotoSource {
+        case .camera:
+            self = .camera
+        case .photoLibrary, .unknownUserPhoto:
+            self = .photoLibrary
+        case .internetReference:
+            self = .internetReference
+        case .aiEdited:
+            self = .aiEnhanced
+        }
+    }
+}
+
+private extension ListingPhotoQuality {
+    init(itemPhotoAsset photo: ItemPhotoAsset) {
+        let lowerVerification = photo.verifies.lowercased()
+        self.init(
+            sharpness: lowerVerification.contains("blurry") || lowerVerification.contains("blur") ? 6 : 12,
+            lighting: lowerVerification.contains("dark") || lowerVerification.contains("poor light") ? 6 : 12,
+            productVisibility: lowerVerification.contains("partial") || lowerVerification.contains("cropped") ? 8 : 12,
+            blurPenalty: lowerVerification.contains("blurry") || lowerVerification.contains("blur") ? 12 : 0,
+            clutterPenalty: lowerVerification.contains("clutter") || lowerVerification.contains("messy") ? 8 : 0,
+            misleadingRisk: photo.source == .internetReference || photo.role == .reference ? 20 : 0
+        )
+    }
+}
+
+extension ItemPhotoRole {
+    init(scanRole: TargetedScanPhotoRole) {
+        switch scanRole {
+        case .label, .barcode, .serial, .sizeTag, .authenticity:
+            self = .label
+        case .condition:
+            self = .condition
+        case .accessories:
+            self = .included
+        case .fullItem:
+            self = .fullItem
+        }
+    }
+}
+
 enum Category: String, Codable, CaseIterable, Sendable, Hashable {
     case electronics
     case furniture
@@ -89,37 +837,37 @@ enum Category: String, Codable, CaseIterable, Sendable, Hashable {
     var placeholderSystemImage: String {
         switch self {
         case .electronics:
-            AppSymbol.Item.electronics
+            "iphone"
         case .furniture, .home:
-            AppSymbol.Item.home
+            "house.fill"
         case .clothing:
-            AppSymbol.Item.clothing
+            "tshirt.fill"
         case .shoes:
-            AppSymbol.Item.shoes
+            "shoeprints.fill"
         case .bags:
-            AppSymbol.Item.bags
+            "handbag.fill"
         case .jewelry:
-            AppSymbol.Item.jewelry
+            "diamond.fill"
         case .toys:
-            AppSymbol.Item.toys
+            "gamecontroller.fill"
         case .kids:
-            AppSymbol.Item.kids
+            "teddybear.fill"
         case .tools:
-            AppSymbol.Item.tools
+            "wrench.and.screwdriver.fill"
         case .sports:
-            AppSymbol.Item.sports
+            "basketball.fill"
         case .books:
-            AppSymbol.Item.books
+            "books.vertical.fill"
         case .media:
-            AppSymbol.Item.media
+            "play.rectangle.fill"
         case .music:
-            AppSymbol.Item.music
+            "music.note"
         case .collectibles:
-            AppSymbol.Item.collectibles
+            "star.fill"
         case .art:
-            AppSymbol.Item.art
+            "paintpalette.fill"
         case .other:
-            AppSymbol.Item.other
+            "tag.fill"
         }
     }
 
@@ -254,6 +1002,17 @@ struct MarketplaceEstimate: Codable, Identifiable, Hashable, Sendable {
 struct MarketplaceComparisonResponse: Decodable, Equatable, Sendable {
     let checkedAt: String?
     let comparisons: [MarketplaceComparison]
+    let entitlement: EntitlementSnapshot?
+
+    init(
+        checkedAt: String?,
+        comparisons: [MarketplaceComparison],
+        entitlement: EntitlementSnapshot? = nil
+    ) {
+        self.checkedAt = checkedAt
+        self.comparisons = comparisons
+        self.entitlement = entitlement?.sanitizedForUse
+    }
 
     var comparisonByMarketplace: [Marketplace: MarketplaceComparison] {
         comparisons.reduce(into: [Marketplace: MarketplaceComparison]()) { result, comparison in
@@ -264,7 +1023,8 @@ struct MarketplaceComparisonResponse: Decodable, Equatable, Sendable {
     func sanitizedForDisplay() -> MarketplaceComparisonResponse {
         MarketplaceComparisonResponse(
             checkedAt: clean(checkedAt, maxLength: 32),
-            comparisons: Array(comparisons.compactMap { $0.sanitizedForDisplay() }.prefix(10))
+            comparisons: Array(comparisons.compactMap { $0.sanitizedForDisplay() }.prefix(10)),
+            entitlement: entitlement?.sanitizedForUse
         )
     }
 
@@ -505,6 +1265,37 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     let imageThumbnail: Data?
     let marketplace: Marketplace
     let listingText: String
+    let itemDetails: ItemDetailAnswers?
+    let listingDraft: GeneratedListingDraft?
+    let identificationProfile: AnalyzeIdentificationProfile?
+
+    init(
+        id: UUID,
+        createdAt: Date,
+        itemName: String,
+        category: Category?,
+        condition: Condition?,
+        suggestedPrice: Decimal?,
+        imageThumbnail: Data?,
+        marketplace: Marketplace,
+        listingText: String,
+        itemDetails: ItemDetailAnswers? = nil,
+        listingDraft: GeneratedListingDraft? = nil,
+        identificationProfile: AnalyzeIdentificationProfile? = nil
+    ) {
+        self.id = id
+        self.createdAt = createdAt
+        self.itemName = itemName
+        self.category = category
+        self.condition = condition
+        self.suggestedPrice = suggestedPrice
+        self.imageThumbnail = imageThumbnail
+        self.marketplace = marketplace
+        self.listingText = listingText
+        self.itemDetails = itemDetails?.sanitizedForUse
+        self.listingDraft = listingDraft?.sanitizedForDisplay()
+        self.identificationProfile = identificationProfile?.sanitizedForDisplay()
+    }
 
     func sanitizedForHistory() -> HistoryEntry? {
         let cleanItemName = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -524,18 +1315,96 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
             suggestedPrice: cleanSuggestedPrice,
             imageThumbnail: imageThumbnail,
             marketplace: marketplace,
-            listingText: cleanListingText
+            listingText: cleanListingText,
+            itemDetails: itemDetails?.sanitizedForUse,
+            listingDraft: listingDraft?.sanitizedForDisplay(),
+            identificationProfile: identificationProfile?.sanitizedForDisplay()
         )
+    }
+}
+
+enum EntitlementState: String, Codable, CaseIterable, Sendable, Hashable {
+    case earlyAccess
+    case free
+    case plus
+    case usagePack
+}
+
+struct EntitlementSnapshot: Codable, Equatable, Sendable, Hashable {
+    let state: EntitlementState
+    let completeFeatureAccess: Bool
+    let futurePaidAccessEnabled: Bool
+    let remainingAnalyses: Int
+    let remainingAiActions: Int
+
+    init(
+        state: EntitlementState = .earlyAccess,
+        completeFeatureAccess: Bool = true,
+        futurePaidAccessEnabled: Bool = false,
+        remainingAnalyses: Int = 0,
+        remainingAiActions: Int = 0
+    ) {
+        self.state = state
+        self.completeFeatureAccess = completeFeatureAccess
+        self.futurePaidAccessEnabled = futurePaidAccessEnabled
+        self.remainingAnalyses = max(remainingAnalyses, 0)
+        self.remainingAiActions = max(remainingAiActions, 0)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let stateValue = try container.decodeIfPresent(String.self, forKey: .state) ?? EntitlementState.earlyAccess.rawValue
+        self.init(
+            state: EntitlementState(rawValue: stateValue) ?? .earlyAccess,
+            completeFeatureAccess: try container.decodeIfPresent(Bool.self, forKey: .completeFeatureAccess) ?? true,
+            futurePaidAccessEnabled: try container.decodeIfPresent(Bool.self, forKey: .futurePaidAccessEnabled) ?? false,
+            remainingAnalyses: try container.decodeIfPresent(Int.self, forKey: .remainingAnalyses) ?? 0,
+            remainingAiActions: try container.decodeIfPresent(Int.self, forKey: .remainingAiActions) ?? 0
+        )
+    }
+
+    var sanitizedForUse: EntitlementSnapshot {
+        EntitlementSnapshot(
+            state: state,
+            completeFeatureAccess: completeFeatureAccess,
+            futurePaidAccessEnabled: futurePaidAccessEnabled,
+            remainingAnalyses: remainingAnalyses,
+            remainingAiActions: remainingAiActions
+        )
+    }
+
+    var analyticsProperties: [String: String] {
+        [
+            "entitlement_state": state.rawValue,
+            "complete_feature_access": completeFeatureAccess ? "true" : "false",
+            "future_paid_access_enabled": futurePaidAccessEnabled ? "true" : "false",
+            "remaining_analyses": "\(remainingAnalyses)",
+            "remaining_ai_actions": "\(remainingAiActions)"
+        ]
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case completeFeatureAccess
+        case futurePaidAccessEnabled
+        case remainingAnalyses
+        case remainingAiActions
     }
 }
 
 struct GeneratedListing: Sendable, Equatable {
     let listing: String
     let draft: GeneratedListingDraft?
+    let entitlement: EntitlementSnapshot?
 
-    init(listing: String, draft: GeneratedListingDraft? = nil) {
+    init(
+        listing: String,
+        draft: GeneratedListingDraft? = nil,
+        entitlement: EntitlementSnapshot? = nil
+    ) {
         self.listing = listing
         self.draft = draft
+        self.entitlement = entitlement?.sanitizedForUse
     }
 }
 
@@ -628,6 +1497,7 @@ struct ListingEvidenceSource: Codable, Identifiable, Sendable, Equatable, Hashab
         else { return nil }
         return cleanURL
     }
+
 }
 
 enum ItemDetailFieldKey: String, Codable, Sendable, Hashable {
@@ -638,6 +1508,8 @@ enum ItemDetailFieldKey: String, Codable, Sendable, Hashable {
     case extraDetails
     case marketplaceNotes
     case largeOrFragile
+    case targetedScan
+    case marketplaceTargetedScan
 }
 
 struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
@@ -778,6 +1650,47 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
         answeredFieldKeys.removeAll { $0 == field }
     }
 
+    func seedingConfirmedAnalysisFacts(
+        from analysis: AnalyzeIntelligence?,
+        category: Category
+    ) -> ItemDetailAnswers {
+        guard let analysis else { return self }
+        var seededAnswers = self
+        let userProvidedFields = Set(
+            ItemDetailFieldKey.analysisSeedableFields.filter { hasConcreteValue(for: $0) }
+        )
+        analysis.itemFacts
+            .compactMap { ItemDetailAnalysisSeed(fact: $0, category: category) }
+            .forEach { seed in
+                guard userProvidedFields.contains(seed.field) == false else { return }
+                seededAnswers.mergeScannedValue(seed.value, into: seed.keyPath, field: seed.field)
+            }
+        return seededAnswers
+    }
+
+    mutating func applyTargetedScanEvidence(
+        _ evidence: NativeScanEvidence?,
+        request: TargetedScanRequest,
+        answeredField: ItemDetailFieldKey = .targetedScan
+    ) {
+        markAnswered(answeredField)
+
+        switch request.role {
+        case .barcode:
+            guard let barcodeSummary = Self.scanBarcodeSummary(from: evidence) else { return }
+            mergeScannedValue(barcodeSummary, into: \.sizeOrModel, field: .sizeOrModel)
+        case .label, .serial, .sizeTag, .authenticity:
+            guard let detailSummary = Self.scanTextSummary(from: evidence) else { return }
+            mergeScannedValue(detailSummary, into: \.sizeOrModel, field: .sizeOrModel)
+        case .accessories:
+            mergeScannedValue("Included items photo attached.", into: \.included, field: .included)
+        case .condition:
+            mergeScannedValue("Condition detail photo attached.", into: \.flaws, field: .flaws)
+        case .fullItem:
+            mergeScannedValue("Full item photo attached.", into: \.extraDetails, field: .extraDetails)
+        }
+    }
+
     mutating func setMarketplaceNote(_ value: String, for marketplace: Marketplace) {
         let cleanValue = Self.clean(value, maxLength: 220)
         if cleanValue.isEmpty {
@@ -811,6 +1724,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             hasConcreteAnswer = marketplaceNotes.values.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         case .largeOrFragile:
             hasConcreteAnswer = false
+        case .targetedScan, .marketplaceTargetedScan:
+            hasConcreteAnswer = false
         }
         return hasConcreteAnswer || answeredFieldKeys.contains(field)
     }
@@ -842,6 +1757,38 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return String(collapsedWhitespace.prefix(maxLength))
+    }
+
+    private mutating func mergeScannedValue(
+        _ value: String,
+        into keyPath: WritableKeyPath<ItemDetailAnswers, String>,
+        field: ItemDetailFieldKey
+    ) {
+        let cleanValue = Self.clean(value, maxLength: 140)
+        guard cleanValue.isEmpty == false else { return }
+        let existingValue = self[keyPath: keyPath].trimmingCharacters(in: .whitespacesAndNewlines)
+        if existingValue.isEmpty {
+            self[keyPath: keyPath] = cleanValue
+        } else if existingValue.localizedCaseInsensitiveContains(cleanValue) == false {
+            self[keyPath: keyPath] = Self.clean("\(existingValue); \(cleanValue)", maxLength: 180)
+        }
+        markAnswered(field)
+    }
+
+    private static func scanBarcodeSummary(from evidence: NativeScanEvidence?) -> String? {
+        guard let evidence else { return nil }
+        let payloads = evidence.barcodes.map(\.payload).filter { $0.isEmpty == false }
+        guard payloads.isEmpty == false else { return nil }
+        return "Barcode \(payloads.prefix(2).joined(separator: ", "))"
+    }
+
+    private static func scanTextSummary(from evidence: NativeScanEvidence?) -> String? {
+        guard let evidence else { return nil }
+        let candidates = evidence.modelOrSerialCandidates.isEmpty
+            ? evidence.recognizedText
+            : evidence.modelOrSerialCandidates
+        guard candidates.isEmpty == false else { return nil }
+        return candidates.prefix(3).joined(separator: "; ")
     }
 
     private static func uniqueFieldKeys(_ values: [ItemDetailFieldKey]) -> [ItemDetailFieldKey] {
@@ -905,6 +1852,8 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             marketplaceNotes.values.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         case .largeOrFragile:
             isLargeOrFragile
+        case .targetedScan, .marketplaceTargetedScan:
+            false
         }
     }
 
@@ -924,6 +1873,10 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
             "Marketplace"
         case .largeOrFragile:
             "Large or fragile"
+        case .targetedScan:
+            "Extra scan"
+        case .marketplaceTargetedScan:
+            "Marketplace scan"
         }
     }
 
@@ -940,7 +1893,94 @@ struct ItemDetailAnswers: Codable, Equatable, Sendable, Hashable {
     }
 }
 
-struct GeneratedListingDraft: Codable, Sendable, Equatable {
+private extension ItemDetailFieldKey {
+    static var analysisSeedableFields: [ItemDetailFieldKey] {
+        [.labelOrBrand, .sizeOrModel, .flaws, .included, .extraDetails]
+    }
+}
+
+private struct ItemDetailAnalysisSeed {
+    let value: String
+    let keyPath: WritableKeyPath<ItemDetailAnswers, String>
+    let field: ItemDetailFieldKey
+
+    init?(fact: AnalyzeItemFact, category: Category) {
+        guard fact.confidence >= 0.78 else { return nil }
+        let cleanLabel = Self.clean(fact.label, maxLength: 40)
+        let cleanValue = Self.clean(fact.value, maxLength: 80)
+        guard cleanLabel.isEmpty == false, cleanValue.isEmpty == false else { return nil }
+
+        let searchable = "\(cleanLabel) \(cleanValue)".lowercased()
+        let seededValue = "\(cleanLabel): \(cleanValue)"
+
+        if Self.matches(searchable, [
+            "brand", "brand label", "maker", "artist", "designer", "manufacturer", "logo", "signature"
+        ]) {
+            self.init(value: seededValue, keyPath: \.labelOrBrand, field: .labelOrBrand)
+            return
+        }
+
+        if Self.matches(searchable, [
+            "model", "serial", "sku", "style", "size", "storage", "capacity", "dimension",
+            "measurement", "material", "color", "edition", "set", "year", "number", "variant"
+        ]) {
+            self.init(value: seededValue, keyPath: \.sizeOrModel, field: .sizeOrModel)
+            return
+        }
+
+        if Self.matches(searchable, [
+            "box", "charger", "case", "remote", "cable", "accessory", "accessories",
+            "included", "packaging", "certificate", "paperwork", "manual"
+        ]) {
+            self.init(value: seededValue, keyPath: \.included, field: .included)
+            return
+        }
+
+        if Self.matches(searchable, [
+            "flaw", "damage", "scratch", "stain", "wear", "broken", "missing", "condition",
+            "tested", "working", "works", "turns on", "power"
+        ]) {
+            self.init(value: seededValue, keyPath: \.flaws, field: .flaws)
+            return
+        }
+
+        if Self.shouldKeepAsExtra(searchable, category: category) {
+            self.init(value: seededValue, keyPath: \.extraDetails, field: .extraDetails)
+            return
+        }
+
+        return nil
+    }
+
+    private init(
+        value: String,
+        keyPath: WritableKeyPath<ItemDetailAnswers, String>,
+        field: ItemDetailFieldKey
+    ) {
+        self.value = value
+        self.keyPath = keyPath
+        self.field = field
+    }
+
+    private static func shouldKeepAsExtra(_ searchable: String, category: Category) -> Bool {
+        matches(searchable, ["authentic", "signed", "numbered", "rare", "vintage", "sealed", "handmade", "era"]) ||
+            ([.art, .collectibles, .jewelry, .home, .furniture, .music].contains(category) &&
+                matches(searchable, ["mark", "origin", "period", "finish", "wood", "metal", "stone"]))
+    }
+
+    private static func matches(_ value: String, _ needles: [String]) -> Bool {
+        needles.contains { value.contains($0) }
+    }
+
+    private static func clean(_ value: String, maxLength: Int) -> String {
+        let collapsed = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(collapsed.prefix(maxLength))
+    }
+}
+
+struct GeneratedListingDraft: Codable, Sendable, Equatable, Hashable {
     var title: String?
     var description: String?
     var listPrice: Decimal?
@@ -1028,6 +2068,28 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
         return sanitized
     }
 
+    func sanitizedForMarketplace(_ marketplace: Marketplace, item: DetectedItem) -> GeneratedListingDraft? {
+        guard var sanitized = sanitizedForDisplay() else { return nil }
+
+        if let title = sanitized.title {
+            sanitized.title = Self.truncatedTitle(
+                title,
+                maxCharacters: marketplace.optimizationProfile.titleMaxCharacters
+            )
+        }
+
+        let warnings = marketplace.requiredListingWarnings(for: item, draft: sanitized)
+        if warnings.isEmpty == false {
+            sanitized.missingInfoWarnings = Self.mergedWarnings(
+                sanitized.missingInfoWarnings,
+                warnings,
+                maxItems: 4
+            )
+        }
+
+        return sanitized.sanitizedForDisplay()
+    }
+
     private func clean(_ value: String?, maxLength: Int) -> String? {
         guard let value else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1073,6 +2135,98 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable {
               url.host?.isEmpty == false
         else { return nil }
         return cleanURL
+    }
+
+    private static func truncatedTitle(_ title: String, maxCharacters: Int) -> String {
+        guard maxCharacters > 0, title.count > maxCharacters else { return title }
+        let prefix = String(title.prefix(maxCharacters))
+        let wordBoundary = prefix.split(separator: " ").dropLast().joined(separator: " ")
+        return wordBoundary.isEmpty ? prefix : wordBoundary
+    }
+
+    private static func mergedWarnings(
+        _ existingWarnings: [String]?,
+        _ newWarnings: [String],
+        maxItems: Int
+    ) -> [String]? {
+        let values = (existingWarnings ?? []) + newWarnings
+        let cleaned = values.reduce(into: [String]()) { result, value in
+            let cleanValue = value
+                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard cleanValue.isEmpty == false,
+                  result.contains(cleanValue) == false,
+                  result.count < maxItems
+            else { return }
+            result.append(String(cleanValue.prefix(120)))
+        }
+        return cleaned.isEmpty ? nil : cleaned
+    }
+}
+
+private extension Marketplace {
+    func requiredListingWarnings(for item: DetectedItem, draft: GeneratedListingDraft) -> [String] {
+        let searchableText = [
+            item.name,
+            draft.title,
+            draft.description,
+            draft.firstPhoto,
+            draft.missingPhotoPrompt,
+            draft.itemSpecifics?.joined(separator: " "),
+            draft.postingNotes?.joined(separator: " ")
+        ]
+            .compactMap { $0 }
+            .joined(separator: " ")
+            .lowercased()
+
+        func lacksAny(_ values: [String]) -> Bool {
+            values.contains { searchableText.contains($0.lowercased()) } == false
+        }
+
+        switch self {
+        case .ebay:
+            if [.electronics, .tools, .music, .media].contains(item.category),
+               lacksAny(["model", "serial", "part number", "mpn", "sku"]) {
+                return ["Add model number before posting on eBay."]
+            }
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            if [.furniture, .home, .tools, .sports, .other].contains(item.category),
+               lacksAny(["pickup", "delivery", "meet", "porch", "local"]) {
+                return ["Add pickup or delivery details before posting locally."]
+            }
+        case .poshmark, .depop, .grailed, .vinted, .curtsy:
+            if [.clothing, .shoes, .bags].contains(item.category),
+               lacksAny(["size", "measurement", "tagged", "fit"]) {
+                return ["Add size or measurements before posting."]
+            }
+        case .etsy:
+            if lacksAny(["vintage", "handmade", "supply", "material"]) {
+                return ["Confirm vintage, handmade, supply, or material details before posting on Etsy."]
+            }
+        case .stockx, .goat:
+            if lacksAny(["sku", "style code", "size", "box"]) {
+                return ["Add size, style code, and box condition before posting."]
+            }
+        case .reverb:
+            if lacksAny(["model", "year", "working", "tested", "serial"]) {
+                return ["Add model, year, and working condition before posting on Reverb."]
+            }
+        case .swappa:
+            if lacksAny(["carrier", "unlocked", "battery", "storage", "imei"]) {
+                return ["Add carrier, storage, and battery details before posting on Swappa."]
+            }
+        case .chairish:
+            if lacksAny(["dimension", "height", "width", "depth", "material"]) {
+                return ["Add dimensions and materials before posting on Chairish."]
+            }
+        case .tcgplayer:
+            if lacksAny(["set", "card number", "language", "foil", "condition"]) {
+                return ["Add set, card number, finish, language, and condition before posting."]
+            }
+        default:
+            break
+        }
+        return []
     }
 }
 
@@ -1216,27 +2370,93 @@ struct ItemQuestionsContext: Identifiable, Equatable {
     let id = UUID()
     let item: DetectedItem
     let imageData: Data?
+    let supplementalPhotos: [ItemPhotoAsset]
     let preferredMarketplace: Marketplace?
+    let marketplaceComparison: MarketplaceComparison?
+    let listingDraft: GeneratedListingDraft?
     let analysis: AnalyzeIntelligence?
     let answers: ItemDetailAnswers?
+
+    init(
+        item: DetectedItem,
+        imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
+        preferredMarketplace: Marketplace?,
+        marketplaceComparison: MarketplaceComparison? = nil,
+        listingDraft: GeneratedListingDraft? = nil,
+        analysis: AnalyzeIntelligence?,
+        answers: ItemDetailAnswers?
+    ) {
+        self.item = item
+        self.imageData = imageData
+        self.supplementalPhotos = supplementalPhotos.filter { $0.itemID == item.id }
+        self.preferredMarketplace = preferredMarketplace
+        self.marketplaceComparison = marketplaceComparison?.sanitizedForDisplay()
+        self.listingDraft = listingDraft?.sanitizedForDisplay()
+        self.analysis = analysis
+        self.answers = answers
+    }
 }
 
 struct MarketplacePickerContext: Identifiable, Equatable {
     let id = UUID()
     let item: DetectedItem
     let imageData: Data?
+    let supplementalPhotos: [ItemPhotoAsset]
     let details: ItemDetailAnswers?
     let analysis: AnalyzeIntelligence?
+
+    init(
+        item: DetectedItem,
+        imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
+        details: ItemDetailAnswers?,
+        analysis: AnalyzeIntelligence?
+    ) {
+        self.item = item
+        self.imageData = imageData
+        self.supplementalPhotos = supplementalPhotos.filter { $0.itemID == item.id }
+        self.details = details
+        self.analysis = analysis
+    }
 }
 
 struct ListingContext: Identifiable, Equatable {
     let id = UUID()
     let item: DetectedItem
     let imageData: Data?
+    let supplementalPhotos: [ItemPhotoAsset]
     let marketplace: Marketplace
     let details: ItemDetailAnswers?
+    let marketplaceComparison: MarketplaceComparison?
+    let analysis: AnalyzeIntelligence?
     let existingListingText: String?
+    let existingListingDraft: GeneratedListingDraft?
     let existingHistoryEntry: HistoryEntry?
+
+    init(
+        item: DetectedItem,
+        imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
+        marketplace: Marketplace,
+        details: ItemDetailAnswers?,
+        marketplaceComparison: MarketplaceComparison? = nil,
+        analysis: AnalyzeIntelligence? = nil,
+        existingListingText: String?,
+        existingListingDraft: GeneratedListingDraft? = nil,
+        existingHistoryEntry: HistoryEntry?
+    ) {
+        self.item = item
+        self.imageData = imageData
+        self.supplementalPhotos = supplementalPhotos.filter { $0.itemID == item.id }
+        self.marketplace = marketplace
+        self.details = details?.sanitizedForUse
+        self.marketplaceComparison = marketplaceComparison?.sanitizedForDisplay()
+        self.analysis = analysis
+        self.existingListingText = existingListingText
+        self.existingListingDraft = existingListingDraft?.sanitizedForDisplay()
+        self.existingHistoryEntry = existingHistoryEntry
+    }
 }
 
 extension Array where Element: Equatable {

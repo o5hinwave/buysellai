@@ -44,8 +44,8 @@
 	<string>Amazon needs the matching product page, condition, and whether it is new or used.</string>
 	<key>Analyzing your photo…</key>
 	<string>Analyzing your photo…</string>
-	<key>Approved, not sure, already have an account...</key>
-	<string>Approved, not sure, already have an account...</string>
+	<key>Approved, not sure, account ready...</key>
+	<string>Approved, not sure, account ready...</string>
 	<key>Answer</key>
 	<string>Answer</string>
 	<key>Answer a few questions</key>
@@ -242,6 +242,8 @@
 	<string>Double-tap to edit the item name</string>
 	<key>Drafts a listing without a payout estimate</key>
 	<string>Drafts a listing without a payout estimate</string>
+	<key>Done editing</key>
+	<string>Done editing</string>
 	<key>Electronics</key>
 	<string>Electronics</string>
 	<key>Email</key>
@@ -250,6 +252,10 @@
 	<string>Estimated price</string>
 	<key>Exact item name or model...</key>
 	<string>Exact item name or model...</string>
+	<key>Extra scan</key>
+	<string>Extra scan</string>
+	<key>Edit listing</key>
+	<string>Edit listing</string>
 	<key>Etsy</key>
 	<string>Etsy</string>
 	<key>Easy shipping for everyday items</key>
@@ -318,6 +324,8 @@
 	<string>Item photo</string>
 	<key>Item photo placeholder</key>
 	<string>Item photo placeholder</string>
+	<key>Listing text</key>
+	<string>Listing text</string>
 	<key>Jewelry</key>
 	<string>Jewelry</string>
 	<key>Keep going without an account</key>
@@ -514,6 +522,14 @@
 	<string>Signed out.</string>
 	<key>Skip</key>
 	<string>Skip</string>
+	<key>Skips this question.</key>
+	<string>Skips this question.</string>
+	<key>Closes the camera.</key>
+	<string>Closes the camera.</string>
+	<key>Keeps going without this scan.</key>
+	<string>Keeps going without this scan.</string>
+	<key>One photo. A few answers. Ready to post.</key>
+	<string>One photo. A few answers. Ready to post.</string>
 	<key>Snap a photo.</key>
 	<string>Snap a photo.</string>
 	<key>Snap a photo. Pick a marketplace. Copy your listing.</key>
@@ -606,6 +622,8 @@
 	<string>Trading cards</string>
 	<key>Try again</key>
 	<string>Try again</string>
+	<key>Try a clearer photo, or retry this one.</key>
+	<string>Try a clearer photo, or retry this one.</string>
 	<key>Turn stuff into cash in three taps.</key>
 	<string>Turn stuff into cash in three taps.</string>
 	<key>Turn flash off</key>
@@ -936,8 +954,8 @@
 	<string>How should pickup work?</string>
 	<key>How hard is shipping?</key>
 	<string>How hard is shipping?</string>
-	<key>Have seller account</key>
-	<string>Have seller account</string>
+	<key>Ready to list</key>
+	<string>Ready to list</string>
 	<key>Have a store</key>
 	<string>Have a store</string>
 	<key>Have a store, need setup, pickup only...</key>
@@ -1162,6 +1180,10 @@
 	<string>Not sure</string>
 	<key>Shows simple ways to check the item</key>
 	<string>Shows simple ways to check the item</string>
+	<key>Keep checking</key>
+	<string>Keep checking</string>
+	<key>Asks a few simple questions to help identify the item.</key>
+	<string>Asks a few simple questions to help identify the item.</string>
 	<key>Change details</key>
 	<string>Change details</string>
 	<key>Checked %@</key>
@@ -1180,8 +1202,14 @@
 	<string>Lets you edit the name, category, condition, or price</string>
 	<key>No problem</key>
 	<string>No problem</string>
+	<key>Pick the closest match</key>
+	<string>Pick the closest match</string>
 	<key>Pick what looks closest, or snap a clearer label.</key>
 	<string>Pick what looks closest, or snap a clearer label.</string>
+	<key>Choose one if it looks right. If not, keep checking.</key>
+	<string>Choose one if it looks right. If not, keep checking.</string>
+	<key>Check against these</key>
+	<string>Check against these</string>
 	<key>Try a closer photo of any logo, label, or model number.</key>
 	<string>Try a closer photo of any logo, label, or model number.</string>
 	<key>Which one looks closest?</key>
@@ -1236,6 +1264,20 @@
 	<string>Easy shipping</string>
 	<key>Evidence</key>
 	<string>Evidence</string>
+	<key>Estimate only</key>
+	<string>Estimate only</string>
+	<key>Grounded check</key>
+	<string>Grounded check</string>
+	<key>No verified sold comps</key>
+	<string>No verified sold comps</string>
+	<key>Sold comps checked</key>
+	<string>Sold comps checked</string>
+	<key>Sources</key>
+	<string>Sources</string>
+	<key>%d source(s)</key>
+	<string>%d source(s)</string>
+	<key>%@ · Checked %@</key>
+	<string>%@ · Checked %@</string>
 	<key>Easiest option</key>
 	<string>Easiest option</string>
 	<key>Fee note</key>
@@ -1288,8 +1330,8 @@
 	<string>Source</string>
 	<key>Source details</key>
 	<string>Source details</string>
-	<key>Some products need approval, a matched catalog page, or a selling account.</key>
-	<string>Some products need approval, a matched catalog page, or a selling account.</string>
+	<key>Some products need approval, a matched catalog page, or an Amazon listing account.</key>
+	<string>Some products need approval, a matched catalog page, or an Amazon listing account.</string>
 	<key>No sold prices found</key>
 	<string>No sold prices found</string>
 	<key>Sold price range</key>
@@ -1310,11 +1352,413 @@
 	<string>Up to %@</string>
 	<key>Use this to check the item, not as a listing photo.</key>
 	<string>Use this to check the item, not as a listing photo.</string>
+	<key>Use these only to compare. Keep your own photos for the listing.</key>
+	<string>Use these only to compare. Keep your own photos for the listing.</string>
 	<key>Use these to check the item. Keep your own photos for the listing.</key>
 	<string>Use these to check the item. Keep your own photos for the listing.</string>
 	<key>%@ to %@</key>
 	<string>%@ to %@</string>
 	<key>%@, typical %@</key>
 	<string>%@, typical %@</string>
+	<key>Answer a few things</key>
+	<string>Answer a few things</string>
+	<key>Anything you want to sell.</key>
+	<string>Anything you want to sell.</string>
+	<key>BuySell is free during early access while we improve item identification, pricing research, and marketplace recommendations.</key>
+	<string>BuySell is free during early access while we improve item identification, pricing research, and marketplace recommendations.</string>
+	<key>BuySell figures out what it is, what it's worth, and where to sell it.</key>
+	<string>BuySell figures out what it is, what it's worth, and where to sell it.</string>
+	<key>Best place</key>
+	<string>Best place</string>
+	<key>Check before posting</key>
+	<string>Check before posting</string>
+	<key>Keep a title and description before copying.</key>
+	<string>Keep a title and description before copying.</string>
+	<key>Listing ready</key>
+	<string>Listing ready</string>
+	<key>Listing ready. Forty five dollars. Best place eBay. Copy post.</key>
+	<string>Listing ready. Forty five dollars. Best place eBay. Copy post.</string>
+	<key>Free during early access</key>
+	<string>Free during early access</string>
+	<key>Full access right now</key>
+	<string>Full access right now</string>
+	<key>Full listing</key>
+	<string>Full listing</string>
+	<key>Only what changes the price.</key>
+	<string>Only what changes the price.</string>
+	<key>Photo checklist</key>
+	<string>Photo checklist</string>
+	<key>Photo. Price. Post.</key>
+	<string>Photo. Price. Post.</string>
+	<key>Post</key>
+	<string>Post</string>
+	<key>Posting notes</key>
+	<string>Posting notes</string>
+	<key>Post source</key>
+	<string>Post source</string>
+	<key>Post info checked</key>
+	<string>Post info checked</string>
+	<key>Open posting help</key>
+	<string>Open posting help</string>
+	<key>Price, place, and words are ready.</key>
+	<string>Price, place, and words are ready.</string>
+	<key>Share listing</key>
+	<string>Share listing</string>
+	<key>Save photos</key>
+	<string>Save photos</string>
+	<key>Save recommended to Photos</key>
+	<string>Save recommended to Photos</string>
+	<key>Save all to Photos</key>
+	<string>Save all to Photos</string>
+	<key>Share recommended to Files</key>
+	<string>Share recommended to Files</string>
+	<key>Share all to Files</key>
+	<string>Share all to Files</string>
+	<key>Post on %@</key>
+	<string>Post on %@</string>
+	<key>How to post here</key>
+	<string>How to post here</string>
+	<key>Posting opens the official marketplace page.</key>
+	<string>Posting opens the official marketplace page.</string>
+	<key>Posting link isn't available right now.</key>
+	<string>Posting link isn't available right now.</string>
+	<key>Couldn't save photos. Try again.</key>
+	<string>Couldn't save photos. Try again.</string>
+	<key>More</key>
+	<string>More</string>
+	<key>Photos</key>
+	<string>Photos</string>
+	<key>Best first photo</key>
+	<string>Best first photo</string>
+	<key>Your photo is ready</key>
+	<string>Your photo is ready</string>
+	<key>No listing photos ready</key>
+	<string>No listing photos ready</string>
+	<key>%d photos are ready</key>
+	<string>%d photos are ready</string>
+	<key>Your %d best photos are ready</key>
+	<string>Your %d best photos are ready</string>
+	<key>Add a real item photo before posting.</key>
+	<string>Add a real item photo before posting.</string>
+	<key>Reference image stays out. Add a real item photo before posting.</key>
+	<string>Reference image stays out. Add a real item photo before posting.</string>
+	<key>Add one %@ photo for a stronger listing.</key>
+	<string>Add one %@ photo for a stronger listing.</string>
+	<key>Reference images stay out of your listing photos.</key>
+	<string>Reference images stay out of your listing photos.</string>
+	<key>These %d photos are enough to post.</key>
+	<string>These %d photos are enough to post.</string>
+	<key>This photo set is ready to save.</key>
+	<string>This photo set is ready to save.</string>
+	<key>Save the recommended set or all listing-ready photos to Photos or Files.</key>
+	<string>Save the recommended set or all listing-ready photos to Photos or Files.</string>
+	<key>Use your own photo first. Add one detail photo if BuySell asks.</key>
+	<string>Use your own photo first. Add one detail photo if BuySell asks.</string>
+	<key>The actual item photo.</key>
+	<string>The actual item photo.</string>
+	<key>Cover photo</key>
+	<string>Cover photo</string>
+	<key>Full item</key>
+	<string>Full item</string>
+	<key>Label or model</key>
+	<string>Label or model</string>
+	<key>Condition detail</key>
+	<string>Condition detail</string>
+	<key>Included items</key>
+	<string>Included items</string>
+	<key>Scan added.</key>
+	<string>Scan added.</string>
+	<key>Scan it</key>
+	<string>Scan it</string>
+	<key>Scan one more detail</key>
+	<string>Scan one more detail</string>
+	<key>Scan the barcode</key>
+	<string>Scan the barcode</string>
+	<key>Scan the important detail.</key>
+	<string>Scan the important detail.</string>
+	<key>Scan the model label</key>
+	<string>Scan the model label</string>
+	<key>Scan the serial plate</key>
+	<string>Scan the serial plate</string>
+	<key>Scan the size tag</key>
+	<string>Scan the size tag</string>
+	<key>Show the damaged area</key>
+	<string>Show the damaged area</string>
+	<key>Skip if you do not want another photo.</key>
+	<string>Skip if you do not want another photo.</string>
+	<key>Snap it. Price it. Sell it.</key>
+	<string>Snap it. Price it. Sell it.</string>
+	<key>Take a picture</key>
+	<string>Take a picture</string>
+	<key>Take a picture of anything.</key>
+	<string>Take a picture of anything.</string>
+	<key>This can confirm the exact model.</key>
+	<string>This can confirm the exact model.</string>
+	<key>This can improve the listing.</key>
+	<string>This can improve the listing.</string>
+	<key>This helps us find closer sold listings.</key>
+	<string>This helps us find closer sold listings.</string>
+	<key>This may improve your price estimate.</key>
+	<string>This may improve your price estimate.</string>
+	<key>Buyers will want to see this.</key>
+	<string>Buyers will want to see this.</string>
+	<key>One better scan</key>
+	<string>One better scan</string>
+	<key>You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.</key>
+	<string>You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.</string>
+	<key>A clearer photo helps BuySell identify the item and write a stronger listing.</key>
+	<string>A clearer photo helps BuySell identify the item and write a stronger listing.</string>
+	<key>A label, size, material, edition, or mark can separate similar items.</key>
+	<string>A label, size, material, edition, or mark can separate similar items.</string>
+	<key>Certificate</key>
+	<string>Certificate</string>
+	<key>Edition number</key>
+	<string>Edition number</string>
+	<key>Look for one clue we can search</key>
+	<string>Look for one clue we can search</string>
+	<key>Maker mark</key>
+	<string>Maker mark</string>
+	<key>Material clue</key>
+	<string>Material clue</string>
+	<key>Material tag</key>
+	<string>Material tag</string>
+	<key>Measurements</key>
+	<string>Measurements</string>
+	<key>Model label</key>
+	<string>Model label</string>
+	<key>Model name</key>
+	<string>Model name</string>
+	<key>No clue visible</key>
+	<string>No clue visible</string>
+	<key>Photo needs a quick check</key>
+	<string>Photo needs a quick check</string>
+	<key>Retake or use this photo first.</key>
+	<string>Retake or use this photo first.</string>
+	<key>Sealed package</key>
+	<string>Sealed package</string>
+	<key>Serial number</key>
+	<string>Serial number</string>
+	<key>Size tag</key>
+	<string>Size tag</string>
+	<key>Storage shown</key>
+	<string>Storage shown</string>
+	<key>Style number</key>
+	<string>Style number</string>
+	<key>Keeps this photo and continues with lower confidence</key>
+	<string>Keeps this photo and continues with lower confidence</string>
+	<key>Use photo</key>
+	<string>Use photo</string>
+	<key>A clearer label or mark could improve the ID.</key>
+	<string>A clearer label or mark could improve the ID.</string>
+	<key>A few similar matches are still possible.</key>
+	<string>A few similar matches are still possible.</string>
+	<key>Asks one more simple question if you are not sure.</key>
+	<string>Asks one more simple question if you are not sure.</string>
+	<key>BuySell has enough details to write this listing.</key>
+	<string>BuySell has enough details to write this listing.</string>
+	<key>BuySell has enough to search real marketplace results next.</key>
+	<string>BuySell has enough to search real marketplace results next.</string>
+	<key>Category: %@</key>
+	<string>Category: %@</string>
+	<key>Check %@ only if you can see it.</key>
+	<string>Check %@ only if you can see it.</string>
+	<key>Checked %d real %@ result(s).</key>
+	<string>Checked %d real %@ result(s).</string>
+	<key>Checked %@ before this.</key>
+	<string>Checked %@ before this.</string>
+	<key>Market evidence</key>
+	<string>Market evidence</string>
+	<key>No major gaps before marketplace research.</key>
+	<string>No major gaps before marketplace research.</string>
+	<key>No major gaps before writing this post.</key>
+	<string>No major gaps before writing this post.</string>
+	<key>One %@ detail could still help.</key>
+	<string>One %@ detail could still help.</string>
+	<key>Sold range %@ to %@</key>
+	<string>Sold range %@ to %@</string>
+	<key>Still unsure</key>
+	<string>Still unsure</string>
+	<key>We know</key>
+	<string>We know</string>
+	<key>Do this next</key>
+	<string>Do this next</string>
+	<key>Paste it into %@</key>
+	<string>Paste it into %@</string>
+	<key>BuySell copies the listing before opening the marketplace.</key>
+	<string>BuySell copies the listing before opening the marketplace.</string>
+	<key>%d ready photo(s)</key>
+	<string>%d ready photo(s)</string>
+	<key>Step %d, %@, %@</key>
+	<string>Step %d, %@, %@</string>
+	<key>Fix before posting</key>
+	<string>Fix before posting</string>
+	<key>Fix missing details</key>
+	<string>Fix missing details</string>
+	<key>Add missing photo</key>
+	<string>Add missing photo</string>
+	<key>Add item photo</key>
+	<string>Add item photo</string>
+	<key>Asks only the remaining details for this marketplace.</key>
+	<string>Asks only the remaining details for this marketplace.</string>
+	<key>Opens the camera for the exact photo this listing needs.</key>
+	<string>Opens the camera for the exact photo this listing needs.</string>
+	<key>Checking where this should sell</key>
+	<string>Checking where this should sell</string>
+	<key>BuySell is comparing real market signals before picking a place.</key>
+	<string>BuySell is comparing real market signals before picking a place.</string>
+	<key>Sold prices</key>
+	<string>Sold prices</string>
+	<key>Looks for recent comparable sales.</key>
+	<string>Looks for recent comparable sales.</string>
+	<key>Fees</key>
+	<string>Fees</string>
+	<key>Checks what you may keep after selling costs.</key>
+	<string>Checks what you may keep after selling costs.</string>
+	<key>Best fit</key>
+	<string>Best fit</string>
+	<key>Compares speed, shipping, pickup, and buyer demand.</key>
+	<string>Compares speed, shipping, pickup, and buyer demand.</string>
+	<key>Identify item</key>
+	<string>Identify item</string>
+	<key>Compares the photo with likely product types.</key>
+	<string>Compares the photo with likely product types.</string>
+	<key>Read visible clues</key>
+	<string>Read visible clues</string>
+	<key>Looks for labels, logos, model numbers, and marks.</key>
+	<string>Looks for labels, logos, model numbers, and marks.</string>
+	<key>Find price clues</key>
+	<string>Find price clues</string>
+	<key>For %@</key>
+	<string>For %@</string>
+	<key>For this post</key>
+	<string>For this post</string>
+	<key>Only what helps this post.</key>
+	<string>Only what helps this post.</string>
+	<key>Checks condition, accessories, packaging, and special versions.</key>
+	<string>Checks condition, accessories, packaging, and special versions.</string>
+	<key>BuySell found market clues. This answer helps match the right sold items.</key>
+	<string>BuySell found market clues. This answer helps match the right sold items.</string>
+	<key>Pick one only if it really looks like yours. It is fine to be unsure.</key>
+	<string>Pick one only if it really looks like yours. It is fine to be unsure.</string>
+	<key>This decides whether shipping or local pickup makes more sense.</key>
+	<string>This decides whether shipping or local pickup makes more sense.</string>
+	<key>No problem. BuySell can keep going with less certainty.</key>
+	<string>No problem. BuySell can keep going with less certainty.</string>
+	<key>No problem. Check for any logo, tag, stamp, signature, or sticker.</key>
+	<string>No problem. Check for any logo, tag, stamp, signature, or sticker.</string>
+	<key>No problem. A model, size, serial, year, or material is enough if you see one.</key>
+	<string>No problem. A model, size, serial, year, or material is enough if you see one.</string>
+	<key>No problem. Look for the worst visible spot, then pick the closest choice.</key>
+	<string>No problem. Look for the worst visible spot, then pick the closest choice.</string>
+	<key>No problem. Just check whether a box, charger, case, papers, or parts are nearby.</key>
+	<string>No problem. Just check whether a box, charger, case, papers, or parts are nearby.</string>
+	<key>No problem. BuySell only needs one practical %@ detail if you know it.</key>
+	<string>No problem. BuySell only needs one practical %@ detail if you know it.</string>
+	<key>A visible name, logo, tag, stamp, or signature can change the search.</key>
+	<string>A visible name, logo, tag, stamp, or signature can change the search.</string>
+	<key>Condition changes price fast, so only say what a buyer can see.</key>
+	<string>Condition changes price fast, so only say what a buyer can see.</string>
+	<key>Boxes, chargers, cases, papers, and parts can change what it is worth.</key>
+	<string>Boxes, chargers, cases, papers, and parts can change what it is worth.</string>
+	<key>BuySell uses this to make the %@ listing fit that marketplace.</key>
+	<string>BuySell uses this to make the %@ listing fit that marketplace.</string>
+	<key>Exact model, storage, carrier, and power status can change the price.</key>
+	<string>Exact model, storage, carrier, and power status can change the price.</string>
+	<key>Size, material, style code, and tag details help buyers trust it.</key>
+	<string>Size, material, style code, and tag details help buyers trust it.</string>
+	<key>Measurements, material, maker marks, and signatures help separate common from valuable.</key>
+	<string>Measurements, material, maker marks, and signatures help separate common from valuable.</string>
+	<key>Edition, year, set number, sealed status, and certificates can change value.</key>
+	<string>Edition, year, set number, sealed status, and certificates can change value.</string>
+	<key>Model, serial, working status, and included parts help match real sold items.</key>
+	<string>Model, serial, working status, and included parts help match real sold items.</string>
+	<key>One exact detail helps BuySell search better sold matches.</key>
+	<string>One exact detail helps BuySell search better sold matches.</string>
+	<key>Older versions, limited editions, signatures, or numbers can matter a lot.</key>
+	<string>Older versions, limited editions, signatures, or numbers can matter a lot.</string>
+	<key>Weight, material, stamps, maker marks, and signatures can separate ordinary from valuable.</key>
+	<string>Weight, material, stamps, maker marks, and signatures can separate ordinary from valuable.</string>
+	<key>Serials, model plates, working status, and accessories can move the price.</key>
+	<string>Serials, model plates, working status, and accessories can move the price.</string>
+	<key>Only add something visible, measured, or confidently known.</key>
+	<string>Only add something visible, measured, or confidently known.</string>
+	<key>No problem. Look for a year, edition, set number, signature, or sealed package.</key>
+	<string>No problem. Look for a year, edition, set number, signature, or sealed package.</string>
+	<key>No problem. Weight, material, stamps, marks, or signatures are the best clues.</key>
+	<string>No problem. Weight, material, stamps, marks, or signatures are the best clues.</string>
+	<key>No problem. Check for a model plate, serial number, power light, or included parts.</key>
+	<string>No problem. Check for a model plate, serial number, power light, or included parts.</string>
+	<key>No problem. Check whether it feels heavy, shows a stamp, or has a material clue.</key>
+	<string>No problem. Check whether it feels heavy, shows a stamp, or has a material clue.</string>
+	<key>Serial or model</key>
+	<string>Serial or model</string>
+	<key>Needs repair</key>
+	<string>Needs repair</string>
+	<key>From older era</key>
+	<string>From older era</string>
+	<key>Feels heavy</key>
+	<string>Feels heavy</string>
+	<key>Material clue</key>
+	<string>Material clue</string>
+	<key>Show proof</key>
+	<string>Show proof</string>
+	<key>Hide proof</key>
+	<string>Hide proof</string>
+	<key>Shows the market checks behind this recommendation.</key>
+	<string>Shows the market checks behind this recommendation.</string>
+	<key>Proof</key>
+	<string>Proof</string>
+	<key>%@ usually needs %@. Add it only if you can see it or know it.</key>
+	<string>%@ usually needs %@. Add it only if you can see it or know it.</string>
+	<key>What name or mark does %@ need?</key>
+	<string>What name or mark does %@ need?</string>
+	<key>What exact detail does %@ need?</key>
+	<string>What exact detail does %@ need?</string>
+	<key>What condition detail does %@ need?</key>
+	<string>What condition detail does %@ need?</string>
+	<key>What proof or parts does %@ need?</key>
+	<string>What proof or parts does %@ need?</string>
+	<key>What %@ detail should we add?</key>
+	<string>What %@ detail should we add?</string>
+	<key>Look for a tag, stamp, signature, or maker mark</key>
+	<string>Look for a tag, stamp, signature, or maker mark</string>
+	<key>Look for %@</key>
+	<string>Look for %@</string>
+	<key>Check the part buyers would worry about</key>
+	<string>Check the part buyers would worry about</string>
+	<key>Check the box, parts, paperwork, or proof</key>
+	<string>Check the box, parts, paperwork, or proof</string>
+	<key>Pick the practical detail you know</key>
+	<string>Pick the practical detail you know</string>
+	<key>Works, light wear, needs repair...</key>
+	<string>Works, light wear, needs repair...</string>
+	<key>Needs packing</key>
+	<string>Needs packing</string>
+	<key>Pickup better</key>
+	<string>Pickup better</string>
+	<key>Parts included</key>
+	<string>Parts included</string>
+	<key>Brand visible</key>
+	<string>Brand visible</string>
+	<key>No mark</key>
+	<string>No mark</string>
+	<key>Model visible</key>
+	<string>Model visible</string>
+	<key>Size visible</key>
+	<string>Size visible</string>
+	<key>Number visible</key>
+	<string>Number visible</string>
+	<key>Special detail</key>
+	<string>Special detail</string>
+	<key>Battery good</key>
+	<string>Battery good</string>
+	<key>Battery issue</key>
+	<string>Battery issue</string>
+	<key>Battery condition looks good</key>
+	<string>Battery condition looks good</string>
+	<key>Check these if you can see them: %@.</key>
+	<string>Check these if you can see them: %@.</string>
+	<key>Check these if you can see them: %@, plus one more.</key>
+	<string>Check these if you can see them: %@, plus one more.</string>
 </dict>
 </plist>

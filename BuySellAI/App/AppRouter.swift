@@ -8,6 +8,7 @@ import UIKit
 enum FlowSheetContext: Equatable {
     case snapResult(SnapResultContext)
     case itemQuestions(ItemQuestionsContext)
+    case targetedScanReview(TargetedScanReviewContext)
     case marketplacePicker(MarketplacePickerContext)
     case listing(ListingContext)
 }
@@ -16,6 +17,26 @@ enum HistorySyncState: Equatable, Sendable {
     case idle
     case loading
     case failed(String)
+}
+
+private struct PendingTargetedScan {
+    let context: ItemQuestionsContext
+    let answers: ItemDetailAnswers
+    let request: TargetedScanRequest
+    let answeredField: ItemDetailFieldKey
+}
+
+struct TargetedScanReviewContext: Equatable {
+    let imageData: Data
+    let request: TargetedScanRequest
+    let fixPrompt: String
+    let itemName: String
+}
+
+private struct PendingTargetedScanReview {
+    let imageData: Data
+    let evidence: NativeScanEvidence?
+    let pendingTargetedScan: PendingTargetedScan
 }
 
 @MainActor
@@ -34,6 +55,22 @@ final class AppStore {
     var hasRememberedSellingPreferences: Bool {
         rememberedSellingPreferences?.marketplaceNotes.isEmpty == false
     }
+    var latestEntitlementSnapshot: EntitlementSnapshot?
+    var earlyAccessStatusValue: String {
+        guard let latestEntitlementSnapshot else {
+            return "Full access right now".localized
+        }
+        guard latestEntitlementSnapshot.completeFeatureAccess else {
+            return "Saved listings stay available".localized
+        }
+        let remaining = min(
+            latestEntitlementSnapshot.remainingAnalyses,
+            latestEntitlementSnapshot.remainingAiActions
+        )
+        return remaining > 0
+            ? String.localizedFormat("%d analyses left today".localized, remaining)
+            : "Protected cooldown active".localized
+    }
 
     var isShowingCamera = false
     var isShowingTutorial = false
@@ -46,6 +83,7 @@ final class AppStore {
     var flowSheetContext: FlowSheetContext?
     var toast: ToastMessage?
     var uiTestClipboardStatus: String?
+    var activeCameraScanRequest: TargetedScanRequest?
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var modelContext: ModelContext?
@@ -56,6 +94,8 @@ final class AppStore {
     @ObservationIgnored private let logger = Logger(subsystem: "BuySellAI", category: "Persistence")
     @ObservationIgnored private let flowTransitionDelayNanoseconds: UInt64
     @ObservationIgnored private var pendingCapturedPhotoData: Data?
+    @ObservationIgnored private var pendingTargetedScan: PendingTargetedScan?
+    @ObservationIgnored private var pendingTargetedScanReview: PendingTargetedScanReview?
     @ObservationIgnored private var flowGeneration = 0
     @ObservationIgnored private var modalPresentationGeneration = 0
     @ObservationIgnored private var historyMutationGeneration = 0
@@ -95,6 +135,7 @@ final class AppStore {
         self.theme = storedTheme ?? .system
         self.reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
         self.rememberedSellingPreferences = Self.storedSellingPreferences(from: defaults)
+        self.latestEntitlementSnapshot = Self.storedEntitlementSnapshot(from: defaults)
 
         if let userID = Keychain.load(Keys.authUserID) ?? Keychain.load(Keys.appleUserID) {
             self.session = AuthSession(
@@ -111,6 +152,7 @@ final class AppStore {
                 email: "person@example.com"
             )
         }
+        ProductAnalytics.recordAppOpened(defaults: defaults)
         observeAppleCredentialRevocation()
     }
 
@@ -215,6 +257,8 @@ final class AppStore {
 
     func startSnapFlow() {
         advanceFlowGeneration()
+        activeCameraScanRequest = nil
+        pendingTargetedScan = nil
         pendingCapturedPhotoData = nil
 #if DEBUG
         let uiTestingCameraMode = LaunchArguments.contains(LaunchArguments.uiTestingCameraDenied) ||
@@ -229,26 +273,207 @@ final class AppStore {
     }
 
     func handleCapturedPhoto(_ data: Data) {
-        advanceFlowGeneration()
+        if pendingTargetedScan == nil {
+            advanceFlowGeneration()
+        }
         pendingCapturedPhotoData = data
         isShowingCamera = false
+        ProductAnalytics.record(
+            .photoCaptured,
+            properties: ["image_bytes_bucket": Self.imageSizeBucket(for: data.count)]
+        )
     }
 
     func presentPendingCapturedPhoto() {
         guard let data = pendingCapturedPhotoData else { return }
         pendingCapturedPhotoData = nil
+        if let pendingTargetedScan {
+            Task { [weak self] in
+                await self?.presentTargetedScanReviewOrResult(data, pendingTargetedScan: pendingTargetedScan)
+            }
+            return
+        }
         presentFlowSheet(.snapResult(SnapResultContext(imageData: data)))
+    }
+
+    private func presentTargetedScanReviewOrResult(
+        _ data: Data,
+        pendingTargetedScan: PendingTargetedScan
+    ) async {
+        let evidence = await NativeScanAnalyzer.evidence(from: data)
+        if let fixPrompt = evidence?.photoQuality?.fixPrompt,
+           fixPrompt.isEmpty == false {
+            pendingTargetedScanReview = PendingTargetedScanReview(
+                imageData: data,
+                evidence: evidence,
+                pendingTargetedScan: pendingTargetedScan
+            )
+            flowSheetContext = .targetedScanReview(
+                TargetedScanReviewContext(
+                    imageData: data,
+                    request: pendingTargetedScan.request,
+                    fixPrompt: fixPrompt,
+                    itemName: pendingTargetedScan.context.item.name
+                )
+            )
+            showToast("Photo needs a quick check.".localized, style: .warning)
+            return
+        }
+        acceptTargetedScanResult(data, evidence: evidence, pendingTargetedScan: pendingTargetedScan)
+    }
+
+    private func acceptTargetedScanResult(
+        _ data: Data,
+        evidence: NativeScanEvidence?,
+        pendingTargetedScan: PendingTargetedScan
+    ) {
+        var updatedAnswers = pendingTargetedScan.answers
+        updatedAnswers.applyTargetedScanEvidence(
+            evidence,
+            request: pendingTargetedScan.request,
+            answeredField: pendingTargetedScan.answeredField
+        )
+        var supplementalPhotos = pendingTargetedScan.context.supplementalPhotos
+        if let scanPhoto = ItemPhotoAsset.targetedScan(
+            item: pendingTargetedScan.context.item,
+            imageData: data,
+            request: pendingTargetedScan.request,
+            evidence: evidence
+        ) {
+            supplementalPhotos.append(scanPhoto)
+        }
+        let updatedAnalysis = pendingTargetedScan.context.analysis?.applyingTargetedScanEvidence(
+            evidence,
+            request: pendingTargetedScan.request
+        )
+        presentItemQuestions(
+            item: pendingTargetedScan.context.item,
+            imageData: pendingTargetedScan.context.imageData ?? data,
+            supplementalPhotos: supplementalPhotos,
+            preferredMarketplace: pendingTargetedScan.context.preferredMarketplace,
+            marketplaceComparison: pendingTargetedScan.context.marketplaceComparison,
+            listingDraft: pendingTargetedScan.context.listingDraft,
+            analysis: updatedAnalysis,
+            answers: updatedAnswers
+        )
+        showToast(
+            Self.targetedScanToastText(for: evidence).localized,
+            style: Self.targetedScanToastStyle(for: evidence)
+        )
+        pendingTargetedScanReview = nil
+        self.pendingTargetedScan = nil
+        activeCameraScanRequest = nil
+    }
+
+    private static func targetedScanToastText(for evidence: NativeScanEvidence?) -> String {
+        guard let fixPrompt = evidence?.photoQuality?.fixPrompt,
+              fixPrompt.isEmpty == false
+        else {
+            return "Scan added."
+        }
+        return "Scan added. \(fixPrompt)"
+    }
+
+    private static func targetedScanToastStyle(for evidence: NativeScanEvidence?) -> ToastStyle {
+        evidence?.photoQuality?.fixPrompt == nil ? .success : .warning
     }
 
     func cancelCamera() {
         pendingCapturedPhotoData = nil
+        pendingTargetedScan = nil
+        pendingTargetedScanReview = nil
+        activeCameraScanRequest = nil
         isShowingCamera = false
+    }
+
+    func retakeTargetedScanPhoto() {
+        guard let review = pendingTargetedScanReview else { return }
+        Haptics.impact(.medium)
+        pendingCapturedPhotoData = nil
+        pendingTargetedScan = review.pendingTargetedScan
+        pendingTargetedScanReview = nil
+        activeCameraScanRequest = review.pendingTargetedScan.request
+        flowSheetContext = .itemQuestions(review.pendingTargetedScan.context)
+        isShowingCamera = true
+    }
+
+    func useTargetedScanPhoto() {
+        guard let review = pendingTargetedScanReview else { return }
+        Haptics.impact(.medium)
+        acceptTargetedScanResult(
+            review.imageData,
+            evidence: review.evidence,
+            pendingTargetedScan: review.pendingTargetedScan
+        )
+    }
+
+    func skipTargetedScanPhoto() {
+        guard let review = pendingTargetedScanReview else { return }
+        Haptics.impact(.light)
+        pendingTargetedScanReview = nil
+        skipTargetedScan(review.pendingTargetedScan)
+    }
+
+    func skipActiveTargetedScanFromCamera() {
+        guard let pendingTargetedScan else {
+            cancelCamera()
+            return
+        }
+        pendingCapturedPhotoData = nil
+        pendingTargetedScanReview = nil
+        isShowingCamera = false
+        skipTargetedScan(pendingTargetedScan)
+    }
+
+    private func skipTargetedScan(_ pendingTargetedScan: PendingTargetedScan) {
+        var updatedAnswers = pendingTargetedScan.answers
+        updatedAnswers.markAnswered(pendingTargetedScan.answeredField)
+        self.pendingTargetedScan = nil
+        activeCameraScanRequest = nil
+        presentItemQuestions(
+            item: pendingTargetedScan.context.item,
+            imageData: pendingTargetedScan.context.imageData,
+            supplementalPhotos: pendingTargetedScan.context.supplementalPhotos,
+            preferredMarketplace: pendingTargetedScan.context.preferredMarketplace,
+            marketplaceComparison: pendingTargetedScan.context.marketplaceComparison,
+            listingDraft: pendingTargetedScan.context.listingDraft,
+            analysis: pendingTargetedScan.context.analysis,
+            answers: updatedAnswers
+        )
+        showToast("Scan skipped.".localized, style: .info)
+    }
+
+    func startTargetedScan(
+        request: TargetedScanRequest,
+        context: ItemQuestionsContext,
+        answers: ItemDetailAnswers,
+        answeredField: ItemDetailFieldKey = .targetedScan
+    ) {
+        pendingCapturedPhotoData = nil
+        pendingTargetedScanReview = nil
+        activeCameraScanRequest = request
+        pendingTargetedScan = PendingTargetedScan(
+            context: context,
+            answers: answers,
+            request: request,
+            answeredField: answeredField
+        )
+#if DEBUG
+        if LaunchArguments.isUITesting {
+            handleCapturedPhoto(ImageTools.sampleJPEG())
+            return
+        }
+#endif
+        isShowingCamera = true
     }
 
     func presentItemQuestions(
         item: DetectedItem,
         imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
         preferredMarketplace: Marketplace? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
+        listingDraft: GeneratedListingDraft? = nil,
         analysis: AnalyzeIntelligence? = nil,
         answers: ItemDetailAnswers? = nil
     ) {
@@ -262,7 +487,10 @@ final class AppStore {
                 ItemQuestionsContext(
                     item: item,
                     imageData: imageData,
+                    supplementalPhotos: supplementalPhotos,
                     preferredMarketplace: preferredMarketplace,
+                    marketplaceComparison: marketplaceComparison,
+                    listingDraft: listingDraft,
                     analysis: analysis,
                     answers: rememberedAnswers
                 )
@@ -273,6 +501,7 @@ final class AppStore {
     func presentMarketplacePicker(
         item: DetectedItem,
         imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
         details: ItemDetailAnswers? = nil,
         analysis: AnalyzeIntelligence? = nil
     ) {
@@ -283,6 +512,7 @@ final class AppStore {
                 MarketplacePickerContext(
                     item: item,
                     imageData: imageData,
+                    supplementalPhotos: supplementalPhotos,
                     details: details,
                     analysis: analysis
                 )
@@ -293,9 +523,13 @@ final class AppStore {
     func presentListing(
         item: DetectedItem,
         imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
         marketplace: Marketplace,
         details: ItemDetailAnswers? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
+        analysis: AnalyzeIntelligence? = nil,
         existingListingText: String? = nil,
+        existingListingDraft: GeneratedListingDraft? = nil,
         existingHistoryEntry: HistoryEntry? = nil
     ) {
         advanceFlowGeneration()
@@ -305,9 +539,13 @@ final class AppStore {
                 ListingContext(
                     item: item,
                     imageData: imageData,
+                    supplementalPhotos: supplementalPhotos,
                     marketplace: marketplace,
                     details: details,
+                    marketplaceComparison: marketplaceComparison,
+                    analysis: analysis,
                     existingListingText: existingListingText,
+                    existingListingDraft: existingListingDraft,
                     existingHistoryEntry: existingHistoryEntry
                 )
             )
@@ -320,6 +558,18 @@ final class AppStore {
         rememberedSellingPreferences = Self.marketplacePreferenceSnapshot(from: updatedPreferences)
         persistRememberedSellingPreferences()
         showToast("Selling preference cleared.".localized, style: .success)
+    }
+
+    func updateRememberedSellingPreference(_ note: String, for marketplace: Marketplace) {
+        guard let cleanNote = cleanMarketplacePreference(note) else {
+            forgetSellingPreference(for: marketplace)
+            return
+        }
+        var updatedPreferences = rememberedSellingPreferences ?? ItemDetailAnswers()
+        updatedPreferences.setMarketplaceNote(cleanNote, for: marketplace)
+        rememberedSellingPreferences = Self.marketplacePreferenceSnapshot(from: updatedPreferences)
+        persistRememberedSellingPreferences()
+        showToast("Selling preference updated.".localized, style: .success)
     }
 
     func clearRememberedSellingPreferences() {
@@ -378,6 +628,8 @@ final class AppStore {
             snapResultContext = snapResult
         case .itemQuestions(let itemQuestions):
             itemQuestionsContext = itemQuestions
+        case .targetedScanReview:
+            break
         case .marketplacePicker(let marketplacePicker):
             marketplacePickerContext = marketplacePicker
         case .listing(let listing):
@@ -393,6 +645,9 @@ final class AppStore {
         marketplacePickerContext = nil
         listingContext = nil
         flowSheetContext = nil
+        pendingTargetedScanReview = nil
+        pendingTargetedScan = nil
+        activeCameraScanRequest = nil
     }
 
     func loadHistory() async {
@@ -472,6 +727,9 @@ final class AppStore {
         imageData: Data?,
         marketplace: Marketplace,
         listingText: String,
+        details: ItemDetailAnswers? = nil,
+        listingDraft: GeneratedListingDraft? = nil,
+        identificationProfile: AnalyzeIdentificationProfile? = nil,
         replacing existingEntry: HistoryEntry? = nil
     ) {
         let cleanItemName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -493,10 +751,15 @@ final class AppStore {
             suggestedPrice: item.priceEstimate,
             imageThumbnail: thumbnail,
             marketplace: marketplace,
-            listingText: cleanListingText
+            listingText: cleanListingText,
+            itemDetails: details?.sanitizedForUse ?? existingEntry?.itemDetails,
+            listingDraft: listingDraft?.sanitizedForDisplay() ?? existingEntry?.listingDraft,
+            identificationProfile: identificationProfile?.sanitizedForDisplay() ?? existingEntry?.identificationProfile
         )
 
         let previousHistory = history
+        let isNewListing = existingEntry == nil && history.contains(where: { $0.id == entry.id }) == false
+        let createsSecondListing = isNewListing && history.count == 1
         let saveGeneration = advanceHistoryMutationGeneration()
         upsertVisibleHistory(entry, replacing: existingEntry)
 
@@ -510,6 +773,8 @@ final class AppStore {
                         return
                     }
                     try await store.remoteHistoryClient.upsertHistory([entry], accessToken: accessToken)
+                    guard store.isCurrentHistoryMutationGeneration(saveGeneration) else { return }
+                    store.recordSavedListingAnalytics(entry, isNewListing: isNewListing, createsSecondListing: createsSecondListing)
                 } catch let error where APIError.isCancellation(error) {
                     guard store.isCurrentHistoryMutationGeneration(saveGeneration) else { return }
                 } catch {
@@ -525,6 +790,7 @@ final class AppStore {
             do {
                 try upsertLocalHistory(entry, in: modelContext)
                 try modelContext.save()
+                recordSavedListingAnalytics(entry, isNewListing: isNewListing, createsSecondListing: createsSecondListing)
             } catch {
                 history = previousHistory
                 showToast("Couldn't save this listing.".localized, style: .error)
@@ -642,11 +908,22 @@ final class AppStore {
             condition: entry.condition ?? .good,
             priceEstimate: entry.suggestedPrice ?? Decimal(1)
         )
+        let analysis = entry.identificationProfile.map {
+            AnalyzeIntelligence(
+                itemFacts: [],
+                missingFacts: [],
+                photoPrompt: nil,
+                identificationProfile: $0
+            )
+        }
         presentListing(
             item: item,
             imageData: entry.imageThumbnail,
             marketplace: entry.marketplace,
+            details: entry.itemDetails,
+            analysis: analysis,
             existingListingText: entry.listingText,
+            existingListingDraft: entry.listingDraft,
             existingHistoryEntry: entry
         )
     }
@@ -756,6 +1033,12 @@ final class AppStore {
         toast = ToastMessage(text: text, style: style)
     }
 
+    func updateEntitlementSnapshot(_ snapshot: EntitlementSnapshot?) {
+        guard let snapshot = snapshot?.sanitizedForUse else { return }
+        latestEntitlementSnapshot = snapshot
+        persistEntitlementSnapshot()
+    }
+
     private func showSessionExpiredToast() {
         showToast(APIError.sessionExpired.localizedDescription, style: .error)
     }
@@ -824,6 +1107,29 @@ final class AppStore {
         }
     }
 
+    private func recordSavedListingAnalytics(
+        _ entry: HistoryEntry,
+        isNewListing: Bool,
+        createsSecondListing: Bool
+    ) {
+        guard isNewListing else { return }
+        ProductAnalytics.record(
+            .itemSaved,
+            properties: [
+                "category": entry.category?.rawValue ?? "unknown",
+                "marketplace": entry.marketplace.rawValue,
+                "has_thumbnail": entry.imageThumbnail == nil ? "false" : "true",
+                "has_answers": entry.itemDetails == nil ? "false" : "true",
+                "has_structured_draft": entry.listingDraft == nil ? "false" : "true",
+                "has_identification_profile": entry.identificationProfile == nil ? "false" : "true",
+                "evidence_source_count": "\(entry.listingDraft?.evidenceSources?.count ?? 0)"
+            ]
+        )
+        if createsSecondListing {
+            ProductAnalytics.record(.userCreatedSecondListing)
+        }
+    }
+
     private func answersApplyingRememberedPreferences(
         _ answers: ItemDetailAnswers?,
         preferredMarketplace: Marketplace?
@@ -874,6 +1180,16 @@ final class AppStore {
         defaults.set(data, forKey: Keys.sellingPreferences)
     }
 
+    private func persistEntitlementSnapshot() {
+        guard let latestEntitlementSnapshot,
+              let data = try? JSONEncoder().encode(latestEntitlementSnapshot)
+        else {
+            defaults.removeObject(forKey: Keys.latestEntitlementSnapshot)
+            return
+        }
+        defaults.set(data, forKey: Keys.latestEntitlementSnapshot)
+    }
+
     private static func storedSellingPreferences(from defaults: UserDefaults) -> ItemDetailAnswers? {
         guard let data = defaults.data(forKey: Keys.sellingPreferences),
               let decoded = try? JSONDecoder().decode(ItemDetailAnswers.self, from: data)
@@ -881,6 +1197,15 @@ final class AppStore {
             return nil
         }
         return marketplacePreferenceSnapshot(from: decoded)
+    }
+
+    private static func storedEntitlementSnapshot(from defaults: UserDefaults) -> EntitlementSnapshot? {
+        guard let data = defaults.data(forKey: Keys.latestEntitlementSnapshot),
+              let decoded = try? JSONDecoder().decode(EntitlementSnapshot.self, from: data)
+        else {
+            return nil
+        }
+        return decoded.sanitizedForUse
     }
 
     private static func marketplacePreferenceSnapshot(from details: ItemDetailAnswers?) -> ItemDetailAnswers? {
@@ -899,6 +1224,17 @@ final class AppStore {
         let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleanValue.isEmpty == false else { return nil }
         return String(cleanValue.prefix(220))
+    }
+
+    private static func imageSizeBucket(for byteCount: Int) -> String {
+        switch byteCount {
+        case 0..<150_000:
+            "small"
+        case 150_000..<700_000:
+            "medium"
+        default:
+            "large"
+        }
     }
 
     private func cleanMarketplacePreference(_ value: String) -> String? {
@@ -1149,6 +1485,7 @@ private enum Keys {
     static let theme = "themePreference"
     static let reduceMotion = "reduceMotion"
     static let sellingPreferences = "sellingPreferences"
+    static let latestEntitlementSnapshot = "latestEntitlementSnapshot"
     static let hasSeenHowItWorks = "hasSeenHowItWorks"
     static let appleUserID = "appleUserID"
     static let authUserID = "authUserID"
@@ -1185,8 +1522,10 @@ struct RootView: View {
             appStore.presentPendingCapturedPhoto()
         }) {
             CameraView(
+                scanRequest: appStore.activeCameraScanRequest,
                 onCapture: { data in appStore.handleCapturedPhoto(data) },
-                onCancel: { appStore.cancelCamera() }
+                onCancel: { appStore.cancelCamera() },
+                onSkipTargetedScan: { appStore.skipActiveTargetedScanFromCamera() }
             )
         }
         .fullScreenCover(isPresented: $store.isShowingTutorial) {
@@ -1268,7 +1607,7 @@ struct RootView: View {
         switch appStore.flowSheetContext {
         case .snapResult:
             [.large]
-        case .itemQuestions, .marketplacePicker, .listing:
+        case .itemQuestions, .targetedScanReview, .marketplacePicker, .listing:
             [.large]
         case nil:
             [.large]
@@ -1286,6 +1625,8 @@ private struct FlowSheetContent: View {
                 SnapResultSheet(context: context)
             case .itemQuestions(let context):
                 ItemQuestionsSheet(context: context)
+            case .targetedScanReview(let context):
+                TargetedScanReviewSheet(context: context)
             case .marketplacePicker(let context):
                 MarketplacePickerSheet(context: context)
             case .listing(let context):
@@ -1297,6 +1638,139 @@ private struct FlowSheetContent: View {
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilitySortPriority(1_000)
+    }
+}
+
+private struct TargetedScanReviewSheet: View {
+    let context: TargetedScanReviewContext
+
+    @Environment(AppStore.self) private var appStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: Spacing.lg) {
+                        HStack(alignment: .center, spacing: Spacing.md) {
+                            PhotoThumbnail(data: context.imageData, size: 72, category: .other)
+
+                            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                                Text("Photo needs a quick check".localized)
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(Color.brand.foreground)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Text(context.fixPrompt.localized)
+                                    .font(.body)
+                                    .foregroundStyle(Color.brand.foregroundSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .accessibilityElement(children: .combine)
+
+                        Label {
+                            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                                Text(context.request.title.localized)
+                                    .font(.headline)
+                                    .foregroundStyle(Color.brand.foreground)
+                                Text("A clearer scan helps BuySell confirm this detail. You can still use this photo or skip it.".localized)
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.brand.foregroundSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        } icon: {
+                            Image(systemName: "camera.metering.unknown")
+                                .brandSymbol(.controlIcon)
+                                .foregroundStyle(Color.brand.primaryText)
+                                .accessibilityHidden(true)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                    .padding(.vertical, Spacing.sm)
+                } footer: {
+                    Text("Skipping will keep going without this scan.".localized)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .navigationTitle("Check photo".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                bottomActions
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var bottomActions: some View {
+        let usesStack = dynamicTypeSize.isAccessibilitySize
+        Group {
+            if usesStack {
+                VStack(spacing: Spacing.sm) {
+                    retakeButton
+                    usePhotoButton
+                    skipButton
+                }
+            } else {
+                VStack(spacing: Spacing.sm) {
+                    HStack(spacing: Spacing.sm) {
+                        retakeButton
+                        usePhotoButton
+                    }
+                    skipButton
+                }
+            }
+        }
+        .frame(maxWidth: 820)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.md)
+        .padding(.bottom, Spacing.sm)
+        .background(.bar)
+    }
+
+    private var retakeButton: some View {
+        Button {
+            appStore.retakeTargetedScanPhoto()
+        } label: {
+            Label("Retake".localized, systemImage: AppSymbol.Action.retakePhoto)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(Color.brand.primary)
+        .accessibilityLabel("Retake".localized)
+        .accessibilityHint(context.fixPrompt.localized)
+    }
+
+    private var usePhotoButton: some View {
+        Button {
+            appStore.useTargetedScanPhoto()
+        } label: {
+            Label("Use Photo".localized, systemImage: "checkmark.circle")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
+        .accessibilityLabel("Use Photo".localized)
+        .accessibilityHint("Keeps this scan and continues with lower confidence.".localized)
+    }
+
+    private var skipButton: some View {
+        Button {
+            appStore.skipTargetedScanPhoto()
+        } label: {
+            Text("Skip".localized)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
+        .accessibilityLabel("Skip".localized)
+        .accessibilityHint("Keeps going without this scan.".localized)
     }
 }
 

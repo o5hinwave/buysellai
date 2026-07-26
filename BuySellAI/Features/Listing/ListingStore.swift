@@ -4,7 +4,15 @@ import Foundation
 @MainActor
 @Observable
 final class ListingStore {
-    typealias GenerateHandler = (DetectedItem, Marketplace, ItemDetailAnswers?, Data?, String?) async throws -> GeneratedListing
+    typealias GenerateHandler = (
+        DetectedItem,
+        Marketplace,
+        ItemDetailAnswers?,
+        MarketplaceComparison?,
+        AnalyzeIdentificationProfile?,
+        Data?,
+        String?
+    ) async throws -> GeneratedListing
 
     enum Phase: Equatable {
         case idle
@@ -16,9 +24,12 @@ final class ListingStore {
     let item: DetectedItem
     let marketplace: Marketplace
     let details: ItemDetailAnswers?
+    let marketplaceComparison: MarketplaceComparison?
+    let identificationProfile: AnalyzeIdentificationProfile?
     let imageData: Data?
     var listingText: String
     var draft: GeneratedListingDraft?
+    var entitlementSnapshot: EntitlementSnapshot?
     var phase: Phase
 
     private let generateHandler: GenerateHandler
@@ -28,13 +39,18 @@ final class ListingStore {
         item: DetectedItem,
         marketplace: Marketplace,
         details: ItemDetailAnswers? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
+        identificationProfile: AnalyzeIdentificationProfile? = nil,
         imageData: Data? = nil,
         existingListingText: String?,
-        generateHandler: @escaping GenerateHandler = { item, marketplace, details, imageData, accessToken in
+        existingListingDraft: GeneratedListingDraft? = nil,
+        generateHandler: @escaping GenerateHandler = { item, marketplace, details, marketplaceComparison, identificationProfile, imageData, accessToken in
             try await APIClient.shared.generateListingPayload(
                 item: item,
                 marketplace: marketplace,
                 details: details,
+                marketplaceComparison: marketplaceComparison,
+                identificationProfile: identificationProfile,
                 imageData: imageData,
                 accessToken: accessToken
             )
@@ -43,12 +59,14 @@ final class ListingStore {
         self.item = item
         self.marketplace = marketplace
         self.details = details?.sanitizedForUse
+        self.marketplaceComparison = marketplaceComparison?.sanitizedForDisplay()
+        self.identificationProfile = identificationProfile?.sanitizedForDisplay()
         self.imageData = imageData
         self.generateHandler = generateHandler
         if let existingListingText {
             if let safeListingText = try? ListingTextContract.validatedStored(existingListingText) {
                 self.listingText = safeListingText
-                self.draft = nil
+                self.draft = existingListingDraft?.sanitizedForMarketplace(marketplace, item: item)
                 self.phase = .success
             } else {
                 self.listingText = ""
@@ -85,11 +103,23 @@ final class ListingStore {
         let currentGeneration = generation
         phase = .loading
         do {
-            let generated = try await generateHandler(item, marketplace, details, imageData, accessToken)
+            let generated = try await generateHandler(item, marketplace, details, marketplaceComparison, identificationProfile, imageData, accessToken)
             guard currentGeneration == generation else { return }
             listingText = try ListingTextContract.validatedGenerated(generated.listing)
-            draft = generated.draft
+            draft = generated.draft?.sanitizedForMarketplace(marketplace, item: item)
+            entitlementSnapshot = generated.entitlement
             phase = .success
+            ProductAnalytics.recordEstimatedCost(
+                event: .listingGenerated,
+                endpoint: "generate-listing",
+                estimatedAICostCents: Decimal(string: "0.18") ?? 0,
+                groundedSearchCount: generated.draft?.evidenceSources?.count ?? 0,
+                extra: [
+                    "marketplace": marketplace.rawValue,
+                    "category": item.category.rawValue,
+                    "has_structured_draft": generated.draft == nil ? "false" : "true"
+                ].merging(generated.entitlement?.analyticsProperties ?? [:]) { current, _ in current }
+            )
         } catch let error where APIError.isCancellation(error) {
             guard currentGeneration == generation else { return }
             phase = .idle

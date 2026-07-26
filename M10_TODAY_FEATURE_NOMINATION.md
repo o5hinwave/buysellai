@@ -20,10 +20,10 @@ This file keeps the App Store editorial pitch ready for App Store Connect Featur
 | Platform | iOS and iPadOS |
 | Nomination type | New app launch |
 | Preferred placement | Today tab and Apps tab editorial consideration |
-| Feature title | Sell anything in three taps |
-| One-line story | BuySell AI turns a photo of a household item into a priced, copy-ready marketplace listing. |
+| Feature title | Snap it. Price it. Sell it. |
+| One-line story | BuySell AI turns almost any item photo into a priced, copy-ready marketplace listing. |
 | Editorial angle | A calm, camera-first resale assistant for people who avoid resale apps because they feel crowded, confusing, or too much work. |
-| Why now | The native SwiftUI 1.0 launch replaces the web experience with a focused iPhone flow: snap a photo, confirm what it is, pick the best marketplace, and copy the listing. |
+| Why now | The native SwiftUI 1.0 launch replaces the web experience with a focused iPhone flow: take a picture, confirm what it is, compare where to sell, and copy the listing. |
 | New content/functionality | Full-screen AVFoundation camera capture, image downscaling, Supabase Edge Function analysis, a short item-details review step, marketplace payout ranking, grounded marketplace listing research, generated listing copy, optional Sign in with Apple sync, guest SwiftData history, and a concise first-launch guide. |
 | Technology quality | Built with SwiftUI, Observation, AVFoundation, SwiftData, StoreKit, AuthenticationServices, async/await networking, semantic privacy metadata, native materials, Dynamic Type, and Reduce Motion support. |
 | Accessibility story | VoiceOver labels and sheet order, Larger Text through accessibility3, Bold Text font variants, sufficient contrast, Reduced Motion, Reduce Transparency, Differentiate Without Color borders, and 44-point tap targets are covered by simulator/source guardrails. |

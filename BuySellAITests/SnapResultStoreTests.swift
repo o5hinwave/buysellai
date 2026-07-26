@@ -166,6 +166,7 @@ final class SnapResultStoreTests: XCTestCase {
 
         XCTAssertEqual(store.item?.name, "Nintendo Switch OLED")
         XCTAssertEqual(store.nameText, "Nintendo Switch OLED")
+        XCTAssertEqual(store.confirmedLikelyMatchName, "Nintendo Switch OLED")
         XCTAssertEqual(store.analysisDetails?.itemFacts.first, AnalyzeItemFact(
             label: "You picked",
             value: "Nintendo Switch OLED",
@@ -185,6 +186,30 @@ final class SnapResultStoreTests: XCTestCase {
                 source: "Visual search"
             )
         ])
+    }
+
+    func testManualNameEditClearsConfirmedLikelyMatchChoice() {
+        let selected = AnalyzeLikelyMatch(
+            name: "Nintendo Switch OLED",
+            distinguishingQuestion: "Does the label say OLED?",
+            confidence: 0.86
+        )
+        let store = SnapResultStore(imageData: Data())
+        store.item = DetectedItem(
+            name: "Game console",
+            category: .electronics,
+            condition: .good,
+            priceEstimate: Decimal(180)
+        )
+        store.nameText = "Game console"
+        store.priceText = "180"
+
+        store.selectLikelyMatch(selected)
+        store.nameText = "Nintendo Switch Lite"
+        store.commitEdits()
+
+        XCTAssertEqual(store.item?.name, "Nintendo Switch Lite")
+        XCTAssertNil(store.confirmedLikelyMatchName)
     }
 
     func testCycleActionsDoNotUseOptionalChainedObservedMutation() throws {
@@ -245,6 +270,33 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.priceText, "1")
     }
 
+    func testAnalyzeStoresServerEntitlementSnapshotForEarlyAccessStatus() async {
+        let entitlement = EntitlementSnapshot(
+            state: .earlyAccess,
+            completeFeatureAccess: true,
+            futurePaidAccessEnabled: false,
+            remainingAnalyses: 16,
+            remainingAiActions: 50
+        )
+        let store = SnapResultStore(
+            imageData: Data(),
+            analyzeHandler: { _, _ in
+                AnalyzeResponse(
+                    name: "Lamp",
+                    category: "Home",
+                    condition: "good",
+                    currentPrice: Decimal(45),
+                    entitlement: entitlement
+                )
+            }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.entitlementSnapshot, entitlement)
+    }
+
     func testAnalyzeStoresOnePlainGuidanceHintWhenAvailable() async {
         let store = SnapResultStore(
             imageData: Data(),
@@ -271,6 +323,44 @@ final class SnapResultStoreTests: XCTestCase {
         XCTAssertEqual(store.analysisDetails?.itemFacts.first?.confidence, 0.8)
         XCTAssertEqual(store.analysisDetails?.missingFacts, ["maker"])
         XCTAssertEqual(store.analysisGuidance, "Show the maker mark.")
+    }
+
+    func testAnalyzePassesNativeScanEvidenceToAnalyzeHandler() async {
+        let evidence = NativeScanEvidence(
+            recognizedText: ["Model A2482"],
+            barcodes: [NativeScanBarcode(payload: "012345678905", symbology: "ean13")],
+            modelOrSerialCandidates: ["Model A2482"],
+            photoQuality: PhotoQualityAssessment(
+                brightness: 0.1,
+                contrast: 0.2,
+                glareRatio: 0,
+                width: 640,
+                height: 480,
+                issue: .tooDark
+            )
+        )
+        var receivedEvidence: NativeScanEvidence?
+        let store = SnapResultStore(
+            imageData: Data([1, 2, 3]),
+            scanEvidenceHandler: { _ in evidence },
+            analyzeHandler: { _, nativeScanEvidence, _ in
+                receivedEvidence = nativeScanEvidence
+                return AnalyzeResponse(
+                    name: "Phone",
+                    category: "Electronics",
+                    condition: "good",
+                    currentPrice: Decimal(250)
+                )
+            }
+        )
+
+        await store.analyze(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.nativeScanEvidence, evidence)
+        XCTAssertEqual(store.photoQualityPrompt, "Move it into better light.")
+        XCTAssertEqual(store.analysisGuidance, "Move it into better light.")
+        XCTAssertEqual(receivedEvidence, evidence)
     }
 
     func testStaleStillWorkingHintDoesNotLeakIntoRetriedAnalysis() async {

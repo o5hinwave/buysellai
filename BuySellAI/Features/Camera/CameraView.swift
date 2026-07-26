@@ -3,8 +3,10 @@ import PhotosUI
 import SwiftUI
 
 struct CameraView: View {
+    var scanRequest: TargetedScanRequest?
     let onCapture: (Data) -> Void
     let onCancel: () -> Void
+    var onSkipTargetedScan: (() -> Void)? = nil
 
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -249,7 +251,7 @@ struct CameraView: View {
     @ViewBuilder
     private var cameraHintLabel: some View {
         if dynamicTypeSize.isAccessibilitySize {
-            Text("Fit the whole item in the frame".localized)
+            Text(cameraHintText)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
                 .multilineTextAlignment(.center)
@@ -259,7 +261,7 @@ struct CameraView: View {
                 .padding(.vertical, Spacing.xs)
                 .nativeMaterialPill(tintOpacity: 0.72, strokeOpacity: 0.64)
         } else {
-            Text("Fit the whole item in the frame".localized)
+            Text(cameraHintText)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.brand.primaryForeground)
                 .multilineTextAlignment(.center)
@@ -267,6 +269,10 @@ struct CameraView: View {
                 .minimumScaleFactor(0.82)
                 .shadow(color: Color.brand.cameraBackdrop.opacity(0.5), radius: 4, y: 2)
         }
+    }
+
+    private var cameraHintText: String {
+        scanRequest?.prompt ?? "Fit the whole item in the frame".localized
     }
 
     private var cameraBottomPadding: CGFloat {
@@ -318,22 +324,7 @@ struct CameraView: View {
 
             photoFallbackButton(sortPriority: 1)
 
-            Button {
-                Haptics.impact(.light)
-                controller.stop()
-                onCancel()
-            } label: {
-                Text("Close".localized)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.82)
-                    .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
-                    .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .accessibilityLabel("Close".localized)
-            .accessibilitySortPriority(0)
+            closeOrSkipFallbackButton(sortPriority: 0)
         }
     }
 
@@ -349,23 +340,32 @@ struct CameraView: View {
 
             photoFallbackButton(sortPriority: 1)
 
-            Button {
-                Haptics.impact(.light)
-                controller.stop()
-                onCancel()
-            } label: {
-                Text("Close".localized)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.82)
-                    .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
-                    .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .accessibilityLabel("Close".localized)
-            .accessibilitySortPriority(0)
+            closeOrSkipFallbackButton(sortPriority: 0)
         }
+    }
+
+    private func closeOrSkipFallbackButton(sortPriority: Double) -> some View {
+        Button {
+            Haptics.impact(.light)
+            controller.stop()
+            if scanRequest != nil, let onSkipTargetedScan {
+                onSkipTargetedScan()
+            } else {
+                onCancel()
+            }
+        } label: {
+            Text(fallbackDismissTitle.localized)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.82)
+                .frame(maxWidth: fallbackActionsFillWidth ? fallbackActionMaxWidth : nil)
+                .frame(maxWidth: fallbackActionsFillWidth ? .infinity : nil)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .accessibilityLabel(fallbackDismissTitle.localized)
+        .accessibilityHint(fallbackDismissHint.localized)
+        .accessibilitySortPriority(sortPriority)
     }
 
     private func photoFallbackButton(sortPriority: Double) -> some View {
@@ -413,6 +413,16 @@ struct CameraView: View {
 
     private var fallbackActionsFillWidth: Bool {
         dynamicTypeSize.isAccessibilitySize
+    }
+
+    private var fallbackDismissTitle: String {
+        scanRequest == nil ? "Close" : "Skip"
+    }
+
+    private var fallbackDismissHint: String {
+        scanRequest == nil
+            ? "Closes the camera.".localized
+            : "Keeps going without this scan.".localized
     }
 
     private var usesRegularWidthLayout: Bool {

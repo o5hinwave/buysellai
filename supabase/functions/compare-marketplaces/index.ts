@@ -5,6 +5,7 @@ import {
   geminiGroundingSourcesKey,
   generateJsonWithGemini,
 } from "../_shared/gemini.ts";
+import { consumeEarlyAccessUsage } from "../_shared/entitlements.ts";
 import {
   errorResponse,
   fetchWithTimeout,
@@ -25,15 +26,21 @@ serve(async (request) => {
     const body = await readJson(request);
     const item = requireItem(body.item);
     const details = optionalItemDetails(body.details);
+    const identificationProfile = optionalIdentificationProfile(body.identificationProfile);
     const candidateMarketplaces = requireCandidateMarketplaces(body.candidateMarketplaces);
-    const result = await generateMarketplaceComparisonJson(item, details, candidateMarketplaces);
+    const entitlement = await consumeEarlyAccessUsage(request, "marketplace_research", {
+      estimatedAiCostCents: 4.8,
+      groundedSearchCount: Math.min(candidateMarketplaces.length, 10),
+    });
+    const result = await generateMarketplaceComparisonJson(item, details, identificationProfile, candidateMarketplaces);
     const checkedAt = new Date().toISOString();
     const comparisons = normalizeComparisons(result, item, candidateMarketplaces, checkedAt);
-    await saveComparisonResearchCache(item, details, result, comparisons);
+    await saveComparisonResearchCache(item, details, identificationProfile, result, comparisons);
 
     return jsonResponse({
       checkedAt,
       comparisons,
+      entitlement,
     });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -59,6 +66,18 @@ type ListingItemDetails = {
   extraDetails: string | null;
   marketplaceNotes: Record<string, string>;
   isLargeOrFragile: boolean;
+};
+
+type IdentificationProfile = {
+  confirmedFacts: string[];
+  likelyFacts: string[];
+  conflictingClues: string[];
+  unknownDetails: string[];
+  possibleMatches: string[];
+  potentiallyValuableVariants: string[];
+  evidenceNeeded: string[];
+  previousCorrections: string[];
+  confidenceState: string | null;
 };
 
 type StructuredEvidenceSource = {
@@ -201,6 +220,7 @@ const knownConditionValues = [
 async function generateMarketplaceComparisonJson(
   item: ListingItem,
   details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
   candidates: MarketplaceId[],
 ): Promise<Record<string, unknown>> {
   const tools: GeminiTool[] = [
@@ -213,8 +233,10 @@ async function generateMarketplaceComparisonJson(
     `Condition: ${item.condition}`,
     `Base observed price: ${item.currentPrice}`,
     `Seller details: ${detailsForPrompt(details)}`,
+    `Item identification profile: ${identificationProfileForPrompt(identificationProfile)}`,
     `Candidate marketplaces: ${candidates.map((id) => marketplaceDisplayNames[id]).join(", ")}`,
     "Use the minimum searches needed to compare these candidates.",
+    "Use confirmed profile facts as search anchors, likely facts as hypotheses, and unknown or conflicting profile clues as reasons to search narrower variants before pricing.",
     "Prioritize sold/completed listing evidence over active asking prices.",
     "Use official marketplace fee or help pages for fees and rules when available.",
     "If reliable sold evidence is unavailable for a marketplace, leave comp prices empty and say the evidence is limited.",
@@ -249,7 +271,10 @@ function compareSystemInstruction(candidates: MarketplaceId[]): string {
     "Each comparison should help a non-expert decide where to sell one item.",
     "Do not invent sold listings, prices, fees, dates, demand, restrictions, or source URLs.",
     "Use Google Search and URL Context for current marketplace fees, rules, sold/completed comps, active competition, and shipping or pickup expectations.",
+    "Use the item identification profile to choose exact search terms; check possible matches and potentially valuable variants before assuming a generic item.",
+    "If the profile says details are unknown or conflicting, mention the uncertainty and do not price or rank as a rare variant unless grounded evidence supports it.",
     "For compLowPrice, compMedianPrice, and compHighPrice, use sold/completed comparable evidence only. Do not use active asking prices for sold-price fields.",
+    "Active listings and asking prices may appear in evidenceSources, but they must never populate sold comp price fields.",
     "If only active or weak evidence is available, leave sold comp price fields empty and set evidenceStatus to limited or unavailable.",
     "For every factual market result you rely on, add evidenceSources with sourceMarketplace, title, url, dateChecked, listingStatus sold/active/official/reference, conditionAndVariant, comparability, and price when grounded.",
     "Use recommendationLabel only when it truly fits: Best overall, Fastest sale, Most money, or Easiest option.",
@@ -359,8 +384,9 @@ function normalizeComparison(
 
   const platform = marketplace as MarketplaceId;
   const evidenceSources = cleanEvidenceSources(row.evidenceSources, platform, checkedAt);
-  const evidenceStatus = normalizeEvidenceStatus(row.evidenceStatus, evidenceSources.length);
-  const hasSoldEvidence = evidenceSources.some((source) => source.listingStatus === "Sold");
+  const soldEvidencePrices = soldComparableEvidencePrices(evidenceSources);
+  const hasPricedSoldEvidence = soldEvidencePrices.length > 0;
+  const evidenceStatus = normalizeEvidenceStatus(row.evidenceStatus, evidenceSources.length, soldEvidencePrices.length);
 
   return {
     marketplace: platform,
@@ -370,15 +396,15 @@ function normalizeComparison(
     likelyRangeLow: optionalPositiveNumber(row.likelyRangeLow),
     likelyRangeHigh: optionalPositiveNumber(row.likelyRangeHigh),
     takeHomeEstimate: optionalPositiveNumber(row.takeHomeEstimate),
-    compLowPrice: hasSoldEvidence ? optionalPositiveNumber(row.compLowPrice) : null,
-    compMedianPrice: hasSoldEvidence ? optionalPositiveNumber(row.compMedianPrice) : null,
-    compHighPrice: hasSoldEvidence ? optionalPositiveNumber(row.compHighPrice) : null,
+    compLowPrice: hasPricedSoldEvidence ? lowPrice(soldEvidencePrices) : null,
+    compMedianPrice: hasPricedSoldEvidence ? medianPrice(soldEvidencePrices) : null,
+    compHighPrice: hasPricedSoldEvidence ? highPrice(soldEvidencePrices) : null,
     expectedSpeed: optionalCleanText(row.expectedSpeed, 80),
     shippingExpectation: optionalCleanText(row.shippingExpectation, 100),
     feeSummary: optionalCleanText(row.feeSummary, 180),
     reason: optionalCleanText(row.reason, 180) ??
       `${marketplaceDisplayNames[platform]} may fit when price and photos are clear.`,
-    evidenceSummary: optionalCleanText(row.evidenceSummary, 220),
+    evidenceSummary: evidenceSummaryForDisplay(row.evidenceSummary, platform, evidenceSources, soldEvidencePrices.length),
     evidenceStatus,
     evidenceSources,
   };
@@ -416,21 +442,23 @@ function createMarketplaceResearchPlan(
   item: ListingItem,
   platform: MarketplaceId,
   details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
 ): MarketplaceResearchPlan {
   const displayName = marketplaceDisplayNames[platform] ?? platform;
   const currentYear = new Date().getUTCFullYear();
   const category = normalizedIdentifier(item.category);
   const condition = normalizedIdentifier(item.condition);
-  const identity = researchIdentity(item, details);
+  const identity = researchIdentity(item, details, identificationProfile);
   const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
+  const profileKey = normalizedIdentifier(profileSearchTerms(identificationProfile).join(" ")).slice(0, 90) || "noprofile";
   const searchQuestions = [
     `${displayName} official selling fees ${currentYear}`,
     `${displayName} sold listings ${identity} used ${item.condition}`,
-    `${identity} resale sold price comparable`,
+    `${identity} ${profileSearchTerms(identificationProfile).join(" ")} resale sold price comparable`,
   ];
 
   return {
-    cacheKey: `${platform}:${category}:${condition}:${identityKey}`,
+    cacheKey: `${platform}:${category}:${condition}:${identityKey}:${profileKey}`,
     marketplace: platform,
     category: item.category,
     condition: item.condition,
@@ -446,18 +474,26 @@ function createMarketplaceResearchPlan(
   };
 }
 
-function researchIdentity(item: ListingItem, details: ListingItemDetails | null): string {
+function researchIdentity(
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
+): string {
   const parts = uniqueStrings([
+    ...(identificationProfile?.confirmedFacts ?? []),
+    ...(identificationProfile?.likelyFacts ?? []),
+    ...(identificationProfile?.possibleMatches ?? []),
     details?.labelOrBrand ?? "",
     details?.sizeOrModel ?? "",
     item.name,
-  ], 5);
+  ], 7);
   return parts.join(" ").slice(0, 160) || item.name;
 }
 
 async function saveComparisonResearchCache(
   item: ListingItem,
   details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
   result: Record<string, unknown>,
   comparisons: NormalizedMarketplaceComparison[],
 ): Promise<void> {
@@ -479,14 +515,16 @@ async function saveComparisonResearchCache(
   for (const comparison of comparisons) {
     if (comparison.evidenceStatus === "unavailable") continue;
 
-    const plan = createMarketplaceResearchPlan(item, comparison.marketplace, details);
+    const plan = createMarketplaceResearchPlan(item, comparison.marketplace, details, identificationProfile);
     const usefulFindings = comparisonUsefulFindings(comparison);
     const officialSources = uniqueStrings([
       ...groundingSources,
       ...evidenceSourceReferenceStrings(comparison.evidenceSources),
     ], 8);
+    const hasVerifiableSources = officialSources.length > 0;
     const researchSummary = globalResearchSummary ?? comparison.evidenceSummary ?? comparison.reason;
 
+    if (!hasVerifiableSources) continue;
     if (!researchSummary && usefulFindings.length === 0 && officialSources.length === 0) continue;
 
     const row = {
@@ -561,6 +599,68 @@ function evidenceSourceReferenceStrings(sources: StructuredEvidenceSource[]): st
     if (source.title && source.url) return `${source.title}: ${source.url}`;
     return source.url ?? source.title;
   }), 8);
+}
+
+function isSoldComparableEvidenceSource(source: StructuredEvidenceSource): boolean {
+  return source.listingStatus === "Sold" &&
+    source.price !== null &&
+    hasEvidenceSourceReference(source);
+}
+
+function soldComparableEvidencePrices(sources: StructuredEvidenceSource[]): number[] {
+  return sources
+    .filter(isSoldComparableEvidenceSource)
+    .map((source) => source.price)
+    .filter((price): price is number => typeof price === "number" && Number.isFinite(price) && price > 0)
+    .sort((lhs, rhs) => lhs - rhs);
+}
+
+function lowPrice(prices: number[]): number | null {
+  return prices.length > 0 ? roundMoney(prices[0]) : null;
+}
+
+function highPrice(prices: number[]): number | null {
+  return prices.length > 0 ? roundMoney(prices[prices.length - 1]) : null;
+}
+
+function medianPrice(prices: number[]): number | null {
+  if (prices.length === 0) return null;
+  const middle = Math.floor(prices.length / 2);
+  if (prices.length % 2 === 1) return roundMoney(prices[middle]);
+  return roundMoney((prices[middle - 1] + prices[middle]) / 2);
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function evidenceSummaryForDisplay(
+  value: unknown,
+  platform: MarketplaceId,
+  evidenceSources: StructuredEvidenceSource[],
+  soldEvidenceCount: number,
+): string | null {
+  const summary = optionalCleanText(value, 220);
+  if (soldEvidenceCount > 0) return summary;
+  if (evidenceSources.length === 0) return summary;
+
+  const displayName = marketplaceDisplayNames[platform] ?? platform;
+  const hasActiveEvidence = evidenceSources.some((source) => source.listingStatus === "Active");
+  const hasOfficialEvidence = evidenceSources.some((source) => source.listingStatus === "Official");
+  if (hasActiveEvidence && hasOfficialEvidence) {
+    return `${displayName} has active or official evidence, but no verified sold comps for this check.`;
+  }
+  if (hasActiveEvidence) {
+    return `${displayName} has active listing evidence, but no verified sold comps for this check.`;
+  }
+  if (hasOfficialEvidence) {
+    return `${displayName} has official guidance, but no verified sold comps for this check.`;
+  }
+  return summary ?? `${displayName} evidence is limited because sold comps were not verified.`;
+}
+
+function hasEvidenceSourceReference(source: StructuredEvidenceSource): boolean {
+  return Boolean(source.url || source.title);
 }
 
 function cleanEvidenceSources(
@@ -669,6 +769,45 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
   return cleanDetails;
 }
 
+function optionalIdentificationProfile(value: unknown): IdentificationProfile | null {
+  const record = recordOrNull(value);
+  if (!record) return null;
+
+  const profile: IdentificationProfile = {
+    confirmedFacts: stringArray(record.confirmedFacts, 6, 100),
+    likelyFacts: stringArray(record.likelyFacts, 6, 100),
+    conflictingClues: stringArray(record.conflictingClues, 4, 100),
+    unknownDetails: stringArray(record.unknownDetails, 6, 100),
+    possibleMatches: stringArray(record.possibleMatches, 3, 100),
+    potentiallyValuableVariants: stringArray(record.potentiallyValuableVariants, 4, 120),
+    evidenceNeeded: stringArray(record.evidenceNeeded, 5, 120),
+    previousCorrections: stringArray(record.previousCorrections, 4, 100),
+    confidenceState: optionalConfidenceState(record.confidenceState),
+  };
+
+  if (identificationProfileValues(profile).length === 0) {
+    return null;
+  }
+
+  return profile;
+}
+
+function optionalConfidenceState(value: unknown): string | null {
+  const normalized = normalizedIdentifier(optionalString(value, 40) ?? "");
+  switch (normalized) {
+    case "confirmed":
+      return "confirmed";
+    case "likely":
+      return "likely";
+    case "stillchecking":
+      return "stillChecking";
+    case "notenoughevidence":
+      return "notEnoughEvidence";
+    default:
+      return null;
+  }
+}
+
 function optionalMarketplaceNotes(value: unknown): Record<string, string> {
   const record = recordOrNull(value);
   if (!record) return {};
@@ -714,6 +853,49 @@ function detailsForPrompt(details: ListingItemDetails | null): string {
     marketplaceNoteSummary(details.marketplaceNotes),
     details.isLargeOrFragile ? "Shipping note: big, heavy, or fragile" : "",
   ].filter((line) => line.length > 0).join("; ") || "none";
+}
+
+function identificationProfileForPrompt(profile: IdentificationProfile | null): string {
+  if (!profile) return "none";
+  const lines = [
+    profile.confidenceState ? `Confidence: ${profile.confidenceState}` : "",
+    profile.confirmedFacts.length ? `Confirmed facts: ${profile.confirmedFacts.join("; ")}` : "",
+    profile.likelyFacts.length ? `Likely facts: ${profile.likelyFacts.join("; ")}` : "",
+    profile.possibleMatches.length ? `Possible matches: ${profile.possibleMatches.join("; ")}` : "",
+    profile.potentiallyValuableVariants.length
+      ? `Potentially valuable variants to verify: ${profile.potentiallyValuableVariants.join("; ")}`
+      : "",
+    profile.unknownDetails.length ? `Unknown details: ${profile.unknownDetails.join("; ")}` : "",
+    profile.conflictingClues.length ? `Conflicting clues: ${profile.conflictingClues.join("; ")}` : "",
+    profile.evidenceNeeded.length ? `Evidence still needed: ${profile.evidenceNeeded.join("; ")}` : "",
+    profile.previousCorrections.length ? `User corrections: ${profile.previousCorrections.join("; ")}` : "",
+  ].filter((line) => line.length > 0);
+  return lines.join(" | ") || "none";
+}
+
+function profileSearchTerms(profile: IdentificationProfile | null): string[] {
+  if (!profile) return [];
+  return uniqueStrings([
+    ...profile.confirmedFacts,
+    ...profile.likelyFacts,
+    ...profile.possibleMatches,
+    ...profile.potentiallyValuableVariants,
+    ...profile.evidenceNeeded,
+  ], 6);
+}
+
+function identificationProfileValues(profile: IdentificationProfile): string[] {
+  return [
+    ...profile.confirmedFacts,
+    ...profile.likelyFacts,
+    ...profile.conflictingClues,
+    ...profile.unknownDetails,
+    ...profile.possibleMatches,
+    ...profile.potentiallyValuableVariants,
+    ...profile.evidenceNeeded,
+    ...profile.previousCorrections,
+    profile.confidenceState ?? "",
+  ].filter((value) => value.length > 0);
 }
 
 function marketplaceNoteSummary(notes: Record<string, string>): string {
@@ -846,17 +1028,18 @@ function normalizeRecommendationLabel(value: unknown): string | null {
   }
 }
 
-function normalizeEvidenceStatus(value: unknown, evidenceSourceCount: number): string {
+function normalizeEvidenceStatus(value: unknown, evidenceSourceCount: number, soldEvidenceCount: number): string {
   const normalized = normalizedIdentifier(optionalString(value, 32) ?? "");
   switch (normalized) {
     case "grounded":
     case "verified":
-      return evidenceSourceCount > 0 ? "grounded" : "limited";
+      return soldEvidenceCount > 0 ? "grounded" : "limited";
     case "limited":
     case "partial":
       return "limited";
     default:
-      return evidenceSourceCount > 0 ? "limited" : "unavailable";
+      if (evidenceSourceCount === 0) return "unavailable";
+      return soldEvidenceCount > 0 ? "grounded" : "limited";
   }
 }
 
@@ -868,10 +1051,15 @@ function cleanListingStatus(value: unknown): string | null {
     case "soldlisting":
     case "soldsale":
     case "completed":
+    case "completeditem":
     case "completedlisting":
     case "completedsale":
+    case "ended":
+    case "endeditem":
+    case "endedlisting":
     case "soldcompleted":
     case "completedsold":
+    case "solditem":
       return "Sold";
     case "active":
     case "activelisting":

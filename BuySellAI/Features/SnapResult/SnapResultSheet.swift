@@ -15,6 +15,8 @@ struct SnapResultSheet: View {
     @State private var isSheetVisible = true
     @State private var showsUncertaintyHelp = false
     @State private var showsDetailCorrection = false
+    @State private var acceptedPhotoQualityWarning = false
+    @State private var skippedConfirmationScanRequest = false
     @FocusState private var focusedField: Field?
 
     init(context: SnapResultContext) {
@@ -62,10 +64,17 @@ struct SnapResultSheet: View {
             cancelAnalysisTask()
         }
         .onChange(of: store.phase) { oldPhase, newPhase in
+            if oldPhase != newPhase {
+                acceptedPhotoQualityWarning = false
+                skippedConfirmationScanRequest = false
+            }
             retryVisibleAnalysisIfCancelled(from: oldPhase, to: newPhase)
         }
         .onChange(of: store.showStillWorking) { _, isShowing in
             announceStillWorkingAlertIfNeeded(isShowing)
+        }
+        .onChange(of: store.entitlementSnapshot) { _, snapshot in
+            appStore.updateEntitlementSnapshot(snapshot)
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -90,29 +99,66 @@ struct SnapResultSheet: View {
             Text("Analyzing your photo…".localized)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
+            photoAnalysisChecklist
             if store.showStillWorking || (store.phase == .idle && automaticCancellationRetryCount > 0) {
                 VStack(spacing: Spacing.sm) {
-                    Text("Still working… tap Retry to try again.".localized)
+                    Text("Still working… this can take a moment.".localized)
                         .font(.caption)
-                        .foregroundStyle(Color.brand.destructive)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
                         .multilineTextAlignment(.center)
                         .accessibilityIdentifier("SnapResult.StillWorkingAlert")
-                        .accessibilityLabel("Still working… tap Retry to try again.".localized)
-                    Button {
-                        Haptics.impact(.light)
-                        retryAnalysis()
-                    } label: {
-                        Label("Retry".localized, systemImage: AppSymbol.Action.retry)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .accessibilityLabel("Retry".localized)
+                        .accessibilityLabel("Still working… this can take a moment.".localized)
                 }
             }
         }
         .frame(maxWidth: .infinity, minHeight: 360)
         .accessibilityElement(children: .combine)
         .accessibilitySortPriority(3)
+    }
+
+    private var photoAnalysisChecklist: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            photoAnalysisStepRow(
+                title: "Identify item",
+                detail: "Compares the photo with likely product types.",
+                systemImage: "sparkle.magnifyingglass"
+            )
+            photoAnalysisStepRow(
+                title: "Read visible clues",
+                detail: "Looks for labels, logos, model numbers, and marks.",
+                systemImage: "text.viewfinder"
+            )
+            photoAnalysisStepRow(
+                title: "Find price clues",
+                detail: "Checks condition, accessories, packaging, and special versions.",
+                systemImage: "tag.fill"
+            )
+        }
+        .frame(maxWidth: 420, alignment: .leading)
+        .padding(.top, Spacing.xs)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("SnapResult.PhotoAnalysisChecklist")
+    }
+
+    private func photoAnalysisStepRow(title: String, detail: String, systemImage: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                Text(title.localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                Text(detail.localized)
+                    .font(.caption)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } icon: {
+            Image(systemName: systemImage)
+                .brandSymbol(.controlIcon)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func retryVisibleAnalysisIfCancelled(from oldPhase: SnapResultStore.Phase, to newPhase: SnapResultStore.Phase) {
@@ -128,7 +174,7 @@ struct SnapResultSheet: View {
         guard isShowing else { return }
         UIAccessibility.post(
             notification: .announcement,
-            argument: "Still working… tap Retry to try again.".localized
+            argument: "Still working… this can take a moment.".localized
         )
     }
 
@@ -141,6 +187,24 @@ struct SnapResultSheet: View {
                 .listRowInsets(EdgeInsets(top: Spacing.md, leading: Spacing.lg, bottom: Spacing.md, trailing: Spacing.lg))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+        }
+
+        if let lowQualityPhotoPrompt {
+            Section {
+                photoQualityRecovery(prompt: lowQualityPhotoPrompt)
+                    .accessibilitySortPriority(4)
+            }
+        }
+
+        if let confirmationTargetedScanRequest {
+            Section {
+                confirmationTargetedScanCard(confirmationTargetedScanRequest, item: item)
+                    .accessibilitySortPriority(4)
+            } header: {
+                Text("One better scan".localized)
+            } footer: {
+                Text("Skip if you do not want another photo.".localized)
+            }
         }
 
         if showsUncertaintyHelp {
@@ -165,6 +229,154 @@ struct SnapResultSheet: View {
         }
     }
 
+    private func photoQualityRecovery(prompt: String) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Label {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("Photo needs a quick check".localized)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.brand.foreground)
+
+                    Text(prompt)
+                        .font(.body)
+                        .foregroundStyle(Color.brand.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("A clearer photo helps BuySell identify the item and write a stronger listing.".localized)
+                        .font(.caption)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } icon: {
+                Image(systemName: "camera.metering.unknown")
+                    .brandSymbol(.controlIcon)
+                    .foregroundStyle(Color.brand.primaryText)
+                    .accessibilityHidden(true)
+            }
+            .accessibilityElement(children: .combine)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    retakePhotoButtonForQuality
+                    usePhotoButton
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    retakePhotoButtonForQuality
+                    usePhotoButton
+                }
+            }
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("SnapResult.PhotoQualityRecovery")
+    }
+
+    private var retakePhotoButtonForQuality: some View {
+        Button {
+            Haptics.impact(.light)
+            appStore.retakePhoto(keeping: context.preferredMarketplace)
+        } label: {
+            Label("Retake photo".localized, systemImage: AppSymbol.Action.retakePhoto)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(Color.brand.primary)
+        .accessibilityLabel("Retake photo".localized)
+    }
+
+    private var usePhotoButton: some View {
+        Button {
+            Haptics.impact(.light)
+            acceptedPhotoQualityWarning = true
+        } label: {
+            Label("Use photo".localized, systemImage: "checkmark.circle")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
+        .accessibilityLabel("Use photo".localized)
+        .accessibilityHint("Keeps this photo and continues with lower confidence".localized)
+    }
+
+    private func confirmationTargetedScanCard(_ request: TargetedScanRequest, item: DetectedItem) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Label {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text(request.title.localized)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Color.brand.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(request.benefit.localized)
+                        .font(.body)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } icon: {
+                Image(systemName: request.systemImage)
+                    .brandSymbol(.controlIcon)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.brand.primaryText)
+                    .accessibilityHidden(true)
+            }
+            .accessibilityElement(children: .combine)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    scanOneMoreDetailButton(request, item: item)
+                    skipConfirmationScanButton(item: item)
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    scanOneMoreDetailButton(request, item: item)
+                    skipConfirmationScanButton(item: item)
+                }
+            }
+        }
+        .padding(.vertical, Spacing.xs)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("SnapResult.TargetedScanRequest")
+    }
+
+    private func scanOneMoreDetailButton(_ request: TargetedScanRequest, item: DetectedItem) -> some View {
+        Button {
+            startConfirmationTargetedScan(request, item: item)
+        } label: {
+            Label("Scan it".localized, systemImage: AppSymbol.Flow.snapPhotoCompact)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(Color.brand.primary)
+        .accessibilityLabel("Scan it".localized)
+        .accessibilityHint(request.benefit.localized)
+    }
+
+    private func skipConfirmationScanButton(item: DetectedItem) -> some View {
+        Button {
+            Haptics.impact(.light)
+            skippedConfirmationScanRequest = true
+            ProductAnalytics.record(
+                .followUpQuestionAnswered,
+                properties: [
+                    "category": item.category.rawValue,
+                    "question_kind": "confirmation_targeted_scan",
+                    "answer_state": "unknown",
+                    "marketplace": context.preferredMarketplace?.rawValue ?? "none"
+                ]
+            )
+        } label: {
+            Text("Skip".localized)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .accessibilityLabel("Skip".localized)
+    }
+
     private var pearlSheetBackground: some View {
         LinearGradient(
             colors: [
@@ -182,6 +394,9 @@ struct SnapResultSheet: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             confirmationHero(item: item)
             itemFactPills(item: item)
+            if let details = store.analysisDetails {
+                instantKnownFacts(details, item: item)
+            }
             confirmationChoiceRow
         }
         .padding(Spacing.lg)
@@ -202,6 +417,114 @@ struct SnapResultSheet: View {
         }
         .shadow(color: Color.brand.shadow.opacity(0.055), radius: 24, x: 0, y: 12)
         .accessibilityElement(children: .contain)
+    }
+
+    private func instantKnownFacts(_ details: AnalyzeIntelligence, item: DetectedItem) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                Image(systemName: "sparkle.magnifyingglass")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.primaryText)
+                    .accessibilityHidden(true)
+
+                Text("Known so far".localized)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .textCase(.uppercase)
+            }
+
+            ForEach(instantKnownFactRows(details, item: item), id: \.self) { row in
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                    Image(systemName: row.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.brand.primaryText)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+
+                    Text(row.text)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.brand.foreground)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(Spacing.md)
+        .background(Color.brand.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                .stroke(Color.brand.border.opacity(0.58), lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("SnapResult.InstantKnownFacts")
+    }
+
+    private func instantKnownFactRows(_ details: AnalyzeIntelligence, item: DetectedItem) -> [InstantKnownFactRow] {
+        var rows: [InstantKnownFactRow] = []
+
+        func append(_ text: String, systemImage: String) {
+            let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard cleanText.isEmpty == false else { return }
+            guard rows.contains(where: { $0.text.localizedCaseInsensitiveCompare(cleanText) == .orderedSame }) == false else { return }
+            rows.append(InstantKnownFactRow(text: String(cleanText.prefix(92)), systemImage: systemImage))
+        }
+
+        append("Usually sells under \(item.category.display)", systemImage: item.category.placeholderSystemImage)
+        append("Looks \(item.condition.display.lowercased()) from this photo", systemImage: conditionMenuItemIcon(for: item.condition))
+        if let valueClue = instantValueClue(details) {
+            append(valueClue, systemImage: "sparkles")
+        }
+
+        if let profile = details.identificationProfile {
+            if let known = profile.primaryKnownSummary {
+                append(known, systemImage: identificationProfileSystemImage(profile))
+            }
+            if let unresolved = profile.primaryUnresolvedSummary {
+                append(unresolved, systemImage: "questionmark.circle.fill")
+            }
+        }
+
+        details.itemFacts
+            .prefix(4)
+            .forEach { fact in
+                append("\(fact.label): \(fact.value)", systemImage: AppSymbol.Flow.complete)
+            }
+
+        if rows.isEmpty, let guidance = details.displayHint {
+            append(guidance, systemImage: AppSymbol.Action.edit)
+        }
+
+        return Array(rows.prefix(4))
+    }
+
+    private func instantValueClue(_ details: AnalyzeIntelligence) -> String? {
+        if let valuableVariant = details.identificationProfile?.potentiallyValuableVariants.first {
+            return "Worth checking: \(valuableVariant)"
+        }
+
+        let valueQuestion = details.valueQuestions.first { question in
+            let text = "\(question.question) \(question.reason)".lowercased()
+            return text.contains("value") ||
+                text.contains("price") ||
+                text.contains("worth") ||
+                text.contains("rare") ||
+                text.contains("edition") ||
+                text.contains("signed") ||
+                text.contains("numbered") ||
+                text.contains("maker") ||
+                text.contains("stamp") ||
+                text.contains("hallmark") ||
+                text.contains("authentic") ||
+                text.contains("material") ||
+                text.contains("serial") ||
+                text.contains("style code") ||
+                text.contains("sku") ||
+                text.contains("box")
+        }
+
+        guard let valueQuestion else { return nil }
+        return "Worth checking: \(valueQuestion.question)"
     }
 
     @ViewBuilder
@@ -337,11 +660,21 @@ struct SnapResultSheet: View {
 
     @ViewBuilder
     private func analysisDetailRows(_ details: AnalyzeIntelligence) -> some View {
+        if let profile = details.identificationProfile {
+            analysisIdentificationProfileRow(profile)
+        }
+
         ForEach(Array(details.itemFacts.prefix(3).enumerated()), id: \.offset) { _, fact in
             analysisFactRow(fact)
         }
 
-        if let guidance = details.photoGuidance {
+        if let missingFacts = missingFactsSummary(details.missingFacts) {
+            analysisMissingFactsRow(missingFacts)
+        }
+
+        if skippedConfirmationScanRequest == false,
+           confirmationTargetedScanRequest == nil,
+           let guidance = details.photoGuidance {
             analysisPhotoGuidanceRow(guidance)
         } else if let guidance = details.detailGuidance {
             analysisDetailGuidanceRow(guidance)
@@ -351,11 +684,11 @@ struct SnapResultSheet: View {
     private func uncertaintyHelp(details: AnalyzeIntelligence?) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("No problem".localized)
+                Text(uncertaintyTitle(details: details).localized)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color.brand.foreground)
 
-                Text(details?.uncertaintyPrompt ?? "Try a closer photo of any logo, label, or model number.".localized)
+                Text(uncertaintyPrompt(details: details).localized)
                     .font(.body)
                     .foregroundStyle(Color.brand.foregroundSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -379,18 +712,70 @@ struct SnapResultSheet: View {
 
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: Spacing.sm) {
+                    keepCheckingButton
                     retryButton
                     retakeButton
                 }
             } else {
-                HStack(spacing: Spacing.sm) {
-                    retryButton
-                    retakeButton
+                VStack(spacing: Spacing.sm) {
+                    keepCheckingButton
+                    HStack(spacing: Spacing.sm) {
+                        retryButton
+                        retakeButton
+                    }
                 }
             }
         }
         .padding(.vertical, Spacing.xs)
         .accessibilityElement(children: .contain)
+    }
+
+    private func uncertaintyTitle(details: AnalyzeIntelligence?) -> String {
+        if let matches = details?.likelyMatches, matches.isEmpty == false {
+            return "Pick the closest match"
+        }
+
+        if let referenceImages = details?.referenceImages, referenceImages.isEmpty == false {
+            return "Check against these"
+        }
+
+        return "No problem"
+    }
+
+    private func uncertaintyPrompt(details: AnalyzeIntelligence?) -> String {
+        let prompt = (details?.uncertaintyPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if prompt.isEmpty == false {
+            return prompt
+        }
+
+        if let matches = details?.likelyMatches, matches.isEmpty == false {
+            return "Choose one if it looks right. If not, keep checking."
+        }
+
+        if let referenceImages = details?.referenceImages, referenceImages.isEmpty == false {
+            return "Use these only to compare. Keep your own photos for the listing."
+        }
+
+        return "Try a closer photo of any logo, label, or model number."
+    }
+
+    private var keepCheckingButton: some View {
+        Button {
+            guard lowQualityPhotoPrompt == nil,
+                  let item = store.item
+            else { return }
+            Haptics.impact(.light)
+            proceedWithItem(item)
+        } label: {
+            Label("Keep checking".localized, systemImage: "sparkle.magnifyingglass")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .tint(Color.brand.foregroundSecondary)
+        .disabled(lowQualityPhotoPrompt != nil)
+        .accessibilityLabel("Keep checking".localized)
+        .accessibilityHint("Asks a few simple questions to help identify the item.".localized)
     }
 
     private func referenceImagesSection(_ images: [AnalyzeReferenceImage]) -> some View {
@@ -469,7 +854,7 @@ struct SnapResultSheet: View {
 
             if let source = image.source {
                 Text(source)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(Color.brand.foregroundSecondary)
                     .lineLimit(1)
             }
@@ -498,7 +883,7 @@ struct SnapResultSheet: View {
             Haptics.impact(.light)
             store.selectLikelyMatch(match)
             showsUncertaintyHelp = false
-            showsDetailCorrection = true
+            showsDetailCorrection = false
         } label: {
             HStack(alignment: .center, spacing: Spacing.md) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
@@ -532,6 +917,28 @@ struct SnapResultSheet: View {
         .optionalAccessibilityHint(match.distinguishingQuestion.isEmpty ? nil : match.distinguishingQuestion)
     }
 
+    private func analysisIdentificationProfileRow(_ profile: AnalyzeIdentificationProfile) -> some View {
+        let summary = profile.primaryUnresolvedSummary ?? profile.primaryKnownSummary ?? profile.confidenceLabel
+        return analysisGuidanceRow(
+            title: profile.confidenceLabel,
+            guidance: summary,
+            systemImage: identificationProfileSystemImage(profile)
+        )
+    }
+
+    private func identificationProfileSystemImage(_ profile: AnalyzeIdentificationProfile) -> String {
+        switch profile.confidenceState {
+        case .confirmed:
+            "checkmark.seal.fill"
+        case .likely:
+            "sparkle.magnifyingglass"
+        case .stillChecking:
+            "questionmark.circle.fill"
+        case .notEnoughEvidence:
+            "exclamationmark.magnifyingglass"
+        }
+    }
+
     private func analysisFactRow(_ fact: AnalyzeItemFact) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
             Image(systemName: AppSymbol.Flow.complete)
@@ -553,6 +960,33 @@ struct SnapResultSheet: View {
         .padding(.vertical, Spacing.xxs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String.localizedFormat("%@, %@", fact.label, fact.value))
+    }
+
+    private func analysisMissingFactsRow(_ summary: String) -> some View {
+        analysisGuidanceRow(
+            title: "Still unsure",
+            guidance: summary,
+            systemImage: "questionmark.circle.fill"
+        )
+    }
+
+    private func missingFactsSummary(_ facts: [String]) -> String? {
+        let cleanedFacts = facts
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.isEmpty == false }
+            .map { fact in
+                let shortened = String(fact.prefix(46))
+                return shortened.count < fact.count ? "\(shortened)..." : shortened
+            }
+
+        guard cleanedFacts.isEmpty == false else { return nil }
+
+        let visibleFacts = cleanedFacts.prefix(3).joined(separator: ", ")
+        if cleanedFacts.count > 3 {
+            return String.localizedFormat("Check these if you can see them: %@, plus one more.".localized, visibleFacts)
+        }
+
+        return String.localizedFormat("Check these if you can see them: %@.".localized, visibleFacts)
     }
 
     private func analysisPhotoGuidanceRow(_ guidance: String) -> some View {
@@ -605,10 +1039,11 @@ struct SnapResultSheet: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(Color.brand.primary)
+            .disabled(lowQualityPhotoPrompt != nil)
             .accessibilityLabel("Yes, that's it".localized)
             .accessibilitySortPriority(3)
 
-            Text("Next: a few easy questions.".localized)
+            Text(decisionHelperText.localized)
                 .font(.caption)
                 .foregroundStyle(Color.brand.foregroundSecondary)
                 .multilineTextAlignment(.center)
@@ -621,6 +1056,23 @@ struct SnapResultSheet: View {
         .nativeMaterialBar(tintOpacity: 0.9, showsTopDivider: true)
     }
 
+    private var lowQualityPhotoPrompt: String? {
+        guard acceptedPhotoQualityWarning == false else { return nil }
+        let prompt = store.photoQualityPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return prompt.isEmpty ? nil : prompt
+    }
+
+    private var confirmationTargetedScanRequest: TargetedScanRequest? {
+        guard lowQualityPhotoPrompt == nil,
+              skippedConfirmationScanRequest == false
+        else { return nil }
+        return store.analysisDetails?.targetedScanRequest
+    }
+
+    private var decisionHelperText: String {
+        lowQualityPhotoPrompt == nil ? "Next: a few easy questions." : "Retake or use this photo first."
+    }
+
     private func proceedWithItem(_ fallbackItem: DetectedItem) {
         Haptics.impact(.medium)
         store.commitEdits()
@@ -629,8 +1081,42 @@ struct SnapResultSheet: View {
             item: item,
             imageData: context.imageData,
             preferredMarketplace: context.preferredMarketplace,
-            analysis: store.analysisDetails
+            analysis: store.analysisDetails,
+            answers: confirmationAnswers()
         )
+    }
+
+    private func startConfirmationTargetedScan(_ request: TargetedScanRequest, item fallbackItem: DetectedItem) {
+        Haptics.impact(.medium)
+        store.commitEdits()
+        let item = store.item ?? fallbackItem
+        let answers = confirmationAnswers() ?? ItemDetailAnswers()
+        let scanContext = ItemQuestionsContext(
+            item: item,
+            imageData: context.imageData,
+            preferredMarketplace: context.preferredMarketplace,
+            analysis: store.analysisDetails,
+            answers: answers
+        )
+        appStore.startTargetedScan(
+            request: request,
+            context: scanContext,
+            answers: answers,
+            answeredField: .targetedScan
+        )
+    }
+
+    private func confirmationAnswers() -> ItemDetailAnswers? {
+        guard skippedConfirmationScanRequest || store.confirmedLikelyMatchName != nil else { return nil }
+        var answers = ItemDetailAnswers()
+        if let confirmedLikelyMatchName = store.confirmedLikelyMatchName {
+            answers.sizeOrModel = confirmedLikelyMatchName
+            answers.markAnswered(.sizeOrModel)
+        }
+        if skippedConfirmationScanRequest {
+            answers.markAnswered(.targetedScan)
+        }
+        return answers
     }
 
     @ViewBuilder
@@ -897,39 +1383,67 @@ struct SnapResultSheet: View {
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: Spacing.lg) {
-            PhotoThumbnail(data: context.imageData, size: 156, category: store.item?.category)
-            Text(message)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color.brand.destructive)
-                .multilineTextAlignment(.center)
-            Button {
-                Haptics.impact(.light)
-                appStore.retakePhoto(keeping: context.preferredMarketplace)
-            } label: {
-                Label("Retake photo".localized, systemImage: AppSymbol.Action.retakePhoto)
-                    .frame(maxWidth: .infinity)
+        VStack(spacing: Spacing.md) {
+            PhotoThumbnail(data: context.imageData, size: 112, category: store.item?.category)
+
+            VStack(spacing: Spacing.xs) {
+                Text(message)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.brand.destructive)
+                    .multilineTextAlignment(.center)
+
+                Text("Try a clearer photo, or retry this one.".localized)
+                    .font(.callout)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(Color.brand.primary)
-            .accessibilityLabel("Retake photo".localized)
-            Button {
-                Haptics.impact(.light)
-                retryAnalysis()
-            } label: {
-                Label("Try again".localized, systemImage: AppSymbol.Action.retry)
-                    .frame(maxWidth: .infinity)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    errorRetakeButton
+                    errorRetryButton
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    errorRetakeButton
+                    errorRetryButton
+                }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .accessibilityLabel("Try again".localized)
         }
-        .frame(maxWidth: .infinity, minHeight: 420)
+        .frame(maxWidth: .infinity, minHeight: 280)
+        .padding(.vertical, Spacing.sm)
         .task(id: message) {
             appStore.showToast(message, style: .error)
         }
         .accessibilitySortPriority(3)
+    }
+
+    private var errorRetakeButton: some View {
+        Button {
+            Haptics.impact(.light)
+            appStore.retakePhoto(keeping: context.preferredMarketplace)
+        } label: {
+            Label("Retake photo".localized, systemImage: AppSymbol.Action.retakePhoto)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.regular)
+        .tint(Color.brand.primary)
+        .accessibilityLabel("Retake photo".localized)
+    }
+
+    private var errorRetryButton: some View {
+        Button {
+            Haptics.impact(.light)
+            retryAnalysis()
+        } label: {
+            Label("Try again".localized, systemImage: AppSymbol.Action.retry)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .accessibilityLabel("Try again".localized)
     }
 
     private enum Field {
@@ -1076,6 +1590,11 @@ private struct SnapResultFactPill: View {
     }
 }
 
+private struct InstantKnownFactRow: Hashable {
+    let text: String
+    let systemImage: String
+}
+
 struct PhotoThumbnail: View {
     let data: Data?
     var size: CGFloat
@@ -1110,7 +1629,7 @@ struct PhotoThumbnail: View {
 
             VStack(spacing: placeholderSpacing) {
                 Image(systemName: category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact)
-                    .font(.system(size: iconSize, weight: .semibold))
+                    .brandSymbol(size < 72 ? .controlIcon : .heroIcon)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(Color.brand.primaryText)
                     .accessibilityHidden(true)
@@ -1138,10 +1657,6 @@ struct PhotoThumbnail: View {
             RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
                 .stroke(Color.brand.border.opacity(0.7), lineWidth: 1)
         }
-    }
-
-    private var iconSize: CGFloat {
-        max(20, min(size * 0.36, 44))
     }
 
     private var placeholderSpacing: CGFloat {

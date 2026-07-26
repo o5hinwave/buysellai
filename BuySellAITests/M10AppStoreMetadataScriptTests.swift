@@ -229,7 +229,7 @@ final class M10AppStoreMetadataScriptTests: XCTestCase {
         XCTAssertNotNil(nomination.range(of: "Submit at least two weeks"))
         XCTAssertNotNil(nomination.range(of: "up to three months"))
         XCTAssertNotNil(nomination.range(of: "Today tab and Apps tab editorial consideration"))
-        XCTAssertNotNil(nomination.range(of: "Sell anything in three taps"))
+        XCTAssertNotNil(nomination.range(of: "Snap it. Price it. Sell it."))
         XCTAssertNotNil(nomination.range(of: "SwiftUI"))
         XCTAssertNotNil(nomination.range(of: "AVFoundation"))
         XCTAssertNotNil(nomination.range(of: "SwiftData"))

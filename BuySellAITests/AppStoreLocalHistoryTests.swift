@@ -161,7 +161,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             createdAt: Date(timeIntervalSince1970: 1_700_000_000),
             itemName: "Desk lamp",
             marketplace: .ebay,
-            listingText: "TITLE:\nDesk lamp\n\nDESCRIPTION:\nDesk lamp in good condition."
+            listingText: "TITLE:\nDesk lamp\n\nDESCRIPTION:\nDesk lamp in good condition.",
+            identificationProfile: Self.sampleIdentificationProfile
         )
         context.insert(HistoryEntryModel(entry: originalEntry))
         try context.save()
@@ -169,6 +170,14 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         let store = AppStore(defaults: defaults)
         store.configure(modelContext: context)
         await store.loadHistory()
+
+        let reopenedEntry = try XCTUnwrap(store.history.first)
+        store.reopenListing(reopenedEntry)
+        guard case .listing(let listingContext) = store.flowSheetContext else {
+            return XCTFail("Expected reopened history entry to present listing context")
+        }
+        XCTAssertEqual(listingContext.analysis?.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
+        XCTAssertEqual(listingContext.analysis?.identificationProfile?.unknownDetails, ["Check base stamp"])
 
         let updatedItem = DetectedItem(
             name: "Desk lamp",
@@ -191,6 +200,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(visibleEntry.marketplace, .craigslist)
         XCTAssertEqual(visibleEntry.condition, .likeNew)
         XCTAssertEqual(visibleEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+        XCTAssertEqual(visibleEntry.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
+        XCTAssertEqual(visibleEntry.identificationProfile?.confidenceState, .stillChecking)
 
         let models = try context.fetch(FetchDescriptor<HistoryEntryModel>())
         XCTAssertEqual(models.count, 1)
@@ -199,6 +210,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(persistedEntry.createdAt, originalEntry.createdAt)
         XCTAssertEqual(persistedEntry.marketplace, .craigslist)
         XCTAssertEqual(persistedEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+        XCTAssertEqual(persistedEntry.identificationProfile?.unknownDetails, ["Check base stamp"])
     }
 
     func testClearHistoryWithoutModelContextStillClearsVisibleRowsAndShowsToast() throws {
@@ -232,7 +244,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         createdAt: Date,
         itemName: String,
         marketplace: Marketplace,
-        listingText: String? = nil
+        listingText: String? = nil,
+        identificationProfile: AnalyzeIdentificationProfile? = nil
     ) -> HistoryEntry {
         HistoryEntry(
             id: id,
@@ -243,7 +256,18 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             suggestedPrice: Decimal(25),
             imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
             marketplace: marketplace,
-            listingText: listingText ?? "TITLE:\n\(itemName)\n\nDESCRIPTION:\n\(itemName) in good condition."
+            listingText: listingText ?? "TITLE:\n\(itemName)\n\nDESCRIPTION:\n\(itemName) in good condition.",
+            identificationProfile: identificationProfile
+        )
+    }
+
+    private static var sampleIdentificationProfile: AnalyzeIdentificationProfile {
+        AnalyzeIdentificationProfile(
+            confirmedFacts: ["Brand: Lumina"],
+            likelyFacts: ["Brass desk lamp"],
+            unknownDetails: ["Check base stamp"],
+            evidenceNeeded: ["Photo of underside label"],
+            confidenceState: .stillChecking
         )
     }
 

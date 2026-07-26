@@ -5,7 +5,7 @@ export const jsonHeaders = {
 
 export const corsHeaders = {
   "access-control-allow-origin": "*",
-  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers": "authorization, x-client-info, x-buysell-device-id, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
 };
 

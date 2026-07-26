@@ -27,6 +27,7 @@ fi
 export DENO_DIR="${DENO_DIR:-${TMPDIR:-/tmp}/buysell-deno-cache}"
 
 "${deno_cmd[@]}" check "${entrypoints[@]}"
+"${deno_cmd[@]}" test --allow-env supabase/functions/_shared/entitlements_test.ts
 
 require_source_contains() {
     local file="$1"
@@ -50,6 +51,38 @@ require_source_not_contains() {
     fi
 }
 
+require_source_contains \
+    "supabase/functions/_shared/entitlements.ts" \
+    "consumeEarlyAccessUsage" \
+    "shared early-access usage gate"
+require_source_contains \
+    "supabase/functions/_shared/entitlements.ts" \
+    "entitlement_config" \
+    "server-controlled entitlement config"
+require_source_contains \
+    "supabase/functions/_shared/entitlements.ts" \
+    "entitlement_usage_events" \
+    "privacy-conscious usage event storage"
+require_source_contains \
+    "supabase/functions/_shared/entitlements.ts" \
+    "x-buysell-device-id" \
+    "per-device abuse protection header"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    'consumeEarlyAccessUsage(request, "analysis"' \
+    "analyze early-access usage gate"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    'consumeEarlyAccessUsage(request, "marketplace_research"' \
+    "marketplace research early-access usage gate"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    'consumeEarlyAccessUsage(request, "listing_generation"' \
+    "listing early-access usage gate"
+require_source_contains \
+    "supabase/functions/_shared/http.ts" \
+    "x-buysell-device-id" \
+    "early-access device header CORS"
 require_source_contains \
     "supabase/functions/_shared/gemini.ts" \
     "attachGroundingMetadata" \
@@ -92,7 +125,7 @@ require_source_contains \
     "deterministic listing formatting"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
-    "return jsonResponse({ listing, draft })" \
+    "return jsonResponse({ listing, draft, entitlement })" \
     "structured draft response"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
@@ -100,12 +133,36 @@ require_source_contains \
     "structured evidence source validation"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
-    "const hasSoldCompEvidence = evidenceSources.some(isSoldEvidenceSource)" \
-    "listing sold comp evidence guard"
+    "const soldPrices = soldEvidencePrices(evidenceSources)" \
+    "listing sold comp source price collection"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
-    "compLowPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compLowPrice) : null" \
-    "listing comp low sold-only guard"
+    "const compLowPrice = hasPricedSoldCompEvidence ? lowEvidencePrice(soldPrices) : null" \
+    "listing sold comp source-derived low price"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "const compMedianPrice = hasPricedSoldCompEvidence ? medianEvidencePrice(soldPrices) : null" \
+    "listing sold comp source-derived median price"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "function soldEvidencePrices(sources: StructuredEvidenceSource[]): number[]" \
+    "listing sold evidence price derivation helper"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "evidenceSummary: listingEvidenceSummaryForDisplay(" \
+    "listing evidence summary grounded display guard"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "no verified sold comps for this final listing" \
+    "listing active-only evidence limitation copy"
+require_source_not_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "optionalPositiveNumber(result.compLowPrice) ?? priorCompLowPrice" \
+    "model-provided listing comp low fallback"
+require_source_not_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "evidenceSummary: optionalCleanDraftText(result.evidenceSummary, 260) ?? priorComparison?.evidenceSummary ?? null" \
+    "direct listing evidence summary fallback"
 require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     "function listingStatusFromPriceFields(record: Record<string, unknown>): string | null" \
@@ -140,6 +197,22 @@ require_source_contains \
     "analyze image reference image contract"
 require_source_contains \
     "supabase/functions/analyze-image/index.ts" \
+    "Do not ask generic catch-all questions" \
+    "analyze image adaptive question specificity instruction"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "isSpecificAdaptiveQuestion(question, reason, choices, unknownFollowUpQuestion, unknownFollowUpChoices)" \
+    "analyze image adaptive question specificity guard"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "adaptiveQuestionValueScore(searchableText) >= 2" \
+    "analyze image adaptive question value scoring guard"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
+    "isButtonSizedAdaptiveChoice" \
+    "analyze image button-sized choice guard"
+require_source_contains \
+    "supabase/functions/analyze-image/index.ts" \
     "identification checking only" \
     "reference images identification-only instruction"
 require_source_contains \
@@ -160,8 +233,16 @@ require_source_contains \
     "sold-comps-first marketplace compare instruction"
 require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
-    "compLowPrice: hasSoldEvidence ? optionalPositiveNumber(row.compLowPrice) : null" \
-    "marketplace compare sold comp guard"
+    "compLowPrice: hasPricedSoldEvidence ? lowPrice(soldEvidencePrices) : null" \
+    "marketplace compare sold comp source-derived guard"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "Active listings and asking prices may appear in evidenceSources, but they must never populate sold comp price fields." \
+    "marketplace compare active asking price exclusion"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "return soldEvidenceCount > 0 ? \"grounded\" : \"limited\"" \
+    "marketplace compare grounded requires sold evidence guard"
 require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "function listingStatusFromPriceFields(record: Record<string, unknown>): string | null" \
@@ -180,8 +261,20 @@ require_source_contains \
     "marketplace-note comparison context"
 require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
-    "await saveComparisonResearchCache(item, details, result, comparisons)" \
+    "await saveComparisonResearchCache(item, details, identificationProfile, result, comparisons)" \
     "marketplace compare research cache save"
+require_source_contains \
+    "supabase/functions/compare-marketplaces/index.ts" \
+    "Item identification profile" \
+    "profile-aware marketplace compare prompt"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "identificationProfileForPrompt(identificationProfile)" \
+    "profile-aware listing prompt"
+require_source_contains \
+    "supabase/functions/generate-listing/index.ts" \
+    "const profileKey = normalizedIdentifier(profileSearchTerms(identificationProfile).join(\" \")).slice(0, 90) || \"noprofile\"" \
+    "profile-aware listing cache key"
 require_source_contains \
     "supabase/functions/compare-marketplaces/index.ts" \
     "marketplace_research_cache?on_conflict=cache_key" \
@@ -219,3 +312,4 @@ printf 'marketplace compare cache: grounded findings saved for listing reuse\n'
 printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
 printf 'listing evidence sources: sold-comp guarded structured source/date/status/comparability\n'
+printf 'early access: server-controlled entitlements with usage protection\n'

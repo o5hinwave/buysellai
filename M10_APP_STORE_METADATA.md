@@ -12,7 +12,7 @@ This file records the App Store Connect product-page, privacy, accessibility, sc
 | SKU | buysell-ai-ios |
 | Primary language | English (U.S.) |
 | Primary category | Shopping |
-| Subtitle | Sell anything in three taps |
+| Subtitle | Turn any photo into a listing |
 | Made for Kids | No |
 | License agreement | Apple's standard End User License Agreement |
 | Copyright | © 2026 RHODES MCALLEN COONS COONS |
@@ -22,8 +22,8 @@ This file records the App Store Connect product-page, privacy, accessibility, sc
 | DSA trader status | Pending - App Store Connect account owner must confirm Digital Services Act trader status before submission. |
 | Account owner legal confirmation | Pending - App Store Connect account owner must enter the final submission confirmation covering DSA trader status, privacy answers, review contact ownership, and the recorded copyright, age rating, and export compliance fields. |
 | Keywords | sell,resale,marketplace,listing,camera,declutter,garage,used |
-| Promotional text | Snap a photo, pick a marketplace, and copy a ready-to-post listing. |
-| Description | BuySell AI helps people sell one thing quickly. Snap a photo, confirm the item and price, choose where to sell, then copy a polished listing for the marketplace you picked. |
+| Promotional text | Snap it. Price it. Sell it. Take a picture and BuySell turns it into a clear marketplace plan. |
+| Description | BuySell AI helps people sell almost anything from a photo. Snap a picture, answer a few simple questions, see real marketplace evidence, compare likely proceeds and fees, then copy a polished listing for the place you choose. |
 | App Review notes | BuySell supports guest use and Sign in with Apple. Launch the app, choose the guest path if prompted, grant Camera permission, tap Snap to sell, capture an item, confirm the result, choose a marketplace, and copy the listing. Supabase Edge Functions provide item analysis and listing generation when `Config.plist` points at the production Supabase project. |
 | Support URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/support |
 | Privacy Policy URL | https://buysell-ai-support.o5hinwavve.chatgpt.site/privacy |

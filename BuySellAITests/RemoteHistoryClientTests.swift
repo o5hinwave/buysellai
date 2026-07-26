@@ -16,7 +16,8 @@ final class RemoteHistoryClientTests: XCTestCase {
             XCTAssertEqual(components.host, "example.supabase.co")
             XCTAssertEqual(components.path, "/rest/v1/history")
             XCTAssertEqual(components.queryItems?.first(where: { $0.name == "order" })?.value, "created_at.desc")
-            XCTAssertNotNil(components.queryItems?.first(where: { $0.name == "select" })?.value)
+            let select = try XCTUnwrap(components.queryItems?.first(where: { $0.name == "select" })?.value)
+            XCTAssertTrue(select.contains("identification_profile"))
             XCTAssertEqual(request.httpMethod, "GET")
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
@@ -158,7 +159,31 @@ final class RemoteHistoryClientTests: XCTestCase {
               "suggested_price": 55,
               "image_thumbnail_base64": null,
               "marketplace": "Facebook Marketplace",
-              "listing_text": "TITLE:\\nCoat\\n\\nDESCRIPTION:\\nCoat in like new condition."
+              "listing_text": "TITLE:\\nCoat\\n\\nDESCRIPTION:\\nCoat in like new condition.",
+              "item_details": { "labelOrBrand": "Wool", "flaws": "", "sizeOrModel": "M" },
+              "listing_draft": {
+                "title": "Wool Coat",
+                "description": "Wool coat in like new condition.",
+                "evidenceSummary": "Checked recent comparable coats.",
+                "evidenceSources": [{
+                  "sourceMarketplace": "eBay",
+                  "title": "Sold wool coat",
+                  "dateChecked": "2026-07-24",
+                  "listingStatus": "sold",
+                  "price": 58
+                }]
+              },
+              "identification_profile": {
+                "confirmedFacts": ["Brand: Wool"],
+                "likelyFacts": ["Looks like a winter coat"],
+                "conflictingClues": [],
+                "unknownDetails": ["material blend"],
+                "possibleMatches": ["Wool blend overcoat"],
+                "potentiallyValuableVariants": ["Cashmere blend"],
+                "evidenceNeeded": ["Photo of fabric tag"],
+                "previousCorrections": ["User rejected trench coat"],
+                "confidenceState": "stillChecking"
+              }
             }]
             """.utf8)
             return (response, data)
@@ -171,6 +196,13 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].category, .clothing)
         XCTAssertEqual(entries[0].condition, .likeNew)
         XCTAssertEqual(entries[0].marketplace, .facebook)
+        XCTAssertEqual(entries[0].itemDetails?.labelOrBrand, "Wool")
+        XCTAssertEqual(entries[0].itemDetails?.sizeOrModel, "M")
+        XCTAssertEqual(entries[0].listingDraft?.evidenceSummary, "Checked recent comparable coats.")
+        XCTAssertEqual(entries[0].listingDraft?.evidenceSources?.first?.listingStatus, "sold")
+        XCTAssertEqual(entries[0].identificationProfile?.confirmedFacts, ["Brand: Wool"])
+        XCTAssertEqual(entries[0].identificationProfile?.unknownDetails, ["material blend"])
+        XCTAssertEqual(entries[0].identificationProfile?.confidenceState, .stillChecking)
     }
 
     func testUpsertHistoryBuildsBatchPostgRESTRequest() async throws {
@@ -185,7 +217,31 @@ final class RemoteHistoryClientTests: XCTestCase {
             suggestedPrice: Decimal(30),
             imageThumbnail: Data([4, 5, 6]),
             marketplace: .craigslist,
-            listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition."
+            listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition.",
+            itemDetails: ItemDetailAnswers(labelOrBrand: "Oak", isLargeOrFragile: true),
+            listingDraft: GeneratedListingDraft(
+                title: "Oak Chair",
+                description: "Oak chair in fair condition.",
+                evidenceSummary: "Checked recent local chair listings.",
+                evidenceSources: [
+                    ListingEvidenceSource(
+                        sourceMarketplace: "Craigslist",
+                        title: "Sold oak chair",
+                        dateChecked: "2026-07-24",
+                        listingStatus: "sold",
+                        price: Decimal(28)
+                    )
+                ]
+            ),
+            identificationProfile: AnalyzeIdentificationProfile(
+                confirmedFacts: ["Material: oak"],
+                likelyFacts: ["Dining chair"],
+                unknownDetails: ["maker stamp"],
+                possibleMatches: ["Oak dining chair"],
+                potentiallyValuableVariants: ["Mid-century maker"],
+                evidenceNeeded: ["Photo of underside mark"],
+                confidenceState: .likely
+            )
         )
         let client = try makeClient { request in
             let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
@@ -209,6 +265,17 @@ final class RemoteHistoryClientTests: XCTestCase {
             XCTAssertEqual(row["image_thumbnail_base64"] as? String, "BAUG")
             XCTAssertEqual(row["marketplace"] as? String, "craigslist")
             XCTAssertEqual(row["listing_text"] as? String, "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition.")
+            let itemDetails = try XCTUnwrap(row["item_details"] as? [String: Any])
+            XCTAssertEqual(itemDetails["labelOrBrand"] as? String, "Oak")
+            XCTAssertEqual(itemDetails["isLargeOrFragile"] as? Bool, true)
+            let listingDraft = try XCTUnwrap(row["listing_draft"] as? [String: Any])
+            XCTAssertEqual(listingDraft["evidenceSummary"] as? String, "Checked recent local chair listings.")
+            let sources = try XCTUnwrap(listingDraft["evidenceSources"] as? [[String: Any]])
+            XCTAssertEqual(sources.first?["listingStatus"] as? String, "sold")
+            let identificationProfile = try XCTUnwrap(row["identification_profile"] as? [String: Any])
+            XCTAssertEqual(identificationProfile["confirmedFacts"] as? [String], ["Material: oak"])
+            XCTAssertEqual(identificationProfile["unknownDetails"] as? [String], ["maker stamp"])
+            XCTAssertEqual(identificationProfile["confidenceState"] as? String, "likely")
 
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),

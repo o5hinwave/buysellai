@@ -20,7 +20,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in
+            generateHandler: { _, _, _, _, _, _, _ in
                 attempts += 1
                 return try await withCheckedThrowingContinuation { continuation in
                     if attempts == 1 {
@@ -55,7 +55,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in
+            generateHandler: { _, _, _, _, _, _, _ in
                 attempts += 1
                 return try await withCheckedThrowingContinuation { continuation in
                     if attempts == 1 {
@@ -87,7 +87,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in throw CancellationError() }
+            generateHandler: { _, _, _, _, _, _, _ in throw CancellationError() }
         )
 
         await store.generate(accessToken: nil)
@@ -101,7 +101,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in throw URLError(.cancelled) }
+            generateHandler: { _, _, _, _, _, _, _ in throw URLError(.cancelled) }
         )
 
         await store.generate(accessToken: nil)
@@ -115,7 +115,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in throw URLError(.notConnectedToInternet) }
+            generateHandler: { _, _, _, _, _, _, _ in throw URLError(.notConnectedToInternet) }
         )
 
         await store.generate(accessToken: nil)
@@ -139,7 +139,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in
+            generateHandler: { _, _, _, _, _, _, _ in
                 GeneratedListing(listing: "  \nTITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.\n  ")
             }
         )
@@ -148,6 +148,32 @@ final class ListingStoreTests: XCTestCase {
 
         XCTAssertEqual(store.phase, .success)
         XCTAssertEqual(store.listingText, "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.")
+    }
+
+    func testGeneratedListingStoresServerEntitlementSnapshotForSettings() async {
+        let entitlement = EntitlementSnapshot(
+            state: .earlyAccess,
+            completeFeatureAccess: true,
+            futurePaidAccessEnabled: false,
+            remainingAnalyses: 15,
+            remainingAiActions: 44
+        )
+        let store = ListingStore(
+            item: lamp,
+            marketplace: .ebay,
+            existingListingText: nil,
+            generateHandler: { _, _, _, _, _, _, _ in
+                GeneratedListing(
+                    listing: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.",
+                    entitlement: entitlement
+                )
+            }
+        )
+
+        await store.generate(accessToken: nil)
+
+        XCTAssertEqual(store.phase, .success)
+        XCTAssertEqual(store.entitlementSnapshot, entitlement)
     }
 
     func testValidatedGeneratedListingStoresStructuredDraft() async {
@@ -168,7 +194,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in
+            generateHandler: { _, _, _, _, _, _, _ in
                 GeneratedListing(
                     listing: "TITLE:\nFresh listing\n\nDESCRIPTION:\nReady to post.",
                     draft: draft
@@ -207,7 +233,7 @@ final class ListingStoreTests: XCTestCase {
                 item: lamp,
                 marketplace: .ebay,
                 existingListingText: nil,
-                generateHandler: { _, _, _, _, _ in GeneratedListing(listing: unsafeText) }
+                generateHandler: { _, _, _, _, _, _, _ in GeneratedListing(listing: unsafeText) }
             )
 
             await store.generate(accessToken: nil)
@@ -238,7 +264,7 @@ final class ListingStoreTests: XCTestCase {
                 item: lamp,
                 marketplace: .ebay,
                 existingListingText: nil,
-                generateHandler: { _, _, _, _, _ in GeneratedListing(listing: unsafeText) }
+                generateHandler: { _, _, _, _, _, _, _ in GeneratedListing(listing: unsafeText) }
             )
 
             await store.generate(accessToken: nil)
@@ -259,7 +285,7 @@ final class ListingStoreTests: XCTestCase {
             item: lamp,
             marketplace: .ebay,
             existingListingText: nil,
-            generateHandler: { _, _, _, _, _ in throw RawBackendError() }
+            generateHandler: { _, _, _, _, _, _, _ in throw RawBackendError() }
         )
 
         await store.generate(accessToken: nil)

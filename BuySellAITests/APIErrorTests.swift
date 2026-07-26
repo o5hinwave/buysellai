@@ -5,7 +5,7 @@ final class APIErrorTests: XCTestCase {
     func testUserFriendlyErrorMessagesDoNotExposeRawTransportNames() {
         XCTAssertEqual(APIError.offline.localizedDescription, "You're offline. Reconnect and try again.")
         XCTAssertEqual(APIError.timeout.localizedDescription, "That took too long. Try again.")
-        XCTAssertEqual(APIError.rateLimited.localizedDescription, "Too many tries right now. Give it a minute.")
+        XCTAssertEqual(APIError.rateLimited.localizedDescription, "You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.")
         XCTAssertEqual(APIError.server(500).localizedDescription, "BuySell is having trouble. Try again.")
         XCTAssertEqual(APIError.decoding.localizedDescription, "BuySell got an answer it couldn't read.")
         XCTAssertEqual(APIError.notConfigured.localizedDescription, "BuySell isn't ready yet. Try again later.")

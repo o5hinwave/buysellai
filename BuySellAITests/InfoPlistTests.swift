@@ -51,7 +51,7 @@ final class InfoPlistTests: XCTestCase {
         XCTAssertNotNil(m10.range(of: "design compatibility mode"))
     }
 
-    func testPhotoLibraryImportUsesReadOnlyPhotosPickerMetadata() throws {
+    func testPhotoLibraryImportAndExportUseScopedNativePhotoMetadata() throws {
         let plist = try projectInfoPlist()
         let appSource = try appSwiftFiles()
             .map { try String(contentsOf: $0, encoding: .utf8) }
@@ -61,14 +61,18 @@ final class InfoPlistTests: XCTestCase {
             plist["NSPhotoLibraryUsageDescription"] as? String,
             "BuySell lets you choose existing item photos from your library."
         )
-        XCTAssertNil(plist["NSPhotoLibraryAddUsageDescription"])
+        XCTAssertEqual(
+            plist["NSPhotoLibraryAddUsageDescription"] as? String,
+            "BuySell saves your listing-ready item photos to your photo library when you ask."
+        )
         XCTAssertNotNil(appSource.range(of: #"\bimport\s+PhotosUI\b"#, options: .regularExpression))
         XCTAssertNotNil(appSource.range(of: #"\bPhotosPicker\b"#, options: .regularExpression))
-        XCTAssertNil(appSource.range(of: #"\bimport\s+Photos\b"#, options: .regularExpression))
+        XCTAssertNotNil(appSource.range(of: #"\bimport\s+Photos\b"#, options: .regularExpression))
+        XCTAssertNotNil(appSource.range(of: #"PHPhotoLibrary\.requestAuthorization\(for: \.addOnly\)"#, options: .regularExpression))
+        XCTAssertNotNil(appSource.range(of: #"PHAssetCreationRequest\.forAsset\(\)"#, options: .regularExpression))
         XCTAssertNil(appSource.range(of: #"\bPHPickerViewController\b"#, options: .regularExpression))
         XCTAssertNil(appSource.range(of: #"\bUIImagePickerController\b"#, options: .regularExpression))
         XCTAssertNil(appSource.range(of: #"\bUIImageWriteToSavedPhotosAlbum\b"#, options: .regularExpression))
-        XCTAssertNil(appSource.range(of: #"\bPHPhotoLibrary\b"#, options: .regularExpression))
     }
 
     func testProjectTargetsIOSSeventeenMinimum() throws {

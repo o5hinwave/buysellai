@@ -16,135 +16,12 @@ struct SettingsView: View {
 
         NavigationStack {
             List {
-                Section("Account".localized) {
-                    SettingsRowLabel(
-                        title: accountStatus,
-                        systemImage: appStore.session == nil ? "person.crop.circle" : "person.crop.circle.badge.checkmark",
-                        iconTint: Color.brand.primaryText
-                    )
-                    .accessibilityLabel(accountStatus)
-
-                    SettingsActionRow(
-                        title: appStore.session == nil ? "Sign in" : "Sign out",
-                        systemImage: appStore.session == nil ? "arrow.right.circle.fill" : "rectangle.portrait.and.arrow.right",
-                        iconTint: Color.brand.primaryText
-                    ) {
-                        if appStore.session == nil {
-                            appStore.presentAuthAfterSettingsDismissal()
-                        } else {
-                            appStore.signOut()
-                        }
-                    }
-                }
-
-                Section("Appearance".localized) {
-                    Picker("Theme".localized, selection: $store.theme) {
-                        ForEach(ThemePreference.allCases) { theme in
-                            Text(theme.display).tag(theme)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(Color.brand.primary)
-                    .accessibilityLabel("Theme".localized)
-                    .onChange(of: store.theme) { _, _ in
-                        Haptics.impact(.light)
-                    }
-
-                    Toggle("Reduce Motion".localized, isOn: $store.reduceMotion)
-                        .tint(Color.brand.primary)
-                        .accessibilityLabel("Reduce Motion".localized)
-                        .onChange(of: store.reduceMotion) { _, _ in
-                            Haptics.impact(.light)
-                        }
-
-                    if LaunchArguments.contains(LaunchArguments.uiTestingStateProbe) {
-                        Text(appStore.uiTestSettingsStateDescription)
-                            .font(.caption2)
-                            .foregroundStyle(Color.brand.mutedForeground)
-                            .accessibilityIdentifier("SettingsStateProbe")
-                    }
-                }
-
-                Section("App".localized) {
-                    SettingsActionRow(
-                        title: "How it works",
-                        systemImage: "questionmark.circle.fill",
-                        iconTint: Color.brand.primaryText,
-                        accessibilityIdentifier: "Settings.HowItWorks"
-                    ) {
-                        appStore.presentTutorialAfterSettingsDismissal()
-                    }
-
-                    if appStore.hasRememberedSellingPreferences {
-                        SettingsActionRow(
-                            title: "Selling preferences",
-                            systemImage: AppSymbol.Action.condition,
-                            iconTint: Color.brand.primaryText,
-                            accessibilityIdentifier: "Settings.SellingPreferences"
-                        ) {
-                            showSellingPreferences = true
-                        }
-                    }
-
-                    SettingsActionRow(
-                        title: "Clear history",
-                        systemImage: "trash.fill",
-                        iconTint: Color.brand.destructive,
-                        titleTint: Color.brand.destructive,
-                        accessibilityIdentifier: "Settings.ClearHistory",
-                        role: .destructive
-                    ) {
-                        showClearConfirmation = true
-                    }
-
-                    SettingsActionRow(
-                        title: "Rate BuySell",
-                        systemImage: "star.fill",
-                        iconTint: Color.brand.primaryText
-                    ) {
-                        requestReview()
-                    }
-                }
-
-                Section("About".localized) {
-                    SettingsRowLabel(
-                        title: "Version",
-                        systemImage: "info.circle.fill",
-                        iconTint: Color.brand.primaryText,
-                        value: versionString
-                    )
-                    .accessibilityLabel(String.localizedFormat("%@, %@", "Version".localized, versionString))
-
-                    SettingsActionRow(
-                        title: "Privacy policy",
-                        systemImage: "hand.raised.fill",
-                        iconTint: Color.brand.primaryText
-                    ) {
-                        safariDestination = AppStoreLinks.url(for: .privacyPolicy).map(SafariDestination.init)
-                    }
-
-                    SettingsActionRow(
-                        title: "Terms",
-                        systemImage: "doc.text.fill",
-                        iconTint: Color.brand.primaryText
-                    ) {
-                        safariDestination = AppStoreLinks.url(for: .terms).map(SafariDestination.init)
-                    }
-                }
-
+                accountSection
+                appearanceSection(theme: $store.theme, reduceMotion: $store.reduceMotion)
+                appSection
+                aboutSection
                 if appStore.session != nil {
-                    Section("Danger zone".localized) {
-                        SettingsActionRow(
-                            title: "Delete account",
-                            systemImage: "person.crop.circle.badge.xmark",
-                            iconTint: Color.brand.destructive,
-                            titleTint: Color.brand.destructive,
-                            accessibilityIdentifier: "Settings.DeleteAccount",
-                            role: .destructive
-                        ) {
-                            showDeleteAccount = true
-                        }
-                    }
+                    dangerSection
                 }
             }
             .navigationTitle("Settings".localized)
@@ -183,6 +60,165 @@ struct SettingsView: View {
                     .accessibilitySortPriority(2)
                 }
             }
+        }
+    }
+
+    private var accountSection: some View {
+        Section {
+            SettingsRowLabel(
+                title: accountStatus,
+                systemImage: appStore.session == nil ? "person.crop.circle" : "person.crop.circle.badge.checkmark",
+                iconTint: Color.brand.primaryText
+            )
+            .accessibilityLabel(accountStatus)
+
+            SettingsRowLabel(
+                title: "Free during early access",
+                systemImage: "checkmark.seal.fill",
+                iconTint: Color.brand.primaryText,
+                value: appStore.earlyAccessStatusValue
+            )
+            .accessibilityLabel("Free during early access".localized)
+
+            SettingsActionRow(
+                title: appStore.session == nil ? "Sign in" : "Sign out",
+                systemImage: appStore.session == nil ? "arrow.right.circle.fill" : "rectangle.portrait.and.arrow.right",
+                iconTint: Color.brand.primaryText
+            ) {
+                if appStore.session == nil {
+                    appStore.presentAuthAfterSettingsDismissal()
+                } else {
+                    appStore.signOut()
+                }
+            }
+        } header: {
+            Text("Account".localized)
+        } footer: {
+            Text("BuySell is free during early access while we improve item identification, pricing research, and marketplace recommendations.".localized)
+        }
+    }
+
+    private func appearanceSection(theme: Binding<ThemePreference>, reduceMotion: Binding<Bool>) -> some View {
+        Section {
+            Picker("Theme".localized, selection: theme) {
+                ForEach(ThemePreference.allCases) { theme in
+                    Text(theme.display).tag(theme)
+                }
+            }
+            .pickerStyle(.segmented)
+            .tint(Color.brand.primary)
+            .accessibilityLabel("Theme".localized)
+            .onChange(of: appStore.theme) { _, _ in
+                Haptics.impact(.light)
+            }
+
+            Toggle("Reduce Motion".localized, isOn: reduceMotion)
+                .tint(Color.brand.primary)
+                .accessibilityLabel("Reduce Motion".localized)
+                .onChange(of: appStore.reduceMotion) { _, _ in
+                    Haptics.impact(.light)
+                }
+
+            if LaunchArguments.contains(LaunchArguments.uiTestingStateProbe) {
+                Text(appStore.uiTestSettingsStateDescription)
+                    .font(.caption2)
+                    .foregroundStyle(Color.brand.mutedForeground)
+                    .accessibilityIdentifier("SettingsStateProbe")
+            }
+        } header: {
+            Text("Appearance".localized)
+        }
+    }
+
+    private var appSection: some View {
+        Section {
+            SettingsActionRow(
+                title: "How it works",
+                systemImage: "questionmark.circle.fill",
+                iconTint: Color.brand.primaryText,
+                accessibilityIdentifier: "Settings.HowItWorks"
+            ) {
+                appStore.presentTutorialAfterSettingsDismissal()
+            }
+
+            if appStore.hasRememberedSellingPreferences {
+                SettingsActionRow(
+                    title: "Selling preferences",
+                    systemImage: AppSymbol.Action.condition,
+                    iconTint: Color.brand.primaryText,
+                    accessibilityIdentifier: "Settings.SellingPreferences"
+                ) {
+                    showSellingPreferences = true
+                }
+            }
+
+            SettingsActionRow(
+                title: "Clear history",
+                systemImage: "trash.fill",
+                iconTint: Color.brand.destructive,
+                titleTint: Color.brand.destructive,
+                accessibilityIdentifier: "Settings.ClearHistory",
+                role: .destructive
+            ) {
+                showClearConfirmation = true
+            }
+
+            SettingsActionRow(
+                title: "Rate BuySell",
+                systemImage: "star.fill",
+                iconTint: Color.brand.primaryText
+            ) {
+                requestReview()
+            }
+        } header: {
+            Text("App".localized)
+        }
+    }
+
+    private var aboutSection: some View {
+        Section {
+            SettingsRowLabel(
+                title: "Version",
+                systemImage: "info.circle.fill",
+                iconTint: Color.brand.primaryText,
+                value: versionString
+            )
+            .accessibilityLabel(String.localizedFormat("%@, %@", "Version".localized, versionString))
+
+            SettingsActionRow(
+                title: "Privacy policy",
+                systemImage: "hand.raised.fill",
+                iconTint: Color.brand.primaryText
+            ) {
+                safariDestination = AppStoreLinks.url(for: .privacyPolicy).map(SafariDestination.init)
+            }
+
+            SettingsActionRow(
+                title: "Terms",
+                systemImage: "doc.text.fill",
+                iconTint: Color.brand.primaryText
+            ) {
+                safariDestination = AppStoreLinks.url(for: .terms).map(SafariDestination.init)
+            }
+        } header: {
+            Text("About".localized)
+        }
+    }
+
+    private var dangerSection: some View {
+        Section {
+            SettingsActionRow(
+                title: "Delete account",
+                systemImage: "person.crop.circle.badge.xmark",
+                iconTint: Color.brand.destructive,
+                titleTint: Color.brand.destructive,
+                accessibilityIdentifier: "Settings.DeleteAccount",
+                role: .destructive
+            ) {
+                showDeleteAccount = true
+            }
+        } header: {
+            Text("Danger zone".localized)
         }
     }
 
@@ -327,6 +363,7 @@ private struct SettingsRowLabel: View {
 private struct SellingPreferencesView: View {
     @Environment(AppStore.self) private var appStore
     @State private var showClearAllConfirmation = false
+    @State private var editingPreference: RememberedSellingPreferenceRow?
 
     var body: some View {
         List {
@@ -342,6 +379,9 @@ private struct SellingPreferencesView: View {
                 } else {
                     ForEach(preferenceRows) { row in
                         SellingPreferenceRow(row: row) {
+                            Haptics.impact(.light)
+                            editingPreference = row
+                        } forget: {
                             appStore.forgetSellingPreference(for: row.marketplace)
                         }
                     }
@@ -374,6 +414,9 @@ private struct SellingPreferencesView: View {
         .background(Color.clear)
         .navigationTitle("Selling preferences".localized)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingPreference) { row in
+            SellingPreferenceEditSheet(row: row)
+        }
         .confirmationDialog("Clear selling preferences?".localized, isPresented: $showClearAllConfirmation, titleVisibility: .visible) {
             Button("Clear all".localized, role: .destructive) {
                 appStore.clearRememberedSellingPreferences()
@@ -411,40 +454,131 @@ private struct RememberedSellingPreferenceRow: Identifiable {
 
 private struct SellingPreferenceRow: View {
     let row: RememberedSellingPreferenceRow
+    let edit: () -> Void
     let forget: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
-            MarketplaceIcon(marketplace: row.marketplace, size: 36)
+        Button {
+            edit()
+        } label: {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                MarketplaceIcon(marketplace: row.marketplace, size: 36)
 
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text(row.marketplace.displayName)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(Color.brand.foreground)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text(row.marketplace.displayName)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.brand.foreground)
+                        .lineLimit(2)
 
-                Text(row.note)
-                    .font(.caption)
+                    Text(row.note)
+                        .font(.caption)
+                        .foregroundStyle(Color.brand.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: Spacing.sm)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.brand.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Spacer(minLength: Spacing.sm)
-
+        }
+        .buttonStyle(.plain)
+        .frame(minHeight: 56)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 Haptics.impact(.light)
                 forget()
             } label: {
-                Text("Forget".localized)
-                    .font(.caption.weight(.semibold))
+                Label("Forget".localized, systemImage: "trash")
             }
-            .buttonStyle(.borderless)
-            .controlSize(.small)
             .accessibilityLabel(String.localizedFormat("Forget %@ preference", row.marketplace.displayName))
         }
-        .frame(minHeight: 56)
-        .accessibilityElement(children: .contain)
+        .accessibilityElement(children: .combine)
         .accessibilityLabel(String.localizedFormat("%@, %@", row.marketplace.displayName, row.note))
+        .accessibilityHint("Opens preference editing.".localized)
+    }
+}
+
+private struct SellingPreferenceEditSheet: View {
+    @Environment(AppStore.self) private var appStore
+    @Environment(\.dismiss) private var dismiss
+    let row: RememberedSellingPreferenceRow
+    @State private var note: String
+    @FocusState private var isNoteFocused: Bool
+
+    init(row: RememberedSellingPreferenceRow) {
+        self.row = row
+        _note = State(initialValue: row.note)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack(spacing: Spacing.md) {
+                        MarketplaceIcon(marketplace: row.marketplace, size: 36)
+                        Text(row.marketplace.displayName)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.brand.foreground)
+                    }
+                    .frame(minHeight: 48)
+                    .accessibilityElement(children: .combine)
+
+                    TextField("Preference".localized, text: $note, axis: .vertical)
+                        .lineLimit(3...6)
+                        .textInputAutocapitalization(.sentences)
+                        .focused($isNoteFocused)
+                        .accessibilityLabel("Preference".localized)
+                        .accessibilityIdentifier("Settings.SellingPreferenceEditor")
+                } footer: {
+                    Text("BuySell uses this only to pre-fill marketplace questions when it still fits.".localized)
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        Haptics.impact(.light)
+                        appStore.forgetSellingPreference(for: row.marketplace)
+                        dismiss()
+                    } label: {
+                        SettingsRowLabel(
+                            title: "Forget this preference",
+                            systemImage: "trash.fill",
+                            iconTint: Color.brand.destructive,
+                            titleTint: Color.brand.destructive
+                        )
+                    }
+                    .accessibilityLabel(String.localizedFormat("Forget %@ preference", row.marketplace.displayName))
+                    .accessibilityIdentifier("Settings.ForgetSellingPreference")
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .navigationTitle("Edit preference".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel".localized) {
+                        dismiss()
+                    }
+                    .accessibilityLabel("Cancel".localized)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save".localized) {
+                        Haptics.impact(.light)
+                        appStore.updateRememberedSellingPreference(note, for: row.marketplace)
+                        dismiss()
+                    }
+                    .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityLabel("Save selling preference".localized)
+                    .accessibilityIdentifier("Settings.SaveSellingPreference")
+                }
+            }
+            .onAppear {
+                isNoteFocused = true
+            }
+        }
     }
 }
 

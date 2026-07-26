@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import XCTest
 @testable import BuySellAI
 
@@ -15,6 +16,7 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            Self.assertDeviceIDHeader(in: request)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
@@ -34,6 +36,71 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.category, "Home")
         XCTAssertEqual(response.condition, "good")
         XCTAssertEqual(response.currentPrice, Decimal(12))
+    }
+
+    func testAnalyzeCompactsCameraSizedJPEGBeforeUpload() async throws {
+        let fullSizeJPEG = try Self.makeJPEG(width: 2_600, height: 1_900)
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let imageDataURL = try XCTUnwrap(json["imageDataUrl"] as? String)
+            let base64 = String(imageDataURL.dropFirst("data:image/jpeg;base64,".count))
+            let uploaded = try XCTUnwrap(Data(base64Encoded: base64))
+            let uploadedImage = try XCTUnwrap(UIImage(data: uploaded))
+
+            XCTAssertLessThan(uploaded.count, fullSizeJPEG.count)
+            XCTAssertLessThanOrEqual(max(uploadedImage.size.width, uploadedImage.size.height), 1_280)
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Camera","category":"Electronics","condition":"good","currentPrice":50}"#.utf8))
+        }
+
+        _ = try await client.analyze(image: fullSizeJPEG, accessToken: nil)
+    }
+
+    func testAnalyzeIncludesNativeScanEvidenceWhenAvailable() async throws {
+        let evidence = NativeScanEvidence(
+            recognizedText: [" MODEL A2482 ", "Serial SN12345"],
+            barcodes: [
+                NativeScanBarcode(payload: " 012345678905 ", symbology: "VNBarcodeSymbologyEAN13")
+            ],
+            modelOrSerialCandidates: ["MODEL A2482", "Serial SN12345"],
+            photoQuality: PhotoQualityAssessment(
+                brightness: 0.12,
+                contrast: 0.2,
+                glareRatio: 0.01,
+                width: 640,
+                height: 480,
+                issue: .tooDark
+            )
+        )
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let scanEvidence = try XCTUnwrap(json["nativeScanEvidence"] as? [String: Any])
+            XCTAssertEqual(scanEvidence["recognizedText"] as? [String], ["MODEL A2482", "Serial SN12345"])
+            let barcodes = try XCTUnwrap(scanEvidence["barcodes"] as? [[String: Any]])
+            XCTAssertEqual(barcodes.first?["payload"] as? String, "012345678905")
+            XCTAssertEqual(barcodes.first?["symbology"] as? String, "VNBarcodeSymbologyEAN13")
+            XCTAssertEqual(scanEvidence["modelOrSerialCandidates"] as? [String], ["MODEL A2482", "Serial SN12345"])
+            let photoQuality = try XCTUnwrap(scanEvidence["photoQuality"] as? [String: Any])
+            XCTAssertEqual(photoQuality["issue"] as? String, "tooDark")
+            XCTAssertEqual(photoQuality["width"] as? Int, 640)
+            XCTAssertEqual(photoQuality["height"] as? Int, 480)
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"name":"Phone","category":"Electronics","condition":"good","currentPrice":250}"#.utf8))
+        }
+
+        let response = try await client.analyze(
+            image: Data([1, 2, 3]),
+            nativeScanEvidence: evidence
+        )
+
+        XCTAssertEqual(response.name, "Phone")
+        XCTAssertEqual(response.category, "Electronics")
     }
 
     func testAnalyzeIgnoresWebOnlyFollowUpAndTaxFields() async throws {
@@ -104,7 +171,18 @@ final class APIClientTests: XCTestCase {
                         "url": "file:///tmp/mug.jpg",
                         "source": "Ignored"
                       }
-                    ]
+                    ],
+                    "identificationProfile": {
+                      "confirmedFacts": [" Material: Ceramic ", ""],
+                      "likelyFacts": ["Looks handmade"],
+                      "conflictingClues": ["Different base marks"],
+                      "unknownDetails": ["maker"],
+                      "possibleMatches": ["Ceramic mug with maker mark"],
+                      "potentiallyValuableVariants": ["Studio pottery mark"],
+                      "evidenceNeeded": ["Is there a stamp on the bottom?"],
+                      "previousCorrections": ["User rejected plain mug"],
+                      "confidenceState": "stillChecking"
+                    }
                   }
                 }
                 """.utf8
@@ -135,6 +213,50 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.analysis?.photoGuidance, "Show the bottom mark.")
         XCTAssertEqual(response.analysis?.detailGuidance, "Check maker if you know it.")
         XCTAssertEqual(response.analysis?.displayHint, "Show the bottom mark.")
+        XCTAssertEqual(response.analysis?.identificationProfile?.confirmedFacts, ["Material: Ceramic"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.likelyFacts, ["Looks handmade"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.conflictingClues, ["Different base marks"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.unknownDetails, ["maker"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.possibleMatches, ["Ceramic mug with maker mark"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.potentiallyValuableVariants, ["Studio pottery mark"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.evidenceNeeded, ["Is there a stamp on the bottom?"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.previousCorrections, ["User rejected plain mug"])
+        XCTAssertEqual(response.analysis?.identificationProfile?.confidenceState, .stillChecking)
+        XCTAssertEqual(response.analysis?.identificationProfile?.primaryKnownSummary, "Material: Ceramic")
+        XCTAssertEqual(response.analysis?.identificationProfile?.primaryUnresolvedSummary, "Conflicting clue: Different base marks")
+    }
+
+    func testAnalyzeDecodesServerControlledEarlyAccessEntitlement() async throws {
+        let client = try makeClient { request in
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "name": "Ceramic mug",
+                  "category": "Home",
+                  "condition": "good",
+                  "currentPrice": 9,
+                  "entitlement": {
+                    "state": "earlyAccess",
+                    "completeFeatureAccess": true,
+                    "futurePaidAccessEnabled": false,
+                    "remainingAnalyses": 17,
+                    "remainingAiActions": 52
+                  }
+                }
+                """.utf8
+            ))
+        }
+
+        let response = try await client.analyze(image: Data([1, 2, 3]))
+
+        XCTAssertEqual(response.entitlement?.state, .earlyAccess)
+        XCTAssertEqual(response.entitlement?.completeFeatureAccess, true)
+        XCTAssertEqual(response.entitlement?.futurePaidAccessEnabled, false)
+        XCTAssertEqual(response.entitlement?.remainingAnalyses, 17)
+        XCTAssertEqual(response.entitlement?.remainingAiActions, 52)
+        XCTAssertEqual(response.entitlement?.analyticsProperties["entitlement_state"], "earlyAccess")
     }
 
     func testAnalyzeUsesMissingFactGuidanceWhenNoPhotoPromptIsNeeded() async throws {
@@ -149,6 +271,116 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(analysis.displayHint, "Check serial number if you know it.")
     }
 
+    func testAnalyzeValueQuestionsSanitizeSpecificChoices() throws {
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: [],
+            photoPrompt: nil,
+            valueQuestions: [
+                AnalyzeValueQuestion(
+                    question: "Does the label say OLED or HAC-001?",
+                    reason: "OLED and original models sell differently.",
+                    answerField: .spec,
+                    choices: ["OLED", "HAC-001", "I don't know", "OLED"],
+                    unknownFollowUpQuestion: "Can you find a model number on the back?",
+                    unknownFollowUpChoices: ["OLED label", "HAC-001 label", "OLED label", "   "]
+                )
+            ]
+        )
+
+        let sanitized = try XCTUnwrap(analysis.sanitizedForDisplay())
+        let question = try XCTUnwrap(sanitized.valueQuestions.first)
+
+        XCTAssertEqual(question.question, "Does the label say OLED or HAC-001?")
+        XCTAssertEqual(question.reason, "OLED and original models sell differently.")
+        XCTAssertEqual(question.answerField, .spec)
+        XCTAssertEqual(question.choices, ["OLED", "HAC-001", "I don't know"])
+        XCTAssertEqual(question.unknownFollowUpQuestion, "Can you find a model number on the back?")
+        XCTAssertEqual(question.unknownFollowUpChoices, ["OLED label", "HAC-001 label"])
+    }
+
+    func testAnalyzeSynthesizesIdentificationProfileFromLegacyFields() throws {
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [
+                AnalyzeItemFact(label: "Brand", value: "Nintendo", confidence: 0.91),
+                AnalyzeItemFact(label: "Possible color", value: "White", confidence: 0.62)
+            ],
+            missingFacts: ["model number"],
+            photoPrompt: nil,
+            likelyMatches: [
+                AnalyzeLikelyMatch(
+                    name: "Nintendo Switch OLED",
+                    distinguishingQuestion: "Does the label say HEG-001?",
+                    confidence: 0.78
+                ),
+                AnalyzeLikelyMatch(
+                    name: "Nintendo Switch original",
+                    distinguishingQuestion: "Does the label say HAC-001?",
+                    confidence: 0.55
+                )
+            ],
+            valueQuestions: [
+                AnalyzeValueQuestion(
+                    question: "Does it say OLED?",
+                    reason: "OLED and original models sell differently.",
+                    answerField: .spec,
+                    choices: ["OLED", "HAC-001"]
+                )
+            ]
+        )
+
+        let profile = try XCTUnwrap(analysis.sanitizedForDisplay()?.identificationProfile)
+
+        XCTAssertEqual(profile.confirmedFacts, ["Brand: Nintendo"])
+        XCTAssertEqual(profile.likelyFacts, ["Possible color: White"])
+        XCTAssertEqual(profile.unknownDetails, ["model number"])
+        XCTAssertEqual(profile.possibleMatches, ["Nintendo Switch OLED", "Nintendo Switch original"])
+        XCTAssertEqual(profile.evidenceNeeded, [
+            "Does the label say HEG-001?",
+            "Does the label say HAC-001?",
+            "Check model number"
+        ])
+        XCTAssertEqual(profile.potentiallyValuableVariants, ["Does it say OLED?"])
+        XCTAssertEqual(profile.confidenceState, .likely)
+        XCTAssertEqual(profile.primaryKnownSummary, "Brand: Nintendo")
+        XCTAssertEqual(profile.primaryUnresolvedSummary, "A few similar matches are still possible.")
+    }
+
+    func testAnalyzeBuildsTargetedScanRequestFromPhotoPrompt() {
+        let labelAnalysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: [],
+            photoPrompt: " Show the model label. "
+        )
+
+        let labelRequest = labelAnalysis.targetedScanRequest
+        XCTAssertEqual(labelRequest?.prompt, "Show the model label.")
+        XCTAssertEqual(labelRequest?.role, .label)
+        XCTAssertEqual(labelRequest?.benefit, "This can confirm the exact model.")
+        XCTAssertEqual(labelRequest?.systemImage, "text.viewfinder")
+
+        let barcodeAnalysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: [],
+            photoPrompt: "Scan the barcode for sold pricing."
+        )
+
+        let barcodeRequest = barcodeAnalysis.targetedScanRequest
+        XCTAssertEqual(barcodeRequest?.role, .barcode)
+        XCTAssertEqual(barcodeRequest?.benefit, "This helps us find closer sold listings.")
+        XCTAssertEqual(barcodeRequest?.systemImage, "barcode.viewfinder")
+    }
+
+    func testAnalyzeDoesNotAskForTargetedScanWithoutPhotoPrompt() {
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: ["serial number"],
+            photoPrompt: nil
+        )
+
+        XCTAssertNil(analysis.targetedScanRequest)
+    }
+
     func testAnalyzeGuestRequestOmitsAuthorizationHeader() async throws {
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/analyze-image")
@@ -156,6 +388,7 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            Self.assertDeviceIDHeader(in: request)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
@@ -247,6 +480,33 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
     }
 
+    func testGenerateListingIncludesIdentificationProfileForSpecificResearchAndListing() async throws {
+        let profile = Self.sampleIdentificationProfile
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let payload = try XCTUnwrap(json["identificationProfile"] as? [String: Any])
+            XCTAssertEqual(payload["confirmedFacts"] as? [String], ["Brand: Stiffel", "Material: brass"])
+            XCTAssertEqual(payload["unknownDetails"] as? [String], ["Maker mark", "Height"])
+            XCTAssertEqual(payload["possibleMatches"] as? [String], ["Stiffel brass table lamp", "Generic brass table lamp"])
+            XCTAssertEqual(payload["potentiallyValuableVariants"] as? [String], ["Check if it has a Stiffel foil label"])
+            XCTAssertEqual(payload["evidenceNeeded"] as? [String], ["Scan the maker mark"])
+            XCTAssertEqual(payload["confidenceState"] as? String, "stillChecking")
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nLamp\n\nDESCRIPTION:\nWorks well."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(
+            item: Self.sampleItem,
+            marketplace: .ebay,
+            identificationProfile: profile
+        )
+
+        XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
+    }
+
     func testGenerateListingOmitsQuestionMemoryWhenNoListingDetailsWereConfirmed() async throws {
         let item = Self.sampleItem
         let client = try makeClient { request in
@@ -268,6 +528,71 @@ final class APIClientTests: XCTestCase {
             marketplace: .ebay,
             details: answers,
             imageData: nil
+        )
+
+        XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
+    }
+
+    func testGenerateListingIncludesSelectedMarketplaceComparisonEvidence() async throws {
+        let item = Self.sampleItem
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            recommendationLabel: "Best overall",
+            marketplaceFitScore: 92,
+            listPrice: Decimal(45),
+            likelyRangeLow: Decimal(38),
+            likelyRangeHigh: Decimal(52),
+            takeHomeEstimate: Decimal(39),
+            compLowPrice: Decimal(30),
+            compMedianPrice: Decimal(42),
+            compHighPrice: Decimal(61),
+            expectedSpeed: "Usually sells in a week",
+            shippingExpectation: "Ship safely with padding",
+            feeSummary: "Expect final value fees.",
+            reason: "eBay has the best sold history for lamps.",
+            evidenceSummary: "Checked close sold brass lamp comps.",
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold brass lamp",
+                    url: "https://example.com/sold-lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "Sold",
+                    conditionAndVariant: "Good brass lamp",
+                    comparability: "Close match",
+                    price: Decimal(42)
+                )
+            ]
+        )
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let payload = try XCTUnwrap(json["marketplaceComparison"] as? [String: Any])
+            XCTAssertEqual(payload["marketplace"] as? String, "ebay")
+            XCTAssertEqual(payload["recommendationLabel"] as? String, "Best overall")
+            XCTAssertEqual(payload["marketplaceFitScore"] as? Int, 92)
+            XCTAssertEqual((payload["listPrice"] as? NSNumber)?.decimalValue, Decimal(45))
+            XCTAssertEqual((payload["compLowPrice"] as? NSNumber)?.decimalValue, Decimal(30))
+            XCTAssertEqual((payload["compMedianPrice"] as? NSNumber)?.decimalValue, Decimal(42))
+            XCTAssertEqual((payload["compHighPrice"] as? NSNumber)?.decimalValue, Decimal(61))
+            XCTAssertEqual(payload["feeSummary"] as? String, "Expect final value fees.")
+            XCTAssertEqual(payload["evidenceStatus"] as? String, "grounded")
+            let sources = try XCTUnwrap(payload["evidenceSources"] as? [[String: Any]])
+            XCTAssertEqual(sources.count, 1)
+            XCTAssertEqual(sources.first?["url"] as? String, "https://example.com/sold-lamp")
+            XCTAssertEqual(sources.first?["listingStatus"] as? String, "Sold")
+            XCTAssertEqual((sources.first?["price"] as? NSNumber)?.decimalValue, Decimal(42))
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(#"{"listing":"TITLE:\nLamp\n\nDESCRIPTION:\nWorks well."}"#.utf8))
+        }
+
+        let listing = try await client.generateListing(
+            item: item,
+            marketplace: .ebay,
+            marketplaceComparison: comparison
         )
 
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
@@ -298,6 +623,23 @@ final class APIClientTests: XCTestCase {
         let item = Self.sampleItem
         let client = try makeClient { request in
             XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/generate-listing")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let playbook = try XCTUnwrap(json["marketplacePlaybook"] as? [String: Any])
+            let expectedPlaybook = Marketplace.ebay.listingPlaybook
+            XCTAssertEqual(playbook["titleCharacterLimit"] as? Int, expectedPlaybook.titleCharacterLimit)
+            XCTAssertEqual(playbook["titleFormula"] as? String, expectedPlaybook.titleFormula)
+            XCTAssertEqual(playbook["descriptionGuidance"] as? String, expectedPlaybook.descriptionGuidance)
+            XCTAssertEqual(playbook["requiredFields"] as? [String], expectedPlaybook.requiredFields)
+            XCTAssertEqual(playbook["highImpactOptionalFields"] as? [String], expectedPlaybook.highImpactOptionalFields)
+            XCTAssertEqual(playbook["recommendedPhotoSequence"] as? [String], expectedPlaybook.recommendedPhotoSequence.map(\.rawValue))
+            XCTAssertEqual(playbook["pricingFormat"] as? String, expectedPlaybook.pricingFormat)
+            XCTAssertEqual(playbook["shippingOrPickupGuidance"] as? String, expectedPlaybook.shippingOrPickupGuidance)
+            XCTAssertEqual(playbook["officialPostURLString"] as? String, expectedPlaybook.officialPostURLString)
+            XCTAssertEqual(playbook["officialHowToURLString"] as? String, expectedPlaybook.officialHowToURLString)
+            XCTAssertEqual(playbook["ruleSourceURLs"] as? [String], expectedPlaybook.ruleSourceURLs)
+            XCTAssertEqual(playbook["ruleSourceLastVerified"] as? String, expectedPlaybook.ruleSourceLastVerified)
+            XCTAssertEqual(playbook["postingSurface"] as? String, expectedPlaybook.postingSurface.rawValue)
             let url = try XCTUnwrap(request.url)
             let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
             return (
@@ -349,6 +691,13 @@ final class APIClientTests: XCTestCase {
                             "price": 42
                           }
                         ]
+                      },
+                      "entitlement": {
+                        "state": "earlyAccess",
+                        "completeFeatureAccess": true,
+                        "futurePaidAccessEnabled": false,
+                        "remainingAnalyses": 15,
+                        "remainingAiActions": 41
                       }
                     }
                     """.utf8
@@ -390,6 +739,289 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(evidenceSource.conditionAndVariant, "Good brass lamp")
         XCTAssertEqual(evidenceSource.comparability, "Close match")
         XCTAssertEqual(evidenceSource.price, Decimal(42))
+        XCTAssertEqual(payload.entitlement?.state, .earlyAccess)
+        XCTAssertEqual(payload.entitlement?.remainingAnalyses, 15)
+        XCTAssertEqual(payload.entitlement?.remainingAiActions, 41)
+    }
+
+    func testCompareMarketplacesDecodesEntitlementFromGroundedResearchResponse() async throws {
+        let client = try makeClient { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/compare-marketplaces")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            Self.assertDeviceIDHeader(in: request)
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["candidateMarketplaces"] as? [String], ["ebay", "facebook"])
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "checkedAt": "2026-07-24T00:00:00Z",
+                  "comparisons": [
+                    {
+                      "marketplace": "ebay",
+                      "recommendationLabel": "Best overall",
+                      "listPrice": 45,
+                      "takeHomeEstimate": 39,
+                      "reason": "Broad reach for this item.",
+                      "evidenceStatus": "grounded",
+                      "evidenceSources": [
+                        {
+                          "sourceMarketplace": "eBay",
+                          "title": "Sold lamp",
+                          "url": "https://example.com/sold-lamp",
+                          "dateChecked": "2026-07-24",
+                          "listingStatus": "sold",
+                          "conditionAndVariant": "Good",
+                          "comparability": "Similar",
+                          "price": 42
+                        }
+                      ]
+                    }
+                  ],
+                  "entitlement": {
+                    "state": "earlyAccess",
+                    "completeFeatureAccess": true,
+                    "futurePaidAccessEnabled": false,
+                    "remainingAnalyses": 14,
+                    "remainingAiActions": 39
+                  }
+                }
+                """.utf8
+            ))
+        }
+
+        let response = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            candidateMarketplaces: [.ebay, .facebook],
+            identificationProfile: Self.sampleIdentificationProfile,
+            accessToken: "access-token"
+        )
+
+        XCTAssertEqual(response.entitlement?.state, .earlyAccess)
+        XCTAssertEqual(response.entitlement?.remainingAnalyses, 14)
+        XCTAssertEqual(response.entitlement?.remainingAiActions, 39)
+        XCTAssertEqual(response.comparisons.first?.marketplace, .ebay)
+        XCTAssertEqual(response.comparisons.first?.evidenceStatus, .grounded)
+    }
+
+    func testCompareMarketplacesIncludesIdentificationProfileForGroundedSearch() async throws {
+        let client = try makeClient { request in
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let payload = try XCTUnwrap(json["identificationProfile"] as? [String: Any])
+            XCTAssertEqual(payload["confirmedFacts"] as? [String], ["Brand: Stiffel", "Material: brass"])
+            XCTAssertEqual(payload["likelyFacts"] as? [String], ["Style: mid-century"])
+            XCTAssertEqual(payload["unknownDetails"] as? [String], ["Maker mark", "Height"])
+            XCTAssertEqual(payload["previousCorrections"] as? [String], ["User said it is not a generic lamp"])
+            XCTAssertEqual(payload["confidenceState"] as? String, "stillChecking")
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "checkedAt": "2026-07-24T00:00:00Z",
+                  "comparisons": [
+                    {
+                      "marketplace": "ebay",
+                      "recommendationLabel": "Best overall",
+                      "listPrice": 45,
+                      "takeHomeEstimate": 39,
+                      "reason": "Broad reach for this item.",
+                      "evidenceStatus": "grounded",
+                      "evidenceSources": [
+                        {
+                          "sourceMarketplace": "eBay",
+                          "title": "Sold lamp",
+                          "url": "https://example.com/sold-lamp",
+                          "dateChecked": "2026-07-24",
+                          "listingStatus": "sold",
+                          "conditionAndVariant": "Good",
+                          "comparability": "Similar",
+                          "price": 42
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.utf8
+            ))
+        }
+
+        let response = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            candidateMarketplaces: [.ebay, .facebook],
+            identificationProfile: Self.sampleIdentificationProfile
+        )
+
+        XCTAssertEqual(response.comparisons.first?.marketplace, .ebay)
+    }
+
+    func testCompareMarketplacesReusesFreshGroundedEvidenceForSameItemDetailsAndCandidates() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/compare-marketplaces")
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "checkedAt": "2026-07-24T00:00:00Z",
+                  "comparisons": [
+                    {
+                      "marketplace": "ebay",
+                      "recommendationLabel": "Best overall",
+                      "listPrice": 45,
+                      "takeHomeEstimate": 39,
+                      "reason": "Broad reach for this item.",
+                      "evidenceStatus": "grounded",
+                      "evidenceSources": [
+                        {
+                          "sourceMarketplace": "eBay",
+                          "title": "Sold lamp",
+                          "url": "https://example.com/sold-lamp",
+                          "dateChecked": "2026-07-24",
+                          "listingStatus": "sold",
+                          "conditionAndVariant": "Good",
+                          "comparability": "Similar",
+                          "price": 42
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.utf8
+            ))
+        }
+
+        let details = ItemDetailAnswers(labelOrBrand: "Stiffel", sizeOrModel: "24 inches")
+        let firstResponse = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            details: details,
+            candidateMarketplaces: [.ebay, .facebook]
+        )
+        let secondResponse = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            details: details,
+            candidateMarketplaces: [.ebay, .facebook]
+        )
+
+        XCTAssertEqual(attempts, 1)
+        XCTAssertEqual(firstResponse, secondResponse)
+        XCTAssertEqual(secondResponse.comparisons.first?.evidenceSources?.first?.title, "Sold lamp")
+    }
+
+    func testCompareMarketplacesDoesNotReuseEvidenceWhenDetailsChange() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "checkedAt": "2026-07-24T00:00:00Z",
+                  "comparisons": [
+                    {
+                      "marketplace": "ebay",
+                      "recommendationLabel": "Best overall",
+                      "listPrice": 45,
+                      "takeHomeEstimate": 39,
+                      "reason": "Broad reach for this item.",
+                      "evidenceStatus": "grounded",
+                      "evidenceSources": [
+                        {
+                          "sourceMarketplace": "eBay",
+                          "title": "Sold lamp",
+                          "url": "https://example.com/sold-lamp",
+                          "dateChecked": "2026-07-24",
+                          "listingStatus": "sold",
+                          "conditionAndVariant": "Good",
+                          "comparability": "Similar",
+                          "price": 42
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.utf8
+            ))
+        }
+
+        _ = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            details: ItemDetailAnswers(labelOrBrand: "Stiffel"),
+            candidateMarketplaces: [.ebay, .facebook]
+        )
+        _ = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            details: ItemDetailAnswers(labelOrBrand: "Stiffel", flaws: "Cracked shade"),
+            candidateMarketplaces: [.ebay, .facebook]
+        )
+
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testCompareMarketplacesDoesNotReuseEvidenceWhenIdentificationProfileChanges() async throws {
+        var attempts = 0
+        let client = try makeClient { request in
+            attempts += 1
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "checkedAt": "2026-07-24T00:00:00Z",
+                  "comparisons": [
+                    {
+                      "marketplace": "ebay",
+                      "recommendationLabel": "Best overall",
+                      "listPrice": 45,
+                      "takeHomeEstimate": 39,
+                      "reason": "Broad reach for this item.",
+                      "evidenceStatus": "grounded",
+                      "evidenceSources": [
+                        {
+                          "sourceMarketplace": "eBay",
+                          "title": "Sold lamp",
+                          "url": "https://example.com/sold-lamp",
+                          "dateChecked": "2026-07-24",
+                          "listingStatus": "sold",
+                          "conditionAndVariant": "Good",
+                          "comparability": "Similar",
+                          "price": 42
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.utf8
+            ))
+        }
+
+        _ = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            candidateMarketplaces: [.ebay, .facebook],
+            identificationProfile: Self.sampleIdentificationProfile
+        )
+        _ = try await client.compareMarketplaces(
+            item: Self.sampleItem,
+            candidateMarketplaces: [.ebay, .facebook],
+            identificationProfile: AnalyzeIdentificationProfile(
+                confirmedFacts: ["Brand: Stiffel", "Material: brass", "Height: 24 inches"],
+                possibleMatches: ["Stiffel brass table lamp"],
+                confidenceState: .likely
+            )
+        )
+
+        XCTAssertEqual(attempts, 2)
     }
 
     func testGenerateListingGuestRequestOmitsAuthorizationHeader() async throws {
@@ -400,6 +1032,7 @@ final class APIClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            Self.assertDeviceIDHeader(in: request)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
@@ -789,8 +1422,74 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(response.currentPrice, Decimal(25))
     }
 
+    func testUserAnswersEnrichIdentificationProfileForGroundedResearch() throws {
+        let profile = AnalyzeIdentificationProfile(
+            confirmedFacts: ["Visible item: headphones"],
+            likelyFacts: ["Color: black"],
+            unknownDetails: ["Model number", "Pickup availability", "Original box"],
+            possibleMatches: ["Sony WH-1000XM4", "Sony WH-1000XM5"],
+            evidenceNeeded: ["Check model number", "Check pickup availability", "Check original box"],
+            confidenceState: .notEnoughEvidence
+        )
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: ["Model number", "Pickup availability"],
+            photoPrompt: nil,
+            identificationProfile: profile
+        )
+        let answers = ItemDetailAnswers(
+            labelOrBrand: "Sony",
+            sizeOrModel: "WH-1000XM5",
+            flaws: "Light scratches on the ear cups",
+            included: "Original box and charging cable",
+            marketplaceNotes: [.facebook: "Porch pickup is fine"],
+            answeredFieldKeys: [.labelOrBrand, .sizeOrModel, .flaws, .included, .marketplaceNotes],
+            answeredMarketplaces: [.facebook]
+        )
+        let item = DetectedItem(
+            name: "Wireless headphones",
+            category: .electronics,
+            condition: .good,
+            priceEstimate: Decimal(180)
+        )
+
+        let enriched = try XCTUnwrap(
+            AnalyzeIntelligence.enriching(
+                analysis,
+                with: answers,
+                item: item,
+                marketplace: .facebook
+            )
+        )
+        let enrichedProfile = try XCTUnwrap(enriched.identificationProfile)
+
+        XCTAssertTrue(enrichedProfile.confirmedFacts.contains("Seller confirmed brand or mark: Sony"))
+        XCTAssertTrue(enrichedProfile.confirmedFacts.contains("Seller confirmed model or size: WH-1000XM5"))
+        XCTAssertTrue(enrichedProfile.confirmedFacts.contains("Seller confirmed condition: Light scratches on the ear cups"))
+        XCTAssertTrue(enrichedProfile.confirmedFacts.contains("Seller confirmed included items: Original box and charging cable"))
+        XCTAssertTrue(enrichedProfile.confirmedFacts.contains("Facebook detail: Porch pickup is fine"))
+        XCTAssertFalse(enrichedProfile.unknownDetails.contains("Model number"))
+        XCTAssertFalse(enrichedProfile.unknownDetails.contains("Pickup availability"))
+        XCTAssertFalse(enrichedProfile.evidenceNeeded.contains("Check model number"))
+        XCTAssertFalse(enrichedProfile.evidenceNeeded.contains("Check pickup availability"))
+        XCTAssertNotEqual(enrichedProfile.confidenceState, .notEnoughEvidence)
+    }
+
     private static var sampleItem: DetectedItem {
         DetectedItem(name: "Lamp", category: .home, condition: .good, priceEstimate: Decimal(45))
+    }
+
+    private static var sampleIdentificationProfile: AnalyzeIdentificationProfile {
+        AnalyzeIdentificationProfile(
+            confirmedFacts: ["Brand: Stiffel", "Material: brass"],
+            likelyFacts: ["Style: mid-century"],
+            unknownDetails: ["Maker mark", "Height"],
+            possibleMatches: ["Stiffel brass table lamp", "Generic brass table lamp"],
+            potentiallyValuableVariants: ["Check if it has a Stiffel foil label"],
+            evidenceNeeded: ["Scan the maker mark"],
+            previousCorrections: ["User said it is not a generic lamp"],
+            confidenceState: .stillChecking
+        )
     }
 
     private func makeClient(handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)) throws -> APIClient {
@@ -832,6 +1531,26 @@ final class APIClientTests: XCTestCase {
             data.append(buffer, count: count)
         }
         return data
+    }
+
+    private static func assertDeviceIDHeader(
+        in request: URLRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let value = request.value(forHTTPHeaderField: "X-BuySell-Device-ID")
+        XCTAssertNotNil(value.flatMap(UUID.init(uuidString:)), file: file, line: line)
+    }
+
+    private static func makeJPEG(width: CGFloat, height: CGFloat) throws -> Data {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+        let image = renderer.image { context in
+            UIColor.systemOrange.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            UIColor.white.setFill()
+            context.fill(CGRect(x: width * 0.2, y: height * 0.2, width: width * 0.6, height: height * 0.6))
+        }
+        return try XCTUnwrap(image.jpegData(compressionQuality: 0.92))
     }
 }
 

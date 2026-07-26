@@ -2,7 +2,7 @@ import Foundation
 
 enum AppSymbol {
     enum Flow {
-        static let snapPhoto = "camera.viewfinder"
+        static let snapPhoto = "camera.fill"
         static let snapPhotoCompact = "camera.fill"
         static let answer = "message.fill"
         static let copy = "doc.on.doc.fill"

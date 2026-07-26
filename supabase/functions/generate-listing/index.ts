@@ -5,6 +5,7 @@ import {
   geminiGroundingSourcesKey,
   generateJsonWithGemini,
 } from "../_shared/gemini.ts";
+import { consumeEarlyAccessUsage } from "../_shared/entitlements.ts";
 import {
   errorResponse,
   fetchWithTimeout,
@@ -19,6 +20,9 @@ import {
   timeoutFromEnv,
 } from "../_shared/http.ts";
 
+const selectedComparisonFreshnessWindowMs = 72 * 60 * 60 * 1_000;
+const finalListingResearchFreshnessWindowMs = 24 * 60 * 60 * 1_000;
+
 serve(async (request) => {
   const options = handleOptions(request);
   if (options) return options;
@@ -29,12 +33,44 @@ serve(async (request) => {
     const item = requireItem(body.item);
     const platform = requireMarketplace(body.platform);
     const details = optionalItemDetails(body.details);
+    const identificationProfile = optionalIdentificationProfile(body.identificationProfile);
     const imageDataUrl = optionalImageDataUrl(body.imageDataUrl);
-    const imageEvidence = imageDataUrl ? await fetchVisionWebDetectionEvidence(imageDataUrl) : null;
-    const profile = marketplaceProfiles[platform];
-    const researchPlan = createMarketplaceResearchPlan(item, platform, profile, details, imageEvidence);
-    const cachedResearch = await fetchMarketplaceResearchCache(researchPlan);
-    const usesCachedResearch = cachedResearch !== null;
+    const clientPlaybook = optionalMarketplacePlaybook(body.marketplacePlaybook);
+    const priorComparison = optionalMarketplaceComparison(body.marketplaceComparison, platform);
+    const profile = profileWithClientPlaybook(marketplaceProfiles[platform], clientPlaybook);
+    let imageEvidence: ListingImageEvidence | null = null;
+    let researchPlan = createMarketplaceResearchPlan(item, platform, profile, details, null, identificationProfile);
+    let cachedResearch = marketplaceComparisonAsResearch(priorComparison, researchPlan);
+    if (!cachedResearch) {
+      cachedResearch = await fetchMarketplaceResearchCache(researchPlan);
+    }
+
+    if (!isFreshMarketplaceResearchCache(cachedResearch, new Date()) && imageDataUrl) {
+      imageEvidence = await fetchVisionWebDetectionEvidence(imageDataUrl);
+      researchPlan = createMarketplaceResearchPlan(item, platform, profile, details, imageEvidence, identificationProfile);
+      const imageResearch = marketplaceComparisonAsResearch(priorComparison, researchPlan);
+      if (imageResearch) {
+        cachedResearch = imageResearch;
+      } else {
+        const imageCachedResearch = await fetchMarketplaceResearchCache(researchPlan);
+        if (imageCachedResearch) {
+          cachedResearch = imageCachedResearch;
+        }
+      }
+    }
+
+    const now = new Date();
+    const finalResearchRefreshReason = finalListingResearchRefreshReason(
+      cachedResearch,
+      priorComparison,
+      now,
+    );
+    const usesCachedResearch = isFreshMarketplaceResearchCache(cachedResearch, now) &&
+      finalResearchRefreshReason === null;
+    const entitlement = await consumeEarlyAccessUsage(request, "listing_generation", {
+      estimatedAiCostCents: usesCachedResearch ? 1.4 : 2.8,
+      groundedSearchCount: usesCachedResearch ? 0 : researchPlan.searchQuestions.length,
+    });
 
     const promptParts = [{
         text: [
@@ -43,9 +79,22 @@ serve(async (request) => {
           `Marketplace search focus: ${profile.searchFocus}`,
           `Photo guidance to mention if helpful: ${profile.photoGuidance}`,
           `Featured guidance to respect: ${profile.featuredGuidance}`,
+          `Marketplace required fields: ${profile.requiredFields?.join(", ") ?? "server default"}`,
+          `High-impact optional fields: ${profile.highImpactOptionalFields?.join(", ") ?? "server default"}`,
+          `Recommended photo sequence: ${profile.recommendedPhotoSequence?.join(", ") ?? "server default"}`,
+          `Pricing format: ${profile.pricingFormat ?? "server default"}`,
+          `Shipping or pickup guidance: ${profile.shippingOrPickupGuidance ?? "server default"}`,
+          `Official post URL: ${profile.officialPostURLString ?? "server default"}`,
+          `Official how-to URL: ${profile.officialHowToURLString ?? "server default"}`,
+          `Marketplace rule sources: ${profile.ruleSourceURLs?.join(", ") ?? "server default"}`,
+          `Rule source last verified: ${profile.ruleSourceLastVerified ?? "server default"}`,
           `Minimal marketplace research plan: ${JSON.stringify(researchPlan)}`,
+          `Selected marketplace comparison: ${priorComparison ? JSON.stringify(priorComparison) : "none"}`,
           `Saved marketplace research: ${cachedResearch ? JSON.stringify(cachedResearch) : "none"}`,
+          `Saved marketplace research freshness: ${cachedResearch ? (usesCachedResearch ? "fresh" : "stale - refresh current price, fee, and rule facts before final listing") : "none"}`,
+          `Focused final research refresh: ${finalResearchRefreshReason ?? "not needed"}`,
           `Visual web evidence: ${imageEvidence ? JSON.stringify(imageEvidence) : "none"}`,
+          `Item identification profile: ${identificationProfileForPrompt(identificationProfile)}`,
           `Item: ${item.name}`,
           `Category: ${item.category}`,
           `Condition: ${item.condition}`,
@@ -60,13 +109,23 @@ serve(async (request) => {
       promptParts,
       item,
       platform,
+      details,
+      identificationProfile,
     });
 
-    const draft = requireStructuredListingDraft(result, item, platform, profile);
+    const draft = requireStructuredListingDraft(
+      result,
+      item,
+      platform,
+      profile,
+      priorComparison,
+      details,
+      identificationProfile,
+    );
     const listing = formatListingDraft(draft);
     requireCleanListing(listing, profile.titleMaxCharacters);
     await saveMarketplaceResearchCache(researchPlan, result);
-    return jsonResponse({ listing, draft });
+    return jsonResponse({ listing, draft, entitlement });
   } catch (error) {
     if (error instanceof HttpError) {
       return errorResponse(error.message, error.status);
@@ -94,6 +153,26 @@ type MarketplaceResearchCache = {
   updatedAt: string;
 };
 
+type PriorMarketplaceComparison = {
+  marketplace: MarketplaceId;
+  recommendationLabel: string | null;
+  marketplaceFitScore: number | null;
+  listPrice: number | null;
+  likelyRangeLow: number | null;
+  likelyRangeHigh: number | null;
+  takeHomeEstimate: number | null;
+  compLowPrice: number | null;
+  compMedianPrice: number | null;
+  compHighPrice: number | null;
+  expectedSpeed: string | null;
+  shippingExpectation: string | null;
+  feeSummary: string | null;
+  reason: string | null;
+  evidenceSummary: string | null;
+  evidenceStatus: string | null;
+  evidenceSources: StructuredEvidenceSource[];
+};
+
 type ListingItem = {
   name: string;
   category: string;
@@ -110,6 +189,18 @@ type ListingItemDetails = {
   extraDetails: string | null;
   marketplaceNotes: Record<string, string>;
   isLargeOrFragile: boolean;
+};
+
+type IdentificationProfile = {
+  confirmedFacts: string[];
+  likelyFacts: string[];
+  conflictingClues: string[];
+  unknownDetails: string[];
+  possibleMatches: string[];
+  potentiallyValuableVariants: string[];
+  evidenceNeeded: string[];
+  previousCorrections: string[];
+  confidenceState: string | null;
 };
 
 type ImageDataUrl = {
@@ -164,6 +255,8 @@ type GenerateListingDraftJsonInput = {
   promptParts: Array<{ text: string }>;
   item: ListingItem;
   platform: MarketplaceId;
+  details: ListingItemDetails | null;
+  identificationProfile: IdentificationProfile | null;
 };
 
 const knownMarketplaceIds = [
@@ -236,7 +329,61 @@ type MarketplaceListingProfile = {
   searchFocus: string;
   photoGuidance: string;
   featuredGuidance: string;
+  requiredFields?: string[];
+  highImpactOptionalFields?: string[];
+  recommendedPhotoSequence?: string[];
+  pricingFormat?: string;
+  shippingOrPickupGuidance?: string;
+  officialPostURLString?: string;
+  officialHowToURLString?: string;
+  ruleSourceURLs?: string[];
+  ruleSourceLastVerified?: string;
+  postingSurface?: string;
 };
+
+type MarketplaceListingPlaybookInput = {
+  titleCharacterLimit?: number;
+  titleFormula?: string;
+  descriptionGuidance?: string;
+  requiredFields: string[];
+  highImpactOptionalFields: string[];
+  recommendedPhotoSequence: string[];
+  pricingFormat?: string;
+  shippingOrPickupGuidance?: string;
+  officialPostURLString?: string;
+  officialHowToURLString?: string;
+  ruleSourceURLs: string[];
+  ruleSourceLastVerified?: string;
+  postingSurface?: string;
+};
+
+function profileWithClientPlaybook(
+  base: MarketplaceListingProfile,
+  playbook: MarketplaceListingPlaybookInput | null,
+): MarketplaceListingProfile {
+  if (!playbook) return base;
+
+  return {
+    ...base,
+    titleMaxCharacters: playbook.titleCharacterLimit ?? base.titleMaxCharacters,
+    titleFormula: playbook.titleFormula ?? base.titleFormula,
+    featuredGuidance: playbook.descriptionGuidance ?? base.featuredGuidance,
+    requiredFields: playbook.requiredFields.length > 0 ? playbook.requiredFields : base.requiredFields,
+    highImpactOptionalFields: playbook.highImpactOptionalFields.length > 0
+      ? playbook.highImpactOptionalFields
+      : base.highImpactOptionalFields,
+    recommendedPhotoSequence: playbook.recommendedPhotoSequence.length > 0
+      ? playbook.recommendedPhotoSequence
+      : base.recommendedPhotoSequence,
+    pricingFormat: playbook.pricingFormat ?? base.pricingFormat,
+    shippingOrPickupGuidance: playbook.shippingOrPickupGuidance ?? base.shippingOrPickupGuidance,
+    officialPostURLString: playbook.officialPostURLString ?? base.officialPostURLString,
+    officialHowToURLString: playbook.officialHowToURLString ?? base.officialHowToURLString,
+    ruleSourceURLs: playbook.ruleSourceURLs.length > 0 ? playbook.ruleSourceURLs : base.ruleSourceURLs,
+    ruleSourceLastVerified: playbook.ruleSourceLastVerified ?? base.ruleSourceLastVerified,
+    postingSurface: playbook.postingSurface ?? base.postingSurface,
+  };
+}
 
 function listingSystemInstruction(
   profile: MarketplaceListingProfile,
@@ -252,10 +399,18 @@ function listingSystemInstruction(
     "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery, evidenceSources.",
     "title must be body text only and description must be body text only.",
     "Tailor the title and description for the marketplace provided, but never keyword-stuff.",
+    "Use the provided marketplace playbook required fields and recommended photo sequence when they are present.",
+    "Set missingInfoWarnings for required playbook fields that remain unverified or unknown.",
+    "Do not contradict the official post URL, official how-to URL, or marketplace source verification notes.",
+    "Use the item identification profile as the working memory from the scan conversation.",
+    "Treat confirmed profile facts as search anchors, likely facts as hypotheses, and possible matches or valuable variants as checks to resolve before pricing.",
+    "If profile details are unknown or conflicting, add missingInfoWarnings and avoid claims about rarity, authenticity, edition, model, size, material, or value unless provided or grounded.",
     usesCachedResearch
       ? "Use the saved marketplace research provided. Do not broaden beyond it."
       : "Use Google Search and URL Context only for the minimal research plan provided.",
+    "When a selected marketplace comparison is provided, reuse its sold-price range, fee summary, expected speed, shipping expectation, and evidenceSources instead of running a broader search unless the data is unavailable or contradicted by verified item facts.",
     "Prefer official marketplace guidance over stale assumptions.",
+    "If saved marketplace research is marked stale, treat it as memory only and refresh current price, fee, sold-comp, and rule facts before final listing.",
     "After the item identity is known, use grounded search for real marketplace fees, sold/completed comps, comparable price history, and marketplace rules.",
     "Distinguish sold/completed comps from active asking prices. Use compLowPrice, compHighPrice, and compMedianPrice only when grounded sold/completed evidence supports them.",
     "Active listings and asking prices may appear in evidenceSources, but they must never populate sold comp price fields.",
@@ -328,7 +483,13 @@ async function generateListingDraftJson(
     }
   }
 
-  return deterministicListingDraft(input.item, input.platform, input.profile);
+  return deterministicListingDraft(
+    input.item,
+    input.platform,
+    input.profile,
+    input.details,
+    input.identificationProfile,
+  );
 }
 
 function listingDraftResponseSchema(): Record<string, unknown> {
@@ -413,6 +574,8 @@ function deterministicListingDraft(
   item: ListingItem,
   platform: MarketplaceId,
   profile: MarketplaceListingProfile,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
 ): Record<string, unknown> {
   const displayName = marketplaceDisplayNames[platform] ?? platform;
   const condition = displayCondition(item.condition);
@@ -433,12 +596,13 @@ function deterministicListingDraft(
     takeHomeEstimate,
     firstPhoto: profile.photoGuidance,
     missingPhotoPrompt: null,
-    missingInfoWarnings: [],
+    missingInfoWarnings: requiredFieldWarnings(profile, item, details, identificationProfile),
     fitReason: `${displayName} can work for this item when the photos and details are clear.`,
     postingNotes: [
       "Use the generated copy with your actual photos.",
       "Mention any flaws you can see before posting.",
-    ],
+      ...playbookPostingNotes(profile),
+    ].slice(0, 3),
     itemSpecifics: [],
     tags: [],
     evidenceSummary: "Current marketplace research returned no final draft, so this uses only the item facts provided.",
@@ -466,24 +630,26 @@ function createMarketplaceResearchPlan(
   profile: MarketplaceListingProfile,
   details: ListingItemDetails | null,
   imageEvidence: ListingImageEvidence | null,
+  identificationProfile: IdentificationProfile | null,
 ): MarketplaceResearchPlan {
   const displayName = marketplaceDisplayNames[platform] ?? platform;
   const currentYear = new Date().getUTCFullYear();
   const category = normalizedIdentifier(item.category);
   const condition = normalizedIdentifier(item.condition);
-  const identity = researchIdentity(item, details, imageEvidence);
+  const identity = researchIdentity(item, details, imageEvidence, identificationProfile);
   const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
-  const noImageIdentity = researchIdentity(item, details, null);
+  const profileKey = normalizedIdentifier(profileSearchTerms(identificationProfile).join(" ")).slice(0, 90) || "noprofile";
+  const noImageIdentity = researchIdentity(item, details, null, identificationProfile);
   const noImageIdentityKey = normalizedIdentifier(noImageIdentity).slice(0, 90) || "unknownitem";
-  const cacheKey = `${platform}:${category}:${condition}:${identityKey}`;
+  const cacheKey = `${platform}:${category}:${condition}:${identityKey}:${profileKey}`;
   const cacheLookupKeys = uniqueStrings([
     cacheKey,
-    `${platform}:${category}:${condition}:${noImageIdentityKey}`,
+    `${platform}:${category}:${condition}:${noImageIdentityKey}:${profileKey}`,
   ], 2);
   const searchQuestions = [
     `${displayName} official selling fees ${currentYear}`,
     `${displayName} sold listings ${identity} used ${item.condition}`,
-    `${identity} resale sold price comparable`,
+    `${identity} ${profileSearchTerms(identificationProfile).join(" ")} resale sold price comparable`,
   ];
 
   return {
@@ -508,13 +674,17 @@ function researchIdentity(
   item: ListingItem,
   details: ListingItemDetails | null,
   imageEvidence: ListingImageEvidence | null,
+  identificationProfile: IdentificationProfile | null,
 ): string {
   const parts = uniqueStrings([
+    ...(identificationProfile?.confirmedFacts ?? []),
+    ...(identificationProfile?.likelyFacts ?? []),
+    ...(identificationProfile?.possibleMatches ?? []),
     details?.labelOrBrand ?? "",
     details?.sizeOrModel ?? "",
     item.name,
     imageEvidence?.bestGuessLabels[0] ?? "",
-  ].filter((value) => value.trim().length > 0), 5);
+  ].filter((value) => value.trim().length > 0), 7);
   return parts.join(" ").slice(0, 160) || item.name;
 }
 
@@ -533,6 +703,49 @@ function detailsForPrompt(details: ListingItemDetails | null, platform: Marketpl
     details.isLargeOrFragile ? "Shipping note: big, heavy, or fragile" : "",
   ].filter((value) => value.length > 0);
   return lines.length ? lines.join("; ") : "none";
+}
+
+function identificationProfileForPrompt(profile: IdentificationProfile | null): string {
+  if (!profile) return "none";
+  const lines = [
+    profile.confidenceState ? `Confidence: ${profile.confidenceState}` : "",
+    profile.confirmedFacts.length ? `Confirmed facts: ${profile.confirmedFacts.join("; ")}` : "",
+    profile.likelyFacts.length ? `Likely facts: ${profile.likelyFacts.join("; ")}` : "",
+    profile.possibleMatches.length ? `Possible matches: ${profile.possibleMatches.join("; ")}` : "",
+    profile.potentiallyValuableVariants.length
+      ? `Potentially valuable variants to verify: ${profile.potentiallyValuableVariants.join("; ")}`
+      : "",
+    profile.unknownDetails.length ? `Unknown details: ${profile.unknownDetails.join("; ")}` : "",
+    profile.conflictingClues.length ? `Conflicting clues: ${profile.conflictingClues.join("; ")}` : "",
+    profile.evidenceNeeded.length ? `Evidence still needed: ${profile.evidenceNeeded.join("; ")}` : "",
+    profile.previousCorrections.length ? `User corrections: ${profile.previousCorrections.join("; ")}` : "",
+  ].filter((line) => line.length > 0);
+  return lines.join(" | ") || "none";
+}
+
+function profileSearchTerms(profile: IdentificationProfile | null): string[] {
+  if (!profile) return [];
+  return uniqueStrings([
+    ...profile.confirmedFacts,
+    ...profile.likelyFacts,
+    ...profile.possibleMatches,
+    ...profile.potentiallyValuableVariants,
+    ...profile.evidenceNeeded,
+  ], 6);
+}
+
+function identificationProfileValues(profile: IdentificationProfile): string[] {
+  return [
+    ...profile.confirmedFacts,
+    ...profile.likelyFacts,
+    ...profile.conflictingClues,
+    ...profile.unknownDetails,
+    ...profile.possibleMatches,
+    ...profile.potentiallyValuableVariants,
+    ...profile.evidenceNeeded,
+    ...profile.previousCorrections,
+    profile.confidenceState ?? "",
+  ].filter((value) => value.length > 0);
 }
 
 function marketplaceNoteSummary(notes: Record<string, string>, currentPlatform: MarketplaceId): string {
@@ -676,6 +889,88 @@ function marketplaceResearchCacheFromRow(row: unknown): MarketplaceResearchCache
   };
 }
 
+function isFreshMarketplaceResearchCache(
+  cachedResearch: MarketplaceResearchCache | null,
+  now: Date,
+): cachedResearch is MarketplaceResearchCache {
+  if (!cachedResearch) return false;
+  const updatedAt = evidenceCheckedAt(cachedResearch.updatedAt);
+  if (!updatedAt) return false;
+  const ageMs = now.getTime() - updatedAt.getTime();
+  return ageMs >= 0 && ageMs <= selectedComparisonFreshnessWindowMs;
+}
+
+function isFreshFinalListingResearch(
+  cachedResearch: MarketplaceResearchCache | null,
+  now: Date,
+): cachedResearch is MarketplaceResearchCache {
+  if (!cachedResearch) return false;
+  const updatedAt = evidenceCheckedAt(cachedResearch.updatedAt);
+  if (!updatedAt) return false;
+  const ageMs = now.getTime() - updatedAt.getTime();
+  return ageMs >= 0 && ageMs <= finalListingResearchFreshnessWindowMs;
+}
+
+function finalListingResearchRefreshReason(
+  cachedResearch: MarketplaceResearchCache | null,
+  comparison: PriorMarketplaceComparison | null,
+  now: Date,
+): string | null {
+  if (!cachedResearch) {
+    return "No saved marketplace research is available for this final listing.";
+  }
+  if (!isFreshFinalListingResearch(cachedResearch, now)) {
+    return "Saved marketplace research is older than 24 hours; refresh current price, fee, and rule facts before final listing.";
+  }
+  if (comparison && hasPriorSoldCompEvidence(comparison) === false) {
+    return "Selected marketplace comparison has no grounded sold/completed comp range; refresh comparable sale evidence before final listing.";
+  }
+  if (hasOfficialFeeOrRuleSource(cachedResearch, comparison) === false) {
+    return "Saved marketplace research has no official fee or rule source; refresh marketplace requirements before final listing.";
+  }
+  return null;
+}
+
+function hasPriorSoldCompEvidence(comparison: PriorMarketplaceComparison): boolean {
+  return soldEvidencePrices(comparison.evidenceSources).length > 0;
+}
+
+function hasOfficialFeeOrRuleSource(
+  cachedResearch: MarketplaceResearchCache,
+  comparison: PriorMarketplaceComparison | null,
+): boolean {
+  const searchableText = [
+    cachedResearch.researchSummary,
+    ...cachedResearch.usefulFindings,
+    ...cachedResearch.officialSources,
+    comparison?.feeSummary ?? "",
+    comparison?.evidenceSummary ?? "",
+    ...(comparison?.evidenceSources ?? []).map((source) =>
+      [
+        source.sourceMarketplace ?? "",
+        source.title ?? "",
+        source.url ?? "",
+        source.listingStatus ?? "",
+      ].join(" ")
+    ),
+  ].join(" ").toLowerCase();
+  return [
+    "official",
+    "fee",
+    "fees",
+    "seller help",
+    "help center",
+    "policy",
+    "requirements",
+    "rules",
+  ].some((signal) => searchableText.includes(signal));
+}
+
+function isSoldOrCompletedStatus(value: string | null): boolean {
+  const text = value?.toLowerCase() ?? "";
+  return text.includes("sold") || text.includes("completed");
+}
+
 async function saveMarketplaceResearchCache(
   plan: MarketplaceResearchPlan,
   result: Record<string, unknown>,
@@ -694,6 +989,7 @@ async function saveMarketplaceResearchCache(
     ...stringArray(result[geminiGroundingSearchQueriesKey], 3),
   ], 3);
   const researchSummaryForCache = researchSummary ?? (usefulFindings.join(" ") || officialSources.join(" "));
+  if (officialSources.length === 0) return;
   if (!researchSummaryForCache) return;
 
   const now = new Date();
@@ -729,6 +1025,67 @@ async function saveMarketplaceResearchCache(
   } catch {
     return;
   }
+}
+
+function marketplaceComparisonAsResearch(
+  comparison: PriorMarketplaceComparison | null,
+  plan: MarketplaceResearchPlan,
+): MarketplaceResearchCache | null {
+  if (!comparison || comparison.evidenceSources.length === 0) return null;
+
+  const priceFacts = [
+    comparison.listPrice ? `Recommended list price: $${formatPlainPrice(comparison.listPrice)}` : "",
+    comparison.likelyRangeLow && comparison.likelyRangeHigh
+      ? `Likely sale range: $${formatPlainPrice(comparison.likelyRangeLow)} to $${formatPlainPrice(comparison.likelyRangeHigh)}`
+      : "",
+    comparison.compLowPrice && comparison.compHighPrice
+      ? `Grounded sold comps ranged from $${formatPlainPrice(comparison.compLowPrice)} to $${formatPlainPrice(comparison.compHighPrice)}`
+      : "",
+    comparison.compMedianPrice ? `Typical sold comp: $${formatPlainPrice(comparison.compMedianPrice)}` : "",
+    comparison.takeHomeEstimate ? `Estimated take-home: $${formatPlainPrice(comparison.takeHomeEstimate)}` : "",
+  ].filter((value) => value.length > 0);
+
+  const usefulFindings = uniqueStrings([
+    ...priceFacts,
+    comparison.feeSummary ? `Fee note: ${comparison.feeSummary}` : "",
+    comparison.expectedSpeed ? `Expected speed: ${comparison.expectedSpeed}` : "",
+    comparison.shippingExpectation ? `Shipping or pickup: ${comparison.shippingExpectation}` : "",
+    comparison.reason ? `Marketplace fit: ${comparison.reason}` : "",
+  ].filter((value) => value.length > 0), 8);
+
+  const sourceSummaries = comparison.evidenceSources.map((source) =>
+    [
+      source.sourceMarketplace ?? marketplaceDisplayNames[comparison.marketplace] ?? comparison.marketplace,
+      source.listingStatus,
+      source.title,
+      source.price ? `$${formatPlainPrice(source.price)}` : "",
+      source.conditionAndVariant,
+      source.comparability,
+      source.url,
+    ].filter((value) => value && value.length > 0).join(" - ")
+  );
+
+  const researchSummary = uniqueStrings([
+    comparison.evidenceSummary ?? "",
+    comparison.reason ?? "",
+    ...priceFacts,
+    ...sourceSummaries,
+  ].filter((value) => value.length > 0), 8).join(" ");
+
+  if (!researchSummary) return null;
+
+  return {
+    researchSummary,
+    usefulFindings,
+    officialSources: uniqueStrings(
+      comparison.evidenceSources
+        .map((source) => source.url)
+        .filter((value): value is string => Boolean(value)),
+      8,
+    ),
+    searchQuestions: plan.searchQuestions,
+    updatedAt: comparison.evidenceSources.find((source) => source.dateChecked)?.dateChecked ?? new Date().toISOString(),
+  };
 }
 
 
@@ -999,6 +1356,45 @@ function optionalItemDetails(value: unknown): ListingItemDetails | null {
   return cleanDetails;
 }
 
+function optionalIdentificationProfile(value: unknown): IdentificationProfile | null {
+  const record = recordOrNull(value);
+  if (!record) return null;
+
+  const profile: IdentificationProfile = {
+    confirmedFacts: stringArray(record.confirmedFacts, 6, 100),
+    likelyFacts: stringArray(record.likelyFacts, 6, 100),
+    conflictingClues: stringArray(record.conflictingClues, 4, 100),
+    unknownDetails: stringArray(record.unknownDetails, 6, 100),
+    possibleMatches: stringArray(record.possibleMatches, 3, 100),
+    potentiallyValuableVariants: stringArray(record.potentiallyValuableVariants, 4, 120),
+    evidenceNeeded: stringArray(record.evidenceNeeded, 5, 120),
+    previousCorrections: stringArray(record.previousCorrections, 4, 100),
+    confidenceState: optionalConfidenceState(record.confidenceState),
+  };
+
+  if (identificationProfileValues(profile).length === 0) {
+    return null;
+  }
+
+  return profile;
+}
+
+function optionalConfidenceState(value: unknown): string | null {
+  const normalized = normalizedIdentifier(optionalString(value, 40) ?? "");
+  switch (normalized) {
+    case "confirmed":
+      return "confirmed";
+    case "likely":
+      return "likely";
+    case "stillchecking":
+      return "stillChecking";
+    case "notenoughevidence":
+      return "notEnoughEvidence";
+    default:
+      return null;
+  }
+}
+
 function optionalMarketplaceNotes(value: unknown): Record<string, string> {
   const record = recordOrNull(value);
   if (!record) return {};
@@ -1012,6 +1408,145 @@ function optionalMarketplaceNotes(value: unknown): Record<string, string> {
     notes[marketplace] = text;
   }
   return notes;
+}
+
+function optionalMarketplacePlaybook(value: unknown): MarketplaceListingPlaybookInput | null {
+  const record = recordOrNull(value);
+  if (!record) return null;
+
+  const playbook: MarketplaceListingPlaybookInput = {
+    titleCharacterLimit: optionalTitleCharacterLimit(record.titleCharacterLimit),
+    titleFormula: optionalString(record.titleFormula, 180) ?? undefined,
+    descriptionGuidance: optionalString(record.descriptionGuidance, 260) ?? undefined,
+    requiredFields: stringArray(record.requiredFields, 10, 96),
+    highImpactOptionalFields: stringArray(record.highImpactOptionalFields, 10, 96),
+    recommendedPhotoSequence: stringArray(record.recommendedPhotoSequence, 8, 48),
+    pricingFormat: optionalString(record.pricingFormat, 180) ?? undefined,
+    shippingOrPickupGuidance: optionalString(record.shippingOrPickupGuidance, 220) ?? undefined,
+    officialPostURLString: optionalHttpsURLString(record.officialPostURLString, 220) ?? undefined,
+    officialHowToURLString: optionalHttpsURLString(record.officialHowToURLString, 220) ?? undefined,
+    ruleSourceURLs: stringArray(record.ruleSourceURLs, 8, 220).filter(isHttpURLString),
+    ruleSourceLastVerified: optionalString(record.ruleSourceLastVerified, 32) ?? undefined,
+    postingSurface: optionalString(record.postingSurface, 40) ?? undefined,
+  };
+
+  const hasGuidance = [
+    playbook.titleCharacterLimit,
+    playbook.titleFormula,
+    playbook.descriptionGuidance,
+    playbook.pricingFormat,
+    playbook.shippingOrPickupGuidance,
+    playbook.officialPostURLString,
+    playbook.officialHowToURLString,
+    playbook.ruleSourceLastVerified,
+  ].some((entry) => entry !== undefined) ||
+    playbook.requiredFields.length > 0 ||
+    playbook.highImpactOptionalFields.length > 0 ||
+    playbook.recommendedPhotoSequence.length > 0 ||
+    playbook.ruleSourceURLs.length > 0;
+
+  return hasGuidance ? playbook : null;
+}
+
+function optionalMarketplaceComparison(
+  value: unknown,
+  selectedMarketplace: MarketplaceId,
+): PriorMarketplaceComparison | null {
+  const record = recordOrNull(value);
+  if (!record) return null;
+
+  const marketplaceText = optionalString(record.marketplace, 48)?.toLowerCase();
+  const marketplace = marketplaceText && knownMarketplaceIdSet.has(marketplaceText)
+    ? marketplaceText as MarketplaceId
+    : selectedMarketplace;
+  if (marketplace !== selectedMarketplace) return null;
+
+  const evidenceStatus = optionalComparisonEvidenceStatus(record.evidenceStatus);
+  const evidenceSources = cleanEvidenceSources(record.evidenceSources, selectedMarketplace);
+  const freshEvidenceSources = evidenceSources.filter((source) =>
+    hasEvidenceSourceReference(source) && isFreshSelectedComparisonEvidence(source, new Date())
+  );
+  const hasReusableEvidence = evidenceStatus !== "unavailable" && freshEvidenceSources.length > 0;
+  if (!hasReusableEvidence) return null;
+
+  return {
+    marketplace,
+    recommendationLabel: optionalString(record.recommendationLabel, 32),
+    marketplaceFitScore: optionalFitScore(record.marketplaceFitScore),
+    listPrice: optionalPositiveNumber(record.listPrice),
+    likelyRangeLow: optionalPositiveNumber(record.likelyRangeLow),
+    likelyRangeHigh: optionalPositiveNumber(record.likelyRangeHigh),
+    takeHomeEstimate: optionalPositiveNumber(record.takeHomeEstimate),
+    compLowPrice: optionalPositiveNumber(record.compLowPrice),
+    compMedianPrice: optionalPositiveNumber(record.compMedianPrice),
+    compHighPrice: optionalPositiveNumber(record.compHighPrice),
+    expectedSpeed: optionalString(record.expectedSpeed, 80),
+    shippingExpectation: optionalString(record.shippingExpectation, 100),
+    feeSummary: optionalString(record.feeSummary, 180),
+    reason: optionalString(record.reason, 180),
+    evidenceSummary: optionalString(record.evidenceSummary, 220),
+    evidenceStatus,
+    evidenceSources: freshEvidenceSources,
+  };
+}
+
+function isFreshSelectedComparisonEvidence(
+  source: StructuredEvidenceSource,
+  now: Date,
+): boolean {
+  const checkedAt = evidenceCheckedAt(source.dateChecked);
+  if (!checkedAt) return false;
+  const ageMs = now.getTime() - checkedAt.getTime();
+  return ageMs >= 0 && ageMs <= selectedComparisonFreshnessWindowMs;
+}
+
+function evidenceCheckedAt(value: string | null): Date | null {
+  const text = optionalString(value, 32);
+  if (!text) return null;
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T12:00:00Z` : text;
+  const checkedAt = new Date(normalized);
+  return Number.isFinite(checkedAt.getTime()) ? checkedAt : null;
+}
+
+function optionalComparisonEvidenceStatus(value: unknown): string | null {
+  const text = optionalString(value, 32)?.toLowerCase();
+  switch (text) {
+    case "grounded":
+    case "verified":
+      return "grounded";
+    case "limited":
+    case "partial":
+      return "limited";
+    default:
+      return "unavailable";
+  }
+}
+
+function optionalFitScore(value: unknown): number | null {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 1 || number > 100) return null;
+  return number;
+}
+
+function optionalTitleCharacterLimit(value: unknown): number | undefined {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 20 || number > 160) return undefined;
+  return number;
+}
+
+function optionalHttpsURLString(value: unknown, maxLength: number): string | null {
+  const text = optionalString(value, maxLength);
+  if (!text || !isHttpURLString(text)) return null;
+  return text;
+}
+
+function isHttpURLString(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 function optionalImageDataUrl(value: unknown): ImageDataUrl | null {
@@ -1113,21 +1648,43 @@ function requireStructuredListingDraft(
   item: ListingItem,
   platform: MarketplaceId,
   profile: MarketplaceListingProfile,
+  priorComparison: PriorMarketplaceComparison | null,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
 ): StructuredListingDraft {
   const title = cleanDraftText(result.title, "title", profile.titleMaxCharacters);
   const description = cleanDraftText(result.description, "description", 1_500);
-  const listPrice = positiveNumberOrFallback(result.listPrice, item.currentPrice);
-  const likelySalePrice = positiveNumberOrFallback(result.likelySalePrice, Math.max(item.currentPrice * 0.9, 1));
-  const takeHomeEstimate = positiveNumberOrFallback(result.takeHomeEstimate, Math.max(likelySalePrice * 0.85, 1));
+  const listPrice = positiveNumberOrFallback(result.listPrice, priorComparison?.listPrice ?? item.currentPrice);
+  const likelySalePrice = positiveNumberOrFallback(
+    result.likelySalePrice,
+    priorComparisonLikelySalePrice(priorComparison) ?? Math.max(item.currentPrice * 0.9, 1),
+  );
+  const takeHomeEstimate = positiveNumberOrFallback(
+    result.takeHomeEstimate,
+    priorComparison?.takeHomeEstimate ?? Math.max(likelySalePrice * 0.85, 1),
+  );
   const firstPhoto = optionalCleanDraftText(result.firstPhoto, 180) ?? profile.photoGuidance;
   const missingPhotoPrompt = optionalCleanDraftText(result.missingPhotoPrompt, 140);
   const fitReason = optionalCleanDraftText(result.fitReason, 220) ??
+    priorComparison?.reason ??
     `${marketplaceDisplayNames[platform]} fits this item when the details and photos are clear.`;
-  const evidenceSources = cleanEvidenceSources(result.evidenceSources, platform);
-  const hasSoldCompEvidence = evidenceSources.some(isSoldEvidenceSource);
-  const compLowPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compLowPrice) : null;
-  const compHighPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compHighPrice) : null;
-  const compMedianPrice = hasSoldCompEvidence ? optionalPositiveNumber(result.compMedianPrice) : null;
+  const evidenceSources = mergedEvidenceSources(
+    cleanEvidenceSources(result.evidenceSources, platform),
+    priorComparison?.evidenceSources ?? [],
+  );
+  const soldPrices = soldEvidencePrices(evidenceSources);
+  const hasPricedSoldCompEvidence = soldPrices.length > 0;
+  const compLowPrice = hasPricedSoldCompEvidence ? lowEvidencePrice(soldPrices) : null;
+  const compHighPrice = hasPricedSoldCompEvidence ? highEvidencePrice(soldPrices) : null;
+  const compMedianPrice = hasPricedSoldCompEvidence ? medianEvidencePrice(soldPrices) : null;
+  const missingInfoWarnings = uniqueStrings([
+    ...cleanStringList(result.missingInfoWarnings, 4, 120),
+    ...requiredFieldWarnings(profile, item, details, identificationProfile),
+  ], 4);
+  const postingNotes = uniqueStrings([
+    ...cleanStringList(result.postingNotes, 3, 160),
+    ...playbookPostingNotes(profile),
+  ], 3);
 
   return {
     title,
@@ -1137,21 +1694,37 @@ function requireStructuredListingDraft(
     takeHomeEstimate,
     firstPhoto,
     missingPhotoPrompt,
-    missingInfoWarnings: cleanStringList(result.missingInfoWarnings, 4, 120),
+    missingInfoWarnings,
     fitReason,
-    postingNotes: cleanStringList(result.postingNotes, 3, 160),
+    postingNotes,
     itemSpecifics: cleanStringList(result.itemSpecifics, 6, 80),
     tags: cleanStringList(result.tags, 8, 40),
     compLowPrice,
     compHighPrice,
     compMedianPrice,
-    feeSummary: optionalCleanDraftText(result.feeSummary, 180),
+    feeSummary: optionalCleanDraftText(result.feeSummary, 180) ?? priorComparison?.feeSummary ?? null,
     pricingStrategy: optionalCleanDraftText(result.pricingStrategy, 220),
-    evidenceSummary: optionalCleanDraftText(result.evidenceSummary, 260),
+    evidenceSummary: listingEvidenceSummaryForDisplay(
+      result.evidenceSummary,
+      platform,
+      evidenceSources,
+      soldPrices.length,
+      priorComparison,
+    ),
     referenceImageURL: optionalReferenceImageURL(result.referenceImageURL),
     publicImageQuery: optionalCleanDraftText(result.publicImageQuery, 140),
     evidenceSources,
   };
+}
+
+function priorComparisonLikelySalePrice(comparison: PriorMarketplaceComparison | null): number | null {
+  if (!comparison) return null;
+  if (comparison.compMedianPrice) return comparison.compMedianPrice;
+  if (comparison.likelyRangeLow && comparison.likelyRangeHigh) {
+    return Math.round(((comparison.likelyRangeLow + comparison.likelyRangeHigh) / 2) * 100) / 100;
+  }
+  if (comparison.listPrice) return comparison.listPrice;
+  return null;
 }
 
 function formatListingDraft(draft: StructuredListingDraft): string {
@@ -1183,6 +1756,165 @@ function cleanStringList(value: unknown, maxItems: number, maxLength: number): s
   return stringArray(value, maxItems, maxLength)
     .map((entry) => rejectUnsafeDraftText(entry, "draft list item").slice(0, maxLength).trim())
     .filter((entry) => entry.length > 0);
+}
+
+function requiredFieldWarnings(
+  profile: MarketplaceListingProfile,
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
+): string[] {
+  const requiredFields = profile.requiredFields ?? [];
+  return requiredFields
+    .filter((field) => hasVerifiedRequiredField(field, item, details, identificationProfile) === false)
+    .slice(0, 4)
+    .map((field) => `Confirm ${field.toLowerCase()} before posting.`);
+}
+
+function hasVerifiedRequiredField(
+  field: string,
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
+): boolean {
+  if (systemProvidesRequiredField(field, item)) return true;
+  const signals = requiredFieldSignals(field);
+  if (signals.length === 0) return false;
+  if (sellerDetailsCoverRequiredSignals(signals, details)) return true;
+  if (confirmedProfileFactsCoverRequiredSignals(signals, identificationProfile)) return true;
+  if (profileStillNeedsRequiredSignals(signals, identificationProfile)) return false;
+  return false;
+}
+
+function systemProvidesRequiredField(field: string, item: ListingItem): boolean {
+  const normalized = field
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (!normalized) return false;
+  if ([
+    "title",
+    "product title",
+    "description",
+    "category",
+    "condition",
+    "price",
+    "starting price",
+  ].includes(normalized)) {
+    return true;
+  }
+  if (normalized.includes("photo") || normalized.includes("image") || normalized.includes("picture")) {
+    return true;
+  }
+  if (
+    normalized.includes("item identity") ||
+    normalized.includes("exact device")
+  ) {
+    return item.name.trim().length > 0 && normalizedIdentifier(item.name) !== "unknownitem";
+  }
+  return false;
+}
+
+function sellerDetailsCoverRequiredSignals(
+  signals: string[],
+  details: ListingItemDetails | null,
+): boolean {
+  if (!details) return false;
+
+  const fields: Array<[string[], string | boolean | null | undefined]> = [
+    [["brand", "maker", "manufacturer", "artist", "logo", "label", "mark", "signature", "hallmark"], details.labelOrBrand],
+    [["model", "serial", "sku", "style", "code", "size", "measurement", "dimension", "capacity", "storage", "carrier"], details.sizeOrModel],
+    [["condition", "flaw", "damage", "scratch", "wear", "working", "tested", "broken"], details.flaws],
+    [["included", "accessory", "accessories", "box", "case", "charger", "paperwork", "certificate", "receipt", "parts"], details.included],
+    [["material", "year", "age", "vintage", "antique", "edition", "limited", "numbered", "signed", "authentic", "authenticity"], details.extraDetails],
+    [["shipping", "pickup", "delivery", "location", "zip", "postal", "weight", "fragile", "large"], details.isLargeOrFragile],
+    [["shipping", "pickup", "delivery", "location", "zip", "postal", "offer", "auction", "price"], marketplaceNotesText(details)],
+  ];
+
+  return fields.some(([fieldSignals, value]) => {
+    if (value === true) return signalsOverlap(signals, fieldSignals);
+    if (typeof value !== "string" || value.trim().length === 0) return false;
+    return signalsOverlap(signals, fieldSignals) || containsAnySignal(value, signals);
+  });
+}
+
+function confirmedProfileFactsCoverRequiredSignals(
+  signals: string[],
+  profile: IdentificationProfile | null,
+): boolean {
+  if (!profile) return false;
+  return containsAnySignal(
+    [
+      ...profile.confirmedFacts,
+      ...profile.previousCorrections,
+    ].join(" "),
+    signals,
+  );
+}
+
+function profileStillNeedsRequiredSignals(
+  signals: string[],
+  profile: IdentificationProfile | null,
+): boolean {
+  if (!profile) return false;
+  return containsAnySignal(
+    [
+      ...profile.unknownDetails,
+      ...profile.conflictingClues,
+      ...profile.evidenceNeeded,
+    ].join(" "),
+    signals,
+  );
+}
+
+function requiredFieldSignals(field: string): string[] {
+  const normalized = field
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (!normalized) return [];
+
+  const signalGroups: Record<string, string[]> = {
+    category: ["category", "item type"],
+    brand: ["brand", "maker", "manufacturer", "artist", "logo", "label", "mark"],
+    model: ["model", "serial", "sku", "style", "code", "barcode", "upc", "number"],
+    size: ["size", "measurement", "dimension", "fit"],
+    material: ["material", "fabric", "metal", "wood", "leather", "sterling", "gold", "silver"],
+    condition: ["condition", "flaw", "damage", "scratch", "wear", "working", "tested", "broken"],
+    included: ["included", "accessory", "accessories", "box", "case", "charger", "paperwork", "certificate", "receipt", "parts"],
+    shipping: ["shipping", "pickup", "delivery", "location", "zip", "postal", "weight", "fragile", "large"],
+    authenticity: ["authentic", "authenticity", "certificate", "hallmark", "signature", "signed"],
+    age: ["year", "age", "vintage", "antique", "edition", "limited", "numbered"],
+    price: ["price", "offer", "auction", "fixed"],
+    photo: ["photo", "image", "picture"],
+    title: ["title"],
+    description: ["description"],
+  };
+
+  const signals = Object.values(signalGroups)
+    .filter((group) => group.some((signal) => normalized.includes(signal)))
+    .flat();
+  return uniqueStrings([normalized, ...signals], 24);
+}
+
+function marketplaceNotesText(details: ListingItemDetails): string {
+  return Object.values(details.marketplaceNotes).join(" ");
+}
+
+function signalsOverlap(lhs: string[], rhs: string[]): boolean {
+  return lhs.some((signal) => rhs.includes(signal));
+}
+
+function containsAnySignal(value: string, signals: string[]): boolean {
+  const normalized = value.toLowerCase();
+  return signals.some((signal) => normalized.includes(signal));
+}
+
+function playbookPostingNotes(profile: MarketplaceListingProfile): string[] {
+  return [
+    profile.shippingOrPickupGuidance,
+    profile.officialHowToURLString ? `Use the official posting guide if you get stuck: ${profile.officialHowToURLString}` : null,
+  ].filter((value): value is string => Boolean(value)).slice(0, 2);
 }
 
 function rejectUnsafeDraftText(text: string, field: string): string {
@@ -1313,6 +2045,34 @@ function cleanEvidenceSources(value: unknown, platform: MarketplaceId): Structur
   return sources;
 }
 
+function mergedEvidenceSources(
+  primarySources: StructuredEvidenceSource[],
+  fallbackSources: StructuredEvidenceSource[],
+): StructuredEvidenceSource[] {
+  const sources: StructuredEvidenceSource[] = [];
+  const seen = new Set<string>();
+
+  for (const source of [...primarySources, ...fallbackSources]) {
+    if (!hasEvidenceSourceReference(source)) continue;
+    const key = [
+      source.sourceMarketplace,
+      source.title,
+      source.url,
+      source.dateChecked,
+      source.listingStatus,
+      source.conditionAndVariant,
+      source.comparability,
+      source.price?.toString() ?? "",
+    ].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sources.push(source);
+    if (sources.length >= 4) break;
+  }
+
+  return sources;
+}
+
 function cleanListingStatus(value: unknown): string | null {
   const text = optionalCleanDraftText(value, 32);
   if (!text) return null;
@@ -1321,10 +2081,15 @@ function cleanListingStatus(value: unknown): string | null {
     case "soldlisting":
     case "soldsale":
     case "completed":
+    case "completeditem":
     case "completedlisting":
     case "completedsale":
+    case "ended":
+    case "endeditem":
+    case "endedlisting":
     case "soldcompleted":
     case "completedsold":
+    case "solditem":
       return "Sold";
     case "active":
     case "activelisting":
@@ -1351,7 +2116,71 @@ function listingStatusFromPriceFields(record: Record<string, unknown>): string |
 }
 
 function isSoldEvidenceSource(source: StructuredEvidenceSource): boolean {
-  return source.listingStatus === "Sold" && source.price !== null;
+  return source.listingStatus === "Sold" &&
+    source.price !== null &&
+    Boolean(source.dateChecked) &&
+    hasEvidenceSourceReference(source);
+}
+
+function soldEvidencePrices(sources: StructuredEvidenceSource[]): number[] {
+  return sources
+    .filter(isSoldEvidenceSource)
+    .map((source) => source.price)
+    .filter((price): price is number => typeof price === "number" && Number.isFinite(price) && price > 0)
+    .sort((lhs, rhs) => lhs - rhs);
+}
+
+function lowEvidencePrice(prices: number[]): number | null {
+  return prices.length > 0 ? roundMoney(prices[0]) : null;
+}
+
+function highEvidencePrice(prices: number[]): number | null {
+  return prices.length > 0 ? roundMoney(prices[prices.length - 1]) : null;
+}
+
+function medianEvidencePrice(prices: number[]): number | null {
+  if (prices.length === 0) return null;
+  const middle = Math.floor(prices.length / 2);
+  if (prices.length % 2 === 1) return roundMoney(prices[middle]);
+  return roundMoney((prices[middle - 1] + prices[middle]) / 2);
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function listingEvidenceSummaryForDisplay(
+  value: unknown,
+  platform: MarketplaceId,
+  evidenceSources: StructuredEvidenceSource[],
+  soldEvidenceCount: number,
+  priorComparison: PriorMarketplaceComparison | null,
+): string | null {
+  const summary = optionalCleanDraftText(value, 260);
+  if (soldEvidenceCount > 0) {
+    return summary ?? priorComparison?.evidenceSummary ?? null;
+  }
+  if (evidenceSources.length === 0) {
+    return summary ?? priorComparison?.evidenceSummary ?? null;
+  }
+
+  const displayName = marketplaceDisplayNames[platform] ?? platform;
+  const hasActiveEvidence = evidenceSources.some((source) => source.listingStatus === "Active");
+  const hasOfficialEvidence = evidenceSources.some((source) => source.listingStatus === "Official");
+  if (hasActiveEvidence && hasOfficialEvidence) {
+    return `${displayName} has active or official evidence, but no verified sold comps for this final listing.`;
+  }
+  if (hasActiveEvidence) {
+    return `${displayName} has active listing evidence, but no verified sold comps for this final listing.`;
+  }
+  if (hasOfficialEvidence) {
+    return `${displayName} has official guidance, but no verified sold comps for this final listing.`;
+  }
+  return summary ?? `${displayName} evidence is limited because sold comps were not verified.`;
+}
+
+function hasEvidenceSourceReference(source: StructuredEvidenceSource): boolean {
+  return Boolean(source.url || source.title);
 }
 
 type SupabaseServiceConfig = {

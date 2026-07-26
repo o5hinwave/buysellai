@@ -114,6 +114,174 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
     }
 }
 
+struct MarketplaceListingPlaybook: Sendable, Hashable {
+    let marketplace: Marketplace
+    let titleCharacterLimit: Int
+    let titleFormula: String
+    let descriptionGuidance: String
+    let requiredFields: [String]
+    let highImpactOptionalFields: [String]
+    let recommendedPhotoSequence: [ItemPhotoRole]
+    let pricingFormat: String
+    let shippingOrPickupGuidance: String
+    let feeModelSourceTitle: String
+    let feeModelLastChecked: String
+    let officialPostURLString: String
+    let officialHowToURLString: String
+    let ruleSourceURLs: [String]
+    let ruleSourceLastVerified: String
+    let postingSurface: MarketplacePostingSurface
+}
+
+extension Marketplace {
+    var listingPlaybook: MarketplaceListingPlaybook {
+        let profile = optimizationProfile
+        let evidence = playbookEvidence
+        let destination = postingDestination
+
+        return MarketplaceListingPlaybook(
+            marketplace: self,
+            titleCharacterLimit: profile.titleMaxCharacters,
+            titleFormula: profile.titleFormula,
+            descriptionGuidance: profile.featuredGuidance,
+            requiredFields: listingRequiredFields,
+            highImpactOptionalFields: highImpactListingFields,
+            recommendedPhotoSequence: recommendedPhotoSequence,
+            pricingFormat: "List at, likely sells for, take-home estimate, and lowest fair offer.",
+            shippingOrPickupGuidance: listingShippingOrPickupGuidance,
+            feeModelSourceTitle: evidence.feeModelSourceTitle,
+            feeModelLastChecked: evidence.feeModelLastChecked,
+            officialPostURLString: destination.postURLString,
+            officialHowToURLString: destination.howToURLString,
+            ruleSourceURLs: Self.uniqueSourceURLs([
+                destination.howToURLString,
+                evidence.feeModelSourceURL
+            ]),
+            ruleSourceLastVerified: destination.lastChecked,
+            postingSurface: destination.postingSurface
+        )
+    }
+
+    private var listingRequiredFields: [String] {
+        switch self {
+        case .ebay:
+            ["Title", "Category", "Condition", "Item specifics", "Model or product identifier", "Shipping or pickup"]
+        case .craigslist:
+            ["Title", "Price", "Pickup area", "Condition", "Full-item photo"]
+        case .facebook:
+            ["Title", "Price", "Category", "Condition", "Pickup area", "Photos"]
+        case .poshmark:
+            ["Brand", "Category", "Size", "Condition", "Cover photo", "Description"]
+        case .mercari:
+            ["Title", "Category", "Brand when known", "Condition", "Price", "Shipping choice", "Photos"]
+        case .offerup:
+            ["Title", "Price", "Category", "Condition", "Pickup or shipping preference", "Photos"]
+        case .depop:
+            ["Brand when known", "Size", "Condition", "Category", "Price", "Photos"]
+        case .whatnot:
+            ["Category", "Item identity", "Condition", "Starting price", "Photo or live-sale asset"]
+        case .grailed:
+            ["Designer or brand", "Size", "Condition", "Category", "Measurements or fit notes", "Photos"]
+        case .reverb:
+            ["Brand", "Model", "Year when known", "Condition", "Working status", "Shipping safety", "Photos"]
+        case .etsy:
+            ["Handmade, vintage, or supply fit", "Title", "Category", "Materials", "Price", "Photos"]
+        case .stockx:
+            ["Exact model", "Style code or SKU", "Size", "Box condition", "Authenticity details"]
+        case .goat:
+            ["Exact model", "Style code or SKU", "Size", "Box condition", "Authenticity details"]
+        case .kidizen:
+            ["Marketplace unavailable"]
+        case .vinted:
+            ["Brand when known", "Size", "Condition", "Category", "Price", "Photos"]
+        case .vestiaire:
+            ["Brand", "Category", "Condition", "Authenticity details", "Materials", "Photos"]
+        case .therealreal:
+            ["Brand", "Category", "Condition", "Authenticity details", "Consignment handoff details"]
+        case .swappa:
+            ["Exact device", "Storage", "Carrier or unlocked status", "Battery condition", "Functional checks", "Photos"]
+        case .tradesy:
+            ["Marketplace unavailable"]
+        case .chairish:
+            ["Title", "Dimensions", "Materials", "Maker or period when known", "Condition", "Freight or pickup notes", "Photos"]
+        case .bonanza:
+            ["Title", "Category", "Condition", "Price", "Shipping", "Photos"]
+        case .curtsy:
+            ["Brand", "Size", "Condition", "Category", "Price", "Photos"]
+        case .nextdoor:
+            ["Title", "Price", "Pickup area", "Condition", "Photos"]
+        case .amazon:
+            ["Product identifier", "Condition", "Category", "Fulfillment choice", "Account fit"]
+        case .shopify:
+            ["Product title", "Price", "Description", "Photos", "Fulfillment notes"]
+        case .rubylane:
+            ["Title", "Category", "Age or maker", "Condition", "Materials", "Photos"]
+        case .tcgplayer:
+            ["Set", "Card number", "Printing or finish", "Language", "Condition", "Photos"]
+        }
+    }
+
+    private var highImpactListingFields: [String] {
+        switch self {
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            ["Negotiability", "Delivery availability", "Dimensions", "Flaw notes"]
+        case .poshmark, .depop, .grailed, .vinted, .curtsy:
+            ["Measurements", "Fabric or material", "Style keywords", "Flaws"]
+        case .stockx, .goat:
+            ["Receipt or provenance", "Original box photos", "Sole and label photos"]
+        case .reverb:
+            ["Serial number", "Included accessories", "Cosmetic wear", "Packing plan"]
+        case .swappa:
+            ["IMEI-safe verification", "Battery health", "Activation lock status", "Ports and scratches"]
+        case .chairish, .rubylane:
+            ["Maker marks", "Period", "Restoration notes", "Scale photo"]
+        case .tcgplayer:
+            ["Centering", "Surface flaws", "Grading slab", "Edition notes"]
+        default:
+            ["Brand", "Model", "Dimensions", "Included accessories", "Visible flaws"]
+        }
+    }
+
+    private var recommendedPhotoSequence: [ItemPhotoRole] {
+        switch self {
+        case .stockx, .goat:
+            [.cover, .label, .included, .condition]
+        case .swappa, .reverb:
+            [.cover, .label, .condition, .included]
+        case .chairish, .rubylane:
+            [.cover, .fullItem, .label, .condition]
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            [.cover, .fullItem, .condition]
+        case .tcgplayer:
+            [.cover, .condition, .label]
+        default:
+            [.cover, .fullItem, .label, .included, .condition]
+        }
+    }
+
+    private var listingShippingOrPickupGuidance: String {
+        switch self {
+        case .facebook, .craigslist, .offerup, .nextdoor:
+            "Use pickup first. Add nearby area, delivery availability, and whether price is firm."
+        case .chairish:
+            "Call out dimensions and whether local pickup, freight, or buyer-arranged shipping is best."
+        case .therealreal:
+            "Treat as consignment handoff rather than a normal self-posted listing."
+        case .stockx, .goat, .swappa, .reverb, .tcgplayer:
+            "Package carefully and include platform-required condition or authenticity details before posting."
+        default:
+            "Use the marketplace shipping flow unless the item is large, fragile, or local-pickup friendly."
+        }
+    }
+
+    private static func uniqueSourceURLs(_ values: [String]) -> [String] {
+        values.reduce(into: [String]()) { result, value in
+            guard result.contains(value) == false else { return }
+            result.append(value)
+        }
+    }
+}
+
 extension DetectedItem {
     var localPickupNeedScore: Int {
         switch category {

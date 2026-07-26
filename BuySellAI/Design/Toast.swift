@@ -10,12 +10,14 @@ enum ToastStyle: Equatable {
     case success
     case error
     case info
+    case warning
 
     var tint: Color {
         switch self {
         case .success: Color.brand.success
         case .error: Color.brand.destructive
         case .info: Color.brand.info
+        case .warning: Color.brand.warning
         }
     }
 
@@ -24,6 +26,7 @@ enum ToastStyle: Equatable {
         case .success: "checkmark.circle.fill"
         case .error: "exclamationmark.triangle.fill"
         case .info: "info.circle.fill"
+        case .warning: "camera.metering.unknown"
         }
     }
 }

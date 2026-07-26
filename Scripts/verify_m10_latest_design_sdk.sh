@@ -185,7 +185,7 @@ require_chips_marker ".nativeRoundedButtonBackground("
 require_chips_marker ".nativeGlassButtonStyle(.standard)"
 require_app_symbol_marker "enum AppSymbol"
 require_app_symbol_marker "static let familiarSellingSymbols"
-require_app_symbol_marker 'static let snapPhoto = "camera.viewfinder"'
+require_app_symbol_marker 'static let snapPhoto = "camera.fill"'
 require_app_symbol_marker 'static let answer = "message.fill"'
 require_app_symbol_marker 'static let copy = "doc.on.doc.fill"'
 require_home_marker ".listStyle(.insetGrouped)"
@@ -239,7 +239,7 @@ require_marketplace_estimator_marker '"hand.tap.fill"'
 require_tutorial_marker "private struct CompactGuideGraphic"
 require_tutorial_marker "private struct TutorialStepRow"
 require_tutorial_marker "TutorialStep.steps"
-require_tutorial_marker 'Text("Sell anything in three taps.".localized)'
+require_tutorial_marker 'Text("Take a picture of anything.".localized)'
 require_tutorial_marker 'Text("Start selling".localized)'
 require_tutorial_marker 'TextActionButton(title: "Skip", minWidth: 64)'
 require_tutorial_marker ".buttonStyle(.borderedProminent)"

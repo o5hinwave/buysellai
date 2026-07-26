@@ -63,9 +63,13 @@ final class ArchitectureGuardrailTests: XCTestCase {
             #"\bInventory\b"#,
             #"\bProfit\b"#,
             #"\bTax\b"#,
-            #"\bSold\b"#,
+            #"\bSold\s+(tab|tabs|dashboard|dashboards|section|sections)\b"#,
             #"\bPro\s+plan\b"#,
+            #"\b[Ss]ubscribe\b"#,
             #"\bsubscription\b"#,
+            #"\btrial\b"#,
+            #"\bcredit\s+card\b"#,
+            #"\bunlock\s+(?:more|all|premium|plus|pro)\b"#,
             #"\bupsell\b"#,
             #"\breferral\b"#,
             #"\bcoach\s+mark\b"#,
@@ -77,6 +81,56 @@ final class ArchitectureGuardrailTests: XCTestCase {
         ]
 
         try assertNoMatches(patterns, in: appTextFiles())
+    }
+
+    func testFuturePaidAccessHasNoActivePurchaseSurface() throws {
+        let forbiddenPurchaseAPIs = [
+            #"\bSubscriptionStoreView\b"#,
+            #"\bProduct\.products\b"#,
+            #"\.purchase\s*\("#,
+            #"\bSKPaymentQueue\b"#,
+            #"\bSKProductsRequest\b"#,
+            #"\bStoreView\s*\("#,
+            #"\bPaywall\b"#,
+            #"\bPurchaseButton\b"#
+        ]
+
+        try assertNoMatches(forbiddenPurchaseAPIs, in: appSwiftFiles())
+
+        for sourceFile in try appSwiftFiles() {
+            let text = try String(contentsOf: sourceFile, encoding: .utf8)
+            guard text.range(of: #"\bimport\s+StoreKit\b"#, options: .regularExpression) != nil else {
+                continue
+            }
+
+            XCTAssertEqual(
+                relativePath(sourceFile),
+                "BuySellAI/Features/Settings/SettingsView.swift",
+                "\(relativePath(sourceFile)) imports StoreKit outside the review prompt surface"
+            )
+            XCTAssertNotNil(text.range(of: "SKStoreReviewController.requestReview(in: scene)"))
+        }
+    }
+
+    func testEarlyAccessMessagingStaysOutOfPhotoToListingFlow() throws {
+        let flowFiles = [
+            "BuySellAI/Features/Home/HomeView.swift",
+            "BuySellAI/Features/Camera/CameraView.swift",
+            "BuySellAI/Features/SnapResult/SnapResultSheet.swift",
+            "BuySellAI/Features/ItemQuestions/ItemQuestionsSheet.swift",
+            "BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift",
+            "BuySellAI/Features/Listing/ListingSheet.swift"
+        ].map(projectURL)
+
+        try assertNoMatches([
+            #"\b[Ff]ree during early access\b"#,
+            #"\b[Ee]arly access\b"#,
+            #"\b[Ff]ull access right now\b"#
+        ], in: flowFiles)
+
+        let settings = try String(contentsOf: projectURL("BuySellAI/Features/Settings/SettingsView.swift"), encoding: .utf8)
+        XCTAssertNotNil(settings.range(of: #"title: "Free during early access""#))
+        XCTAssertNotNil(settings.range(of: #"value: "Full access right now""#))
     }
 
     func testAppCopyAvoidsForbiddenToneWords() throws {

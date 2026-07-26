@@ -23,6 +23,16 @@ export type JsonSchema = Record<string, unknown>;
 export type GeminiTool = Record<string, Record<string, unknown>>;
 export const geminiGroundingSearchQueriesKey = "__geminiGroundingSearchQueries";
 export const geminiGroundingSourcesKey = "__geminiGroundingSources";
+export const geminiDefaultTextModel = "gemini-2.5-flash";
+
+export const nanoBananaImageModels = {
+  lite: "gemini-3.1-flash-lite-image",
+  balanced: "gemini-3.1-flash-image",
+  pro: "gemini-3-pro-image",
+  legacy: "gemini-2.5-flash-image",
+} as const;
+
+export const nanoBananaDefaultImageModel = nanoBananaImageModels.balanced;
 
 type GeminiRequestOptions = {
   tools?: GeminiTool[];
@@ -39,7 +49,7 @@ export async function generateJsonWithGemini(
 ): Promise<Record<string, unknown>> {
   const apiKey = requireEnv("GEMINI_API_KEY");
   const model = options.model?.trim() || Deno.env.get("GEMINI_MODEL")?.trim() ||
-    "gemini-2.5-flash";
+    geminiDefaultTextModel;
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const timeoutMs = timeoutFromEnv("GEMINI_TIMEOUT_MS", 18_000);
@@ -113,7 +123,7 @@ function parseModelJson(text: string): Record<string, unknown> {
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(unfenced);
+    parsed = JSON.parse(jsonObjectText(unfenced));
   } catch {
     throw new HttpError("Provider response was not valid model JSON", 502);
   }
@@ -123,6 +133,15 @@ function parseModelJson(text: string): Record<string, unknown> {
   }
 
   return parsed as Record<string, unknown>;
+}
+
+function jsonObjectText(text: string): string {
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return text.slice(firstBrace, lastBrace + 1);
+  }
+  return text;
 }
 
 function attachGroundingMetadata(

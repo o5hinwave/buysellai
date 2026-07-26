@@ -5,6 +5,8 @@ import Foundation
 @Observable
 final class SnapResultStore {
     typealias AnalyzeHandler = (Data, String?) async throws -> AnalyzeResponse
+    typealias AnalyzeWithEvidenceHandler = (Data, NativeScanEvidence?, String?) async throws -> AnalyzeResponse
+    typealias ScanEvidenceHandler = (Data) async -> NativeScanEvidence?
 
     enum Phase: Equatable {
         case idle
@@ -20,23 +22,49 @@ final class SnapResultStore {
     var priceText = ""
     var analysisDetails: AnalyzeIntelligence?
     var analysisGuidance: String?
+    var nativeScanEvidence: NativeScanEvidence?
+    var photoQualityPrompt: String?
+    var confirmedLikelyMatchName: String?
+    var entitlementSnapshot: EntitlementSnapshot?
     var showStillWorking = false
 
-    private let analyzeHandler: AnalyzeHandler
+    private let analyzeHandler: AnalyzeWithEvidenceHandler
+    private let scanEvidenceHandler: ScanEvidenceHandler
     private let stillWorkingDelayNanoseconds: UInt64
     private var analysisGeneration = 0
     private var stillWorkingTask: Task<Void, Never>?
 
     init(
         imageData: Data,
-        stillWorkingDelayNanoseconds: UInt64 = 6_000_000_000,
-        analyzeHandler: @escaping AnalyzeHandler = { imageData, accessToken in
-            try await APIClient.shared.analyze(image: imageData, accessToken: accessToken)
+        stillWorkingDelayNanoseconds: UInt64 = 16_000_000_000,
+        scanEvidenceHandler: @escaping ScanEvidenceHandler = { imageData in
+            await NativeScanAnalyzer.evidence(from: imageData)
+        },
+        analyzeHandler: @escaping AnalyzeWithEvidenceHandler = { imageData, nativeScanEvidence, accessToken in
+            try await APIClient.shared.analyze(
+                image: imageData,
+                nativeScanEvidence: nativeScanEvidence,
+                accessToken: accessToken
+            )
         }
     ) {
         self.imageData = imageData
         self.stillWorkingDelayNanoseconds = stillWorkingDelayNanoseconds
+        self.scanEvidenceHandler = scanEvidenceHandler
         self.analyzeHandler = analyzeHandler
+    }
+
+    init(
+        imageData: Data,
+        stillWorkingDelayNanoseconds: UInt64 = 16_000_000_000,
+        analyzeHandler: @escaping AnalyzeHandler
+    ) {
+        self.imageData = imageData
+        self.stillWorkingDelayNanoseconds = stillWorkingDelayNanoseconds
+        self.scanEvidenceHandler = { _ in nil }
+        self.analyzeHandler = { imageData, _, accessToken in
+            try await analyzeHandler(imageData, accessToken)
+        }
     }
 
     func analyzeIfNeeded(accessToken: String?) async {
@@ -53,6 +81,10 @@ final class SnapResultStore {
         item = nil
         analysisDetails = nil
         analysisGuidance = nil
+        nativeScanEvidence = nil
+        photoQualityPrompt = nil
+        confirmedLikelyMatchName = nil
+        entitlementSnapshot = nil
 
         stillWorkingTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: stillWorkingDelayNanoseconds)
@@ -63,7 +95,11 @@ final class SnapResultStore {
         }
 
         do {
-            let response = try await analyzeHandler(imageData, accessToken).validatedForDisplay()
+            let evidence = await scanEvidenceHandler(imageData)
+            guard generation == analysisGeneration else { return }
+            nativeScanEvidence = evidence
+            photoQualityPrompt = evidence?.photoQuality?.fixPrompt
+            let response = try await analyzeHandler(imageData, evidence, accessToken).validatedForDisplay()
             guard generation == analysisGeneration else { return }
             cancelStillWorkingTask()
             guard let priceEstimate = Self.listingPriceEstimate(from: response.currentPrice) else {
@@ -79,8 +115,19 @@ final class SnapResultStore {
             nameText = detected.name
             priceText = NSDecimalNumber(decimal: detected.priceEstimate).stringValue
             analysisDetails = response.analysis
-            analysisGuidance = response.analysis?.displayHint
+            analysisGuidance = photoQualityPrompt ?? response.analysis?.displayHint
+            entitlementSnapshot = response.entitlement
             phase = .success
+            ProductAnalytics.record(
+                .identificationCompleted,
+                properties: [
+                    "category": detected.category.rawValue,
+                    "condition": detected.condition.rawValue,
+                    "likely_match_count": "\(response.analysis?.likelyMatches.count ?? 0)",
+                    "missing_fact_count": "\(response.analysis?.missingFacts.count ?? 0)",
+                    "price_bucket": Self.priceBucket(for: detected.priceEstimate)
+                ]
+            )
             AnalysisFeedback.performSuccess()
         } catch let error where APIError.isCancellation(error) {
             guard generation == analysisGeneration else { return }
@@ -102,6 +149,7 @@ final class SnapResultStore {
         guard var edited = item else { return }
         edited.category = edited.category.next()
         item = edited
+        recordIdentificationCorrection(field: "category", item: edited)
     }
 
     func cycleCondition() {
@@ -109,6 +157,7 @@ final class SnapResultStore {
         guard var edited = item else { return }
         edited.condition = edited.condition.next()
         item = edited
+        recordIdentificationCorrection(field: "condition", item: edited)
     }
 
     func selectCategory(_ category: Category) {
@@ -116,6 +165,7 @@ final class SnapResultStore {
         guard var edited = item else { return }
         edited.category = category
         item = edited
+        recordIdentificationCorrection(field: "category", item: edited)
     }
 
     func selectCondition(_ condition: Condition) {
@@ -123,12 +173,17 @@ final class SnapResultStore {
         guard var edited = item else { return }
         edited.condition = condition
         item = edited
+        recordIdentificationCorrection(field: "condition", item: edited)
     }
 
     func selectLikelyMatch(_ match: AnalyzeLikelyMatch) {
         guard let cleanMatch = match.sanitizedForDisplay() else { return }
+        confirmedLikelyMatchName = cleanMatch.name
         nameText = cleanMatch.name
         commitEdits()
+        if let item {
+            recordIdentificationCorrection(field: "likely_match", item: item)
+        }
         if let details = analysisDetails {
             analysisDetails = details.acceptingLikelyMatch(cleanMatch)
             analysisGuidance = analysisDetails?.displayHint
@@ -137,6 +192,7 @@ final class SnapResultStore {
 
     func commitEdits(priceLocale: Locale = .current) {
         guard var edited = item else { return }
+        let original = edited
         let trimmedName = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedName.isEmpty == false {
             edited.name = trimmedName
@@ -148,7 +204,14 @@ final class SnapResultStore {
             edited.priceEstimate = priceEstimate
         }
         priceText = NSDecimalNumber(decimal: edited.priceEstimate).stringValue
+        if edited.name != original.name,
+           confirmedLikelyMatchName != edited.name {
+            confirmedLikelyMatchName = nil
+        }
         item = edited
+        if edited != original {
+            recordIdentificationCorrection(field: "manual_edit", item: edited)
+        }
     }
 
     static func priceDecimal(from text: String, locale: Locale = .current) -> Decimal? {
@@ -193,5 +256,30 @@ final class SnapResultStore {
     private func cancelStillWorkingTask() {
         stillWorkingTask?.cancel()
         stillWorkingTask = nil
+    }
+
+    private func recordIdentificationCorrection(field: String, item: DetectedItem) {
+        ProductAnalytics.record(
+            .identificationCorrected,
+            properties: [
+                "field": field,
+                "category": item.category.rawValue,
+                "condition": item.condition.rawValue,
+                "price_bucket": Self.priceBucket(for: item.priceEstimate)
+            ]
+        )
+    }
+
+    private static func priceBucket(for price: Decimal) -> String {
+        if price < 25 {
+            return "under_25"
+        }
+        if price < 100 {
+            return "25_to_99"
+        }
+        if price < 500 {
+            return "100_to_499"
+        }
+        return "500_plus"
     }
 }

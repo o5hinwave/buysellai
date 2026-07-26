@@ -465,6 +465,67 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
         }
     }
 
+    private static let postingDestinationLastChecked = "2026-07-25"
+
+    var postingDestination: MarketplacePostingDestination {
+        switch self {
+        case .ebay:
+            destination(post: "https://www.ebay.com/sl/sell", help: "https://www.ebay.com/help/selling/listings/creating-listing?id=4105", checked: Self.postingDestinationLastChecked)
+        case .craigslist:
+            destination(post: "https://post.craigslist.org/", help: "https://www.craigslist.org/about/help/posting/create", checked: Self.postingDestinationLastChecked)
+        case .facebook:
+            destination(post: "https://www.facebook.com/marketplace/create/item", help: "https://www.facebook.com/help/561376580709359", checked: Self.postingDestinationLastChecked)
+        case .poshmark:
+            destination(post: "https://poshmark.com/create-listing", help: "https://support.poshmark.com/s/article/894455911?language=en_US", checked: Self.postingDestinationLastChecked)
+        case .mercari:
+            destination(post: "https://www.mercari.com/sell/", help: "https://www.mercari.com/us/help_center/article/169/", checked: Self.postingDestinationLastChecked)
+        case .offerup:
+            destination(post: "https://offerup.com/", help: "https://help.offerup.com/hc/en-us/articles/360031987592-Post-an-item-to-sell", checked: Self.postingDestinationLastChecked, postingSurface: .appFirst)
+        case .depop:
+            destination(post: "https://www.depop.com/sell/", help: "https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item", checked: Self.postingDestinationLastChecked)
+        case .whatnot:
+            destination(post: "https://www.whatnot.com/sell", help: "https://help.whatnot.com/hc/en-us/articles/8442834600333-Apply-to-sell-on-Whatnot", checked: Self.postingDestinationLastChecked, postingSurface: .appFirst)
+        case .grailed:
+            destination(post: "https://www.grailed.com/sell", help: "https://support.grailed.com/hc/en-us/articles/30282427510797-How-do-I-sell-an-item", checked: Self.postingDestinationLastChecked)
+        case .reverb:
+            destination(post: "https://reverb.com/sell", help: "https://help.reverb.com/hc/en-us/articles/40917662266779-How-do-I-list-my-item-on-Reverb", checked: Self.postingDestinationLastChecked)
+        case .etsy:
+            destination(post: "https://www.etsy.com/your/shops/me/listing-editor", help: "https://help.etsy.com/hc/en-us/articles/115015628707-How-to-Create-a-Listing", checked: Self.postingDestinationLastChecked)
+        case .stockx:
+            destination(post: "https://stockx.com/sell", help: "https://stockx.com/help/home", checked: Self.postingDestinationLastChecked)
+        case .goat:
+            destination(post: "https://www.goat.com/sell", help: "https://support.goat.com/hc/en-us/articles/115004771108-How-do-I-submit-items-to-be-listed-for-sale", checked: Self.postingDestinationLastChecked, postingSurface: .appFirst)
+        case .kidizen:
+            destination(post: "https://www.kidizen.com/", help: "https://www.ecommercebytes.com/2024/10/30/kids-secondhand-clothing-marketplace-abruptly-shuts-down/", checked: Self.postingDestinationLastChecked, postingSurface: .unavailable)
+        case .vinted:
+            destination(post: "https://www.vinted.com/items/new", help: "https://www.vinted.com/help/26-selling-basics", checked: Self.postingDestinationLastChecked)
+        case .vestiaire:
+            destination(post: "https://www.vestiairecollective.com/sell/", help: "https://faq.vestiairecollective.com/hc/en-gb", checked: Self.postingDestinationLastChecked)
+        case .therealreal:
+            destination(post: "https://www.therealreal.com/sell", help: "https://www.therealreal.com/faq/consign", checked: Self.postingDestinationLastChecked, postingSurface: .consignment)
+        case .swappa:
+            destination(post: "https://swappa.com/listing/create", help: "https://swappa.com/faq/answer/how-to-sell", checked: Self.postingDestinationLastChecked)
+        case .tradesy:
+            destination(post: "https://www.vestiairecollective.com/", help: "https://www.vogue.com/article/vestiaire-collective-supercharges-us-push-by-shutting-down-tradesy", checked: Self.postingDestinationLastChecked, postingSurface: .unavailable)
+        case .chairish:
+            destination(post: "https://www.chairish.com/product/create", help: "https://support.chairish.com/hc/en-us/articles/44165603442321-Chairish-Selling-Plans-Commission-Rate-Overview", checked: Self.postingDestinationLastChecked)
+        case .bonanza:
+            destination(post: "https://www.bonanza.com/items/new", help: "https://support.bonanza.com/hc/en-us/articles/360001150572-The-A-Z-Guide-to-Selling-on-Bonanza", checked: Self.postingDestinationLastChecked)
+        case .curtsy:
+            destination(post: "https://curtsyapp.com/", help: "https://curtsyapp.com/help", checked: Self.postingDestinationLastChecked, postingSurface: .appFirst)
+        case .nextdoor:
+            destination(post: "https://nextdoor.com/for_sale_and_free/", help: "https://help.nextdoor.com/s/article/How-to-sell-an-item", checked: Self.postingDestinationLastChecked)
+        case .amazon:
+            destination(post: "https://sellercentral.amazon.com/inventory/ref=xx_invmgr_dnav_xx", help: "https://sellercentral.amazon.com/help/hub/reference/external/G200390640", checked: Self.postingDestinationLastChecked)
+        case .shopify:
+            destination(post: "https://admin.shopify.com/store/create/products/new", help: "https://help.shopify.com/en/manual/products/add-update-products", checked: Self.postingDestinationLastChecked)
+        case .rubylane:
+            destination(post: "https://www.rubylane.com/sell", help: "https://www.rubylane.com/info/faq", checked: Self.postingDestinationLastChecked)
+        case .tcgplayer:
+            destination(post: "https://store.tcgplayer.com/admin/product/manage", help: "https://help.tcgplayer.com/hc/en-us/articles/201357836-TCGplayer-Fees", checked: Self.postingDestinationLastChecked)
+        }
+    }
+
     var feeMultiplier: Decimal {
         switch self {
         case .ebay:
@@ -542,6 +603,21 @@ enum Marketplace: String, Codable, CaseIterable, Identifiable, Sendable, Hashabl
             sourceKind: sourceKind
         )
     }
+
+    private func destination(
+        post: String,
+        help: String,
+        checked: String,
+        postingSurface: MarketplacePostingSurface = .webAndApp
+    ) -> MarketplacePostingDestination {
+        MarketplacePostingDestination(
+            postURLString: post,
+            howToURLString: help,
+            sourceTitle: "\(displayName) posting help",
+            lastChecked: checked,
+            postingSurface: postingSurface
+        )
+    }
 }
 
 struct MarketplacePlaybookEvidence: Codable, Hashable, Sendable {
@@ -557,4 +633,27 @@ enum MarketplaceEvidenceSourceKind: String, Codable, Hashable, Sendable {
     case officialMarketplace
     case companyNews
     case retiredMarketplace
+}
+
+struct MarketplacePostingDestination: Codable, Hashable, Sendable {
+    let postURLString: String
+    let howToURLString: String
+    let sourceTitle: String
+    let lastChecked: String
+    let postingSurface: MarketplacePostingSurface
+
+    var postURL: URL? {
+        URL(string: postURLString)
+    }
+
+    var howToURL: URL? {
+        URL(string: howToURLString) ?? postURL
+    }
+}
+
+enum MarketplacePostingSurface: String, Codable, Hashable, Sendable {
+    case webAndApp
+    case appFirst
+    case consignment
+    case unavailable
 }

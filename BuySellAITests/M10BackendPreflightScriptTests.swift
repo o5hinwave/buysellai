@@ -52,6 +52,8 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "history?select=id&limit=1"))
         XCTAssertNotNil(script.range(of: "apple_auth_tokens?select=user_id&limit=1"))
         XCTAssertNotNil(script.range(of: "marketplace_research_cache?select=cache_key&limit=1"))
+        XCTAssertNotNil(script.range(of: "entitlement_config?select=config_key&limit=1"))
+        XCTAssertNotNil(script.range(of: "entitlement_usage_events?select=id&limit=1"))
         XCTAssertNotNil(script.range(of: "validate_analyze_response"))
         XCTAssertNotNil(script.range(of: "validate_listing_response"))
         XCTAssertNotNil(script.range(of: "currentPrice must be greater than zero"))
@@ -66,10 +68,10 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "title_body ="))
         XCTAssertNotNil(script.range(of: "description_body ="))
         XCTAssertNotNil(script.range(of: "M10 backend preflight passed"))
-        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache"))
+        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected functions: store-apple-token delete-account"))
-        XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache"))
+        XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "analyze item:"))
         XCTAssertNotNil(script.range(of: "analyze rejection contract: missing jpeg base64"))
         XCTAssertNotNil(script.range(of: "listing contract: title-description-plain-text"))
@@ -97,41 +99,49 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
-        XCTAssertNotNil(script.range(of: "DENO_BIN"))
-        XCTAssertNotNil(script.range(of: "command -v deno"))
-        XCTAssertNotNil(script.range(of: "npx --yes deno"))
-        XCTAssertNotNil(script.range(of: "DENO_DIR"))
-        XCTAssertNotNil(script.range(of: "deno-cache"))
-        XCTAssertNotNil(script.range(of: "deno or npx is required"))
-        XCTAssertNotNil(script.range(of: "deno_cmd"))
-        XCTAssertNotNil(script.range(of: "check"))
-        XCTAssertNotNil(script.range(of: "require_source_contains"))
-        XCTAssertNotNil(script.range(of: "supabase/functions/analyze-image/index.ts"))
-        XCTAssertNotNil(script.range(of: "supabase/functions/generate-listing/index.ts"))
-        XCTAssertNotNil(script.range(of: "supabase/functions/store-apple-token/index.ts"))
-        XCTAssertNotNil(script.range(of: "supabase/functions/delete-account/index.ts"))
-        XCTAssertNotNil(script.range(of: "supabase/functions/_shared/gemini.ts"))
-        XCTAssertNotNil(script.range(of: "attachGroundingMetadata"))
-        XCTAssertNotNil(script.range(of: "geminiGroundingSearchQueriesKey"))
-        XCTAssertNotNil(script.range(of: "geminiGroundingSourcesKey"))
-        XCTAssertNotNil(script.range(of: "tools: usesCachedResearch ? [] : ["))
-        XCTAssertNotNil(script.range(of: "{ url_context: {} }"))
-        XCTAssertNotNil(script.range(of: "{ google_search: {} }"))
-        XCTAssertNotNil(script.range(of: "result[geminiGroundingSearchQueriesKey]"))
-        XCTAssertNotNil(script.range(of: "result[geminiGroundingSourcesKey]"))
-        XCTAssertNotNil(script.range(of: "requireStructuredListingDraft"))
-        XCTAssertNotNil(script.range(of: "formatListingDraft"))
-        XCTAssertNotNil(script.range(of: "return jsonResponse({ listing, draft })"))
-        XCTAssertNotNil(script.range(of: "Supabase function Deno check passed"))
-        XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
-        XCTAssertNotNil(script.range(of: "listing research tools: google_search url_context gated-by-cache"))
-        XCTAssertNotNil(script.range(of: "listing research cache: Gemini grounding saved"))
-        XCTAssertNotNil(script.range(of: "listing draft: structured fields formatted deterministically"))
-        XCTAssertNotNil(script.range(of: "listing evidence sources: sold-comp guarded structured source/date/status/comparability"))
-        XCTAssertNotNil(script.range(of: "cleanEvidenceSources(result.evidenceSources, platform)"))
-        XCTAssertNotNil(script.range(of: "hasSoldCompEvidence"))
-        XCTAssertNotNil(script.range(of: "listingStatusFromPriceFields"))
-        XCTAssertNotNil(script.range(of: "For every factual market result you rely on, add one evidenceSources object"))
+        [
+            "DENO_BIN",
+            "command -v deno",
+            "npx --yes deno",
+            "DENO_DIR",
+            "deno-cache",
+            "deno or npx is required",
+            "deno_cmd",
+            "check",
+            "require_source_contains",
+            "supabase/functions/analyze-image/index.ts",
+            "supabase/functions/generate-listing/index.ts",
+            "supabase/functions/store-apple-token/index.ts",
+            "supabase/functions/delete-account/index.ts",
+            "supabase/functions/_shared/gemini.ts",
+            "supabase/functions/_shared/entitlements.ts",
+            "consumeEarlyAccessUsage",
+            "entitlement_config",
+            "entitlement_usage_events",
+            "x-buysell-device-id",
+            "attachGroundingMetadata",
+            "geminiGroundingSearchQueriesKey",
+            "geminiGroundingSourcesKey",
+            "const tools: GeminiTool[] = input.usesCachedResearch ? [] : [",
+            "{ url_context: {} }",
+            "{ google_search: {} }",
+            "result[geminiGroundingSearchQueriesKey]",
+            "result[geminiGroundingSourcesKey]",
+            "requireStructuredListingDraft",
+            "formatListingDraft",
+            "return jsonResponse({ listing, draft, entitlement })",
+            "Supabase function Deno check passed",
+            "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account",
+            "listing research tools: google_search url_context gated-by-cache",
+            "listing research cache: Gemini grounding saved",
+            "listing draft: structured fields formatted deterministically",
+            "listing evidence sources: sold-comp guarded structured source/date/status/comparability",
+            "early access: server-controlled entitlements with usage protection",
+            "cleanEvidenceSources(result.evidenceSources, platform)",
+            "hasSoldCompEvidence",
+            "listingStatusFromPriceFields",
+            "For every factual market result you rely on, add one evidenceSources object",
+        ].forEach { assert(script, contains: $0) }
     }
 
     func testSupabaseSchemaStaticCheckScriptCoversRLSGrantsIndexesAndSwiftParity() throws {
@@ -139,35 +149,46 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
-        XCTAssertNotNil(script.range(of: "20260717000100_create_remote_history_and_apple_auth_tokens.sql"))
-        XCTAssertNotNil(script.range(of: "20260718000100_harden_history_constraints.sql"))
-        XCTAssertNotNil(script.range(of: "20260718000200_harden_apple_auth_token_identity.sql"))
-        XCTAssertNotNil(script.range(of: "20260722000100_create_marketplace_research_cache.sql"))
-        XCTAssertNotNil(script.range(of: "BuySellAI/Data/Marketplace.swift"))
-        XCTAssertNotNil(script.range(of: "BuySellAI/Data/Models.swift"))
-        XCTAssertNotNil(script.range(of: "Postgres does not support ADD CONSTRAINT IF NOT EXISTS"))
-        XCTAssertNotNil(script.range(of: "alter\\s+table\\s+public\\.{table}\\s+enable\\s+row\\s+level\\s+security"))
-        XCTAssertNotNil(script.range(of: "alter\\s+table\\s+public\\.{table}\\s+force\\s+row\\s+level\\s+security"))
-        XCTAssertNotNil(script.range(of: "select\\s+auth\\.uid\\(\\)"))
-        XCTAssertNotNil(script.range(of: "history_user_created_at_idx"))
-        XCTAssertNotNil(script.range(of: "apple_auth_tokens_apple_user_id_unique"))
-        XCTAssertNotNil(script.range(of: "revoke all on table public.history from anon"))
-        XCTAssertNotNil(script.range(of: "grant select, insert, update, delete on table public.history to authenticated"))
-        XCTAssertNotNil(script.range(of: "revoke all on table public.apple_auth_tokens from authenticated"))
-        XCTAssertNotNil(script.range(of: "apple_auth_tokens must not grant authenticated table access"))
-        XCTAssertNotNil(script.range(of: "revoke all on table public.marketplace_research_cache from authenticated"))
-        XCTAssertNotNil(script.range(of: "marketplace_research_cache must not grant authenticated table access"))
-        XCTAssertNotNil(script.range(of: "require_value_parity(\"category\""))
-        XCTAssertNotNil(script.range(of: "require_value_parity(\"condition\""))
-        XCTAssertNotNil(script.range(of: "require_value_parity(\"marketplace\""))
-        XCTAssertNotNil(script.range(of: "Supabase schema static check passed"))
-        XCTAssertNotNil(script.range(of: "tables: history apple_auth_tokens marketplace_research_cache"))
-        XCTAssertNotNil(script.range(of: "rls: history apple_auth_tokens marketplace_research_cache forced"))
-        XCTAssertNotNil(script.range(of: "policy: history authenticated select-auth-uid"))
-        XCTAssertNotNil(script.range(of: "indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique"))
-        XCTAssertNotNil(script.range(of: "grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role"))
-        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache"))
-        XCTAssertNotNil(script.range(of: "swift parity: category condition marketplace"))
+        [
+            "20260717000100_create_remote_history_and_apple_auth_tokens.sql",
+            "20260718000100_harden_history_constraints.sql",
+            "20260718000200_harden_apple_auth_token_identity.sql",
+            "20260722000100_create_marketplace_research_cache.sql",
+            "20260724233029_early_access_entitlements.sql",
+            "20260725001000_add_history_listing_metadata.sql",
+            "20260725141629_add_history_identification_profile.sql",
+            "BuySellAI/Data/Marketplace.swift",
+            "BuySellAI/Data/Models.swift",
+            "Postgres does not support ADD CONSTRAINT IF NOT EXISTS",
+            "alter\\s+table\\s+public\\.{table}\\s+enable\\s+row\\s+level\\s+security",
+            "alter\\s+table\\s+public\\.{table}\\s+force\\s+row\\s+level\\s+security",
+            "select\\s+auth\\.uid\\(\\)",
+            "history_user_created_at_idx",
+            "apple_auth_tokens_apple_user_id_unique",
+            "revoke all on table public.history from anon",
+            "grant select, insert, update, delete on table public.history to authenticated",
+            "revoke all on table public.apple_auth_tokens from authenticated",
+            "apple_auth_tokens must not grant authenticated table access",
+            "revoke all on table public.marketplace_research_cache from authenticated",
+            "marketplace_research_cache must not grant authenticated table access",
+            "for table in (\"entitlement_config\", \"entitlement_usage_events\")",
+            "f\"{table} must not grant authenticated table access\"",
+            "entitlement_usage_identity_day_idx",
+            "entitlement_usage_user_day_idx",
+            "entitlement_usage_device_day_idx",
+            "entitlement_usage_ip_day_idx",
+            "require_value_parity(\"category\"",
+            "require_value_parity(\"condition\"",
+            "require_value_parity(\"marketplace\"",
+            "Supabase schema static check passed",
+            "tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events",
+            "rls: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events forced",
+            "policy: history authenticated select-auth-uid",
+            "indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique entitlement_usage_identity_day_idx entitlement_usage_user_day_idx entitlement_usage_device_day_idx entitlement_usage_ip_day_idx",
+            "grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role entitlement_config service_role entitlement_usage_events service_role",
+            "constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection",
+            "swift parity: category condition marketplace",
+        ].forEach { assert(script, contains: $0) }
     }
 
     func testSupabaseDeployHelperGuardsRemoteSchemaAndFunctionDeployment() throws {
@@ -190,14 +211,17 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260718000100_harden_history_constraints.sql"))
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260718000200_harden_apple_auth_token_identity.sql"))
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260722000100_create_marketplace_research_cache.sql"))
+        XCTAssertNotNil(script.range(of: "supabase/migrations/20260724233029_early_access_entitlements.sql"))
+        XCTAssertNotNil(script.range(of: "supabase/migrations/20260725001000_add_history_listing_metadata.sql"))
+        XCTAssertNotNil(script.range(of: "supabase/migrations/20260725141629_add_history_identification_profile.sql"))
         XCTAssertNotNil(script.range(of: "supabase secrets list --project-ref \"$project_ref\" --output json"))
         XCTAssertNotNil(script.range(of: "Supabase secret names could not be listed within"))
         XCTAssertNotNil(script.range(of: "supabase db push --linked --yes"))
         XCTAssertNotNil(script.range(of: "supabase functions deploy \"$function_name\" --project-ref \"$project_ref\" --use-api"))
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy passed"))
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy preflight passed"))
-        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache"))
-        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache"))
+        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
+        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
         XCTAssertNotNil(script.range(of: "functions: %s"))
         XCTAssertNotNil(script.range(of: "secrets: required names present"))
 
@@ -327,10 +351,10 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10_BACKEND_LOG"))
         XCTAssertNotNil(script.range(of: "/tmp/buysell-submit-readiness-backend.log"))
         XCTAssertNotNil(script.range(of: "M10 backend preflight passed"))
-        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache"))
+        XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected functions: store-apple-token delete-account"))
-        XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache"))
+        XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "analyze rejection contract: missing jpeg base64"))
         XCTAssertNotNil(script.range(of: "listing contract: title-description-plain-text"))
         XCTAssertNotNil(script.range(of: "listing rejection contract: platform category condition"))
@@ -357,5 +381,14 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent(path)
+    }
+
+    private func assert(
+        _ text: String,
+        contains expected: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertNotNil(text.range(of: expected), "Missing expected snippet: \(expected)", file: file, line: line)
     }
 }

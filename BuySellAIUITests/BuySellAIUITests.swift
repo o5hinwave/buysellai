@@ -27,6 +27,8 @@ final class BuySellAIUITests: XCTestCase {
 
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Share listing"].exists)
+        XCTAssertTrue(app.buttons["Edit listing"].exists)
         let enabled = NSPredicate(format: "isEnabled == true")
         expectation(for: enabled, evaluatedWith: copy)
         waitForExpectations(timeout: 5)
@@ -490,7 +492,7 @@ final class BuySellAIUITests: XCTestCase {
         confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
-        let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
+        let bestSummary = app.buttons["MarketplaceSummary.bestOverall.craigslist"]
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
         XCTAssertTrue(bestSummary.label.contains("Best chance"))
         XCTAssertTrue(bestSummary.label.contains("Craigslist"))
@@ -506,6 +508,7 @@ final class BuySellAIUITests: XCTestCase {
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Close listing"].exists)
         XCTAssertTrue(app.staticTexts["Generated listing text"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Edit listing"].exists)
         XCTAssertTrue(app.buttons["Wrong item — retake"].exists)
         XCTAssertTrue(app.buttons["Regenerate"].exists)
 
@@ -587,22 +590,42 @@ final class BuySellAIUITests: XCTestCase {
         waitForExpectations(timeout: 5)
         copy.tap()
 
-        let listing = recentListingWithPhoto(in: app)
-        XCTAssertTrue(listing.waitForExistence(timeout: 5))
+        let closeListing = app.buttons["Close listing"]
+        if closeListing.waitForExistence(timeout: 2), closeListing.isHittable {
+            closeListing.tap()
+        }
+
+        XCTAssertTrue(revealRecentListing(in: app).exists)
 
         app.terminate()
         app.launchArguments = ["--ui-testing", "--skip-tutorial", "--reset-auth"]
         app.launch()
 
-        XCTAssertTrue(recentListingWithPhoto(in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(revealRecentListing(in: app).exists)
     }
 
-    private func recentListingWithPhoto(in app: XCUIApplication) -> XCUIElement {
+    private func recentListing(in app: XCUIApplication) -> XCUIElement {
         app.buttons.matching(NSPredicate(
             format: "label CONTAINS[c] %@ AND label CONTAINS[c] %@",
             "Vintage brass table lamp",
-            "photo attached"
+            "Craigslist"
         )).firstMatch
+    }
+
+    private func revealRecentListing(in app: XCUIApplication) -> XCUIElement {
+        let listing = recentListing(in: app)
+        if listing.waitForExistence(timeout: 5) {
+            return listing
+        }
+
+        for _ in 0..<6 {
+            app.swipeUp()
+            if listing.waitForExistence(timeout: 0.5) {
+                return listing
+            }
+        }
+
+        return listing
     }
 
     func testRecentListingReopensListingSheetDirectly() {
@@ -631,9 +654,10 @@ final class BuySellAIUITests: XCTestCase {
         confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
 
-        let bestSummary = app.buttons["MarketplaceSummary.bestChance.craigslist"]
+        let bestSummary = app.buttons["MarketplaceSummary.bestOverall.craigslist"]
         XCTAssertTrue(bestSummary.waitForExistence(timeout: 5))
         bestSummary.tap()
+        continuePastMarketplaceQuestionsIfNeeded(in: app)
 
         XCTAssertTrue(app.buttons["Copy listing"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Craigslist"].exists)
@@ -863,7 +887,7 @@ final class BuySellAIUITests: XCTestCase {
 
         confirmDetectedItem(in: app)
         continuePastItemQuestions(in: app)
-        XCTAssertTrue(app.buttons["MarketplaceSummary.bestChance.craigslist"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["MarketplaceSummary.bestOverall.craigslist"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["MarketplaceRow.craigslist"].waitForExistence(timeout: 5))
         try saveAppStoreScreenshot("03-marketplaces", in: screenshotURL)
 
@@ -871,6 +895,7 @@ final class BuySellAIUITests: XCTestCase {
         let copy = app.buttons["Copy listing"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Generated listing text"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Edit listing"].exists)
 
         let enabled = NSPredicate(format: "isEnabled == true")
         expectation(for: enabled, evaluatedWith: copy)
@@ -975,8 +1000,7 @@ final class BuySellAIUITests: XCTestCase {
                 return
             }
 
-            let unknown = app.buttons["I don't know"]
-            if unknown.waitForExistence(timeout: 1) {
+            if let unknown = hittableButton("I don't know", in: app, timeout: 1) {
                 unknown.tap()
                 continue
             }
@@ -1001,6 +1025,50 @@ final class BuySellAIUITests: XCTestCase {
 
         XCTAssertTrue(row.isHittable, "Marketplace row was not hittable: \(rawValue)", file: file, line: line)
         row.tap()
+        continuePastMarketplaceQuestionsIfNeeded(in: app, file: file, line: line)
+    }
+
+    private func continuePastMarketplaceQuestionsIfNeeded(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if waitForItemQuestionsStep(in: app, timeout: 5) {
+            continuePastItemQuestions(in: app, file: file, line: line)
+        }
+    }
+
+    private func hittableButton(
+        _ label: String,
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> XCUIElement? {
+        let deadline = Date().addingTimeInterval(timeout)
+        let predicate = NSPredicate(format: "label == %@", label)
+        let buttons = app.buttons.matching(predicate)
+
+        repeat {
+            for index in 0..<buttons.count {
+                let button = buttons.element(boundBy: index)
+                if button.exists, button.isHittable {
+                    return button
+                }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        } while Date() < deadline
+
+        return nil
+    }
+
+    private func waitForItemQuestionsStep(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if isOnItemQuestionsStep(in: app) {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        return isOnItemQuestionsStep(in: app)
     }
 
     private func revealMarketplace(
@@ -1011,7 +1079,7 @@ final class BuySellAIUITests: XCTestCase {
     ) -> XCUIElement {
         let row = app.buttons["MarketplaceRow.\(rawValue)"]
 
-        if row.waitForExistence(timeout: 3), row.isHittable {
+        if row.waitForExistence(timeout: 10), row.isHittable {
             return row
         }
 

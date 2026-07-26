@@ -10,6 +10,13 @@ final class HistorySwiftDataTests: XCTestCase {
         let context = ModelContext(container)
 
         let suggestedPrice = try XCTUnwrap(Decimal(string: "19.99", locale: Locale(identifier: "en_US_POSIX")))
+        let identificationProfile = AnalyzeIdentificationProfile(
+            confirmedFacts: ["Brand: BrightHome", "Material: brass"],
+            likelyFacts: ["Likely 1970s style"],
+            unknownDetails: ["Check base stamp"],
+            evidenceNeeded: ["Photo of underside label"],
+            confidenceState: .stillChecking
+        )
         let entry = HistoryEntry(
             id: UUID(),
             createdAt: Date(),
@@ -19,7 +26,26 @@ final class HistorySwiftDataTests: XCTestCase {
             suggestedPrice: suggestedPrice,
             imageThumbnail: Data([1, 2, 3]),
             marketplace: .ebay,
-            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
+            listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.",
+            itemDetails: ItemDetailAnswers(labelOrBrand: "Brass", flaws: "Small scratch"),
+            listingDraft: GeneratedListingDraft(
+                title: "Brass Lamp",
+                description: "Brass lamp in good condition.",
+                evidenceSummary: "Checked recent sold lamps.",
+                evidenceSources: [
+                    ListingEvidenceSource(
+                        sourceMarketplace: "eBay",
+                        title: "Sold brass lamp",
+                        url: "https://example.com/sold-lamp",
+                        dateChecked: "2026-07-24",
+                        listingStatus: "sold",
+                        conditionAndVariant: "Good brass lamp",
+                        comparability: "Close match",
+                        price: Decimal(42)
+                    )
+                ]
+            ),
+            identificationProfile: identificationProfile
         )
 
         context.insert(HistoryEntryModel(entry: entry))
@@ -33,5 +59,11 @@ final class HistorySwiftDataTests: XCTestCase {
         XCTAssertEqual(fetched[0].entry.suggestedPrice, suggestedPrice)
         XCTAssertEqual(fetched[0].entry.marketplace, .ebay)
         XCTAssertEqual(fetched[0].entry.listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
+        XCTAssertEqual(fetched[0].entry.itemDetails?.labelOrBrand, "Brass")
+        XCTAssertEqual(fetched[0].entry.listingDraft?.evidenceSummary, "Checked recent sold lamps.")
+        XCTAssertEqual(fetched[0].entry.listingDraft?.evidenceSources?.first?.listingStatus, "sold")
+        XCTAssertEqual(fetched[0].entry.identificationProfile?.confirmedFacts, ["Brand: BrightHome", "Material: brass"])
+        XCTAssertEqual(fetched[0].entry.identificationProfile?.unknownDetails, ["Check base stamp"])
+        XCTAssertEqual(fetched[0].entry.identificationProfile?.confidenceState, .stillChecking)
     }
 }

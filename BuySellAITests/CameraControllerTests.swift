@@ -206,6 +206,20 @@ final class CameraControllerTests: XCTestCase {
         XCTAssertNil(importSource.range(of: "onCapture(data)", options: .caseInsensitive))
     }
 
+    func testTargetedScanCameraFallbackOffersSkipInsteadOfClose() throws {
+        let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
+
+        XCTAssertNotNil(source.range(of: #"var onSkipTargetedScan: (() -> Void)? = nil"#))
+        XCTAssertNotNil(source.range(of: #"private func closeOrSkipFallbackButton(sortPriority: Double) -> some View"#))
+        XCTAssertNotNil(source.range(of: #"if scanRequest != nil, let onSkipTargetedScan {"#))
+        XCTAssertNotNil(source.range(of: #"onSkipTargetedScan()"#))
+        XCTAssertNotNil(source.range(of: #"private var fallbackDismissTitle: String"#))
+        XCTAssertNotNil(source.range(of: #"scanRequest == nil ? "Close" : "Skip""#))
+        XCTAssertNotNil(source.range(of: #"Keeps going without this scan."#))
+        XCTAssertNotNil(source.range(of: #"fallbackPanel {"#))
+        XCTAssertNotNil(source.range(of: #"Label("Open Settings".localized, systemImage: "gearshape.fill")"#))
+    }
+
     func testCameraFlashToggleTaskIsOwnedAndCancelled() throws {
         let source = try String(contentsOf: projectURL("BuySellAI/Features/Camera/CameraView.swift"), encoding: .utf8)
 

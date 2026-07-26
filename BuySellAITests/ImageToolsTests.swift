@@ -60,6 +60,28 @@ final class ImageToolsTests: XCTestCase {
         XCTAssertGreaterThan(abs(Int(table.luminance) - Int(background.luminance)), 12)
     }
 
+    func testPhotoQualityAssessmentDetectsDarkSmallAndGlareImages() throws {
+        let dark = try makeSolidImage(width: 640, height: 480, color: UIColor(white: 0.05, alpha: 1))
+        let glare = try makeSolidImage(width: 640, height: 480, color: .white)
+        let small = try makeImage(width: 160, height: 120)
+
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: dark)?.issue, .tooDark)
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: glare)?.issue, .glare)
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: small)?.issue, .tooSmall)
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: dark)?.fixPrompt, "Move it into better light.")
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: glare)?.fixPrompt, "Tilt the item to remove glare.")
+        XCTAssertEqual(ImageTools.photoQualityAssessment(from: small)?.fixPrompt, "Step back so the whole item fits.")
+    }
+
+    func testPhotoQualityAssessmentAcceptsUsefulSamplePhoto() throws {
+        let assessment = try XCTUnwrap(ImageTools.photoQualityAssessment(from: ImageTools.sampleJPEG()))
+
+        XCTAssertTrue(assessment.isListingReady)
+        XCTAssertNil(assessment.fixPrompt)
+        XCTAssertEqual(assessment.width, 640)
+        XCTAssertEqual(assessment.height, 480)
+    }
+
     private func makeImage(width: CGFloat, height: CGFloat) throws -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
@@ -70,6 +92,15 @@ final class ImageToolsTests: XCTestCase {
             context.cgContext.fillEllipse(in: CGRect(x: width * 0.25, y: height * 0.2, width: width * 0.5, height: height * 0.5))
         }
         return image
+    }
+
+    private func makeSolidImage(width: CGFloat, height: CGFloat, color: UIColor) throws -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).image { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        }
     }
 
     private func pixel(in image: CGImage, x: Int, y: Int) throws -> Pixel {

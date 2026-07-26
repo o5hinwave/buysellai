@@ -22,10 +22,10 @@ print_pending_and_exit() {
     if [[ -n "${supabase_url:-}" ]]; then
         printf 'config: %s\n' "$config_path"
         printf 'project: %s\n' "$supabase_url"
-        printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
+        printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
         printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
         printf 'protected functions: store-apple-token delete-account\n'
-        printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
+        printf 'protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
     fi
     printf 'Complete real Supabase config, deployed schema migration, deployed Edge Functions including protected account functions, and an analyze sample image, then rerun without ALLOW_MISSING_BACKEND=1.\n'
     exit 0
@@ -462,6 +462,8 @@ probe_protected_function "delete-account" "${functions_base}/delete-account" "$w
 probe_protected_table "history" "${rest_base}/history?select=id&limit=1"
 probe_protected_table "apple_auth_tokens" "${rest_base}/apple_auth_tokens?select=user_id&limit=1"
 probe_protected_table "marketplace_research_cache" "${rest_base}/marketplace_research_cache?select=cache_key&limit=1"
+probe_protected_table "entitlement_config" "${rest_base}/entitlement_config?select=config_key&limit=1"
+probe_protected_table "entitlement_usage_events" "${rest_base}/entitlement_usage_events?select=id&limit=1"
 
 analyze_item="$(validate_analyze_response "$work_dir/analyze-response.json")" || fail "analyze-image response shape is invalid"
 validate_compare_response "$work_dir/compare-response.json" || fail "compare-marketplaces response shape is invalid"
@@ -470,10 +472,10 @@ listing_bytes="$(validate_listing_response "$work_dir/listing-response.json")" |
 printf 'M10 backend preflight passed\n'
 printf 'config: %s\n' "$config_path"
 printf 'project: %s\n' "$supabase_url"
-printf 'schema: history apple_auth_tokens marketplace_research_cache\n'
+printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
 printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'protected functions: store-apple-token delete-account\n'
-printf 'protected tables: history apple_auth_tokens marketplace_research_cache\n'
+printf 'protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
 printf 'analyze item: %s\n' "$analyze_item"
 printf 'analyze rejection contract: missing jpeg base64\n'
 printf 'marketplace compare contract: grounded candidates with evidence status\n'

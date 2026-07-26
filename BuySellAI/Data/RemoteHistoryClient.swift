@@ -192,7 +192,7 @@ actor RemoteHistoryClient {
 }
 
 private struct RemoteHistoryRecord: Codable {
-    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text"
+    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text,item_details,listing_draft,identification_profile"
 
     let id: UUID
     let createdAt: Date
@@ -203,6 +203,9 @@ private struct RemoteHistoryRecord: Codable {
     let imageThumbnailBase64: String?
     let marketplace: String
     let listingText: String
+    let itemDetails: ItemDetailAnswers?
+    let listingDraft: GeneratedListingDraft?
+    let identificationProfile: AnalyzeIdentificationProfile?
 
     init(entry: HistoryEntry) {
         self.id = entry.id
@@ -214,6 +217,9 @@ private struct RemoteHistoryRecord: Codable {
         self.imageThumbnailBase64 = entry.imageThumbnail?.base64EncodedString()
         self.marketplace = entry.marketplace.rawValue
         self.listingText = entry.listingText
+        self.itemDetails = entry.itemDetails?.sanitizedForUse
+        self.listingDraft = entry.listingDraft?.sanitizedForDisplay()
+        self.identificationProfile = entry.identificationProfile?.sanitizedForDisplay()
     }
 
     var entry: HistoryEntry {
@@ -226,7 +232,10 @@ private struct RemoteHistoryRecord: Codable {
             suggestedPrice: suggestedPrice,
             imageThumbnail: imageThumbnailBase64.flatMap { Data(base64Encoded: $0) },
             marketplace: Marketplace(apiValue: marketplace),
-            listingText: listingText
+            listingText: listingText,
+            itemDetails: itemDetails?.sanitizedForUse,
+            listingDraft: listingDraft?.sanitizedForDisplay(),
+            identificationProfile: identificationProfile?.sanitizedForDisplay()
         )
     }
 
@@ -240,6 +249,9 @@ private struct RemoteHistoryRecord: Codable {
         case imageThumbnailBase64 = "image_thumbnail_base64"
         case marketplace
         case listingText = "listing_text"
+        case itemDetails = "item_details"
+        case listingDraft = "listing_draft"
+        case identificationProfile = "identification_profile"
     }
 }
 

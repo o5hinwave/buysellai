@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import BuySellAI
 
 @MainActor
@@ -25,6 +26,218 @@ final class AppStoreFlowTransitionTests: XCTestCase {
             return XCTFail("Expected snap result flow sheet.")
         }
         XCTAssertEqual(context.imageData, imageData)
+    }
+
+    func testTargetedScanReturnsToItemQuestionsWithSupplementalPhotoAndOriginalPhotoPreserved() async throws {
+        let store = makeStore()
+        let originalData = Data([1, 2, 3])
+        let scanData = Data([9, 9, 9])
+        let analysis = AnalyzeIntelligence(
+            itemFacts: [],
+            missingFacts: ["barcode"],
+            photoPrompt: "Scan the barcode"
+        )
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            recommendationLabel: "Best overall",
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold lamp comp",
+                    url: "https://example.com/sold-lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "Sold",
+                    comparability: "Close match",
+                    price: Decimal(42)
+                )
+            ]
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: originalData,
+            preferredMarketplace: .ebay,
+            marketplaceComparison: comparison,
+            analysis: analysis,
+            answers: ItemDetailAnswers()
+        )
+        let context = try XCTUnwrap(store.itemQuestionsContext)
+        let request = try XCTUnwrap(analysis.targetedScanRequest)
+
+        store.startTargetedScan(
+            request: request,
+            context: context,
+            answers: ItemDetailAnswers()
+        )
+        XCTAssertTrue(store.isShowingCamera)
+
+        store.handleCapturedPhoto(scanData)
+        store.presentPendingCapturedPhoto()
+        await waitForTransitionTasks()
+
+        let updated = try XCTUnwrap(store.itemQuestionsContext)
+        XCTAssertEqual(updated.item, lamp)
+        XCTAssertEqual(updated.imageData, originalData)
+        XCTAssertEqual(updated.supplementalPhotos.count, 1)
+        XCTAssertEqual(updated.supplementalPhotos.first?.itemID, lamp.id)
+        XCTAssertEqual(updated.supplementalPhotos.first?.role, .label)
+        XCTAssertEqual(updated.supplementalPhotos.first?.imageData, scanData)
+        XCTAssertEqual(updated.marketplaceComparison, comparison)
+        XCTAssertTrue(updated.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
+        guard case .itemQuestions(let flowContext) = store.flowSheetContext else {
+            return XCTFail("Expected item questions flow sheet.")
+        }
+        XCTAssertEqual(flowContext.imageData, originalData)
+        XCTAssertEqual(flowContext.supplementalPhotos.first?.imageData, scanData)
+        XCTAssertEqual(flowContext.marketplaceComparison, comparison)
+    }
+
+    func testMarketplaceTargetedScanUsesSeparateAnsweredMarker() async throws {
+        let store = makeStore()
+        let originalData = Data([1, 2, 3])
+        let scanData = Data([8, 8, 8])
+        var answers = ItemDetailAnswers()
+        answers.markAnswered(.targetedScan)
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: originalData,
+            preferredMarketplace: .facebook,
+            answers: answers
+        )
+        let context = try XCTUnwrap(store.itemQuestionsContext)
+        let request = TargetedScanRequest(
+            prompt: "Show the whole item",
+            benefit: "Buyers will want to see this.",
+            role: .fullItem
+        )
+
+        store.startTargetedScan(
+            request: request,
+            context: context,
+            answers: answers,
+            answeredField: .marketplaceTargetedScan
+        )
+        store.handleCapturedPhoto(scanData)
+        store.presentPendingCapturedPhoto()
+        await waitForTransitionTasks()
+
+        let updated = try XCTUnwrap(store.itemQuestionsContext)
+        XCTAssertTrue(updated.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
+        XCTAssertTrue(updated.answers?.hasAnsweredOrSkipped(.marketplaceTargetedScan) ?? false)
+        XCTAssertEqual(updated.supplementalPhotos.first?.role, .fullItem)
+        XCTAssertEqual(updated.imageData, originalData)
+    }
+
+    func testPoorTargetedScanShowsReviewBeforeAttachingPhotoAndUsePhotoContinues() async throws {
+        let store = makeStore()
+        let originalData = Data([1, 2, 3])
+        let scanData = try makeSolidJPEG(color: UIColor(white: 0.05, alpha: 1))
+        let request = TargetedScanRequest(
+            prompt: "Scan the model label.",
+            benefit: "This can confirm the exact model.",
+            role: .label
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: originalData,
+            analysis: AnalyzeIntelligence(itemFacts: [], missingFacts: ["model"], photoPrompt: request.prompt),
+            answers: ItemDetailAnswers()
+        )
+        let context = try XCTUnwrap(store.itemQuestionsContext)
+
+        store.startTargetedScan(request: request, context: context, answers: ItemDetailAnswers())
+        store.handleCapturedPhoto(scanData)
+        store.presentPendingCapturedPhoto()
+        await waitForTransitionTasks()
+
+        guard case .targetedScanReview(let review) = store.flowSheetContext else {
+            return XCTFail("Expected targeted scan review before accepting poor photo.")
+        }
+        XCTAssertEqual(review.imageData, scanData)
+        XCTAssertEqual(review.request, request)
+        XCTAssertEqual(review.fixPrompt, "Move it into better light.")
+        XCTAssertEqual(store.itemQuestionsContext?.supplementalPhotos.count, 0)
+
+        store.useTargetedScanPhoto()
+
+        let updated = try XCTUnwrap(store.itemQuestionsContext)
+        XCTAssertEqual(updated.supplementalPhotos.count, 1)
+        XCTAssertEqual(updated.supplementalPhotos.first?.imageData, scanData)
+        XCTAssertTrue(updated.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
+    }
+
+    func testPoorTargetedScanReviewCanRetakeSameRequestWithoutSavingPhoto() async throws {
+        let store = makeStore()
+        let scanData = try makeSolidJPEG(color: UIColor(white: 0.05, alpha: 1))
+        let request = TargetedScanRequest(
+            prompt: "Scan the size tag.",
+            benefit: "This helps us match closer sold listings.",
+            role: .sizeTag
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: ImageTools.sampleJPEG(),
+            analysis: AnalyzeIntelligence(itemFacts: [], missingFacts: ["size"], photoPrompt: request.prompt),
+            answers: ItemDetailAnswers()
+        )
+        let context = try XCTUnwrap(store.itemQuestionsContext)
+
+        store.startTargetedScan(request: request, context: context, answers: ItemDetailAnswers())
+        store.handleCapturedPhoto(scanData)
+        store.presentPendingCapturedPhoto()
+        await waitForTransitionTasks()
+
+        guard case .targetedScanReview = store.flowSheetContext else {
+            return XCTFail("Expected targeted scan review.")
+        }
+
+        store.retakeTargetedScanPhoto()
+
+        XCTAssertTrue(store.isShowingCamera)
+        XCTAssertEqual(store.activeCameraScanRequest, request)
+        XCTAssertEqual(store.itemQuestionsContext?.supplementalPhotos.count, 0)
+        XCTAssertFalse(store.itemQuestionsContext?.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
+        guard case .itemQuestions = store.flowSheetContext else {
+            return XCTFail("Expected item questions behind retake camera.")
+        }
+    }
+
+    func testCameraDeniedTargetedScanSkipReturnsToSameQuestionFlowMarkedSkipped() throws {
+        let store = makeStore()
+        let originalData = ImageTools.sampleJPEG()
+        let request = TargetedScanRequest(
+            prompt: "Scan the model label.",
+            benefit: "This can confirm the exact model.",
+            role: .label
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: originalData,
+            analysis: AnalyzeIntelligence(itemFacts: [], missingFacts: ["model"], photoPrompt: request.prompt),
+            answers: ItemDetailAnswers()
+        )
+        let context = try XCTUnwrap(store.itemQuestionsContext)
+
+        store.startTargetedScan(request: request, context: context, answers: ItemDetailAnswers())
+        XCTAssertTrue(store.isShowingCamera)
+
+        store.skipActiveTargetedScanFromCamera()
+
+        XCTAssertFalse(store.isShowingCamera)
+        XCTAssertNil(store.activeCameraScanRequest)
+        let updated = try XCTUnwrap(store.itemQuestionsContext)
+        XCTAssertEqual(updated.imageData, originalData)
+        XCTAssertTrue(updated.supplementalPhotos.isEmpty)
+        XCTAssertTrue(updated.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
+        guard case .itemQuestions(let flowContext) = store.flowSheetContext else {
+            return XCTFail("Expected item questions after targeted scan skip.")
+        }
+        XCTAssertTrue(flowContext.answers?.hasAnsweredOrSkipped(.targetedScan) ?? false)
     }
 
     func testMarketplacePickerUpdatesSingleFlowSheetImmediately() {
@@ -86,6 +299,76 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         XCTAssertEqual(context.item, item)
         XCTAssertEqual(context.imageData, imageData)
         XCTAssertEqual(context.marketplace, .ebay)
+    }
+
+    func testMarketplaceComparisonSurvivesQuestionAndListingTransitions() {
+        let store = makeStore()
+        let comparison = MarketplaceComparison(
+            marketplace: .ebay,
+            recommendationLabel: "Best overall",
+            listPrice: Decimal(45),
+            compLowPrice: Decimal(30),
+            compMedianPrice: Decimal(42),
+            compHighPrice: Decimal(61),
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold brass lamp",
+                    url: "https://example.com/sold-lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "Sold",
+                    conditionAndVariant: "Good brass lamp",
+                    comparability: "Close match",
+                    price: Decimal(42)
+                )
+            ]
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: nil,
+            preferredMarketplace: .ebay,
+            marketplaceComparison: comparison
+        )
+
+        XCTAssertEqual(store.itemQuestionsContext?.marketplaceComparison, comparison)
+
+        store.presentListing(
+            item: lamp,
+            imageData: nil,
+            marketplace: .ebay,
+            marketplaceComparison: store.itemQuestionsContext?.marketplaceComparison
+        )
+
+        XCTAssertEqual(store.listingContext?.marketplaceComparison, comparison)
+        guard case .listing(let context) = store.flowSheetContext else {
+            return XCTFail("Expected listing flow sheet.")
+        }
+        XCTAssertEqual(context.marketplaceComparison, comparison)
+    }
+
+    func testListingDraftWarningCarriesIntoMarketplaceQuestionContext() throws {
+        let store = makeStore()
+        let draft = GeneratedListingDraft(
+            title: "Lamp",
+            description: "Lamp in good condition.",
+            missingInfoWarnings: ["Add model number before posting on eBay."]
+        )
+
+        store.presentItemQuestions(
+            item: lamp,
+            imageData: nil,
+            preferredMarketplace: .ebay,
+            listingDraft: draft,
+            answers: ItemDetailAnswers()
+        )
+
+        XCTAssertEqual(store.itemQuestionsContext?.listingDraft?.missingInfoWarnings, ["Add model number before posting on eBay."])
+        guard case .itemQuestions(let context) = store.flowSheetContext else {
+            return XCTFail("Expected item questions flow sheet.")
+        }
+        XCTAssertEqual(context.listingDraft?.missingInfoWarnings, ["Add model number before posting on eBay."])
     }
 
     func testMarketplaceQuestionsReuseRememberedPreferenceForSameMarketplaceOnly() throws {
@@ -161,6 +444,11 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         let secondStore = AppStore(defaults: defaults, flowTransitionDelayNanoseconds: transitionDelay)
         secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .ebay)
         XCTAssertEqual(secondStore.itemQuestionsContext?.answers?.marketplaceNote(for: .ebay), "Prefer fixed price")
+
+        secondStore.updateRememberedSellingPreference("  Auction is okay if the comps are strong.  ", for: .ebay)
+        secondStore.closeFlow()
+        secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .ebay)
+        XCTAssertEqual(secondStore.itemQuestionsContext?.answers?.marketplaceNote(for: .ebay), "Auction is okay if the comps are strong.")
 
         secondStore.closeFlow()
         secondStore.presentItemQuestions(item: lamp, imageData: nil, preferredMarketplace: .facebook)
@@ -275,6 +563,38 @@ final class AppStoreFlowTransitionTests: XCTestCase {
         XCTAssertEqual(store.session?.userID, "user-123")
     }
 
+    func testEarlyAccessEntitlementSnapshotPersistsForSettingsCopy() {
+        let suiteName = "AppStoreFlowTransitionTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+        defaults.removePersistentDomain(forName: suiteName)
+        let entitlement = EntitlementSnapshot(
+            state: .earlyAccess,
+            completeFeatureAccess: true,
+            futurePaidAccessEnabled: false,
+            remainingAnalyses: 12,
+            remainingAiActions: 33
+        )
+        let store = AppStore(
+            defaults: defaults,
+            flowTransitionDelayNanoseconds: transitionDelay
+        )
+
+        XCTAssertEqual(store.earlyAccessStatusValue, "Full access right now")
+
+        store.updateEntitlementSnapshot(entitlement)
+
+        XCTAssertEqual(store.latestEntitlementSnapshot, entitlement)
+        XCTAssertEqual(store.earlyAccessStatusValue, "12 analyses left today")
+
+        let reopenedStore = AppStore(
+            defaults: defaults,
+            flowTransitionDelayNanoseconds: transitionDelay
+        )
+
+        XCTAssertEqual(reopenedStore.latestEntitlementSnapshot, entitlement)
+        XCTAssertEqual(reopenedStore.earlyAccessStatusValue, "12 analyses left today")
+    }
+
     private var lamp: DetectedItem {
         DetectedItem(
             name: "Lamp",
@@ -296,5 +616,15 @@ final class AppStoreFlowTransitionTests: XCTestCase {
 
     private func waitForTransitionTasks() async {
         try? await Task.sleep(nanoseconds: transitionDelay * 3)
+    }
+
+    private func makeSolidJPEG(color: UIColor) throws -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 480), format: format).image { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 640, height: 480))
+        }
+        return try XCTUnwrap(image.jpegData(compressionQuality: 0.85))
     }
 }

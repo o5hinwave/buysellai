@@ -63,6 +63,13 @@ struct HistoryRow: View {
                 .lineLimit(metaLineLimit)
                 .minimumScaleFactor(0.82)
                 .multilineTextAlignment(.leading)
+
+            Text(HistoryAccessibilityText.savedPackageStatus(for: entry))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryText)
+                .lineLimit(metaLineLimit)
+                .minimumScaleFactor(0.82)
+                .multilineTextAlignment(.leading)
         }
     }
 
@@ -101,7 +108,7 @@ private struct HistoryPhotoPlaceholder: View {
             .overlay {
                 VStack(spacing: 1) {
                     Image(systemName: category?.placeholderSystemImage ?? AppSymbol.Flow.snapPhotoCompact)
-                        .font(.system(size: 19, weight: .semibold))
+                        .brandSymbol(.controlIcon)
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(Color.brand.primaryText)
                         .accessibilityHidden(true)
@@ -142,11 +149,12 @@ private func relativeDate(_ date: Date) -> String {
 enum HistoryAccessibilityText {
     static func rowLabel(for entry: HistoryEntry, relativeDate: String) -> String {
         String.localizedFormat(
-            "%@, %@, %@, %@",
+            "%@, %@, %@, %@, %@",
             entry.itemName,
             entry.marketplace.displayName,
             relativeDate,
-            thumbnailStatus(for: entry.imageThumbnail)
+            thumbnailStatus(for: entry.imageThumbnail),
+            savedPackageStatus(for: entry)
         )
     }
 
@@ -155,5 +163,19 @@ enum HistoryAccessibilityText {
             return "photo placeholder".localized
         }
         return "photo attached".localized
+    }
+
+    static func savedPackageStatus(for entry: HistoryEntry) -> String {
+        var parts = ["Listing saved".localized]
+        if entry.itemDetails != nil {
+            parts.append("Answers saved".localized)
+        }
+        if entry.listingDraft != nil {
+            parts.append("Post details saved".localized)
+        }
+        if entry.listingDraft?.evidenceSources?.isEmpty == false {
+            parts.append("Evidence saved".localized)
+        }
+        return parts.joined(separator: " · ")
     }
 }

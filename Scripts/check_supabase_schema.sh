@@ -15,6 +15,9 @@ migration_paths = [
     repo_root / "supabase/migrations/20260718000100_harden_history_constraints.sql",
     repo_root / "supabase/migrations/20260718000200_harden_apple_auth_token_identity.sql",
     repo_root / "supabase/migrations/20260722000100_create_marketplace_research_cache.sql",
+    repo_root / "supabase/migrations/20260724233029_early_access_entitlements.sql",
+    repo_root / "supabase/migrations/20260725001000_add_history_listing_metadata.sql",
+    repo_root / "supabase/migrations/20260725141629_add_history_identification_profile.sql",
 ]
 swift_paths = {
     "marketplace": repo_root / "BuySellAI/Data/Marketplace.swift",
@@ -79,8 +82,13 @@ condition_cases = enum_cases(swift_paths["models"], "Condition")
 require("add constraint if not exists" not in compact_sql, "Postgres does not support ADD CONSTRAINT IF NOT EXISTS")
 
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.history\b", "history table is missing")
+require_sql(r"add\s+column\s+if\s+not\s+exists\s+item_details\s+jsonb", "history.item_details jsonb metadata column is missing")
+require_sql(r"add\s+column\s+if\s+not\s+exists\s+listing_draft\s+jsonb", "history.listing_draft jsonb metadata column is missing")
+require_sql(r"add\s+column\s+if\s+not\s+exists\s+identification_profile\s+jsonb", "history.identification_profile jsonb metadata column is missing")
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.apple_auth_tokens\b", "apple_auth_tokens table is missing")
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.marketplace_research_cache\b", "marketplace_research_cache table is missing")
+require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.entitlement_config\b", "entitlement_config table is missing")
+require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.entitlement_usage_events\b", "entitlement_usage_events table is missing")
 require_sql(
     r"user_id\s+uuid\s+not\s+null\s+default\s+auth\.uid\(\)\s+references\s+auth\.users\s*\(\s*id\s*\)\s+on\s+delete\s+cascade",
     "history.user_id must default to auth.uid() and cascade from auth.users",
@@ -90,7 +98,7 @@ require_sql(
     "apple_auth_tokens.user_id must be the auth.users cascade primary key",
 )
 
-for table in ("history", "apple_auth_tokens", "marketplace_research_cache"):
+for table in ("history", "apple_auth_tokens", "marketplace_research_cache", "entitlement_config", "entitlement_usage_events"):
     require_sql(rf"alter\s+table\s+public\.{table}\s+enable\s+row\s+level\s+security", f"{table} must enable RLS")
     require_sql(rf"alter\s+table\s+public\.{table}\s+force\s+row\s+level\s+security", f"{table} must force RLS")
 
@@ -118,6 +126,9 @@ for constraint in (
     "history_condition_known",
     "history_marketplace_known",
     "history_listing_text_has_sections",
+    "history_item_details_object",
+    "history_listing_draft_object",
+    "history_identification_profile_object",
     "apple_auth_tokens_apple_user_id_unique",
     "marketplace_research_cache_key_not_blank",
     "marketplace_research_marketplace_not_blank",
@@ -126,8 +137,28 @@ for constraint in (
     "marketplace_research_summary_not_blank",
     "marketplace_research_model_not_blank",
     "marketplace_research_expires_after_updated",
+    "entitlement_config_singleton",
+    "entitlement_config_known_state",
+    "entitlement_config_analysis_limit_range",
+    "entitlement_config_ai_action_limit_range",
+    "entitlement_config_cooldown_message_not_blank",
+    "entitlement_usage_known_state",
+    "entitlement_usage_action_known",
+    "entitlement_usage_identity_key_not_blank",
+    "entitlement_usage_device_id_not_blank",
+    "entitlement_usage_ip_hash_not_blank",
+    "entitlement_usage_estimated_cost_nonnegative",
+    "entitlement_usage_grounded_search_nonnegative",
 ):
     require_sql(rf"\b{re.escape(constraint)}\b", f"{constraint} constraint is missing")
+
+for index in (
+    "entitlement_usage_identity_day_idx",
+    "entitlement_usage_user_day_idx",
+    "entitlement_usage_device_day_idx",
+    "entitlement_usage_ip_day_idx",
+):
+    require_sql(rf"create\s+index\s+if\s+not\s+exists\s+{index}\b", f"{index} index is missing")
 
 require_value_parity("category", category_cases, constraint_values("category"))
 require_value_parity("condition", condition_cases, constraint_values("condition"))
@@ -142,6 +173,12 @@ require_compact("grant all on table public.apple_auth_tokens to service_role", "
 require_compact("revoke all on table public.marketplace_research_cache from anon", "marketplace_research_cache must revoke anon access")
 require_compact("revoke all on table public.marketplace_research_cache from authenticated", "marketplace_research_cache must revoke authenticated access")
 require_compact("grant all on table public.marketplace_research_cache to service_role", "marketplace_research_cache must grant service_role access")
+require_compact("revoke all on table public.entitlement_config from anon", "entitlement_config must revoke anon access")
+require_compact("revoke all on table public.entitlement_config from authenticated", "entitlement_config must revoke authenticated access")
+require_compact("grant all on table public.entitlement_config to service_role", "entitlement_config must grant service_role access")
+require_compact("revoke all on table public.entitlement_usage_events from anon", "entitlement_usage_events must revoke anon access")
+require_compact("revoke all on table public.entitlement_usage_events from authenticated", "entitlement_usage_events must revoke authenticated access")
+require_compact("grant all on table public.entitlement_usage_events to service_role", "entitlement_usage_events must grant service_role access")
 require(
     re.search(r"grant\s+[^;]*on\s+table\s+public\.apple_auth_tokens\s+to\s+authenticated", sql, re.IGNORECASE | re.DOTALL)
     is None,
@@ -152,19 +189,31 @@ require(
     is None,
     "marketplace_research_cache must not grant authenticated table access",
 )
+for table in ("entitlement_config", "entitlement_usage_events"):
+    require(
+        re.search(rf"grant\s+[^;]*on\s+table\s+public\.{table}\s+to\s+authenticated", sql, re.IGNORECASE | re.DOTALL)
+        is None,
+        f"{table} must not grant authenticated table access",
+    )
 require(
     re.search(r"create\s+policy\b[^;]*marketplace_research_cache", sql, re.IGNORECASE | re.DOTALL)
     is None,
     "marketplace_research_cache must not expose client RLS policies",
 )
+for table in ("entitlement_config", "entitlement_usage_events"):
+    require(
+        re.search(rf"create\s+policy\b[^;]*{table}", sql, re.IGNORECASE | re.DOTALL)
+        is None,
+        f"{table} must not expose client RLS policies",
+    )
 
 print("Supabase schema static check passed")
 print("files: " + " ".join(path.relative_to(repo_root).as_posix() for path in migration_paths))
-print("tables: history apple_auth_tokens marketplace_research_cache")
-print("rls: history apple_auth_tokens marketplace_research_cache forced")
+print("tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events")
+print("rls: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events forced")
 print("policy: history authenticated select-auth-uid")
-print("indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique")
-print("grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role")
-print("constraints: history category condition marketplace listing apple-token-identity marketplace-research-cache")
+print("indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique entitlement_usage_identity_day_idx entitlement_usage_user_day_idx entitlement_usage_device_day_idx entitlement_usage_ip_day_idx")
+print("grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role entitlement_config service_role entitlement_usage_events service_role")
+print("constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection")
 print("swift parity: category condition marketplace")
 PY
