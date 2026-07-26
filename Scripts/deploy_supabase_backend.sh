@@ -65,7 +65,22 @@ print_pending_and_exit() {
 plist_value() {
     local key="$1"
 
-    /usr/libexec/PlistBuddy -c "Print :${key}" "$config_path" 2>/dev/null || true
+    if [[ -x /usr/libexec/PlistBuddy ]]; then
+        /usr/libexec/PlistBuddy -c "Print :${key}" "$config_path" 2>/dev/null || true
+        return 0
+    fi
+
+    CONFIG_INPUT_PATH="$config_path" CONFIG_INPUT_KEY="$key" python3 <<'PY' 2>/dev/null || true
+import os
+import plistlib
+
+with open(os.environ["CONFIG_INPUT_PATH"], "rb") as handle:
+    data = plistlib.load(handle)
+
+value = data.get(os.environ["CONFIG_INPUT_KEY"], "")
+if isinstance(value, str):
+    print(value)
+PY
 }
 
 trim_value() {
@@ -285,7 +300,6 @@ case "$mode" in
 esac
 
 command -v python3 >/dev/null 2>&1 || fail "python3 is required"
-[[ -x /usr/libexec/PlistBuddy ]] || fail "PlistBuddy is required"
 
 require_source_files
 run_schema_check

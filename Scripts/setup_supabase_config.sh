@@ -123,6 +123,34 @@ print(f"https://{host}")
 PY
 }
 
+write_public_config() {
+    local output_path="$1"
+    local public_url="$2"
+    local public_anon_key="$3"
+
+    if [[ -x /usr/libexec/PlistBuddy ]]; then
+        /usr/libexec/PlistBuddy -c "Clear dict" "$output_path" >/dev/null 2>&1
+        /usr/libexec/PlistBuddy -c "Add :SUPABASE_URL string $public_url" "$output_path" >/dev/null
+        /usr/libexec/PlistBuddy -c "Add :SUPABASE_ANON_KEY string $public_anon_key" "$output_path" >/dev/null
+        return 0
+    fi
+
+    CONFIG_OUTPUT_PATH="$output_path" \
+    SUPABASE_URL_VALUE="$public_url" \
+    SUPABASE_ANON_KEY_VALUE="$public_anon_key" \
+    python3 <<'PY'
+import os
+import plistlib
+
+config = {
+    "SUPABASE_URL": os.environ["SUPABASE_URL_VALUE"],
+    "SUPABASE_ANON_KEY": os.environ["SUPABASE_ANON_KEY_VALUE"],
+}
+with open(os.environ["CONFIG_OUTPUT_PATH"], "wb") as handle:
+    plistlib.dump(config, handle, fmt=plistlib.FMT_XML, sort_keys=False)
+PY
+}
+
 case "${1:-}" in
     "")
         ;;
@@ -136,7 +164,6 @@ case "${1:-}" in
 esac
 
 command -v python3 >/dev/null 2>&1 || fail "python3 is required"
-[[ -x /usr/libexec/PlistBuddy ]] || fail "PlistBuddy is required"
 
 read_required_or_env "Supabase project URL: " supabase_url SUPABASE_URL
 read_required_or_env "Supabase anon key: " anon_key SUPABASE_ANON_KEY
@@ -148,9 +175,7 @@ mkdir -p "$config_dir"
 trap cleanup EXIT
 tmp_config="$(mktemp "$config_dir/Config.plist.XXXXXX")"
 rm -f "$tmp_config"
-/usr/libexec/PlistBuddy -c "Clear dict" "$tmp_config" >/dev/null 2>&1
-/usr/libexec/PlistBuddy -c "Add :SUPABASE_URL string $normalized_url" "$tmp_config" >/dev/null
-/usr/libexec/PlistBuddy -c "Add :SUPABASE_ANON_KEY string $anon_key" "$tmp_config" >/dev/null
+write_public_config "$tmp_config" "$normalized_url" "$anon_key"
 chmod 600 "$tmp_config"
 mv "$tmp_config" "$config_path"
 chmod 600 "$config_path"

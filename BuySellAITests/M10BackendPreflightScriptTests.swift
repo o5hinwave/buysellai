@@ -225,6 +225,8 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql"))
         XCTAssertNotNil(script.range(of: "supabase secrets list --project-ref \"$project_ref\" --output json"))
         XCTAssertNotNil(script.range(of: "Supabase secret names could not be listed within"))
+        XCTAssertNotNil(script.range(of: "CONFIG_INPUT_PATH=\"$config_path\" CONFIG_INPUT_KEY=\"$key\" python3"))
+        XCTAssertNotNil(script.range(of: "plistlib.load(handle)"))
         XCTAssertNotNil(script.range(of: "supabase db push --linked --yes"))
         XCTAssertNotNil(script.range(of: "supabase functions deploy \"$function_name\" --project-ref \"$project_ref\" --use-api"))
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy passed"))
@@ -336,6 +338,8 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "SUPABASE_URL still contains the Config.plist.example placeholder"))
         XCTAssertNotNil(script.range(of: "SUPABASE_ANON_KEY still contains the Config.plist.example placeholder"))
         XCTAssertNotNil(script.range(of: "SUPABASE_ANON_KEY looks like a provider/server-secret-shaped value"))
+        XCTAssertNotNil(script.range(of: "write_public_config()"))
+        XCTAssertNotNil(script.range(of: "plistlib.dump(config, handle"))
         XCTAssertNotNil(script.range(of: "keys: SUPABASE_URL SUPABASE_ANON_KEY"))
         XCTAssertNil(script.range(of: "printf 'SUPABASE_ANON_KEY"))
 
