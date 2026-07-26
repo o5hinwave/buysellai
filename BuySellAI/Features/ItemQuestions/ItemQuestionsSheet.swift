@@ -4339,16 +4339,21 @@ struct ItemQuestionsSheet: View {
         marketplace: Marketplace,
         answers: ItemDetailAnswers
     ) -> DetailQuestion? {
-        guard let warning = context.listingDraft?.missingInfoWarnings?
-            .compactMap({ cleanDraftWarning($0) })
+        let warningSeed: (warning: String, field: Field)? = context.listingDraft?.missingInfoWarnings?
+            .compactMap { warning -> (warning: String, field: Field)? in
+                guard let cleanWarning = cleanDraftWarning(warning) else { return nil }
+                let field = questionField(forDraftWarning: cleanWarning, marketplace: marketplace)
+                guard isQuestionFieldAnswered(field, marketplace: marketplace, answers: answers) == false else {
+                    return nil
+                }
+                return (cleanWarning, field)
+            }
             .first
-        else {
+        guard let warningSeed else {
             return nil
         }
-        let field = questionField(forDraftWarning: warning, marketplace: marketplace)
-        guard isQuestionFieldAnswered(field, marketplace: marketplace, answers: answers) == false else {
-            return nil
-        }
+        let warning = warningSeed.warning
+        let field = warningSeed.field
 
         return DetailQuestion(
             id: "marketplace-draft-warning-\(marketplace.rawValue)-\(field.detailKey.rawValue)",
