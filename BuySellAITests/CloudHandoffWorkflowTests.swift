@@ -82,19 +82,22 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         for workflow in [ci, handoff] {
             XCTAssertNotNil(workflow.range(of: "Scripts/ci_boot_simulator.sh"))
             XCTAssertNotNil(workflow.range(of: "IOS_TEST_DESTINATION"))
+            XCTAssertNotNil(workflow.range(of: #"destination="$(Scripts/ci_boot_simulator.sh)""#))
+            XCTAssertNotNil(workflow.range(of: #"printf 'IOS_TEST_DESTINATION=%s\n' "$destination""#))
             XCTAssertNotNil(workflow.range(of: #"-destination "$IOS_TEST_DESTINATION""#))
             XCTAssertNil(workflow.range(of: "OS=18.5"))
         }
 
         XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "runtimes", "--json""#))
         XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "devices", "--json""#))
+        XCTAssertNotNil(helper.range(of: "timeout=90"))
         XCTAssertNotNil(helper.range(of: "timeout=30"))
         XCTAssertNotNil(helper.range(of: "timeout=60"))
         XCTAssertNotNil(helper.range(of: "timeout=120"))
         XCTAssertNotNil(helper.range(of: "iPhone 16 Pro"))
-        XCTAssertNotNil(helper.range(of: #"if [[ -n "${existing_udid:-}" ]]; then"#))
-        XCTAssertNotNil(helper.range(of: "xcrun simctl create"))
-        XCTAssertNotNil(helper.range(of: "xcrun simctl bootstatus"))
+        XCTAssertNotNil(helper.range(of: "if existing_udid:"))
+        XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "create""#))
+        XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "bootstatus""#))
         XCTAssertNotNil(helper.range(of: "id=%s"))
     }
 

@@ -29,7 +29,10 @@ jobs:
         run: Scripts/scan_m10_secrets.sh
 
       - name: Prepare iOS simulator
-        run: echo "IOS_TEST_DESTINATION=$(Scripts/ci_boot_simulator.sh)" >> "$GITHUB_ENV"
+        run: |
+          destination="$(Scripts/ci_boot_simulator.sh)"
+          printf 'IOS_TEST_DESTINATION=%s\n' "$destination" >> "$GITHUB_ENV"
+          printf 'Using IOS_TEST_DESTINATION=%s\n' "$destination"
 
       - name: Check formatting whitespace
         run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md

@@ -42,7 +42,10 @@ jobs:
         run: Scripts/check_supabase_functions.sh
 
       - name: Prepare iOS simulator
-        run: echo "IOS_TEST_DESTINATION=$(Scripts/ci_boot_simulator.sh)" >> "$GITHUB_ENV"
+        run: |
+          destination="$(Scripts/ci_boot_simulator.sh)"
+          printf 'IOS_TEST_DESTINATION=%s\n' "$destination" >> "$GITHUB_ENV"
+          printf 'Using IOS_TEST_DESTINATION=%s\n' "$destination"
 
       - name: Build and run native iOS smoke tests
         run: |

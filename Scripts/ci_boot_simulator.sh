@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 def load_json(*args):
-    return json.loads(subprocess.check_output(args, text=True, timeout=30))
+    return json.loads(subprocess.check_output(args, text=True, timeout=90))
 
 runtimes = [
     runtime
