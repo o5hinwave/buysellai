@@ -18,6 +18,15 @@ type GeminiResponse = {
     };
   }>;
 };
+type GeminiInteractionImage = {
+  data: string;
+  mime_type?: string;
+  mimeType?: string;
+};
+type GeminiInteractionResponse = {
+  output_image?: GeminiInteractionImage;
+  outputImage?: GeminiInteractionImage;
+};
 
 export type JsonSchema = Record<string, unknown>;
 export type GeminiTool = Record<string, Record<string, unknown>>;
@@ -34,11 +43,25 @@ export const nanoBananaImageModels = {
 
 export const nanoBananaDefaultImageModel = nanoBananaImageModels.balanced;
 
+export type GeminiEditedImage = {
+  imageBase64: string;
+  mimeType: string;
+  model: string;
+};
+
 type GeminiRequestOptions = {
   tools?: GeminiTool[];
   model?: string;
   temperature?: number;
   maxOutputTokens?: number;
+};
+
+type GeminiImageEditInput = {
+  prompt: string;
+  imageBase64: string;
+  mimeType: string;
+  aspectRatio?: string;
+  model?: string;
 };
 
 export async function generateJsonWithGemini(
@@ -68,6 +91,59 @@ export async function generateJsonWithGemini(
   }
 
   throw lastError;
+}
+
+export async function generateEditedImageWithGemini(
+  input: GeminiImageEditInput,
+): Promise<GeminiEditedImage> {
+  const apiKey = requireEnv("GEMINI_API_KEY");
+  const model = input.model?.trim() || Deno.env.get("GEMINI_IMAGE_MODEL")?.trim() ||
+    nanoBananaDefaultImageModel;
+  const timeoutMs = timeoutFromEnv("GEMINI_IMAGE_TIMEOUT_MS", 30_000, 5_000, 60_000);
+  const response = await fetchWithTimeout(
+    "https://generativelanguage.googleapis.com/v1beta/interactions",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        model,
+        input: [
+          { type: "text", text: input.prompt },
+          {
+            type: "image",
+            mime_type: input.mimeType,
+            data: input.imageBase64,
+          },
+        ],
+        response_format: {
+          type: "image",
+          mime_type: "image/jpeg",
+          aspect_ratio: input.aspectRatio?.trim() || "1:1",
+          image_size: "1K",
+        },
+      }),
+    },
+    {
+      timeoutMs,
+      timeoutMessage: "Provider image edit timed out",
+      transportMessage: "Provider image edit transport failed",
+    },
+  );
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new HttpError("Provider image edit failed", response.status === 429 ? 429 : 502);
+  }
+
+  const outputImage = parseInteractionImage(responseText);
+  return {
+    imageBase64: outputImage.data,
+    mimeType: outputImage.mime_type ?? outputImage.mimeType ?? "image/jpeg",
+    model,
+  };
 }
 
 async function generateJsonWithGeminiAttempt(
@@ -135,6 +211,53 @@ async function generateJsonWithGeminiAttempt(
   }
 
   return attachGroundingMetadata(parseModelJson(text), payload);
+}
+
+function parseInteractionImage(text: string): GeminiInteractionImage {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as GeminiInteractionResponse;
+  } catch {
+    throw new HttpError("Provider image edit response was not valid JSON", 502);
+  }
+
+  if (!isRecord(parsed)) {
+    throw new HttpError("Provider image edit response was not a JSON object", 502);
+  }
+
+  const image = imageBlock(parsed.output_image) ?? imageBlock(parsed.outputImage) ?? nestedImageBlock(parsed);
+  if (!image) {
+    throw new HttpError("Provider image edit returned no image", 502);
+  }
+  return image;
+}
+
+function nestedImageBlock(value: unknown): GeminiInteractionImage | null {
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const found = nestedImageBlock(entry);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!isRecord(value)) return null;
+
+  const direct = imageBlock(value);
+  if (direct) return direct;
+  for (const nested of Object.values(value)) {
+    const found = nestedImageBlock(nested);
+    if (found) return found;
+  }
+  return null;
+}
+
+function imageBlock(value: unknown): GeminiInteractionImage | null {
+  if (!isRecord(value)) return null;
+  const data = optionalString(value.data, 20_000_000);
+  const mimeType = optionalString(value.mime_type, 80) ?? optionalString(value.mimeType, 80);
+  if (!data) return null;
+  if (mimeType && mimeType.startsWith("image/") === false) return null;
+  return { data, ...(mimeType ? { mime_type: mimeType } : {}) };
 }
 
 function instructionForAttempt(systemInstruction: string, attempt: number): string {

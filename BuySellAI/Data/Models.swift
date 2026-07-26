@@ -304,6 +304,29 @@ struct ItemPhotoAsset: Codable, Identifiable, Sendable, Hashable {
     }
 }
 
+struct EnhancedListingPhoto: Equatable, Sendable {
+    let imageData: Data
+    let mimeType: String
+    let model: String
+    let sourcePhotoID: UUID
+    let relatedOriginalID: UUID
+    let verifies: String
+    let entitlement: EntitlementSnapshot?
+
+    func itemPhotoAsset(itemID: UUID) -> ItemPhotoAsset {
+        ItemPhotoAsset(
+            itemID: itemID,
+            imageData: imageData,
+            source: .aiEdited,
+            role: .cover,
+            verifies: verifies,
+            isListingSafe: true,
+            isAIEdited: true,
+            relatedOriginalID: relatedOriginalID
+        )
+    }
+}
+
 struct ListingPhotoPackage: Codable, Sendable, Hashable {
     let itemID: UUID
     let marketplace: Marketplace

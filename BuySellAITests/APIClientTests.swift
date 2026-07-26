@@ -480,6 +480,118 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(listing, "TITLE:\nLamp\n\nDESCRIPTION:\nWorks well.")
     }
 
+    func testEnhanceListingPhotoBuildsSupabaseFunctionRequest() async throws {
+        let item = Self.sampleItem
+        let sourcePhoto = try XCTUnwrap(ItemPhotoAsset.originalUserPhoto(item: item, imageData: ImageTools.sampleJPEG()))
+        let plan = try XCTUnwrap(ListingPhotoIntelligence.enhancementPlan(
+            for: sourcePhoto.listingPhotoCandidate,
+            item: item,
+            marketplace: .ebay,
+            confirmedFacts: ["Brass finish"],
+            visibleConditionNotes: ["Small scratch on base"],
+            qualityProblems: ["slightly dark"]
+        ))
+        let editedImageData = Data([9, 8, 7, 6])
+        let client = try makeClient { request in
+            XCTAssertEqual(request.url?.absoluteString, "https://example.supabase.co/functions/v1/enhance-photo")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.timeoutInterval, 20)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access-token")
+            Self.assertDeviceIDHeader(in: request)
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let imageDataURL = try XCTUnwrap(json["imageDataUrl"] as? String)
+            XCTAssertTrue(imageDataURL.hasPrefix("data:image/jpeg;base64,"))
+            XCTAssertEqual(json["prompt"] as? String, plan.prompt)
+            XCTAssertEqual(json["source"] as? String, "unknownUserPhoto")
+            XCTAssertEqual(json["photoRole"] as? String, "enhancedCover")
+            XCTAssertEqual(json["itemName"] as? String, "Lamp")
+            XCTAssertEqual(json["marketplace"] as? String, "ebay")
+            XCTAssertEqual(json["sourcePhotoID"] as? String, sourcePhoto.id.uuidString)
+            XCTAssertEqual(json["isUserOwned"] as? Bool, true)
+            XCTAssertEqual(json["isAIEdited"] as? Bool, false)
+            XCTAssertEqual(json["aspectRatio"] as? String, "1:1")
+
+            let url = try XCTUnwrap(request.url)
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+            return (response, Data(
+                """
+                {
+                  "imageDataUrl": "data:image/jpeg;base64,\(editedImageData.base64EncodedString())",
+                  "mimeType": "image/jpeg",
+                  "model": "gemini-3.1-flash-image",
+                  "sourcePhotoID": "\(sourcePhoto.id.uuidString)",
+                  "relatedOriginalID": "\(sourcePhoto.id.uuidString)",
+                  "safetySummary": "Edited from the user's own photo.",
+                  "entitlement": {
+                    "state": "earlyAccess",
+                    "completeFeatureAccess": true,
+                    "futurePaidAccessEnabled": false,
+                    "remainingAnalyses": 17,
+                    "remainingAiActions": 52
+                  }
+                }
+                """.utf8
+            ))
+        }
+
+        let enhanced = try await client.enhanceListingPhoto(
+            plan: plan,
+            photo: sourcePhoto,
+            item: item,
+            marketplace: .ebay,
+            accessToken: "access-token"
+        )
+
+        XCTAssertEqual(enhanced.imageData, editedImageData)
+        XCTAssertEqual(enhanced.mimeType, "image/jpeg")
+        XCTAssertEqual(enhanced.model, "gemini-3.1-flash-image")
+        XCTAssertEqual(enhanced.sourcePhotoID, sourcePhoto.id)
+        XCTAssertEqual(enhanced.relatedOriginalID, sourcePhoto.id)
+        XCTAssertEqual(enhanced.verifies, "Edited from the user's own photo.")
+        XCTAssertEqual(enhanced.entitlement?.state, .earlyAccess)
+        XCTAssertEqual(enhanced.entitlement?.remainingAiActions, 52)
+    }
+
+    func testEnhanceListingPhotoRejectsReferencePhotoBeforeNetwork() async throws {
+        let item = Self.sampleItem
+        let referencePhoto = ItemPhotoAsset(
+            itemID: item.id,
+            imageData: ImageTools.sampleJPEG(),
+            source: .internetReference,
+            role: .reference,
+            verifies: "Reference only",
+            isListingSafe: false
+        )
+        let plan = ListingPhotoEnhancementPlan(
+            sourcePhotoID: referencePhoto.id,
+            relatedOriginalID: referencePhoto.id,
+            targetRole: .enhancedCover,
+            prompt: "Preserve labels, serial marks, wear, damage, condition. Do not generate a different item.",
+            safetyRules: []
+        )
+        let client = try makeClient { _ in
+            XCTFail("Reference images should be rejected before a network request")
+            let url = try XCTUnwrap(URL(string: "https://example.supabase.co/functions/v1/enhance-photo"))
+            let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil))
+            return (response, Data())
+        }
+
+        do {
+            _ = try await client.enhanceListingPhoto(
+                plan: plan,
+                photo: referencePhoto,
+                item: item,
+                marketplace: .ebay
+            )
+            XCTFail("Expected reference image rejection")
+        } catch {
+            XCTAssertEqual(error as? APIError, .decoding)
+        }
+    }
+
     func testGenerateListingIncludesIdentificationProfileForSpecificResearchAndListing() async throws {
         let profile = Self.sampleIdentificationProfile
         let client = try makeClient { request in

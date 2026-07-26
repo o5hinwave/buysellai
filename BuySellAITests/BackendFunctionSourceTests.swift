@@ -10,6 +10,7 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/functions/analyze-image/index.ts",
             "supabase/functions/compare-marketplaces/index.ts",
             "supabase/functions/generate-listing/index.ts",
+            "supabase/functions/enhance-photo/index.ts",
             "supabase/functions/store-apple-token/index.ts",
             "supabase/functions/delete-account/index.ts",
             "supabase/functions/_shared/apple.ts",
@@ -178,6 +179,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(config.range(of: #"\[functions\.generate-listing\]\s+verify_jwt = false"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.compare-marketplaces\]\s+verify_jwt = false"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.backend-health\]\s+verify_jwt = false"#, options: .regularExpression))
+        XCTAssertNotNil(config.range(of: #"\[functions\.enhance-photo\]\s+verify_jwt = false"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.store-apple-token\]\s+verify_jwt = true"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.delete-account\]\s+verify_jwt = true"#, options: .regularExpression))
 
@@ -228,8 +230,45 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(gemini.range(of: "geminiGroundingSearchQueriesKey"))
         XCTAssertNotNil(gemini.range(of: "geminiGroundingSourcesKey"))
         XCTAssertNotNil(gemini.range(of: "attachGroundingMetadata"))
+        XCTAssertNotNil(gemini.range(of: "generateEditedImageWithGemini"))
+        XCTAssertNotNil(gemini.range(of: "https://generativelanguage.googleapis.com/v1beta/interactions"))
+        XCTAssertNotNil(gemini.range(of: "GEMINI_IMAGE_MODEL"))
+        XCTAssertNotNil(gemini.range(of: "GEMINI_IMAGE_TIMEOUT_MS"))
+        XCTAssertNotNil(gemini.range(of: "nanoBananaDefaultImageModel"))
+        XCTAssertNotNil(gemini.range(of: "output_image"))
+        XCTAssertNotNil(gemini.range(of: "Provider image edit returned no image"))
         XCTAssertNotNil(gemini.range(of: "application/json"))
         XCTAssertNil(gemini.range(of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#, options: .regularExpression))
+    }
+
+    func testEnhancePhotoFunctionUsesNanoBananaWithOriginalPhotoSafetyGate() throws {
+        let source = try read("supabase/functions/enhance-photo/index.ts")
+        let script = try read("Scripts/check_supabase_functions.sh")
+
+        XCTAssertNotNil(source.range(of: #"generateEditedImageWithGemini"#))
+        XCTAssertNotNil(source.range(of: #"consumeEarlyAccessUsage(request, "listing_generation""#))
+        XCTAssertNotNil(source.range(of: #"estimatedAiCostCents: 4.8"#))
+        XCTAssertNotNil(source.range(of: #"groundedSearchCount: 0"#))
+        XCTAssertNotNil(source.range(of: #"Only user-owned photos can be improved"#))
+        XCTAssertNotNil(source.range(of: #"Use the original photo for AI improvement"#))
+        XCTAssertNotNil(source.range(of: #"Photo prompt could misrepresent the item"#))
+        XCTAssertNotNil(source.range(of: #"Mandatory server safety rules"#))
+        XCTAssertNotNil(source.range(of: #"Preserve the exact photographed product"#))
+        XCTAssertNotNil(source.range(of: #"Preserve visible defects, scratches, wear, damage"#))
+        XCTAssertNotNil(source.range(of: #"Do not invent accessories, packaging, certificates"#))
+        XCTAssertNotNil(source.range(of: #"allowedSources"#))
+        XCTAssertNotNil(source.range(of: #"new Set(["camera", "photoLibrary", "unknownUserPhoto"])"#))
+        XCTAssertNotNil(source.range(of: #"data:image"#))
+        XCTAssertNotNil(source.range(of: #"sourcePhotoID"#))
+        XCTAssertNotNil(source.range(of: #"relatedOriginalID: sourcePhotoID"#))
+        XCTAssertNotNil(source.range(of: #"outputSource: "aiEdited""#))
+        XCTAssertNotNil(source.range(of: #"isAIEdited: true"#))
+        XCTAssertNotNil(source.range(of: #"isListingSafe: true"#))
+        XCTAssertNotNil(script.range(of: #"supabase/functions/enhance-photo/index.ts"#))
+        XCTAssertNotNil(script.range(of: #"photo enhancement: Nano Banana Interactions API with original-photo safety guard"#))
+        XCTAssertNil(source.range(of: #"GOOGLE_CLOUD_VISION_API_KEY"#))
+        XCTAssertNil(source.range(of: #"SUPABASE_SERVICE_ROLE_KEY"#))
+        XCTAssertNil(source.range(of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#, options: .regularExpression))
     }
 
     func testBackendHealthFunctionExposesOnlyNonSensitiveEarlyAccessState() throws {

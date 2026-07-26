@@ -9,6 +9,7 @@ entrypoints=(
     "supabase/functions/analyze-image/index.ts"
     "supabase/functions/compare-marketplaces/index.ts"
     "supabase/functions/generate-listing/index.ts"
+    "supabase/functions/enhance-photo/index.ts"
     "supabase/functions/store-apple-token/index.ts"
     "supabase/functions/delete-account/index.ts"
 )
@@ -124,6 +125,46 @@ require_source_contains \
     "supabase/functions/generate-listing/index.ts" \
     'consumeEarlyAccessUsage(request, "listing_generation"' \
     "listing early-access usage gate"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    'consumeEarlyAccessUsage(request, "listing_generation"' \
+    "photo enhancement early-access usage gate"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    "Only user-owned photos can be improved" \
+    "photo enhancement user-owned guard"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    "Use the original photo for AI improvement" \
+    "photo enhancement original-photo guard"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    "Photo prompt could misrepresent the item" \
+    "photo enhancement misrepresentation guard"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    "Mandatory server safety rules" \
+    "photo enhancement server safety wrapper"
+require_source_contains \
+    "supabase/functions/enhance-photo/index.ts" \
+    "Preserve the exact photographed product" \
+    "photo enhancement preservation prompt"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "generateEditedImageWithGemini" \
+    "Gemini image editing helper"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "https://generativelanguage.googleapis.com/v1beta/interactions" \
+    "Gemini Interactions API image endpoint"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "GEMINI_IMAGE_MODEL" \
+    "Gemini image model env override"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "output_image" \
+    "Gemini Interactions output image parser"
 require_source_contains \
     "supabase/functions/_shared/http.ts" \
     "x-buysell-device-id" \
@@ -358,7 +399,7 @@ require_source_not_contains \
     "copyable listing photo guidance rows"
 
 printf 'Supabase function Deno check passed\n'
-printf 'functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
+printf 'functions: backend-health analyze-image compare-marketplaces generate-listing enhance-photo store-apple-token delete-account\n'
 printf 'listing research tools: google_search url_context gated-by-cache\n'
 printf 'marketplace compare: grounded candidate search before picker recommendation\n'
 printf 'marketplace compare cache: grounded findings saved for listing reuse\n'
@@ -367,3 +408,4 @@ printf 'listing draft: structured fields formatted deterministically\n'
 printf 'listing evidence sources: sold-comp guarded structured source/date/status/comparability\n'
 printf 'early access: server-controlled entitlements with usage protection\n'
 printf 'backend health: entitlement plus private-safe usage/cost monitor\n'
+printf 'photo enhancement: Nano Banana Interactions API with original-photo safety guard\n'

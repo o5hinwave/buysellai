@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { generateJsonWithGemini } from "./gemini.ts";
+import { generateEditedImageWithGemini, generateJsonWithGemini } from "./gemini.ts";
 import { HttpError } from "./http.ts";
 
 const originalFetch = globalThis.fetch;
@@ -61,6 +61,90 @@ Deno.test("Gemini JSON helper does not retry provider rate limits", async () => 
     assertEquals(error instanceof HttpError, true);
     assertEquals((error as HttpError).status, 429);
     assertEquals(fetchCalls, 1);
+  } finally {
+    restoreEnv("GEMINI_API_KEY", previousApiKey);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("Gemini image helper uses Interactions API and parses output image", async () => {
+  const previousApiKey = Deno.env.get("GEMINI_API_KEY");
+  const previousImageModel = Deno.env.get("GEMINI_IMAGE_MODEL");
+  Deno.env.set("GEMINI_API_KEY", "test-key");
+  Deno.env.delete("GEMINI_IMAGE_MODEL");
+
+  globalThis.fetch = (async (input, init) => {
+    assertEquals(String(input), "https://generativelanguage.googleapis.com/v1beta/interactions");
+    assertEquals(init?.method, "POST");
+    const headers = init?.headers as Record<string, string>;
+    assertEquals(headers["x-goog-api-key"], "test-key");
+
+    const body = JSON.parse(String(init?.body ?? "{}")) as {
+      model?: string;
+      input?: Array<Record<string, unknown>>;
+      response_format?: Record<string, unknown>;
+    };
+    assertEquals(body.model, "gemini-3.1-flash-image");
+    assertEquals(body.input?.[0], { type: "text", text: "Improve this listing photo safely." });
+    assertEquals(body.input?.[1], {
+      type: "image",
+      mime_type: "image/jpeg",
+      data: "aW1hZ2U=",
+    });
+    assertEquals(body.response_format?.type, "image");
+    assertEquals(body.response_format?.mime_type, "image/jpeg");
+    assertEquals(body.response_format?.aspect_ratio, "4:3");
+
+    return new Response(JSON.stringify({
+      output_image: {
+        data: "ZWRpdGVk",
+        mime_type: "image/jpeg",
+      },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  try {
+    const result = await generateEditedImageWithGemini({
+      prompt: "Improve this listing photo safely.",
+      imageBase64: "aW1hZ2U=",
+      mimeType: "image/jpeg",
+      aspectRatio: "4:3",
+    });
+
+    assertEquals(result.imageBase64, "ZWRpdGVk");
+    assertEquals(result.mimeType, "image/jpeg");
+    assertEquals(result.model, "gemini-3.1-flash-image");
+  } finally {
+    restoreEnv("GEMINI_API_KEY", previousApiKey);
+    restoreEnv("GEMINI_IMAGE_MODEL", previousImageModel);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+Deno.test("Gemini image helper maps missing output image to provider error", async () => {
+  const previousApiKey = Deno.env.get("GEMINI_API_KEY");
+  Deno.env.set("GEMINI_API_KEY", "test-key");
+
+  globalThis.fetch = (() =>
+    Promise.resolve(new Response(JSON.stringify({ id: "interaction-id" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }))) as typeof fetch;
+
+  try {
+    await generateEditedImageWithGemini({
+      prompt: "Improve this listing photo safely.",
+      imageBase64: "aW1hZ2U=",
+      mimeType: "image/jpeg",
+    });
+    throw new Error("Expected missing image error");
+  } catch (error) {
+    assertEquals(error instanceof HttpError, true);
+    assertEquals((error as HttpError).status, 502);
+    assertEquals((error as HttpError).message, "Provider image edit returned no image");
   } finally {
     restoreEnv("GEMINI_API_KEY", previousApiKey);
     globalThis.fetch = originalFetch;

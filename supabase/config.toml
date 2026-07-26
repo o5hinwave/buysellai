@@ -10,6 +10,9 @@ verify_jwt = false
 [functions.backend-health]
 verify_jwt = false
 
+[functions.enhance-photo]
+verify_jwt = false
+
 [functions.store-apple-token]
 verify_jwt = true
 

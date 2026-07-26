@@ -136,7 +136,7 @@ final class ListingPhotoIntelligenceTests: XCTestCase {
         XCTAssertTrue(plan.prompt.contains("scratch on shade"))
         XCTAssertTrue(plan.prompt.contains("serial LMP-72"))
         XCTAssertTrue(plan.prompt.contains("Preserve the exact product, shape, color, materials, proportions, labels, serial marks, included parts, wear, damage, and condition."))
-        XCTAssertTrue(plan.prompt.contains("Do not remove defects"))
+        XCTAssertTrue(plan.prompt.contains("Preserve visible defects"))
         XCTAssertTrue(plan.prompt.contains("Do not change colors, materials, logos, labels, serial numbers"))
         XCTAssertTrue(plan.prompt.contains("Do not invent accessories"))
         XCTAssertTrue(plan.prompt.contains("Do not make a used item appear new"))

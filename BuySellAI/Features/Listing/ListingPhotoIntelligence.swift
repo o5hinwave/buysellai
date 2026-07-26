@@ -216,7 +216,8 @@ enum ListingPhotoIntelligence {
             "Allowed edits: improve exposure, white balance, careful sharpness, straightening, crop, background cleanup, marketplace-appropriate aspect ratio, and a realistic contact shadow.",
             "Photo issues to address: \(photoIssues.joined(separator: "; ")).",
             "Marketplace photo guidance: \(marketplace.optimizationProfile.photoGuidance)",
-            "Safety rules: \(safetyRules.joined(separator: " "))",
+            "Safety rules:",
+        ] + safetyRules + [
             "Return one realistic edited image derived from the provided photo. Do not generate a different item."
         ]
 
@@ -448,7 +449,7 @@ enum ListingPhotoIntelligence {
     private static func enhancementSafetyRules() -> [String] {
         [
             "Preserve the exact product, shape, color, materials, proportions, labels, serial marks, included parts, wear, damage, and condition.",
-            "Do not remove defects, scratches, stains, dents, chips, missing parts, patina, wear, or damage.",
+            "Preserve visible defects, scratches, stains, dents, chips, missing parts, patina, wear, and damage.",
             "Do not change colors, materials, logos, labels, serial numbers, authenticity marks, model numbers, sizes, text, or packaging details.",
             "Do not invent accessories, boxes, certificates, features, rarity, authenticity, or a newer-looking condition.",
             "Do not make a used item appear new, unused, sealed, or more valuable than the original photo supports."

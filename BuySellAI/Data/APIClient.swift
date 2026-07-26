@@ -349,6 +349,63 @@ actor APIClient {
         )
     }
 
+    func enhanceListingPhoto(
+        plan: ListingPhotoEnhancementPlan,
+        photo: ItemPhotoAsset,
+        item: DetectedItem,
+        marketplace: Marketplace,
+        accessToken: String? = nil
+    ) async throws -> EnhancedListingPhoto {
+        guard plan.sourcePhotoID == photo.id,
+              photo.canExportToListing,
+              photo.isAIEdited == false,
+              photo.source != .aiEdited,
+              photo.source != .internetReference,
+              photo.role != .reference,
+              let imageData = photo.imageData,
+              imageData.isEmpty == false
+        else {
+            throw APIError.decoding
+        }
+
+        guard let imageDataUrl = enhancementImageDataURL(from: imageData),
+              plan.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        else {
+            throw APIError.decoding
+        }
+
+        let config = try loadConfig()
+        let payload = EnhancePhotoRequest(
+            imageDataUrl: imageDataUrl,
+            prompt: plan.prompt,
+            source: photo.source.rawValue,
+            photoRole: plan.targetRole.rawValue,
+            itemName: item.name,
+            marketplace: marketplace.rawValue,
+            sourcePhotoID: photo.id.uuidString,
+            isUserOwned: true,
+            isAIEdited: false,
+            aspectRatio: marketplace.preferredEnhancementAspectRatio
+        )
+        let request = try makeRequest(
+            path: "enhance-photo",
+            config: config,
+            accessToken: accessToken,
+            body: payload
+        )
+        let response = try await perform(request, decoding: EnhancePhotoResponse.self)
+        let decodedImage = try decodedImageData(fromDataURL: response.imageDataUrl, expectedMimeType: response.mimeType)
+        return EnhancedListingPhoto(
+            imageData: decodedImage.data,
+            mimeType: decodedImage.mimeType,
+            model: response.model,
+            sourcePhotoID: response.sourcePhotoID ?? plan.sourcePhotoID,
+            relatedOriginalID: response.relatedOriginalID ?? plan.relatedOriginalID,
+            verifies: response.safetySummary ?? "AI-improved cover photo from the original item photo.",
+            entitlement: response.entitlement
+        )
+    }
+
     private func loadConfig() throws -> AppConfig {
         if let injectedConfig {
             return injectedConfig
@@ -443,6 +500,39 @@ actor APIClient {
         return "data:image/jpeg;base64,\(compactImageData.base64EncodedString())"
     }
 
+    private func enhancementImageDataURL(from imageData: Data) -> String? {
+        guard imageData.isEmpty == false else { return nil }
+        let compactImageData = ImageTools.jpegDataDownscaled(
+            from: imageData,
+            maxLongEdge: 1_400,
+            compression: 0.82
+        ) ?? imageData
+        return "data:image/jpeg;base64,\(compactImageData.base64EncodedString())"
+    }
+
+    private func decodedImageData(fromDataURL dataURL: String, expectedMimeType: String?) throws -> (data: Data, mimeType: String) {
+        let prefix = "data:"
+        guard dataURL.hasPrefix(prefix),
+              let separator = dataURL.range(of: ";base64,")
+        else {
+            throw APIError.decoding
+        }
+        let mimeType = String(dataURL[dataURL.index(dataURL.startIndex, offsetBy: prefix.count)..<separator.lowerBound])
+        guard mimeType.hasPrefix("image/") else {
+            throw APIError.decoding
+        }
+        if let expectedMimeType,
+           expectedMimeType.isEmpty == false,
+           expectedMimeType != mimeType {
+            throw APIError.decoding
+        }
+        let base64 = String(dataURL[separator.upperBound...])
+        guard let data = Data(base64Encoded: base64), data.isEmpty == false else {
+            throw APIError.decoding
+        }
+        return (data, mimeType)
+    }
+
     private var installationIdentifier: String {
         let key = "BuySell.installationIdentifier"
         let defaults = UserDefaults.standard
@@ -473,6 +563,21 @@ private extension MarketplaceComparisonResponse {
     var groundedEvidenceSourceCount: Int {
         comparisons.reduce(0) { count, comparison in
             count + (comparison.evidenceSources?.count ?? 0)
+        }
+    }
+}
+
+private extension Marketplace {
+    var preferredEnhancementAspectRatio: String {
+        switch self {
+        case .facebook, .craigslist, .offerup, .nextdoor, .chairish:
+            "4:3"
+        case .poshmark, .depop, .mercari, .vinted, .vestiaire, .therealreal, .curtsy:
+            "3:4"
+        case .whatnot:
+            "9:16"
+        default:
+            "1:1"
         }
     }
 }
@@ -1812,6 +1917,29 @@ private struct GenerateListingRequest: Encodable {
     let marketplaceComparison: MarketplaceComparisonPayload?
     let identificationProfile: IdentificationProfilePayload?
     let imageDataUrl: String?
+}
+
+private struct EnhancePhotoRequest: Encodable {
+    let imageDataUrl: String
+    let prompt: String
+    let source: String
+    let photoRole: String
+    let itemName: String
+    let marketplace: String
+    let sourcePhotoID: String
+    let isUserOwned: Bool
+    let isAIEdited: Bool
+    let aspectRatio: String?
+}
+
+private struct EnhancePhotoResponse: Decodable {
+    let imageDataUrl: String
+    let mimeType: String
+    let model: String
+    let sourcePhotoID: UUID?
+    let relatedOriginalID: UUID?
+    let safetySummary: String?
+    let entitlement: EntitlementSnapshot?
 }
 
 private struct IdentificationProfilePayload: Encodable {
