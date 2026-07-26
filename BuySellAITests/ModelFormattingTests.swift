@@ -828,4 +828,57 @@ final class ModelFormattingTests: XCTestCase {
 
         XCTAssertNil(sanitized.missingInfoWarnings)
     }
+
+    func testGeneratedListingDraftRequiresVerifiedSoldEvidenceBeforeKeepingCompRange() throws {
+        let activeOnlyDraft = GeneratedListingDraft(
+            title: "Nintendo Switch OLED Console",
+            description: "Good condition console.",
+            compLowPrice: Decimal(180),
+            compHighPrice: Decimal(240),
+            compMedianPrice: Decimal(210),
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Active Nintendo Switch OLED listing",
+                    url: "https://example.com/active",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "active",
+                    conditionAndVariant: "Good, OLED",
+                    comparability: "Close active listing",
+                    price: Decimal(229)
+                )
+            ]
+        )
+
+        let activeOnly = try XCTUnwrap(activeOnlyDraft.sanitizedForDisplay())
+        XCTAssertNil(activeOnly.compLowPrice)
+        XCTAssertNil(activeOnly.compHighPrice)
+        XCTAssertNil(activeOnly.compMedianPrice)
+        XCTAssertEqual(activeOnly.evidenceSources?.count, 1)
+
+        let soldDraft = GeneratedListingDraft(
+            title: "Nintendo Switch OLED Console",
+            description: "Good condition console.",
+            compLowPrice: Decimal(180),
+            compHighPrice: Decimal(240),
+            compMedianPrice: Decimal(210),
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold Nintendo Switch OLED listing",
+                    url: "https://example.com/sold",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    conditionAndVariant: "Good, OLED",
+                    comparability: "Close sold comp",
+                    price: Decimal(210)
+                )
+            ]
+        )
+
+        let sold = try XCTUnwrap(soldDraft.sanitizedForDisplay())
+        XCTAssertEqual(sold.compLowPrice, Decimal(180))
+        XCTAssertEqual(sold.compHighPrice, Decimal(240))
+        XCTAssertEqual(sold.compMedianPrice, Decimal(210))
+    }
 }

@@ -1472,6 +1472,19 @@ struct ListingEvidenceSource: Codable, Identifiable, Sendable, Equatable, Hashab
             .joined(separator: " · ")
     }
 
+    var hasSourceReference: Bool {
+        let reference = url ?? title
+        return reference?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    var isSoldOrCompleted: Bool {
+        let status = listingStatus?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        return status == "sold" ||
+            status == "completed" ||
+            status == "ended" ||
+            status.contains("sold")
+    }
+
     private func clean(_ value: String?, maxLength: Int) -> String? {
         guard let value else { return nil }
         let collapsedWhitespace = value
@@ -2017,6 +2030,8 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable, Hashable {
     }
 
     func sanitizedForDisplay() -> GeneratedListingDraft? {
+        let sanitizedSources = cleanEvidenceSources(evidenceSources)
+        let hasVerifiedSoldEvidence = Self.hasVerifiedSoldEvidence(in: sanitizedSources)
         let sanitized = GeneratedListingDraft(
             title: clean(title, maxLength: 120),
             description: clean(description, maxLength: 1_500),
@@ -2030,15 +2045,15 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable, Hashable {
             postingNotes: cleanList(postingNotes, maxItems: 3, maxLength: 160),
             itemSpecifics: cleanList(itemSpecifics, maxItems: 6, maxLength: 80),
             tags: cleanList(tags, maxItems: 8, maxLength: 40),
-            compLowPrice: positive(compLowPrice),
-            compHighPrice: positive(compHighPrice),
-            compMedianPrice: positive(compMedianPrice),
+            compLowPrice: hasVerifiedSoldEvidence ? positive(compLowPrice) : nil,
+            compHighPrice: hasVerifiedSoldEvidence ? positive(compHighPrice) : nil,
+            compMedianPrice: hasVerifiedSoldEvidence ? positive(compMedianPrice) : nil,
             feeSummary: clean(feeSummary, maxLength: 180),
             pricingStrategy: clean(pricingStrategy, maxLength: 220),
             evidenceSummary: clean(evidenceSummary, maxLength: 260),
             referenceImageURL: cleanReferenceURL(referenceImageURL),
             publicImageQuery: clean(publicImageQuery, maxLength: 140),
-            evidenceSources: cleanEvidenceSources(evidenceSources)
+            evidenceSources: sanitizedSources
         )
 
         if sanitized.title == nil,
@@ -2120,6 +2135,15 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable, Hashable {
                 result.append(value)
             }
         return cleaned.isEmpty ? nil : cleaned
+    }
+
+    private static func hasVerifiedSoldEvidence(in sources: [ListingEvidenceSource]?) -> Bool {
+        (sources ?? []).contains { source in
+            source.price != nil &&
+                source.dateChecked != nil &&
+                source.hasSourceReference &&
+                source.isSoldOrCompleted
+        }
     }
 
     private func positive(_ value: Decimal?) -> Decimal? {

@@ -594,19 +594,6 @@ extension MarketplaceComparison {
 }
 
 private extension ListingEvidenceSource {
-    var hasSourceReference: Bool {
-        let reference = url ?? title
-        return reference?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-    }
-
-    var isSoldOrCompleted: Bool {
-        let status = listingStatus?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
-        return status == "sold" ||
-            status == "completed" ||
-            status == "ended" ||
-            status.contains("sold")
-    }
-
     func marketplaceProofLine(currencyCode: String) -> String? {
         let priceText = price.map { $0.currency(code: currencyCode) }
         let parts = [
