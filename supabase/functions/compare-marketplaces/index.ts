@@ -13,9 +13,14 @@ import {
   HttpError,
   jsonResponse,
   readJson,
+  readResponseJson,
+  requireJsonArray,
+  requireJsonObject,
   requirePost,
   timeoutFromEnv,
 } from "../_shared/http.ts";
+
+const comparisonResearchFreshnessWindowMs = 72 * 60 * 60 * 1_000;
 
 serve(async (request) => {
   const options = handleOptions(request);
@@ -28,11 +33,23 @@ serve(async (request) => {
     const details = optionalItemDetails(body.details);
     const identificationProfile = optionalIdentificationProfile(body.identificationProfile);
     const candidateMarketplaces = requireCandidateMarketplaces(body.candidateMarketplaces);
+    const cachedResearch = await fetchComparisonResearchCaches(
+      item,
+      details,
+      identificationProfile,
+      candidateMarketplaces,
+    );
     const entitlement = await consumeEarlyAccessUsage(request, "marketplace_research", {
       estimatedAiCostCents: 4.8,
       groundedSearchCount: Math.min(candidateMarketplaces.length, 10),
     });
-    const result = await generateMarketplaceComparisonJson(item, details, identificationProfile, candidateMarketplaces);
+    const result = await generateMarketplaceComparisonJson(
+      item,
+      details,
+      identificationProfile,
+      candidateMarketplaces,
+      cachedResearch,
+    );
     const checkedAt = new Date().toISOString();
     const comparisons = normalizeComparisons(result, item, candidateMarketplaces, checkedAt);
     await saveComparisonResearchCache(item, details, identificationProfile, result, comparisons);
@@ -113,12 +130,21 @@ type NormalizedMarketplaceComparison = {
 
 type MarketplaceResearchPlan = {
   cacheKey: string;
+  cacheLookupKeys: string[];
   marketplace: MarketplaceId;
   category: string;
   condition: string;
   searchQuestions: string[];
   sourceTargets: string[];
   reason: string;
+};
+
+type MarketplaceResearchCache = {
+  researchSummary: string;
+  usefulFindings: string[];
+  officialSources: string[];
+  searchQuestions: string[];
+  updatedAt: string;
 };
 
 type SupabaseServiceConfig = {
@@ -222,6 +248,7 @@ async function generateMarketplaceComparisonJson(
   details: ListingItemDetails | null,
   identificationProfile: IdentificationProfile | null,
   candidates: MarketplaceId[],
+  cachedResearch: Partial<Record<MarketplaceId, MarketplaceResearchCache>>,
 ): Promise<Record<string, unknown>> {
   const tools: GeminiTool[] = [
     { google_search: {} },
@@ -235,7 +262,9 @@ async function generateMarketplaceComparisonJson(
     `Seller details: ${detailsForPrompt(details)}`,
     `Item identification profile: ${identificationProfileForPrompt(identificationProfile)}`,
     `Candidate marketplaces: ${candidates.map((id) => marketplaceDisplayNames[id]).join(", ")}`,
+    `Saved marketplace research: ${comparisonResearchCacheForPrompt(cachedResearch, candidates)}`,
     "Use the minimum searches needed to compare these candidates.",
+    "Use saved marketplace research as memory for recent official fee, rule, source, and useful finding context; refresh only time-sensitive sold-price, active-competition, fee, rule, and demand facts that could have changed.",
     "Use confirmed profile facts as search anchors, likely facts as hypotheses, and unknown or conflicting profile clues as reasons to search narrower variants before pricing.",
     "Prioritize sold/completed listing evidence over active asking prices.",
     "Use official marketplace fee or help pages for fees and rules when available.",
@@ -451,6 +480,8 @@ function createMarketplaceResearchPlan(
   const identity = researchIdentity(item, details, identificationProfile);
   const identityKey = normalizedIdentifier(identity).slice(0, 90) || "unknownitem";
   const profileKey = normalizedIdentifier(profileSearchTerms(identificationProfile).join(" ")).slice(0, 90) || "noprofile";
+  const cacheKey = `${platform}:${category}:${condition}:${identityKey}:${profileKey}`;
+  const cacheLookupKeys = uniqueStrings([cacheKey], 1);
   const searchQuestions = [
     `${displayName} official selling fees ${currentYear}`,
     `${displayName} sold listings ${identity} used ${item.condition}`,
@@ -458,7 +489,8 @@ function createMarketplaceResearchPlan(
   ];
 
   return {
-    cacheKey: `${platform}:${category}:${condition}:${identityKey}:${profileKey}`,
+    cacheKey,
+    cacheLookupKeys,
     marketplace: platform,
     category: item.category,
     condition: item.condition,
@@ -488,6 +520,109 @@ function researchIdentity(
     item.name,
   ], 7);
   return parts.join(" ").slice(0, 160) || item.name;
+}
+
+async function fetchComparisonResearchCaches(
+  item: ListingItem,
+  details: ListingItemDetails | null,
+  identificationProfile: IdentificationProfile | null,
+  candidates: MarketplaceId[],
+): Promise<Partial<Record<MarketplaceId, MarketplaceResearchCache>>> {
+  const service = supabaseServiceConfig();
+  if (!service) return {};
+
+  const now = new Date();
+  const lookupResults: Partial<Record<MarketplaceId, MarketplaceResearchCache>> = {};
+  for (const marketplace of candidates) {
+    const plan = createMarketplaceResearchPlan(item, marketplace, details, identificationProfile);
+    const cachedResearch = await fetchComparisonResearchCache(plan, service, now);
+    if (cachedResearch) {
+      lookupResults[marketplace] = cachedResearch;
+    }
+  }
+  return lookupResults;
+}
+
+async function fetchComparisonResearchCache(
+  plan: MarketplaceResearchPlan,
+  service: SupabaseServiceConfig,
+  now: Date,
+): Promise<MarketplaceResearchCache | null> {
+  try {
+    const nowValue = encodeURIComponent(now.toISOString());
+    const select = "research_summary,useful_findings,official_sources,search_queries,updated_at";
+    for (const lookupKey of plan.cacheLookupKeys) {
+      const cacheKey = encodeURIComponent(lookupKey);
+      const response = await fetchWithTimeout(
+        `${service.supabaseUrl}/rest/v1/marketplace_research_cache?cache_key=eq.${cacheKey}&expires_at=gt.${nowValue}&select=${select}&limit=1`,
+        { headers: serviceHeaders(service.serviceRoleKey) },
+        supabaseServiceFetchOptions(),
+      );
+      if (!response.ok) continue;
+
+      const rows = requireJsonArray(
+        await readResponseJson(response, "Marketplace comparison cache response was not valid JSON"),
+        "Marketplace comparison cache response was not a JSON array",
+      );
+      const row = rows[0];
+      if (row === undefined) continue;
+
+      const cachedResearch = marketplaceResearchCacheFromRow(row);
+      if (isFreshComparisonResearchCache(cachedResearch, now)) {
+        return cachedResearch;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function marketplaceResearchCacheFromRow(row: unknown): MarketplaceResearchCache | null {
+  const payload = requireJsonObject(row, "Marketplace comparison cache row was not a JSON object");
+  const researchSummary = optionalString(payload.research_summary, 360);
+  if (!researchSummary) return null;
+
+  return {
+    researchSummary,
+    usefulFindings: stringArray(payload.useful_findings, 8),
+    officialSources: stringArray(payload.official_sources, 8),
+    searchQuestions: stringArray(payload.search_queries, 3),
+    updatedAt: optionalString(payload.updated_at, 40) ?? "",
+  };
+}
+
+function isFreshComparisonResearchCache(
+  cachedResearch: MarketplaceResearchCache | null,
+  now: Date,
+): cachedResearch is MarketplaceResearchCache {
+  if (!cachedResearch) return false;
+  const updatedAt = Date.parse(cachedResearch.updatedAt);
+  if (!Number.isFinite(updatedAt)) return false;
+  const ageMs = now.getTime() - updatedAt;
+  return ageMs >= 0 && ageMs <= comparisonResearchFreshnessWindowMs;
+}
+
+function comparisonResearchCacheForPrompt(
+  cachedResearch: Partial<Record<MarketplaceId, MarketplaceResearchCache>>,
+  candidates: MarketplaceId[],
+): string {
+  const summaries = candidates.flatMap((marketplace) => {
+    const research = cachedResearch[marketplace];
+    if (!research) return [];
+    const displayName = marketplaceDisplayNames[marketplace] ?? marketplace;
+    return [
+      [
+        `${displayName} saved research checked ${research.updatedAt || "recently"}`,
+        `summary: ${research.researchSummary}`,
+        research.usefulFindings.length ? `useful findings: ${research.usefulFindings.join(" | ")}` : "",
+        research.officialSources.length ? `official/source references: ${research.officialSources.join(" | ")}` : "",
+        research.searchQuestions.length ? `previous searches: ${research.searchQuestions.join(" | ")}` : "",
+      ].filter((line) => line.length > 0).join("; "),
+    ];
+  });
+  if (summaries.length === 0) return "none";
+  return summaries.join("\n").slice(0, 2_400);
 }
 
 async function saveComparisonResearchCache(
