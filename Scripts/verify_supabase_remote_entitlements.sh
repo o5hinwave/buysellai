@@ -155,8 +155,53 @@ missing = sorted(expected_versions.difference(actual_versions))
 if missing:
     raise SystemExit("backend-health requiredMigrations missing: " + ", ".join(missing))
 
+monitoring = payload.get("usageMonitoring")
+if not isinstance(monitoring, dict):
+    raise SystemExit("backend-health did not return usageMonitoring")
+
+if monitoring.get("windowHours") != 24:
+    raise SystemExit("usageMonitoring.windowHours expected 24")
+if monitoring.get("status") not in {"normal", "watch", "limit"}:
+    raise SystemExit("usageMonitoring.status was not recognized")
+
+for key in (
+    "eventCount",
+    "analysisCount",
+    "marketplaceResearchCount",
+    "listingGenerationCount",
+    "estimatedAiCostCents",
+    "groundedSearchCount",
+):
+    value = monitoring.get(key)
+    if not isinstance(value, (int, float)) or value < 0:
+        raise SystemExit(f"usageMonitoring.{key} must be a non-negative number")
+
+thresholds = monitoring.get("thresholds")
+if not isinstance(thresholds, dict):
+    raise SystemExit("usageMonitoring did not return thresholds")
+expected_thresholds = {
+    "dailyEventLimit": 200,
+    "dailyEstimatedAiCostCentsLimit": 500,
+    "dailyGroundedSearchLimit": 250,
+    "sampleLimit": 1000,
+}
+for key, expected_value in expected_thresholds.items():
+    if thresholds.get(key) != expected_value:
+        raise SystemExit(f"usageMonitoring.thresholds.{key} expected {expected_value!r}")
+
+alerts = monitoring.get("alerts")
+if not isinstance(alerts, list) or not all(isinstance(alert, str) for alert in alerts):
+    raise SystemExit("usageMonitoring.alerts must be a string array")
+
 print("Supabase remote entitlement check passed")
 print("project state: earlyAccess full-access no-paid-access")
 print("limits: 18 analyses/day 54 AI-actions/day")
+print(
+    "usage monitor: "
+    f"{monitoring['status']} "
+    f"{monitoring['eventCount']} events "
+    f"{monitoring['estimatedAiCostCents']} AI-cents "
+    f"{monitoring['groundedSearchCount']} grounded-searches/24h"
+)
 print("migrations: " + " ".join(sorted(expected_versions)))
 PY

@@ -69,6 +69,34 @@ require_source_contains \
     "SUPABASE_SERVICE_ROLE_KEY" \
     "backend health server-side entitlement query"
 require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "usageMonitoring" \
+    "backend health private-safe usage monitor"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "dailyEstimatedAiCostCentsLimit: 500" \
+    "backend health AI cost threshold"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "grounded_search_count" \
+    "backend health grounded search rollup"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "usage_action,estimated_ai_cost_cents,grounded_search_count" \
+    "backend health non-sensitive usage select"
+require_source_not_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "select=user_id" \
+    "backend health user identifier select"
+require_source_not_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "select=device_id" \
+    "backend health device identifier select"
+require_source_not_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "select=ip_hash" \
+    "backend health IP hash select"
+require_source_contains \
     "supabase/functions/_shared/entitlements.ts" \
     "consumeEarlyAccessUsage" \
     "shared early-access usage gate"
@@ -338,3 +366,4 @@ printf 'listing research cache: Gemini grounding saved\n'
 printf 'listing draft: structured fields formatted deterministically\n'
 printf 'listing evidence sources: sold-comp guarded structured source/date/status/comparability\n'
 printf 'early access: server-controlled entitlements with usage protection\n'
+printf 'backend health: entitlement plus private-safe usage/cost monitor\n'

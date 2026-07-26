@@ -116,6 +116,10 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "supabase/functions/delete-account/index.ts",
             "supabase/functions/_shared/gemini.ts",
             "supabase/functions/_shared/entitlements.ts",
+            "usageMonitoring",
+            "dailyEstimatedAiCostCentsLimit: 500",
+            "grounded_search_count",
+            "usage_action,estimated_ai_cost_cents,grounded_search_count",
             "consumeEarlyAccessUsage",
             "entitlement_config",
             "entitlement_usage_events",
@@ -141,6 +145,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "listing draft: structured fields formatted deterministically",
             "listing evidence sources: sold-comp guarded structured source/date/status/comparability",
             "early access: server-controlled entitlements with usage protection",
+            "backend health: entitlement plus private-safe usage/cost monitor",
             "cleanEvidenceSources(result.evidenceSources, platform)",
             "hasSoldCompEvidence",
             "listingStatusFromPriceFields",
@@ -281,6 +286,12 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(remoteVerifier.range(of: #""future_paid_access_enabled": False"#))
         XCTAssertNotNil(remoteVerifier.range(of: #""daily_analysis_limit": 18"#))
         XCTAssertNotNil(remoteVerifier.range(of: #""daily_ai_action_limit": 54"#))
+        XCTAssertNotNil(remoteVerifier.range(of: "usageMonitoring"))
+        XCTAssertNotNil(remoteVerifier.range(of: #""dailyEventLimit": 200"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""dailyEstimatedAiCostCentsLimit": 500"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""dailyGroundedSearchLimit": 250"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""sampleLimit": 1000"#))
+        XCTAssertNotNil(remoteVerifier.range(of: "usage monitor:"))
         XCTAssertNotNil(remoteVerifier.range(of: "Supabase remote entitlement check passed"))
         XCTAssertNil(remoteVerifier.range(of: "SUPABASE_DB_PASSWORD"))
         XCTAssertNil(remoteVerifier.range(of: "SUPABASE_SERVICE_ROLE_KEY"))
