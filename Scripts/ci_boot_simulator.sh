@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 def load_json(*args):
-    return json.loads(subprocess.check_output(args, text=True))
+    return json.loads(subprocess.check_output(args, text=True, timeout=30))
 
 runtimes = [
     runtime
@@ -34,7 +34,10 @@ preferred_names = ("iPhone 16 Pro", "iPhone 16", "iPhone 15 Pro", "iPhone 15")
 for preferred_name in preferred_names:
     for device_type in device_types:
         if device_type.get("name") == preferred_name:
-            devices = load_json("xcrun", "simctl", "list", "devices", "--json").get("devices", {})
+            try:
+                devices = load_json("xcrun", "simctl", "list", "devices", "--json").get("devices", {})
+            except Exception:
+                devices = {}
             existing_udid = ""
             for device in devices.get(runtime["identifier"], []):
                 if device.get("name") == device_name and device.get("isAvailable", True):
@@ -53,5 +56,18 @@ else
     udid="$(xcrun simctl create "$device_name" "$device_type" "$runtime_id")"
 fi
 xcrun simctl boot "$udid" >/dev/null 2>&1 || true
-xcrun simctl bootstatus "$udid" -b >/dev/null
+python3 - "$udid" <<'PY'
+import subprocess
+import sys
+
+try:
+    subprocess.run(
+        ["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        timeout=120,
+    )
+except subprocess.TimeoutExpired:
+    raise SystemExit("timed out waiting for simulator boot")
+PY
 printf 'id=%s\n' "$udid"
