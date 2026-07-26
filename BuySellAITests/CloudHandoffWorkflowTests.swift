@@ -13,7 +13,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "runs-on: macos-15",
             "actions/checkout@v4",
             "Scripts/scan_m10_secrets.sh",
-            "Scripts/check_workspace_materialization.sh",
+            "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
             "git diff --check",
             "Scripts/check_supabase_schema.sh",
             "Scripts/check_supabase_functions.sh",
@@ -44,11 +44,13 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         let script = try String(contentsOf: projectURL("Scripts/check_workspace_materialization.sh"), encoding: .utf8)
 
         XCTAssertNotNil(script.range(of: "check_git_head_resolves"))
+        XCTAssertNotNil(script.range(of: "M10_EXPECT_SUPPORT_SITE"))
         XCTAssertNotNil(script.range(of: "M10_GIT_CHECK_TIMEOUT"))
         XCTAssertNotNil(script.range(of: "git_with_timeout"))
         XCTAssertNotNil(script.range(of: "git_with_timeout rev-parse --verify HEAD"))
         XCTAssertNotNil(script.range(of: "git_with_timeout status --short"))
         XCTAssertNotNil(script.range(of: #"if [[ -f ".git/refs/heads/main" ]]; then"#))
+        XCTAssertNotNil(script.range(of: "support-site: external Sites project"))
     }
 
     private func projectURL(_ path: String) -> URL {

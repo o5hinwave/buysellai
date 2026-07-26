@@ -30,7 +30,7 @@ jobs:
         run: Scripts/scan_m10_secrets.sh
 
       - name: Verify checkout is fully usable
-        run: Scripts/check_workspace_materialization.sh
+        run: M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh
 
       - name: Check formatting whitespace
         run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md M10_ACCEPTANCE.md .github/workflows

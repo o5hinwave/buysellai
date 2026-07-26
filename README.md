@@ -370,7 +370,7 @@ Hosted cloud handoff check:
 gh workflow run "Cloud Handoff Check" --ref codex/m10-submit-readiness
 ```
 
-The workflow source is `.github/workflows/cloud-handoff.yml`. It runs on GitHub's hosted macOS runner and checks `Scripts/check_workspace_materialization.sh`, `Scripts/scan_m10_secrets.sh`, `Scripts/check_supabase_schema.sh`, `Scripts/check_supabase_functions.sh`, and a focused native iOS smoke bundle. It does not deploy Supabase, submit to App Store Connect, expose secrets, or build the nested `AppStoreSite` Sites project; those remain behind their existing release credentials and deploy/preflight gates.
+The workflow source is `.github/workflows/cloud-handoff.yml`. It runs on GitHub's hosted macOS runner and checks `M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh`, `Scripts/scan_m10_secrets.sh`, `Scripts/check_supabase_schema.sh`, `Scripts/check_supabase_functions.sh`, and a focused native iOS smoke bundle. It does not deploy Supabase, submit to App Store Connect, expose secrets, or build the nested `AppStoreSite` Sites project; those remain behind their existing release credentials and deploy/preflight gates.
 
 Chunked M10 UI runner for isolating simulator UI failures or Xcode result-bundle hangs:
 

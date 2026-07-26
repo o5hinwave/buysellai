@@ -2,6 +2,7 @@
 set -euo pipefail
 
 allow_pending="${ALLOW_DATALLESS_WORKSPACE:-0}"
+expect_support_site="${M10_EXPECT_SUPPORT_SITE:-1}"
 max_tree_examples="${M10_MATERIALIZATION_MAX_EXAMPLES:-12}"
 git_check_timeout_seconds="${M10_GIT_CHECK_TIMEOUT:-20}"
 
@@ -164,8 +165,10 @@ check_tree_not_dataless "BuySellAI" "app source tree"
 check_tree_not_dataless "BuySellAITests" "unit test tree"
 check_tree_not_dataless "BuySellAIUITests" "UI test tree"
 check_tree_not_dataless "supabase" "Supabase source tree"
-check_tree_not_dataless "AppStoreSite/app" "support-site app source tree"
-check_tree_not_dataless "AppStoreSite/public" "support-site public asset tree"
+if [[ "$expect_support_site" == "1" ]]; then
+    check_tree_not_dataless "AppStoreSite/app" "support-site app source tree"
+    check_tree_not_dataless "AppStoreSite/public" "support-site public asset tree"
+fi
 
 for device in iPhone-16-Pro-Max iPad-Pro-13-inch-M4; do
     case "$device" in
@@ -203,6 +206,11 @@ fi
 
 printf 'M10 workspace materialization passed\n'
 printf 'git: status can index worktree\n'
-printf 'sources: app unit ui supabase support-site\n'
+if [[ "$expect_support_site" == "1" ]]; then
+    printf 'sources: app unit ui supabase support-site\n'
+else
+    printf 'sources: app unit ui supabase\n'
+    printf 'support-site: external Sites project\n'
+fi
 printf 'screenshots: iPhone 6.9 1320x2868, iPad 13 2064x2752\n'
 printf 'docs: README M10 acceptance metadata Today nomination\n'

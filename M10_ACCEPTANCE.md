@@ -329,7 +329,7 @@ Run the hosted cloud handoff check from GitHub Actions when proving the reposito
 gh workflow run "Cloud Handoff Check" --ref codex/m10-submit-readiness
 ```
 
-The workflow source is `.github/workflows/cloud-handoff.yml` and covers `Scripts/check_workspace_materialization.sh`, `Scripts/scan_m10_secrets.sh`, `Scripts/check_supabase_schema.sh`, `Scripts/check_supabase_functions.sh`, and focused iOS smoke tests. It is a cloud portability gate, not the final signed App Store submission gate. The nested `AppStoreSite` Sites project is validated through its own source, build, live-site, and deploy evidence.
+The workflow source is `.github/workflows/cloud-handoff.yml` and covers `M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh`, `Scripts/scan_m10_secrets.sh`, `Scripts/check_supabase_schema.sh`, `Scripts/check_supabase_functions.sh`, and focused iOS smoke tests. It is a cloud portability gate, not the final signed App Store submission gate. The nested `AppStoreSite` Sites project is validated through its own source, build, live-site, and deploy evidence.
 
 Run the combined M10 submit-readiness gate after producing every evidence artifact above:
 
