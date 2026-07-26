@@ -11,7 +11,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "name: Cloud Handoff Check",
             "workflow_dispatch:",
             "runs-on: macos-15",
-            "actions/checkout@v4",
+            "actions/checkout@v7",
             "Scripts/scan_m10_secrets.sh",
             "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
             "git diff --check",
@@ -23,7 +23,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "xcodebuild test",
             "WorkspaceMaterializationScriptTests",
             "CloudHandoffWorkflowTests",
-            "actions/upload-artifact@v4",
+            "actions/upload-artifact@v7",
             "/tmp/buysell-cloud-handoff-manifest.log",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected workflow step: \(expected)")
@@ -103,7 +103,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "workflow_dispatch:",
             "allow_missing_credentials",
             "runs-on: macos-15",
-            "actions/checkout@v4",
+            "actions/checkout@v7",
             "Scripts/scan_m10_secrets.sh",
             "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
             "Scripts/check_supabase_schema.sh",
@@ -119,7 +119,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "Scripts/preflight_m10_signed_archive.sh",
             "Scripts/preflight_m10_app_store_export.sh",
             "Scripts/preflight_m10_app_store_validate.sh",
-            "actions/upload-artifact@v4",
+            "actions/upload-artifact@v7",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected App Store workflow step: \(expected)")
         }
@@ -141,7 +141,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "runs-on: ubuntu-latest",
             "permissions:",
             "contents: read",
-            "actions/checkout@v4",
+            "actions/checkout@v7",
             "supabase/setup-cli@v1",
             "SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}",
             "SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}",
@@ -166,7 +166,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "Scripts/deploy_supabase_backend.sh deploy",
             "Scripts/deploy_supabase_backend.sh functions",
             "Scripts/deploy_supabase_backend.sh preflight",
-            "actions/upload-artifact@v4",
+            "actions/upload-artifact@v7",
             "SupabaseBackendDeployLog",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected Supabase deploy workflow step: \(expected)")
