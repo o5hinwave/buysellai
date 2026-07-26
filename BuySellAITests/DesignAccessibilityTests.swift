@@ -2858,7 +2858,10 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(copyActionSource.range(of: #"Haptics.notify(.success)"#))
         XCTAssertNotNil(copyActionSource.range(of: #"appStore.showToast(String.localizedFormat("Copied %@", field.title.localized), style: .success)"#))
         XCTAssertNil(copyActionSource.range(of: #"appStore.closeFlow()"#))
-        XCTAssertNil(copyActionSource.range(of: #"appStore.saveListing("#))
+        XCTAssertNotNil(copyActionSource.range(of: #"if copyableListingText.isEmpty == false {"#))
+        XCTAssertNotNil(copyActionSource.range(of: #"appStore.saveListing("#))
+        XCTAssertNotNil(copyActionSource.range(of: #"listingText: copyableListingText"#))
+        XCTAssertNotNil(copyActionSource.range(of: #"identificationProfile: context.analysis?.identificationProfile"#))
     }
 
     func testListingStructuredDraftGuidanceUsesNativeTipRows() throws {

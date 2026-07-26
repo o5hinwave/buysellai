@@ -1478,6 +1478,20 @@ struct ListingSheet: View {
                 "export_type": "field"
             ]
         )
+        if copyableListingText.isEmpty == false {
+            appStore.saveListing(
+                item: context.item,
+                imageData: context.imageData,
+                supplementalPhotos: context.supplementalPhotos,
+                marketplace: context.marketplace,
+                listingText: copyableListingText,
+                details: context.details,
+                marketplaceComparison: context.marketplaceComparison,
+                listingDraft: store.draft,
+                identificationProfile: context.analysis?.identificationProfile,
+                replacing: context.existingHistoryEntry
+            )
+        }
         appStore.showToast(String.localizedFormat("Copied %@", field.title.localized), style: .success)
     }
 
