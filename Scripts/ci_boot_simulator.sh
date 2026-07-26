@@ -2,9 +2,12 @@
 set -euo pipefail
 
 device_name="${IOS_CI_SIMULATOR_NAME:-BuySell CI iPhone}"
+simulator_choice="$(mktemp "${TMPDIR:-/tmp}/buysell-ci-simulator.XXXXXX")"
+trap 'rm -f "$simulator_choice"' EXIT
 
-read -r device_type runtime_id < <(python3 <<'PY'
+IOS_CI_SIMULATOR_NAME="$device_name" python3 >"$simulator_choice" <<'PY'
 import json
+import os
 import subprocess
 import sys
 
@@ -24,20 +27,31 @@ def version_key(runtime):
     return tuple(int(part) if part.isdigit() else 0 for part in version.split("."))
 
 runtime = sorted(runtimes, key=version_key)[-1]
+device_name = os.environ["IOS_CI_SIMULATOR_NAME"]
 
 device_types = load_json("xcrun", "simctl", "list", "devicetypes", "--json").get("devicetypes", [])
 preferred_names = ("iPhone 16 Pro", "iPhone 16", "iPhone 15 Pro", "iPhone 15")
 for preferred_name in preferred_names:
     for device_type in device_types:
         if device_type.get("name") == preferred_name:
-            print(device_type["identifier"], runtime["identifier"])
+            devices = load_json("xcrun", "simctl", "list", "devices", "--json").get("devices", {})
+            existing_udid = ""
+            for device in devices.get(runtime["identifier"], []):
+                if device.get("name") == device_name and device.get("isAvailable", True):
+                    existing_udid = device.get("udid", "")
+                    break
+            print(device_type["identifier"], runtime["identifier"], existing_udid)
             raise SystemExit(0)
 
 raise SystemExit("no supported iPhone simulator device type")
 PY
-)
+read -r device_type runtime_id existing_udid <"$simulator_choice"
 
-udid="$(xcrun simctl create "$device_name" "$device_type" "$runtime_id")"
+if [[ -n "${existing_udid:-}" ]]; then
+    udid="$existing_udid"
+else
+    udid="$(xcrun simctl create "$device_name" "$device_type" "$runtime_id")"
+fi
 xcrun simctl boot "$udid" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$udid" -b >/dev/null
 printf 'id=%s\n' "$udid"

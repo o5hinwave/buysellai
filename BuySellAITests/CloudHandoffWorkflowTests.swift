@@ -87,7 +87,9 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         }
 
         XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "runtimes", "--json""#))
+        XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "devices", "--json""#))
         XCTAssertNotNil(helper.range(of: "iPhone 16 Pro"))
+        XCTAssertNotNil(helper.range(of: #"if [[ -n "${existing_udid:-}" ]]; then"#))
         XCTAssertNotNil(helper.range(of: "xcrun simctl create"))
         XCTAssertNotNil(helper.range(of: "xcrun simctl bootstatus"))
         XCTAssertNotNil(helper.range(of: "id=%s"))

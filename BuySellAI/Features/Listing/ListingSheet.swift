@@ -123,165 +123,23 @@ struct ListingSheet: View {
                     listingNextStepRow(step)
                 }
             }
-            if copyableListingFields.isEmpty == false {
-                Section("Copy pieces".localized) {
-                    ForEach(copyableListingFields) { field in
-                        copyFieldRow(field)
-                    }
-                }
-            }
-            if let missingInfoWarnings = joinedDraftValues(store.draft?.missingInfoWarnings) {
-                Section("Check before posting".localized) {
-                    marketplaceTipRow(
-                        title: "Missing details",
-                        systemImage: "exclamationmark.triangle.fill",
-                        detail: missingInfoWarnings
-                    )
-                    Button {
-                        handlePostingBlocker()
-                    } label: {
-                        Label(checkBeforePostingActionTitle, systemImage: checkBeforePostingActionSystemImage)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .tint(Color.brand.foregroundSecondary)
-                    .accessibilityLabel(checkBeforePostingActionTitle)
-                    .accessibilityHint(checkBeforePostingActionHint)
-                }
-            }
-            Section("Photos".localized) {
-                listingPhotoPackageRow
-                if let marketplacePhotoChecklistText {
-                    photoChecklistRow(
-                        title: "Photos to take",
-                        systemImage: "camera.viewfinder",
-                        detail: marketplacePhotoChecklistText
-                    )
-                }
-                photoChecklistRow(
-                    title: "Best first photo",
-                    systemImage: AppSymbol.Flow.snapPhotoCompact,
-                    detail: primaryPhotoGuidance
-                )
-                if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
-                    photoChecklistRow(
-                        title: "Add one more photo",
-                        systemImage: AppSymbol.Action.addPhoto,
-                        detail: missingPhotoPrompt
-                    )
-                    Button {
-                        handlePhotoBlocker()
-                    } label: {
-                        Label("Add missing photo".localized, systemImage: AppSymbol.Action.addPhoto)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .tint(Color.brand.foregroundSecondary)
-                    .accessibilityLabel("Add missing photo".localized)
-                    .accessibilityHint("Opens the camera for the exact photo this listing needs.".localized)
-                }
-            }
             Section {
                 listingRecommendationSummary
             }
-            Section("Price plan".localized) {
-                listingPriceRow(
-                    title: "List at",
-                    value: pricePlan.listAt,
-                    detail: "Start here"
-                )
-                listingPriceRow(
-                    title: "Likely sells for",
-                    value: pricePlan.likelySellsFor,
-                    detail: "Expected sale"
-                )
-                listingPriceRow(
-                    title: "Take-home estimate",
-                    value: pricePlan.takeHomeEstimate,
-                    detail: "What you may keep"
-                )
-                listingPriceRow(
-                    title: "Lowest to take",
-                    value: pricePlan.negotiationFloor,
-                    detail: "If someone offers less"
-                )
-            }
-            if hasCompRange {
-                Section("What it sells for".localized) {
-                    if let compLowPrice = store.draft?.compLowPrice {
-                        listingPriceRow(
-                            title: "Lowest sold",
-                            value: compLowPrice,
-                            detail: "Past comp"
-                        )
-                    }
-                    if let compMedianPrice = store.draft?.compMedianPrice {
-                        listingPriceRow(
-                            title: "Typical sold",
-                            value: compMedianPrice,
-                            detail: "Past comps"
-                        )
-                    }
-                    if let compHighPrice = store.draft?.compHighPrice {
-                        listingPriceRow(
-                            title: "Highest sold",
-                            value: compHighPrice,
-                            detail: "Past comp"
-                        )
-                    }
+            Section("Details".localized) {
+                if copyableListingFields.isEmpty == false {
+                    copyPiecesDisclosure
                 }
-            }
-            Section {
+                if hasPostingBlockers {
+                    postingChecklistDisclosure
+                }
+                photosDisclosure
+                pricePlanDisclosure
+                if hasCompRange {
+                    soldCompsDisclosure
+                }
                 evidenceDisclosure
-            }
-            Section("Quick tips".localized) {
-                if let feeSummary = store.draft?.feeSummary {
-                    marketplaceTipRow(
-                        title: "Selling fees",
-                        systemImage: "percent",
-                        detail: feeSummary
-                    )
-                }
-                if let pricingStrategy = store.draft?.pricingStrategy {
-                    marketplaceTipRow(
-                        title: "Price move",
-                        systemImage: "slider.horizontal.3",
-                        detail: pricingStrategy
-                    )
-                }
-                marketplaceTipRow(
-                    title: "What helps here",
-                    systemImage: "lightbulb.fill",
-                    detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
-                )
-                marketplaceTipRow(
-                    title: "Shipping or pickup",
-                    systemImage: AppSymbol.Marketplace.package,
-                    detail: fulfillmentRecommendation
-                )
-                if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
-                    marketplaceTipRow(
-                        title: "Details to include",
-                        systemImage: "list.bullet.rectangle",
-                        detail: itemSpecifics
-                    )
-                }
-                if let postingNotes = joinedDraftValues(store.draft?.postingNotes) {
-                    marketplaceTipRow(
-                        title: "When posting",
-                        systemImage: "checklist",
-                        detail: postingNotes
-                    )
-                }
-                if let tags = joinedDraftValues(store.draft?.tags) {
-                    marketplaceTipRow(
-                        title: "Tags",
-                        systemImage: AppSymbol.Action.category,
-                        detail: tags
-                    )
-                }
+                quickTipsDisclosure
             }
         case .failed(let message):
             Section {
@@ -376,6 +234,217 @@ struct ListingSheet: View {
         .accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))
         .accessibilityIdentifier("Listing.RecommendationSummary")
         .accessibilitySortPriority(3)
+    }
+
+    private var copyPiecesDisclosure: some View {
+        DisclosureGroup {
+            ForEach(copyableListingFields) { field in
+                copyFieldRow(field)
+            }
+        } label: {
+            Label("Copy pieces".localized, systemImage: "doc.on.doc")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.CopyPiecesDisclosure")
+        .accessibilityHint("Shows individual fields you can copy.".localized)
+    }
+
+    private var postingChecklistDisclosure: some View {
+        DisclosureGroup {
+            if let missingInfoWarnings = joinedDraftValues(store.draft?.missingInfoWarnings) {
+                marketplaceTipRow(
+                    title: "Missing details",
+                    systemImage: "exclamationmark.triangle.fill",
+                    detail: missingInfoWarnings
+                )
+            }
+            if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
+                photoChecklistRow(
+                    title: "Add one more photo",
+                    systemImage: AppSymbol.Action.addPhoto,
+                    detail: missingPhotoPrompt
+                )
+            }
+            Button {
+                handlePostingBlocker()
+            } label: {
+                Label(checkBeforePostingActionTitle, systemImage: checkBeforePostingActionSystemImage)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(Color.brand.foregroundSecondary)
+            .accessibilityLabel(checkBeforePostingActionTitle)
+            .accessibilityHint(checkBeforePostingActionHint)
+        } label: {
+            Label("Check before posting".localized, systemImage: "exclamationmark.triangle.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.PostingChecklistDisclosure")
+        .accessibilityHint("Shows the last details or photos needed before posting.".localized)
+    }
+
+    private var photosDisclosure: some View {
+        DisclosureGroup {
+            listingPhotoPackageRow
+            if let marketplacePhotoChecklistText {
+                photoChecklistRow(
+                    title: "Photos to take",
+                    systemImage: "camera.viewfinder",
+                    detail: marketplacePhotoChecklistText
+                )
+            }
+            photoChecklistRow(
+                title: "Best first photo",
+                systemImage: AppSymbol.Flow.snapPhotoCompact,
+                detail: primaryPhotoGuidance
+            )
+            if let missingPhotoPrompt = store.draft?.missingPhotoPrompt {
+                photoChecklistRow(
+                    title: "Add one more photo",
+                    systemImage: AppSymbol.Action.addPhoto,
+                    detail: missingPhotoPrompt
+                )
+                Button {
+                    handlePhotoBlocker()
+                } label: {
+                    Label("Add missing photo".localized, systemImage: AppSymbol.Action.addPhoto)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .tint(Color.brand.foregroundSecondary)
+                .accessibilityLabel("Add missing photo".localized)
+                .accessibilityHint("Opens the camera for the exact photo this listing needs.".localized)
+            }
+        } label: {
+            Label("Photos".localized, systemImage: "photo.on.rectangle")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.PhotosDisclosure")
+        .accessibilityHint("Shows photo guidance for this marketplace.".localized)
+    }
+
+    private var pricePlanDisclosure: some View {
+        DisclosureGroup {
+            listingPriceRow(
+                title: "List at",
+                value: pricePlan.listAt,
+                detail: "Start here"
+            )
+            listingPriceRow(
+                title: "Likely sells for",
+                value: pricePlan.likelySellsFor,
+                detail: "Expected sale"
+            )
+            listingPriceRow(
+                title: "Take-home estimate",
+                value: pricePlan.takeHomeEstimate,
+                detail: "What you may keep"
+            )
+            listingPriceRow(
+                title: "Lowest to take",
+                value: pricePlan.negotiationFloor,
+                detail: "If someone offers less"
+            )
+        } label: {
+            Label("Price plan".localized, systemImage: "dollarsign.circle.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.PricePlanDisclosure")
+        .accessibilityHint("Shows the list price, likely sale price, take-home estimate, and lowest offer.".localized)
+    }
+
+    private var soldCompsDisclosure: some View {
+        DisclosureGroup {
+            if let compLowPrice = store.draft?.compLowPrice {
+                listingPriceRow(
+                    title: "Lowest sold",
+                    value: compLowPrice,
+                    detail: "Past comp"
+                )
+            }
+            if let compMedianPrice = store.draft?.compMedianPrice {
+                listingPriceRow(
+                    title: "Typical sold",
+                    value: compMedianPrice,
+                    detail: "Past comps"
+                )
+            }
+            if let compHighPrice = store.draft?.compHighPrice {
+                listingPriceRow(
+                    title: "Highest sold",
+                    value: compHighPrice,
+                    detail: "Past comp"
+                )
+            }
+        } label: {
+            Label("What it sells for".localized, systemImage: "chart.line.uptrend.xyaxis")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.SoldCompsDisclosure")
+        .accessibilityHint("Shows verified comparable sale prices when available.".localized)
+    }
+
+    private var quickTipsDisclosure: some View {
+        DisclosureGroup {
+            if let feeSummary = store.draft?.feeSummary {
+                marketplaceTipRow(
+                    title: "Selling fees",
+                    systemImage: "percent",
+                    detail: feeSummary
+                )
+            }
+            if let pricingStrategy = store.draft?.pricingStrategy {
+                marketplaceTipRow(
+                    title: "Price move",
+                    systemImage: "slider.horizontal.3",
+                    detail: pricingStrategy
+                )
+            }
+            marketplaceTipRow(
+                title: "What helps here",
+                systemImage: "lightbulb.fill",
+                detail: store.draft?.fitReason ?? context.marketplace.optimizationProfile.featuredGuidance
+            )
+            marketplaceTipRow(
+                title: "Shipping or pickup",
+                systemImage: AppSymbol.Marketplace.package,
+                detail: fulfillmentRecommendation
+            )
+            if let itemSpecifics = joinedDraftValues(store.draft?.itemSpecifics) {
+                marketplaceTipRow(
+                    title: "Details to include",
+                    systemImage: "list.bullet.rectangle",
+                    detail: itemSpecifics
+                )
+            }
+            if let postingNotes = joinedDraftValues(store.draft?.postingNotes) {
+                marketplaceTipRow(
+                    title: "When posting",
+                    systemImage: "checklist",
+                    detail: postingNotes
+                )
+            }
+            if let tags = joinedDraftValues(store.draft?.tags) {
+                marketplaceTipRow(
+                    title: "Tags",
+                    systemImage: AppSymbol.Action.category,
+                    detail: tags
+                )
+            }
+        } label: {
+            Label("Quick tips".localized, systemImage: "lightbulb.fill")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.brand.foreground)
+        }
+        .accessibilityIdentifier("Listing.QuickTipsDisclosure")
+        .accessibilityHint("Shows marketplace-specific posting tips.".localized)
     }
 
     private var listingNextSteps: [ListingNextStep] {
