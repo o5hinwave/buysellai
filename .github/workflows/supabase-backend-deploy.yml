@@ -1,0 +1,101 @@
+name: Supabase Backend Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run deploy preflight or deploy the linked Supabase backend"
+        required: true
+        default: "preflight"
+        type: choice
+        options:
+          - "preflight"
+          - "deploy"
+      confirm_project_ref:
+        description: "Required for deploy mode; must match SUPABASE_PROJECT_REF"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  supabase:
+    name: Migrations and Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_CONFIG_FROM_ENV: "1"
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS: "45"
+
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install scan tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Validate cloud deploy inputs
+        run: |
+          missing=0
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD SUPABASE_URL SUPABASE_ANON_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::$name GitHub secret is required for Supabase Backend Deploy"
+              missing=1
+            fi
+          done
+
+          if [[ "${{ inputs.mode }}" == "deploy" && "${{ inputs.confirm_project_ref }}" != "$SUPABASE_PROJECT_REF" ]]; then
+            echo "::error::confirm_project_ref must match SUPABASE_PROJECT_REF for deploy mode"
+            missing=1
+          fi
+
+          exit "$missing"
+
+      - name: Guard against leaked secrets
+        run: Scripts/scan_m10_secrets.sh
+
+      - name: Write public app config
+        run: Scripts/setup_supabase_config.sh
+
+      - name: Link Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --yes
+
+      - name: Check backend sources
+        run: |
+          Scripts/check_supabase_schema.sh
+          Scripts/check_supabase_functions.sh
+
+      - name: Run guarded Supabase backend command
+        run: |
+          set -o pipefail
+          if [[ "${{ inputs.mode }}" == "deploy" ]]; then
+            CONFIRM_SUPABASE_DEPLOY="$SUPABASE_PROJECT_REF" \
+              Scripts/deploy_supabase_backend.sh deploy \
+              | tee /tmp/buysell-supabase-backend-deploy.log
+          else
+            Scripts/deploy_supabase_backend.sh preflight \
+              | tee /tmp/buysell-supabase-backend-deploy.log
+          fi
+
+      - name: Upload Supabase deploy log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SupabaseBackendDeployLog
+          path: /tmp/buysell-supabase-backend-deploy.log
+          if-no-files-found: ignore

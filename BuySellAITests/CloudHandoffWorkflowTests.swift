@@ -37,6 +37,8 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "Cloud Handoff Check"))
             XCTAssertNotNil(text.range(of: ".github/workflows/app-store-preflight.yml"))
             XCTAssertNotNil(text.range(of: "App Store Preflight"))
+            XCTAssertNotNil(text.range(of: ".github/workflows/supabase-backend-deploy.yml"))
+            XCTAssertNotNil(text.range(of: "Supabase Backend Deploy"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_schema.sh"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_functions.sh"))
             XCTAssertNotNil(text.range(of: "AppStoreSite"))
@@ -71,6 +73,46 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "actions/upload-artifact@v4",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected App Store workflow step: \(expected)")
+        }
+    }
+
+    func testSupabaseBackendDeployWorkflowRunsGuardedCloudDeploy() throws {
+        let workflowURL = projectURL(".github/workflows/supabase-backend-deploy.yml")
+        let workflow = try String(contentsOf: workflowURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workflowURL.path))
+        [
+            "name: Supabase Backend Deploy",
+            "workflow_dispatch:",
+            "mode:",
+            "preflight",
+            "deploy",
+            "confirm_project_ref",
+            "runs-on: ubuntu-latest",
+            "permissions:",
+            "contents: read",
+            "actions/checkout@v4",
+            "supabase/setup-cli@v1",
+            "SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}",
+            "SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}",
+            "SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}",
+            "SUPABASE_URL: ${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}",
+            "SUPABASE_CONFIG_FROM_ENV: \"1\"",
+            "M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS",
+            "confirm_project_ref must match SUPABASE_PROJECT_REF for deploy mode",
+            "Scripts/scan_m10_secrets.sh",
+            "Scripts/setup_supabase_config.sh",
+            "supabase link --project-ref \"$SUPABASE_PROJECT_REF\" --password \"$SUPABASE_DB_PASSWORD\" --yes",
+            "Scripts/check_supabase_schema.sh",
+            "Scripts/check_supabase_functions.sh",
+            "CONFIRM_SUPABASE_DEPLOY=\"$SUPABASE_PROJECT_REF\"",
+            "Scripts/deploy_supabase_backend.sh deploy",
+            "Scripts/deploy_supabase_backend.sh preflight",
+            "actions/upload-artifact@v4",
+            "SupabaseBackendDeployLog",
+        ].forEach { expected in
+            XCTAssertNotNil(workflow.range(of: expected), "Missing expected Supabase deploy workflow step: \(expected)")
         }
     }
 
