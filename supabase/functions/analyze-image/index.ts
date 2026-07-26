@@ -131,6 +131,7 @@ serve(async (request) => {
         "Return analysis.valueQuestions with 1 to 4 item-specific questions that could change identification, price, or marketplace fit. These must be about this exact likely item, not generic category questions.",
         "Only ask valueQuestions after using all visible clues. Rank valueQuestions like an adaptive assistant: ask the next most useful question first, stop once extra answers would not materially improve the result, and avoid asking for facts already visible in itemFacts or native scan evidence.",
         "Prioritize questions that separate ordinary items from valuable variants: exact model or serial, production era, edition, maker mark, material, authenticity mark, SKU/style code, package label, included original box, working status, and the worst visible flaw.",
+        "For watches, cameras, lenses, trading cards, media, games, music gear, appliances, and other specification-heavy items, look for money-moving clues such as reference number, movement, case size, lens mount, aperture, shutter count, grading company, card number, pressing, region, cartridge label, serial plate, or included controller, battery, charger, case, box, and manual.",
         "Write each valueQuestion as one plain sentence a non-expert can answer from the item in front of them. Prefer yes/no or 2 to 4 tap-friendly choices over open-ended wording.",
         "For valueQuestions, ask about visible-or-user-knowable facts such as exact model, year, edition, variant, size, capacity, material, maker mark, serial plate, authenticity mark, included box/certificate/accessories, working status, restoration, flaws, or high-value era.",
         "When the item could have valuable variants, ask a distinguishing question with short choices. Examples: Does the label say OLED or HAC-001? Is it first edition or later printing? Is there a 1920s maker mark? Is the box label present? Is it signed or numbered? Does the tag show wool, leather, sterling, or another material?",
@@ -543,8 +544,11 @@ const adaptiveQuestionSignals = [
   "box",
   "brand",
   "brass",
+  "card",
+  "card number",
   "capacity",
   "carrier",
+  "case size",
   "certificate",
   "charger",
   "chip",
@@ -554,24 +558,35 @@ const adaptiveQuestionSignals = [
   "dent",
   "dimension",
   "edition",
+  "first edition",
   "flaw",
   "glass",
   "gold",
+  "grade",
+  "graded",
   "hole",
   "label",
   "leather",
+  "lens",
+  "lens mount",
   "logo",
   "maker",
   "mark",
   "material",
   "measurement",
   "model",
+  "mount",
+  "movement",
   "numbered",
   "part",
   "porcelain",
   "power",
+  "pressing",
+  "reference",
+  "reference number",
   "repaired",
   "restoration",
+  "region",
   "scratch",
   "sealed",
   "serial",
@@ -588,7 +603,9 @@ const adaptiveQuestionSignals = [
   "tested",
   "turn on",
   "variant",
+  "vinyl",
   "vintage",
+  "watch",
   "weight",
   "wool",
   "working",
@@ -664,6 +681,63 @@ function fallbackAdaptiveValueQuestion(
       choices: ["Model label", "Size tag", "Maker mark", "I don't know"],
       unknownFollowUpQuestion: "Check the label, tag, bottom, back, or package.",
       unknownFollowUpChoices: ["Back label", "Size tag", "No label"],
+    };
+  }
+
+  if (
+    missingTextIncludesAny(missingText, ["watch", "movement", "reference", "case size", "strap"]) ||
+    knownTextContainsAny(knownText, ["watch", "chronograph", "automatic", "quartz"])
+  ) {
+    return {
+      question: "Any watch reference or movement clue?",
+      reason: "Reference numbers, movement type, and case size can separate ordinary watches from valuable versions.",
+      answerField: "extra",
+      choices: ["Reference number", "Automatic or quartz", "Case size", "I don't know"],
+      unknownFollowUpQuestion: "Check the case back, dial edge, clasp, or paperwork.",
+      unknownFollowUpChoices: ["Case back", "Dial text", "No number"],
+    };
+  }
+
+  if (
+    missingTextIncludesAny(missingText, ["camera", "lens", "mount", "aperture", "shutter", "serial"]) ||
+    knownTextContainsAny(knownText, ["camera", "lens", "dslr", "mirrorless", "35mm"])
+  ) {
+    return {
+      question: "Any lens, mount, or shutter clue?",
+      reason: "Camera bodies and lenses can sell very differently by mount, aperture, shutter count, and included kit.",
+      answerField: "spec",
+      choices: ["Lens mount", "Aperture shown", "Shutter count", "I don't know"],
+      unknownFollowUpQuestion: "Check the lens ring, bottom plate, menu, or battery door.",
+      unknownFollowUpChoices: ["Lens ring", "Bottom plate", "No clue"],
+    };
+  }
+
+  if (
+    missingTextIncludesAny(missingText, ["card", "grade", "graded", "psa", "bgs", "cgc", "card number"]) ||
+    knownTextContainsAny(knownText, ["trading card", "pokemon", "sports card", "graded card"])
+  ) {
+    return {
+      question: "Is there a grade, set, or card number?",
+      reason: "Grades, set names, card numbers, and first editions drive sold comps for cards and collectibles.",
+      answerField: "extra",
+      choices: ["Graded slab", "Card number", "First edition", "I don't know"],
+      unknownFollowUpQuestion: "Check the slab label, bottom corner, back, or set symbol.",
+      unknownFollowUpChoices: ["Slab label", "Card back", "No grade"],
+    };
+  }
+
+  if (
+    category === "Music" ||
+    category === "Media" ||
+    missingTextIncludesAny(missingText, ["pressing", "vinyl", "region", "cartridge", "serial", "instrument"])
+  ) {
+    return {
+      question: "Any pressing, region, or serial clue?",
+      reason: "Pressing, region, cartridge label, and serial details can change music and media value.",
+      answerField: "spec",
+      choices: ["Pressing shown", "Region code", "Serial label", "I don't know"],
+      unknownFollowUpQuestion: "Check the back cover, label, spine, cartridge, or serial plate.",
+      unknownFollowUpChoices: ["Back label", "Spine text", "No code"],
     };
   }
 
@@ -811,6 +885,7 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "battery",
     "barcode",
     "box",
+    "card number",
     "capacity",
     "case size",
     "carrier",
@@ -818,13 +893,21 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "charger",
     "coa",
     "edition",
+    "first edition",
     "flaw",
+    "grade",
+    "graded",
     "hallmark",
     "lens",
+    "lens mount",
     "maker",
     "material",
     "model",
+    "movement",
     "numbered",
+    "pressing",
+    "reference number",
+    "region",
     "sealed",
     "serial",
     "signed",
@@ -838,7 +921,9 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "turn on",
     "upc",
     "variant",
+    "vinyl",
     "vintage",
+    "watch",
     "working",
     "year",
   ];
@@ -846,11 +931,19 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "accessor",
     "battery",
     "box",
+    "card number",
     "capacity",
     "carrier",
     "charger",
     "flaw",
+    "grade",
+    "graded",
+    "lens mount",
     "material",
+    "movement",
+    "pressing",
+    "reference number",
+    "region",
     "restoration",
     "sealed",
     "size",
@@ -858,7 +951,9 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "tested",
     "turn on",
     "variant",
+    "vinyl",
     "vintage",
+    "watch",
     "working",
     "year",
   ];
@@ -867,9 +962,11 @@ function adaptiveQuestionValueScore(searchableText: string): number {
     "bottom",
     "inside",
     "label",
+    "lens ring",
     "logo",
     "mark",
     "plate",
+    "slab label",
     "tag",
     "underneath",
     "worst",
