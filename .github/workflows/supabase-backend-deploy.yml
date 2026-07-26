@@ -52,12 +52,17 @@ jobs:
       - name: Validate cloud deploy inputs
         run: |
           missing=0
-          for name in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD SUPABASE_URL SUPABASE_ANON_KEY; do
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_URL SUPABASE_ANON_KEY; do
             if [[ -z "${!name:-}" ]]; then
               echo "::error::$name GitHub secret is required for Supabase Backend Deploy"
               missing=1
             fi
           done
+
+          if [[ "${{ inputs.mode }}" == "deploy" && -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+            echo "::error::SUPABASE_DB_PASSWORD GitHub secret is required for deploy mode"
+            missing=1
+          fi
 
           if [[ "${{ inputs.mode }}" == "deploy" && "${{ inputs.confirm_project_ref }}" != "$SUPABASE_PROJECT_REF" ]]; then
             echo "::error::confirm_project_ref must match SUPABASE_PROJECT_REF for deploy mode"
@@ -72,7 +77,14 @@ jobs:
       - name: Write public app config
         run: Scripts/setup_supabase_config.sh
 
-      - name: Link Supabase project
+      - name: Record Supabase project for preflight
+        if: ${{ inputs.mode == 'preflight' }}
+        run: |
+          mkdir -p supabase/.temp
+          printf '%s' "$SUPABASE_PROJECT_REF" > supabase/.temp/project-ref
+
+      - name: Link Supabase project for deploy
+        if: ${{ inputs.mode == 'deploy' }}
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --yes
 
       - name: Check backend sources
