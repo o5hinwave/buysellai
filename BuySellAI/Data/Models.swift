@@ -1036,7 +1036,7 @@ struct MarketplaceComparisonResponse: Decodable, Equatable, Sendable {
     }
 }
 
-struct MarketplaceComparison: Decodable, Identifiable, Equatable, Sendable, Hashable {
+struct MarketplaceComparison: Codable, Identifiable, Equatable, Sendable, Hashable {
     let marketplace: Marketplace
     let recommendationLabel: String?
     let marketplaceFitScore: Int?
@@ -1055,7 +1055,7 @@ struct MarketplaceComparison: Decodable, Identifiable, Equatable, Sendable, Hash
     let evidenceStatus: EvidenceStatus
     let evidenceSources: [ListingEvidenceSource]?
 
-    enum EvidenceStatus: String, Decodable, Sendable, Hashable {
+    enum EvidenceStatus: String, Codable, Sendable, Hashable {
         case grounded
         case limited
         case unavailable
@@ -1266,6 +1266,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     let marketplace: Marketplace
     let listingText: String
     let itemDetails: ItemDetailAnswers?
+    let marketplaceComparison: MarketplaceComparison?
     let listingDraft: GeneratedListingDraft?
     let identificationProfile: AnalyzeIdentificationProfile?
 
@@ -1280,6 +1281,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
         marketplace: Marketplace,
         listingText: String,
         itemDetails: ItemDetailAnswers? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
         listingDraft: GeneratedListingDraft? = nil,
         identificationProfile: AnalyzeIdentificationProfile? = nil
     ) {
@@ -1293,6 +1295,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
         self.marketplace = marketplace
         self.listingText = listingText
         self.itemDetails = itemDetails?.sanitizedForUse
+        self.marketplaceComparison = marketplaceComparison?.sanitizedForDisplay()
         self.listingDraft = listingDraft?.sanitizedForDisplay()
         self.identificationProfile = identificationProfile?.sanitizedForDisplay()
     }
@@ -1317,6 +1320,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
             marketplace: marketplace,
             listingText: cleanListingText,
             itemDetails: itemDetails?.sanitizedForUse,
+            marketplaceComparison: marketplaceComparison?.sanitizedForDisplay(),
             listingDraft: listingDraft?.sanitizedForDisplay(),
             identificationProfile: identificationProfile?.sanitizedForDisplay()
         )

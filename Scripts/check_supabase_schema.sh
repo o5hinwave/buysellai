@@ -18,6 +18,7 @@ migration_paths = [
     repo_root / "supabase/migrations/20260724233029_early_access_entitlements.sql",
     repo_root / "supabase/migrations/20260725001000_add_history_listing_metadata.sql",
     repo_root / "supabase/migrations/20260725141629_add_history_identification_profile.sql",
+    repo_root / "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
 ]
 swift_paths = {
     "marketplace": repo_root / "BuySellAI/Data/Marketplace.swift",
@@ -85,6 +86,7 @@ require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.history\b", "history 
 require_sql(r"add\s+column\s+if\s+not\s+exists\s+item_details\s+jsonb", "history.item_details jsonb metadata column is missing")
 require_sql(r"add\s+column\s+if\s+not\s+exists\s+listing_draft\s+jsonb", "history.listing_draft jsonb metadata column is missing")
 require_sql(r"add\s+column\s+if\s+not\s+exists\s+identification_profile\s+jsonb", "history.identification_profile jsonb metadata column is missing")
+require_sql(r"add\s+column\s+if\s+not\s+exists\s+marketplace_comparison\s+jsonb", "history.marketplace_comparison jsonb metadata column is missing")
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.apple_auth_tokens\b", "apple_auth_tokens table is missing")
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.marketplace_research_cache\b", "marketplace_research_cache table is missing")
 require_sql(r"create\s+table\s+if\s+not\s+exists\s+public\.entitlement_config\b", "entitlement_config table is missing")
@@ -129,6 +131,7 @@ for constraint in (
     "history_item_details_object",
     "history_listing_draft_object",
     "history_identification_profile_object",
+    "history_marketplace_comparison_object",
     "apple_auth_tokens_apple_user_id_unique",
     "marketplace_research_cache_key_not_blank",
     "marketplace_research_marketplace_not_blank",
@@ -214,6 +217,6 @@ print("rls: history apple_auth_tokens marketplace_research_cache entitlement_con
 print("policy: history authenticated select-auth-uid")
 print("indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique entitlement_usage_identity_day_idx entitlement_usage_user_day_idx entitlement_usage_device_day_idx entitlement_usage_ip_day_idx")
 print("grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role entitlement_config service_role entitlement_usage_events service_role")
-print("constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection")
+print("constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection")
 print("swift parity: category condition marketplace")
 PY

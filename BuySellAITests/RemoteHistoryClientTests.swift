@@ -18,6 +18,7 @@ final class RemoteHistoryClientTests: XCTestCase {
             XCTAssertEqual(components.queryItems?.first(where: { $0.name == "order" })?.value, "created_at.desc")
             let select = try XCTUnwrap(components.queryItems?.first(where: { $0.name == "select" })?.value)
             XCTAssertTrue(select.contains("identification_profile"))
+            XCTAssertTrue(select.contains("marketplace_comparison"))
             XCTAssertEqual(request.httpMethod, "GET")
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
@@ -161,6 +162,25 @@ final class RemoteHistoryClientTests: XCTestCase {
               "marketplace": "Facebook Marketplace",
               "listing_text": "TITLE:\\nCoat\\n\\nDESCRIPTION:\\nCoat in like new condition.",
               "item_details": { "labelOrBrand": "Wool", "flaws": "", "sizeOrModel": "M" },
+              "marketplace_comparison": {
+                "marketplace": "facebook",
+                "recommendationLabel": "Fastest sale",
+                "listPrice": 60,
+                "takeHomeEstimate": 60,
+                "compLowPrice": 45,
+                "compMedianPrice": 55,
+                "compHighPrice": 70,
+                "feeSummary": "Local sale with no platform selling fee.",
+                "evidenceSummary": "Checked recent local coat comps.",
+                "evidenceStatus": "grounded",
+                "evidenceSources": [{
+                  "sourceMarketplace": "Facebook Marketplace",
+                  "title": "Sold wool coat",
+                  "dateChecked": "2026-07-24",
+                  "listingStatus": "sold",
+                  "price": 55
+                }]
+              },
               "listing_draft": {
                 "title": "Wool Coat",
                 "description": "Wool coat in like new condition.",
@@ -198,6 +218,9 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].marketplace, .facebook)
         XCTAssertEqual(entries[0].itemDetails?.labelOrBrand, "Wool")
         XCTAssertEqual(entries[0].itemDetails?.sizeOrModel, "M")
+        XCTAssertEqual(entries[0].marketplaceComparison?.recommendationLabel, "Fastest sale")
+        XCTAssertEqual(entries[0].marketplaceComparison?.compMedianPrice, Decimal(55))
+        XCTAssertEqual(entries[0].marketplaceComparison?.evidenceSources?.first?.listingStatus, "sold")
         XCTAssertEqual(entries[0].listingDraft?.evidenceSummary, "Checked recent comparable coats.")
         XCTAssertEqual(entries[0].listingDraft?.evidenceSources?.first?.listingStatus, "sold")
         XCTAssertEqual(entries[0].identificationProfile?.confirmedFacts, ["Brand: Wool"])
@@ -219,6 +242,28 @@ final class RemoteHistoryClientTests: XCTestCase {
             marketplace: .craigslist,
             listingText: "TITLE:\nChair\n\nDESCRIPTION:\nChair in fair condition.",
             itemDetails: ItemDetailAnswers(labelOrBrand: "Oak", isLargeOrFragile: true),
+            marketplaceComparison: MarketplaceComparison(
+                marketplace: .craigslist,
+                recommendationLabel: "Easiest option",
+                listPrice: Decimal(32),
+                takeHomeEstimate: Decimal(32),
+                compLowPrice: Decimal(25),
+                compMedianPrice: Decimal(28),
+                compHighPrice: Decimal(40),
+                expectedSpeed: "Likely local interest within a week.",
+                feeSummary: "Local pickup avoids shipping.",
+                evidenceSummary: "Checked recent local chair sales.",
+                evidenceStatus: .grounded,
+                evidenceSources: [
+                    ListingEvidenceSource(
+                        sourceMarketplace: "Craigslist",
+                        title: "Sold oak chair",
+                        dateChecked: "2026-07-24",
+                        listingStatus: "sold",
+                        price: Decimal(28)
+                    )
+                ]
+            ),
             listingDraft: GeneratedListingDraft(
                 title: "Oak Chair",
                 description: "Oak chair in fair condition.",
@@ -268,6 +313,11 @@ final class RemoteHistoryClientTests: XCTestCase {
             let itemDetails = try XCTUnwrap(row["item_details"] as? [String: Any])
             XCTAssertEqual(itemDetails["labelOrBrand"] as? String, "Oak")
             XCTAssertEqual(itemDetails["isLargeOrFragile"] as? Bool, true)
+            let marketplaceComparison = try XCTUnwrap(row["marketplace_comparison"] as? [String: Any])
+            XCTAssertEqual(marketplaceComparison["recommendationLabel"] as? String, "Easiest option")
+            XCTAssertEqual(marketplaceComparison["evidenceSummary"] as? String, "Checked recent local chair sales.")
+            let comparisonSources = try XCTUnwrap(marketplaceComparison["evidenceSources"] as? [[String: Any]])
+            XCTAssertEqual(comparisonSources.first?["listingStatus"] as? String, "sold")
             let listingDraft = try XCTUnwrap(row["listing_draft"] as? [String: Any])
             XCTAssertEqual(listingDraft["evidenceSummary"] as? String, "Checked recent local chair listings.")
             let sources = try XCTUnwrap(listingDraft["evidenceSources"] as? [[String: Any]])

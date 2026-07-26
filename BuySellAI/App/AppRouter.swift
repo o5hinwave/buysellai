@@ -728,6 +728,7 @@ final class AppStore {
         marketplace: Marketplace,
         listingText: String,
         details: ItemDetailAnswers? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
         listingDraft: GeneratedListingDraft? = nil,
         identificationProfile: AnalyzeIdentificationProfile? = nil,
         replacing existingEntry: HistoryEntry? = nil
@@ -753,6 +754,7 @@ final class AppStore {
             marketplace: marketplace,
             listingText: cleanListingText,
             itemDetails: details?.sanitizedForUse ?? existingEntry?.itemDetails,
+            marketplaceComparison: marketplaceComparison?.sanitizedForDisplay() ?? existingEntry?.marketplaceComparison,
             listingDraft: listingDraft?.sanitizedForDisplay() ?? existingEntry?.listingDraft,
             identificationProfile: identificationProfile?.sanitizedForDisplay() ?? existingEntry?.identificationProfile
         )
@@ -921,6 +923,7 @@ final class AppStore {
             imageData: entry.imageThumbnail,
             marketplace: entry.marketplace,
             details: entry.itemDetails,
+            marketplaceComparison: entry.marketplaceComparison,
             analysis: analysis,
             existingListingText: entry.listingText,
             existingListingDraft: entry.listingDraft,

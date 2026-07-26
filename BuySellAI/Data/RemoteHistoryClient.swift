@@ -192,7 +192,7 @@ actor RemoteHistoryClient {
 }
 
 private struct RemoteHistoryRecord: Codable {
-    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text,item_details,listing_draft,identification_profile"
+    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text,item_details,marketplace_comparison,listing_draft,identification_profile"
 
     let id: UUID
     let createdAt: Date
@@ -204,6 +204,7 @@ private struct RemoteHistoryRecord: Codable {
     let marketplace: String
     let listingText: String
     let itemDetails: ItemDetailAnswers?
+    let marketplaceComparison: MarketplaceComparison?
     let listingDraft: GeneratedListingDraft?
     let identificationProfile: AnalyzeIdentificationProfile?
 
@@ -218,6 +219,7 @@ private struct RemoteHistoryRecord: Codable {
         self.marketplace = entry.marketplace.rawValue
         self.listingText = entry.listingText
         self.itemDetails = entry.itemDetails?.sanitizedForUse
+        self.marketplaceComparison = entry.marketplaceComparison?.sanitizedForDisplay()
         self.listingDraft = entry.listingDraft?.sanitizedForDisplay()
         self.identificationProfile = entry.identificationProfile?.sanitizedForDisplay()
     }
@@ -234,6 +236,7 @@ private struct RemoteHistoryRecord: Codable {
             marketplace: Marketplace(apiValue: marketplace),
             listingText: listingText,
             itemDetails: itemDetails?.sanitizedForUse,
+            marketplaceComparison: marketplaceComparison?.sanitizedForDisplay(),
             listingDraft: listingDraft?.sanitizedForDisplay(),
             identificationProfile: identificationProfile?.sanitizedForDisplay()
         )
@@ -250,6 +253,7 @@ private struct RemoteHistoryRecord: Codable {
         case marketplace
         case listingText = "listing_text"
         case itemDetails = "item_details"
+        case marketplaceComparison = "marketplace_comparison"
         case listingDraft = "listing_draft"
         case identificationProfile = "identification_profile"
     }

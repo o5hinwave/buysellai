@@ -162,6 +162,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             itemName: "Desk lamp",
             marketplace: .ebay,
             listingText: "TITLE:\nDesk lamp\n\nDESCRIPTION:\nDesk lamp in good condition.",
+            marketplaceComparison: Self.sampleMarketplaceComparison,
             identificationProfile: Self.sampleIdentificationProfile
         )
         context.insert(HistoryEntryModel(entry: originalEntry))
@@ -176,6 +177,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         guard case .listing(let listingContext) = store.flowSheetContext else {
             return XCTFail("Expected reopened history entry to present listing context")
         }
+        XCTAssertEqual(listingContext.marketplaceComparison?.recommendationLabel, "Best overall")
+        XCTAssertEqual(listingContext.marketplaceComparison?.compMedianPrice, Decimal(42))
         XCTAssertEqual(listingContext.analysis?.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
         XCTAssertEqual(listingContext.analysis?.identificationProfile?.unknownDetails, ["Check base stamp"])
 
@@ -200,6 +203,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(visibleEntry.marketplace, .craigslist)
         XCTAssertEqual(visibleEntry.condition, .likeNew)
         XCTAssertEqual(visibleEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+        XCTAssertEqual(visibleEntry.marketplaceComparison?.recommendationLabel, "Best overall")
+        XCTAssertEqual(visibleEntry.marketplaceComparison?.evidenceSources?.first?.listingStatus, "sold")
         XCTAssertEqual(visibleEntry.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
         XCTAssertEqual(visibleEntry.identificationProfile?.confidenceState, .stillChecking)
 
@@ -210,6 +215,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(persistedEntry.createdAt, originalEntry.createdAt)
         XCTAssertEqual(persistedEntry.marketplace, .craigslist)
         XCTAssertEqual(persistedEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
+        XCTAssertEqual(persistedEntry.marketplaceComparison?.compMedianPrice, Decimal(42))
         XCTAssertEqual(persistedEntry.identificationProfile?.unknownDetails, ["Check base stamp"])
     }
 
@@ -245,6 +251,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         itemName: String,
         marketplace: Marketplace,
         listingText: String? = nil,
+        marketplaceComparison: MarketplaceComparison? = nil,
         identificationProfile: AnalyzeIdentificationProfile? = nil
     ) -> HistoryEntry {
         HistoryEntry(
@@ -257,6 +264,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             imageThumbnail: ImageTools.jpegDataDownscaled(from: ImageTools.sampleJPEG(), maxLongEdge: 200, compression: 0.75),
             marketplace: marketplace,
             listingText: listingText ?? "TITLE:\n\(itemName)\n\nDESCRIPTION:\n\(itemName) in good condition.",
+            marketplaceComparison: marketplaceComparison,
             identificationProfile: identificationProfile
         )
     }
@@ -268,6 +276,33 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             unknownDetails: ["Check base stamp"],
             evidenceNeeded: ["Photo of underside label"],
             confidenceState: .stillChecking
+        )
+    }
+
+    private static var sampleMarketplaceComparison: MarketplaceComparison {
+        MarketplaceComparison(
+            marketplace: .ebay,
+            recommendationLabel: "Best overall",
+            listPrice: Decimal(48),
+            takeHomeEstimate: Decimal(39),
+            compLowPrice: Decimal(35),
+            compMedianPrice: Decimal(42),
+            compHighPrice: Decimal(55),
+            feeSummary: "Fees estimated from marketplace rules.",
+            evidenceSummary: "Checked recent sold desk lamps.",
+            evidenceStatus: .grounded,
+            evidenceSources: [
+                ListingEvidenceSource(
+                    sourceMarketplace: "eBay",
+                    title: "Sold desk lamp",
+                    url: "https://example.com/sold-desk-lamp",
+                    dateChecked: "2026-07-25",
+                    listingStatus: "sold",
+                    conditionAndVariant: "Good brass desk lamp",
+                    comparability: "Close match",
+                    price: Decimal(42)
+                )
+            ]
         )
     }
 

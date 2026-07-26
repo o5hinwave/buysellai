@@ -1211,6 +1211,7 @@ struct ListingSheet: View {
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,
+            marketplaceComparison: context.marketplaceComparison,
             listingDraft: store.draft,
             identificationProfile: context.analysis?.identificationProfile,
             replacing: context.existingHistoryEntry
@@ -1243,6 +1244,7 @@ struct ListingSheet: View {
                 marketplace: context.marketplace,
                 listingText: copyableListingText,
                 details: context.details,
+                marketplaceComparison: context.marketplaceComparison,
                 listingDraft: store.draft,
                 identificationProfile: context.analysis?.identificationProfile,
                 replacing: context.existingHistoryEntry
@@ -1284,6 +1286,7 @@ struct ListingSheet: View {
                             marketplace: context.marketplace,
                             listingText: copyableListingText,
                             details: context.details,
+                            marketplaceComparison: context.marketplaceComparison,
                             listingDraft: store.draft,
                             identificationProfile: context.analysis?.identificationProfile,
                             replacing: context.existingHistoryEntry
@@ -1379,6 +1382,7 @@ struct ListingSheet: View {
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,
+            marketplaceComparison: context.marketplaceComparison,
             listingDraft: store.draft,
             identificationProfile: context.analysis?.identificationProfile,
             replacing: context.existingHistoryEntry

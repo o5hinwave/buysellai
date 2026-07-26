@@ -186,7 +186,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "policy: history authenticated select-auth-uid",
             "indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique entitlement_usage_identity_day_idx entitlement_usage_user_day_idx entitlement_usage_device_day_idx entitlement_usage_ip_day_idx",
             "grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role entitlement_config service_role entitlement_usage_events service_role",
-            "constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection",
+            "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection",
             "swift parity: category condition marketplace",
         ].forEach { assert(script, contains: $0) }
     }
@@ -221,7 +221,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy passed"))
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy preflight passed"))
         XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
-        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing metadata identification-profile apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
+        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
         XCTAssertNotNil(script.range(of: "functions: %s"))
         XCTAssertNotNil(script.range(of: "secrets: required names present"))
 
