@@ -10,9 +10,26 @@ import json
 import os
 import subprocess
 import sys
+import time
+
+def checked_output_with_retry(args, timeout=90, attempts=3):
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return subprocess.check_output(args, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            last_error = error
+            print(
+                f"{args[0]} {' '.join(args[1:])} timed out after {timeout}s "
+                f"(attempt {attempt}/{attempts})",
+                file=sys.stderr,
+            )
+            if attempt < attempts:
+                time.sleep(5 * attempt)
+    raise last_error
 
 def load_json(*args):
-    return json.loads(subprocess.check_output(args, text=True, timeout=90))
+    return json.loads(checked_output_with_retry(args, timeout=90))
 
 runtimes = [
     runtime

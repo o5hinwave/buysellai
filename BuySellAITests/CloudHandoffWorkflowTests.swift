@@ -189,6 +189,10 @@ final class CloudHandoffWorkflowTests: XCTestCase {
 
         XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "runtimes", "--json""#))
         XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "devices", "--json""#))
+        XCTAssertNotNil(helper.range(of: "checked_output_with_retry"))
+        XCTAssertNotNil(helper.range(of: "attempts=3"))
+        XCTAssertNotNil(helper.range(of: "time.sleep(5 * attempt)"))
+        XCTAssertNotNil(helper.range(of: "timed out after {timeout}s"))
         XCTAssertNotNil(helper.range(of: "timeout=90"))
         XCTAssertNotNil(helper.range(of: "timeout=30"))
         XCTAssertNotNil(helper.range(of: "timeout=60"))
