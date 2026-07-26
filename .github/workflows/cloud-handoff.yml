@@ -41,6 +41,9 @@ jobs:
       - name: Check Supabase Edge Function source
         run: Scripts/check_supabase_functions.sh
 
+      - name: Write cloud handoff manifest
+        run: Scripts/write_cloud_handoff_manifest.sh /tmp/buysell-cloud-handoff-manifest.log
+
       - name: Prepare iOS simulator
         run: |
           destination="$(Scripts/ci_boot_simulator.sh)"
@@ -65,5 +68,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CloudHandoff.xcresult
-          path: CloudHandoff.xcresult
+          path: |
+            CloudHandoff.xcresult
+            /tmp/buysell-cloud-handoff-manifest.log
           if-no-files-found: ignore

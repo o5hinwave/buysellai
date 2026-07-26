@@ -17,14 +17,61 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "git diff --check",
             "Scripts/check_supabase_schema.sh",
             "Scripts/check_supabase_functions.sh",
+            "Scripts/write_cloud_handoff_manifest.sh /tmp/buysell-cloud-handoff-manifest.log",
             "Scripts/ci_boot_simulator.sh",
             "IOS_TEST_DESTINATION",
             "xcodebuild test",
             "WorkspaceMaterializationScriptTests",
             "CloudHandoffWorkflowTests",
             "actions/upload-artifact@v4",
+            "/tmp/buysell-cloud-handoff-manifest.log",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected workflow step: \(expected)")
+        }
+    }
+
+    func testCloudHandoffManifestRecordsPortableNoSecretHandoffState() throws {
+        let scriptURL = projectURL("Scripts/write_cloud_handoff_manifest.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+        let readme = try String(contentsOf: projectURL("README.md"), encoding: .utf8)
+        let m10 = try String(contentsOf: projectURL("M10_ACCEPTANCE.md"), encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        [
+            "BuySell cloud handoff manifest",
+            "https://github.com/o5hinwave/buysellai",
+            "com.despia.buysellai",
+            "ZVFG6KC7KA",
+            "supabase project ref:",
+            "supabase host:",
+            "support url:",
+            "privacy url:",
+            "accessibility url:",
+            "cloud workflows: iOS Cloud Check, Cloud Handoff Check, Supabase Backend Deploy, App Store Preflight",
+            "github secret names:",
+            "SUPABASE_ACCESS_TOKEN",
+            "SUPABASE_PROJECT_REF",
+            "SUPABASE_DB_PASSWORD",
+            "IOS_DISTRIBUTION_CERTIFICATE_BASE64",
+            "ASC_API_PRIVATE_KEY",
+            "supabase secret names:",
+            "GEMINI_API_KEY",
+            "SUPABASE_SERVICE_ROLE_KEY",
+            "APPLE_PRIVATE_KEY",
+            "source roots: BuySellAI BuySellAITests BuySellAIUITests supabase Scripts AppStoreAssets AppStoreSite",
+            "manifest: no secret values emitted",
+        ].forEach { expected in
+            XCTAssertNotNil(script.range(of: expected), "Missing expected manifest marker: \(expected)")
+        }
+
+        XCTAssertNil(script.range(of: #"printf '.*SUPABASE_ANON_KEY=.*'"#, options: .regularExpression))
+        XCTAssertNil(script.range(of: #"printf '.*SUPABASE_SERVICE_ROLE_KEY=.*'"#, options: .regularExpression))
+        XCTAssertNil(script.range(of: #"printf '.*ASC_API_PRIVATE_KEY=.*'"#, options: .regularExpression))
+
+        for text in [readme, m10] {
+            XCTAssertNotNil(text.range(of: "Scripts/write_cloud_handoff_manifest.sh"))
+            XCTAssertNotNil(text.range(of: "/tmp/buysell-cloud-handoff-manifest.log"))
+            XCTAssertNotNil(text.range(of: "BuySell cloud handoff manifest"))
         }
     }
 
