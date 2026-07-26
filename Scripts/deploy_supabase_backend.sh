@@ -24,11 +24,13 @@ usage() {
     cat <<'USAGE'
 Usage:
   bash Scripts/deploy_supabase_backend.sh preflight
+  bash Scripts/deploy_supabase_backend.sh functions
   CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy
 
 Preflight checks the local Supabase config, linked project, required server-side
 secret names, migrations, and Edge Function sources without printing secret
-values. Deploy applies the migration and deploys all BuySell Edge Functions.
+values. Functions deploys all BuySell Edge Functions without applying database
+migrations. Deploy applies the migration and deploys all BuySell Edge Functions.
 Use Scripts/setup_supabase_config.sh and Scripts/setup_supabase_secrets.sh full
 before deploy mode.
 USAGE
@@ -273,22 +275,28 @@ run_schema_check() {
     bash "$repo_root/Scripts/check_supabase_schema.sh"
 }
 
-run_deploy() {
+run_function_deploy() {
     local project_ref="$1"
     local function_name
+
+    for function_name in "${functions[@]}"; do
+        supabase functions deploy "$function_name" --project-ref "$project_ref" --use-api
+    done
+}
+
+run_deploy() {
+    local project_ref="$1"
 
     if [[ "${CONFIRM_SUPABASE_DEPLOY:-}" != "$project_ref" ]]; then
         fail "set CONFIRM_SUPABASE_DEPLOY=$project_ref to deploy to this Supabase project"
     fi
 
     supabase db push --linked --yes
-    for function_name in "${functions[@]}"; do
-        supabase functions deploy "$function_name" --project-ref "$project_ref" --use-api
-    done
+    run_function_deploy "$project_ref"
 }
 
 case "$mode" in
-    preflight|deploy)
+    preflight|functions|deploy)
         ;;
     -h|--help|help)
         usage
@@ -325,6 +333,9 @@ fi
 if [[ "$mode" == "deploy" ]]; then
     run_deploy "$project_ref"
     printf 'M10 Supabase deploy passed\n'
+elif [[ "$mode" == "functions" ]]; then
+    run_function_deploy "$project_ref"
+    printf 'M10 Supabase functions deploy passed\n'
 else
     printf 'M10 Supabase deploy preflight passed\n'
 fi

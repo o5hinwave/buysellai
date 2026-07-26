@@ -52,19 +52,21 @@ Deploy after the migration and secrets are in place:
 ```sh
 ALLOW_MISSING_SUPABASE_DEPLOY=1 bash Scripts/deploy_supabase_backend.sh preflight
 
+bash Scripts/deploy_supabase_backend.sh functions | tee /tmp/buysell-submit-readiness-supabase-functions-deploy.log
+
 CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy | tee /tmp/buysell-submit-readiness-supabase-deploy.log
 ```
 
-The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. Manual equivalent commands are:
+The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources. `functions` mode deploys each function with `--use-api` without touching migrations; `deploy` mode first runs `supabase db push --linked --yes`, then deploys each function. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. Manual equivalent commands are:
 
-GitHub Actions can run the same deploy path from the cloud through `.github/workflows/supabase-backend-deploy.yml` (`Supabase Backend Deploy`). Configure encrypted repository secrets named `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY`, then run the workflow manually in `preflight` mode for a no-change readiness check. Add encrypted `SUPABASE_DB_PASSWORD` before running `deploy` mode with `confirm_project_ref` matching `SUPABASE_PROJECT_REF`. The workflow runs the secret scan, writes only the public app config, records the project ref for preflight or links the project for deploy, verifies schema/function sources, and calls `Scripts/deploy_supabase_backend.sh`; it does not store provider keys, service-role keys, or Apple private-key material in source.
+GitHub Actions can run the same deploy path from the cloud through `.github/workflows/supabase-backend-deploy.yml` (`Supabase Backend Deploy`). Configure encrypted repository secrets named `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY`, then run the workflow manually in `preflight` mode for a no-change readiness check or `functions` mode to deploy Edge Functions without the database password. Add encrypted `SUPABASE_DB_PASSWORD` before running `deploy` mode with `confirm_project_ref` matching `SUPABASE_PROJECT_REF`. The workflow runs the secret scan, writes only the public app config, records the project ref for preflight/functions or links the project for deploy, verifies schema/function sources, and calls `Scripts/deploy_supabase_backend.sh`; it does not store provider keys, service-role keys, or Apple private-key material in source.
 
 ```sh
-supabase functions deploy analyze-image
-supabase functions deploy compare-marketplaces
-supabase functions deploy generate-listing
-supabase functions deploy store-apple-token
-supabase functions deploy delete-account
+supabase functions deploy analyze-image --project-ref <project-ref> --use-api
+supabase functions deploy compare-marketplaces --project-ref <project-ref> --use-api
+supabase functions deploy generate-listing --project-ref <project-ref> --use-api
+supabase functions deploy store-apple-token --project-ref <project-ref> --use-api
+supabase functions deploy delete-account --project-ref <project-ref> --use-api
 ```
 
 `analyze-image`, `compare-marketplaces`, and `generate-listing` are configured with `verify_jwt = false` so guest requests that include only the public anon `apikey` can work. `store-apple-token` and `delete-account` keep `verify_jwt = true` and also verify the bearer token. `store-apple-token` checks whether the Apple subject is already owned by another Supabase user before exchanging the short-lived Apple authorization code, requires Apple's token response to include an identity subject that matches the submitted Apple user ID, exchanges valid codes for server-side Apple tokens, and returns a 409 conflict for duplicate Apple identity storage. `delete-account` attempts to revoke the stored Apple token through Apple's `/auth/revoke` endpoint, deletes the private token row, then deletes user-owned history and the auth user with the service-role key. BuySell account deletion still completes if Apple token cleanup is stale or temporarily unavailable, but missing or malformed Apple private-key secrets remain hard backend errors so release evidence cannot hide a revocation misconfiguration.

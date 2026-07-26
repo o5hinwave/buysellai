@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Run deploy preflight or deploy the linked Supabase backend"
+        description: "Run deploy preflight, deploy Edge Functions, or deploy the linked Supabase backend"
         required: true
         default: "preflight"
         type: choice
         options:
           - "preflight"
+          - "functions"
           - "deploy"
       confirm_project_ref:
         description: "Required for deploy mode; must match SUPABASE_PROJECT_REF"
@@ -77,8 +78,8 @@ jobs:
       - name: Write public app config
         run: Scripts/setup_supabase_config.sh
 
-      - name: Record Supabase project for preflight
-        if: ${{ inputs.mode == 'preflight' }}
+      - name: Record Supabase project for preflight or functions deploy
+        if: ${{ inputs.mode == 'preflight' || inputs.mode == 'functions' }}
         run: |
           mkdir -p supabase/.temp
           printf '%s' "$SUPABASE_PROJECT_REF" > supabase/.temp/project-ref
@@ -98,6 +99,9 @@ jobs:
           if [[ "${{ inputs.mode }}" == "deploy" ]]; then
             CONFIRM_SUPABASE_DEPLOY="$SUPABASE_PROJECT_REF" \
               Scripts/deploy_supabase_backend.sh deploy \
+              | tee /tmp/buysell-supabase-backend-deploy.log
+          elif [[ "${{ inputs.mode }}" == "functions" ]]; then
+            Scripts/deploy_supabase_backend.sh functions \
               | tee /tmp/buysell-supabase-backend-deploy.log
           else
             Scripts/deploy_supabase_backend.sh preflight \
