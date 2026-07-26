@@ -199,6 +199,7 @@ require_source_files() {
         "$repo_root/supabase/migrations/20260726051236_add_history_supplemental_photos.sql" \
         "$repo_root/supabase/migrations/20260726092634_raise_early_access_usage_limits.sql" \
         "$repo_root/supabase/migrations/20260726132434_restore_early_access_usage_window.sql" \
+        "$repo_root/supabase/migrations/20260726134945_align_early_access_entitlement_defaults.sql" \
         "$repo_root/supabase/functions/analyze-image/index.ts" \
         "$repo_root/supabase/functions/compare-marketplaces/index.ts" \
         "$repo_root/supabase/functions/generate-listing/index.ts" \

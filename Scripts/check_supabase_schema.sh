@@ -22,6 +22,7 @@ migration_paths = [
     repo_root / "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
     repo_root / "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql",
     repo_root / "supabase/migrations/20260726132434_restore_early_access_usage_window.sql",
+    repo_root / "supabase/migrations/20260726134945_align_early_access_entitlement_defaults.sql",
 ]
 swift_paths = {
     "marketplace": repo_root / "BuySellAI/Data/Marketplace.swift",
@@ -121,12 +122,12 @@ require_sql(
     "apple_auth_tokens.apple_user_id must be unique",
 )
 require_sql(
-    r"daily_analysis_limit\s+integer\s+not\s+null\s+default\s+18.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+100.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+18.*?daily_analysis_limit\s+between\s+10\s+and\s+20",
-    "entitlement_config daily analysis limit must end in the early-access 10-20 analysis window",
+    r"daily_analysis_limit\s+integer\s+not\s+null\s+default\s+18.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+100.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+18.*?daily_analysis_limit\s+between\s+10\s+and\s+20.*?daily_analysis_limit\s*=\s*18",
+    "entitlement_config daily analysis limit must end at the early-access default inside the 10-20 analysis window",
 )
 require_sql(
-    r"daily_ai_action_limit\s+integer\s+not\s+null\s+default\s+54.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+300.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+54.*?daily_ai_action_limit\s+between\s+10\s+and\s+120",
-    "entitlement_config daily AI action limit must end in a bounded early-access full-flow window",
+    r"daily_ai_action_limit\s+integer\s+not\s+null\s+default\s+54.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+300.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+54.*?daily_ai_action_limit\s+between\s+10\s+and\s+120.*?daily_ai_action_limit\s*=\s*54",
+    "entitlement_config daily AI action limit must end at the early-access default inside the bounded full-flow window",
 )
 
 for constraint in (

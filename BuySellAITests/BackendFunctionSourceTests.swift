@@ -25,7 +25,8 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
             "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
             "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql",
-            "supabase/migrations/20260726132434_restore_early_access_usage_window.sql"
+            "supabase/migrations/20260726132434_restore_early_access_usage_window.sql",
+            "supabase/migrations/20260726134945_align_early_access_entitlement_defaults.sql"
         ] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL(path).path), "\(path) should exist")
         }
@@ -148,6 +149,7 @@ final class BackendFunctionSourceTests: XCTestCase {
 
     func testSupabaseEntitlementLimitMigrationRestoresEarlyAccessDailyWindow() throws {
         let migration = try read("supabase/migrations/20260726132434_restore_early_access_usage_window.sql")
+        let defaults = try read("supabase/migrations/20260726134945_align_early_access_entitlement_defaults.sql")
 
         XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_analysis_limit_range"))
         XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_ai_action_limit_range"))
@@ -158,6 +160,9 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(migration.range(of: "daily_analysis_limit between 10 and 20"))
         XCTAssertNotNil(migration.range(of: "daily_ai_action_limit between 10 and 120"))
         XCTAssertNil(migration.range(of: "add constraint if not exists", options: .caseInsensitive))
+        XCTAssertNotNil(defaults.range(of: "daily_analysis_limit = 18"))
+        XCTAssertNotNil(defaults.range(of: "daily_ai_action_limit = 54"))
+        XCTAssertNil(defaults.range(of: "add constraint if not exists", options: .caseInsensitive))
 
         let entitlements = try read("supabase/functions/_shared/entitlements.ts")
         XCTAssertNotNil(entitlements.range(of: "dailyAnalysisLimit: 18"))
