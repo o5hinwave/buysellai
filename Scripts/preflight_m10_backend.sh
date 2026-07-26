@@ -23,7 +23,7 @@ print_pending_and_exit() {
         printf 'config: %s\n' "$config_path"
         printf 'project: %s\n' "$supabase_url"
         printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
-        printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
+        printf 'functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
         printf 'protected functions: store-apple-token delete-account\n'
         printf 'protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
     fi
@@ -473,7 +473,7 @@ printf 'M10 backend preflight passed\n'
 printf 'config: %s\n' "$config_path"
 printf 'project: %s\n' "$supabase_url"
 printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
-printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
+printf 'functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'protected functions: store-apple-token delete-account\n'
 printf 'protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
 printf 'analyze item: %s\n' "$analyze_item"

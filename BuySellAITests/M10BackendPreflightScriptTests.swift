@@ -69,7 +69,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "description_body ="))
         XCTAssertNotNil(script.range(of: "M10 backend preflight passed"))
         XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
-        XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
+        XCTAssertNotNil(script.range(of: "functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected functions: store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "analyze item:"))
@@ -109,6 +109,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "deno_cmd",
             "check",
             "require_source_contains",
+            "supabase/functions/backend-health/index.ts",
             "supabase/functions/analyze-image/index.ts",
             "supabase/functions/generate-listing/index.ts",
             "supabase/functions/store-apple-token/index.ts",
@@ -131,7 +132,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "formatListingDraft",
             "return jsonResponse({ listing, draft, entitlement })",
             "Supabase function Deno check passed",
-            "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account",
+            "functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account",
             "supabase/functions/_shared/gemini_test.ts",
             "shouldRetryGeminiJson",
             "The previous provider response was not valid JSON for the app contract.",
@@ -269,9 +270,9 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(workflow.range(of: "Verify live early access entitlements"))
         XCTAssertNotNil(workflow.range(of: "Scripts/verify_supabase_remote_entitlements.sh"))
 
-        XCTAssertNotNil(remoteVerifier.range(of: "supabase db query --linked --output json"))
-        XCTAssertNotNil(remoteVerifier.range(of: "public.entitlement_config"))
-        XCTAssertNotNil(remoteVerifier.range(of: "supabase_migrations.schema_migrations"))
+        XCTAssertNotNil(remoteVerifier.range(of: "curl -sS --show-error --fail-with-body"))
+        XCTAssertNotNil(remoteVerifier.range(of: "/functions/v1/backend-health"))
+        XCTAssertNotNil(remoteVerifier.range(of: "SUPABASE_ANON_KEY"))
         XCTAssertNotNil(remoteVerifier.range(of: "20260724233029"))
         XCTAssertNotNil(remoteVerifier.range(of: "20260726132434"))
         XCTAssertNotNil(remoteVerifier.range(of: "20260726134945"))
@@ -393,7 +394,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "/tmp/buysell-submit-readiness-backend.log"))
         XCTAssertNotNil(script.range(of: "M10 backend preflight passed"))
         XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
-        XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
+        XCTAssertNotNil(script.range(of: "functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected functions: store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
         XCTAssertNotNil(script.range(of: "analyze rejection contract: missing jpeg base64"))

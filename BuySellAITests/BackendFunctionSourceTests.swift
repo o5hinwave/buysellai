@@ -6,6 +6,7 @@ final class BackendFunctionSourceTests: XCTestCase {
     func testSupabaseFunctionSourcesExistForAllAppRoutes() throws {
         for path in [
             "supabase/config.toml",
+            "supabase/functions/backend-health/index.ts",
             "supabase/functions/analyze-image/index.ts",
             "supabase/functions/compare-marketplaces/index.ts",
             "supabase/functions/generate-listing/index.ts",
@@ -175,6 +176,8 @@ final class BackendFunctionSourceTests: XCTestCase {
         let config = try read("supabase/config.toml")
         XCTAssertNotNil(config.range(of: #"\[functions\.analyze-image\]\s+verify_jwt = false"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.generate-listing\]\s+verify_jwt = false"#, options: .regularExpression))
+        XCTAssertNotNil(config.range(of: #"\[functions\.compare-marketplaces\]\s+verify_jwt = false"#, options: .regularExpression))
+        XCTAssertNotNil(config.range(of: #"\[functions\.backend-health\]\s+verify_jwt = false"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.store-apple-token\]\s+verify_jwt = true"#, options: .regularExpression))
         XCTAssertNotNil(config.range(of: #"\[functions\.delete-account\]\s+verify_jwt = true"#, options: .regularExpression))
 
@@ -227,6 +230,25 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(gemini.range(of: "attachGroundingMetadata"))
         XCTAssertNotNil(gemini.range(of: "application/json"))
         XCTAssertNil(gemini.range(of: #"AQ\.[0-9A-Za-z_-]{20,}|AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|sb_secret_[0-9A-Za-z_-]{20,}"#, options: .regularExpression))
+    }
+
+    func testBackendHealthFunctionExposesOnlyNonSensitiveEarlyAccessState() throws {
+        let health = try read("supabase/functions/backend-health/index.ts")
+
+        XCTAssertNotNil(health.range(of: "requiredMigrations"))
+        XCTAssertNotNil(health.range(of: #""20260724233029""#))
+        XCTAssertNotNil(health.range(of: #""20260726132434""#))
+        XCTAssertNotNil(health.range(of: #""20260726134945""#))
+        XCTAssertNotNil(health.range(of: #"service: "buysell-backend""#))
+        XCTAssertNotNil(health.range(of: #"entitlement_state: "earlyAccess""#))
+        XCTAssertNotNil(health.range(of: "complete_feature_access: true"))
+        XCTAssertNotNil(health.range(of: "future_paid_access_enabled: false"))
+        XCTAssertNotNil(health.range(of: "daily_analysis_limit: 18"))
+        XCTAssertNotNil(health.range(of: "daily_ai_action_limit: 54"))
+        XCTAssertNotNil(health.range(of: #"requireEnv("SUPABASE_SERVICE_ROLE_KEY")"#))
+        XCTAssertNotNil(health.range(of: "return jsonResponse({"))
+        XCTAssertNil(health.range(of: "serviceRoleKey,"))
+        XCTAssertNil(health.range(of: "SUPABASE_DB_PASSWORD"))
     }
 
     func testGeminiImageModelCatalogUsesCurrentNanoBananaProductionIds() throws {
@@ -835,6 +857,7 @@ final class BackendFunctionSourceTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "supabase db push --linked --yes"))
             XCTAssertNotNil(text.range(of: "--use-api"))
             XCTAssertNotNil(text.range(of: "supabase db push"))
+            XCTAssertNotNil(text.range(of: "supabase functions deploy backend-health"))
             XCTAssertNotNil(text.range(of: "supabase functions deploy analyze-image"))
             XCTAssertNotNil(text.range(of: "supabase functions deploy generate-listing"))
             XCTAssertNotNil(text.range(of: "supabase functions deploy store-apple-token"))
@@ -892,7 +915,7 @@ final class BackendFunctionSourceTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "Scripts/preflight_m10_backend.sh"))
             XCTAssertNotNil(text.range(of: "M10_ANALYZE_IMAGE_JPEG"))
             XCTAssertNotNil(text.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
-            XCTAssertNotNil(text.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
+            XCTAssertNotNil(text.range(of: "functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
             XCTAssertNotNil(text.range(of: "protected functions: store-apple-token delete-account"))
             XCTAssertNotNil(text.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
             XCTAssertNotNil(text.range(of: "analyze rejection contract: missing jpeg base64"))

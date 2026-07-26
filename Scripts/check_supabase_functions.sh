@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 entrypoints=(
+    "supabase/functions/backend-health/index.ts"
     "supabase/functions/analyze-image/index.ts"
     "supabase/functions/compare-marketplaces/index.ts"
     "supabase/functions/generate-listing/index.ts"
@@ -51,6 +52,22 @@ require_source_not_contains() {
     fi
 }
 
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "requiredMigrations" \
+    "backend health required migration marker"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "daily_analysis_limit: 18" \
+    "backend health early-access analysis limit"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "daily_ai_action_limit: 54" \
+    "backend health early-access AI action limit"
+require_source_contains \
+    "supabase/functions/backend-health/index.ts" \
+    "SUPABASE_SERVICE_ROLE_KEY" \
+    "backend health server-side entitlement query"
 require_source_contains \
     "supabase/functions/_shared/entitlements.ts" \
     "consumeEarlyAccessUsage" \
@@ -313,7 +330,7 @@ require_source_not_contains \
     "copyable listing photo guidance rows"
 
 printf 'Supabase function Deno check passed\n'
-printf 'functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
+printf 'functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account\n'
 printf 'listing research tools: google_search url_context gated-by-cache\n'
 printf 'marketplace compare: grounded candidate search before picker recommendation\n'
 printf 'marketplace compare cache: grounded findings saved for listing reuse\n'

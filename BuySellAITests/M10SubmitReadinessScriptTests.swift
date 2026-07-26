@@ -215,7 +215,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "listing research cache: Gemini grounding saved"))
         XCTAssertNotNil(script.range(of: "listing draft: structured fields formatted deterministically"))
         XCTAssertNotNil(script.range(of: "schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))
-        XCTAssertNotNil(script.range(of: "functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
+        XCTAssertNotNil(script.range(of: "functions: backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "listing evidence sources: sold-comp guarded structured source/date/status/comparability"))
         XCTAssertNotNil(script.range(of: "protected functions: store-apple-token delete-account"))
         XCTAssertNotNil(script.range(of: "protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events"))

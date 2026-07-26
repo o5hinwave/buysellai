@@ -6,7 +6,7 @@ mode="${1:-preflight}"
 config_path="${M10_CONFIG_PLIST:-$repo_root/BuySellAI/App/Config.plist}"
 allow_missing="${ALLOW_MISSING_SUPABASE_DEPLOY:-0}"
 linked_ref_file="$repo_root/supabase/.temp/project-ref"
-functions=(analyze-image compare-marketplaces generate-listing store-apple-token delete-account)
+functions=(backend-health analyze-image compare-marketplaces generate-listing store-apple-token delete-account)
 required_secrets=(GEMINI_API_KEY SUPABASE_SERVICE_ROLE_KEY APPLE_TEAM_ID APPLE_KEY_ID APPLE_CLIENT_ID APPLE_PRIVATE_KEY)
 pending_items=()
 supabase_url=""
@@ -200,6 +200,7 @@ require_source_files() {
         "$repo_root/supabase/migrations/20260726092634_raise_early_access_usage_limits.sql" \
         "$repo_root/supabase/migrations/20260726132434_restore_early_access_usage_window.sql" \
         "$repo_root/supabase/migrations/20260726134945_align_early_access_entitlement_defaults.sql" \
+        "$repo_root/supabase/functions/backend-health/index.ts" \
         "$repo_root/supabase/functions/analyze-image/index.ts" \
         "$repo_root/supabase/functions/compare-marketplaces/index.ts" \
         "$repo_root/supabase/functions/generate-listing/index.ts" \
