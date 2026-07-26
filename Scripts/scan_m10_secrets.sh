@@ -74,7 +74,7 @@ self_test() {
         return 1
     fi
 
-    if [[ "$output" != *"./src/.env"* || "$output" != *"./src/server.env"* ]]; then
+    if [[ "$output" != *"src/.env"* || "$output" != *"src/server.env"* ]]; then
         printf 'error: M10 secret scan self-test did not report the provider/server secret fixture paths\n' >&2
         rm -rf "$temp_root"
         return 1
