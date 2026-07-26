@@ -170,6 +170,7 @@ extension Marketplace {
             officialPostURLString: destination.postURLString,
             officialHowToURLString: destination.howToURLString,
             ruleSourceURLs: Self.uniqueSourceURLs([
+                destination.postURLString,
                 destination.howToURLString,
                 evidence.feeModelSourceURL
             ]),

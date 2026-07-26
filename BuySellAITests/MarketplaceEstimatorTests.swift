@@ -108,7 +108,10 @@ final class MarketplaceEstimatorTests: XCTestCase {
             XCTAssertNotEqual(playbook.postingSurface, .unavailable, marketplace.displayName)
             XCTAssertEqual(URL(string: playbook.officialPostURLString)?.scheme, "https", marketplace.displayName)
             XCTAssertEqual(URL(string: playbook.officialHowToURLString)?.scheme, "https", marketplace.displayName)
-            XCTAssertGreaterThanOrEqual(playbook.ruleSourceURLs.count, 2, marketplace.displayName)
+            XCTAssertGreaterThanOrEqual(playbook.ruleSourceURLs.count, 3, marketplace.displayName)
+            XCTAssertTrue(playbook.ruleSourceURLs.contains(playbook.officialPostURLString), marketplace.displayName)
+            XCTAssertTrue(playbook.ruleSourceURLs.contains(playbook.officialHowToURLString), marketplace.displayName)
+            XCTAssertTrue(playbook.ruleSourceURLs.contains(marketplace.playbookEvidence.feeModelSourceURL), marketplace.displayName)
             for sourceURL in playbook.ruleSourceURLs {
                 XCTAssertEqual(URL(string: sourceURL)?.scheme, "https", "\(marketplace.displayName): \(sourceURL)")
             }
