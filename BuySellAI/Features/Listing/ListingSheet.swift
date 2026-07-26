@@ -236,7 +236,7 @@ struct ListingSheet: View {
         .padding(.vertical, Spacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String.localizedFormat("%@, %@, %@", recommendationLabel.localized, String.localizedFormat("Ready for %@", context.marketplace.displayName), recommendationReason))
-        .accessibilityValue(String.localizedFormat("%@, %@", "Take-home estimate".localized, pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode)))
+        .accessibilityValue(recommendationPriceAccessibilityValue)
         .accessibilityIdentifier("Listing.RecommendationSummary")
         .accessibilitySortPriority(3)
     }
@@ -353,32 +353,47 @@ struct ListingSheet: View {
     private var pricePlanDisclosure: some View {
         DisclosureGroup {
             listingPriceRow(
-                title: "List at",
+                title: pricePlan.hasVerifiedMarketPricing ? "List at" : "Starting estimate",
                 value: pricePlan.listAt,
-                detail: "Start here"
+                detail: pricePlan.hasVerifiedMarketPricing ? "Based on market evidence" : "Needs a current market check"
             )
-            listingPriceRow(
-                title: "Likely sells for",
-                value: pricePlan.likelySellsFor,
-                detail: "Expected sale"
-            )
-            listingPriceRow(
-                title: "Take-home estimate",
-                value: pricePlan.takeHomeEstimate,
-                detail: "What you may keep"
-            )
-            listingPriceRow(
-                title: "Lowest to take",
-                value: pricePlan.negotiationFloor,
-                detail: "If someone offers less"
-            )
+            if let likelySellsFor = pricePlan.likelySellsFor {
+                listingPriceRow(
+                    title: "Likely sells for",
+                    value: likelySellsFor,
+                    detail: "Expected sale"
+                )
+            }
+            if let takeHomeEstimate = pricePlan.takeHomeEstimate {
+                listingPriceRow(
+                    title: "Take-home estimate",
+                    value: takeHomeEstimate,
+                    detail: "What you may keep"
+                )
+            }
+            if let negotiationFloor = pricePlan.negotiationFloor {
+                listingPriceRow(
+                    title: "Lowest to take",
+                    value: negotiationFloor,
+                    detail: "If someone offers less"
+                )
+            }
+            if pricePlan.hasVerifiedMarketPricing == false {
+                marketplaceTipRow(
+                    title: "Pricing not verified",
+                    systemImage: "exclamationmark.circle.fill",
+                    detail: "BuySell did not find reliable sold-price evidence, so it is not guessing a sale price, take-home amount, or lowest offer."
+                )
+            }
         } label: {
             Label("Price plan".localized, systemImage: "dollarsign.circle.fill")
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Color.brand.foreground)
         }
         .accessibilityIdentifier("Listing.PricePlanDisclosure")
-        .accessibilityHint("Shows the list price, likely sale price, take-home estimate, and lowest offer.".localized)
+        .accessibilityHint(pricePlan.hasVerifiedMarketPricing
+            ? "Shows the list price, likely sale price, take-home estimate, and lowest offer.".localized
+            : "Shows a starting estimate and explains that current market pricing was not verified.".localized)
     }
 
     private var soldCompsDisclosure: some View {
@@ -568,29 +583,51 @@ struct ListingSheet: View {
 
     @ViewBuilder
     private var recommendationTakeHome: some View {
-        if dynamicTypeSize.isAccessibilitySize {
+        if let takeHomeEstimate = pricePlan.takeHomeEstimate,
+           dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("Take-home".localized)
                     .font(.caption)
                     .foregroundStyle(Color.brand.mutedForeground)
-                Text(pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode))
+                Text(takeHomeEstimate.currency(code: context.item.currencyCode))
                     .font(.title3.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Color.brand.foreground)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
+        } else if let takeHomeEstimate = pricePlan.takeHomeEstimate {
             HStack(alignment: .firstTextBaseline) {
                 Text("Take-home".localized)
                     .font(.body)
                     .foregroundStyle(Color.brand.foreground)
                 Spacer(minLength: Spacing.md)
-                Text(pricePlan.takeHomeEstimate.currency(code: context.item.currencyCode))
+                Text(takeHomeEstimate.currency(code: context.item.currencyCode))
                     .font(.title3.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Color.brand.foreground)
             }
+        } else {
+            Label {
+                Text("Current take-home could not be verified.".localized)
+                    .font(.callout)
+                    .foregroundStyle(Color.brand.mutedForeground)
+            } icon: {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .accessibilityHidden(true)
+            }
         }
+    }
+
+    private var recommendationPriceAccessibilityValue: String {
+        guard let takeHomeEstimate = pricePlan.takeHomeEstimate else {
+            return "Current take-home could not be verified.".localized
+        }
+        return String.localizedFormat(
+            "%@, %@",
+            "Take-home estimate".localized,
+            takeHomeEstimate.currency(code: context.item.currencyCode)
+        )
     }
 
     private var recommendationLabel: String {
@@ -912,15 +949,17 @@ struct ListingSheet: View {
             systemImage: "slider.horizontal.3"
         ))
         fields.append(ListingCopyField(
-            title: "Price",
+            title: pricePlan.hasVerifiedMarketPricing ? "Price" : "Starting price estimate",
             value: pricePlan.listAt.currency(code: context.item.currencyCode),
             systemImage: AppSymbol.Action.category
         ))
-        fields.append(ListingCopyField(
-            title: "Lowest to take",
-            value: pricePlan.negotiationFloor.currency(code: context.item.currencyCode),
-            systemImage: "arrow.down.circle.fill"
-        ))
+        if let negotiationFloor = pricePlan.negotiationFloor {
+            fields.append(ListingCopyField(
+                title: "Lowest to take",
+                value: negotiationFloor.currency(code: context.item.currencyCode),
+                systemImage: "arrow.down.circle.fill"
+            ))
+        }
         fields.append(ListingCopyField(
             title: "Shipping or pickup",
             value: fulfillmentRecommendation,
@@ -2020,31 +2059,27 @@ private enum ListingPhotoLibrarySaver {
 
 private struct ListingPricePlan {
     let listAt: Decimal
-    let likelySellsFor: Decimal
-    let takeHomeEstimate: Decimal
-    let negotiationFloor: Decimal
+    let likelySellsFor: Decimal?
+    let takeHomeEstimate: Decimal?
+    let negotiationFloor: Decimal?
+    let hasVerifiedMarketPricing: Bool
 
-    private static let likelySaleMultiplier = Decimal(9) / Decimal(10)
     private static let negotiationFloorMultiplier = Decimal(17) / Decimal(20)
 
     init(item: DetectedItem, marketplace: Marketplace, details: ItemDetailAnswers?, draft: GeneratedListingDraft?) {
-        let localTakeHomeEstimate = MarketplaceEstimator.estimates(for: item, details: details)
-            .first { $0.id == marketplace }?
-            .payout ?? item.priceEstimate * marketplace.feeMultiplier - marketplace.fixedDeduction
+        let resolvedListAt = max((draft?.listPrice ?? item.priceEstimate).rounded(scale: 0), Decimal(1))
+        let resolvedLikelySale = draft?.likelySalePrice.map { max($0.rounded(scale: 0), Decimal(1)) }
+        let resolvedTakeHome = draft?.takeHomeEstimate.map { max($0.rounded(scale: 0), Decimal(1)) }
 
-        listAt = max((draft?.listPrice ?? item.priceEstimate).rounded(scale: 0), Decimal(1))
-        likelySellsFor = max(
-            (draft?.likelySalePrice ?? item.priceEstimate * Self.likelySaleMultiplier).rounded(scale: 0),
-            Decimal(1)
-        )
-        takeHomeEstimate = max((draft?.takeHomeEstimate ?? localTakeHomeEstimate).rounded(scale: 0), Decimal(1))
-        negotiationFloor = max(
-            min(
-                listAt * Self.negotiationFloorMultiplier,
-                likelySellsFor
-            ).rounded(scale: 0),
-            Decimal(1)
-        )
+        listAt = resolvedListAt
+        likelySellsFor = resolvedLikelySale
+        takeHomeEstimate = resolvedTakeHome
+        hasVerifiedMarketPricing = draft?.hasVerifiedSoldEvidence == true &&
+            resolvedLikelySale != nil &&
+            resolvedTakeHome != nil
+        negotiationFloor = resolvedLikelySale.map {
+            max(min(resolvedListAt * Self.negotiationFloorMultiplier, $0).rounded(scale: 0), Decimal(1))
+        }
     }
 }
 

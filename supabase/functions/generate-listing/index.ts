@@ -220,9 +220,9 @@ type ListingImageEvidence = {
 type StructuredListingDraft = {
   title: string;
   description: string;
-  listPrice: number;
-  likelySalePrice: number;
-  takeHomeEstimate: number;
+  listPrice: number | null;
+  likelySalePrice: number | null;
+  takeHomeEstimate: number | null;
   firstPhoto: string;
   missingPhotoPrompt: string | null;
   missingInfoWarnings: string[];
@@ -409,7 +409,7 @@ function listingSystemInstruction(
     "Return one valid JSON object only, with no markdown fences.",
     "Return structured draft fields only; BuySell formats the final listing text.",
     "Do not return a listing field, markdown, preambles, watermarks, or section headings.",
-    "Required fields: title, description, listPrice, likelySalePrice, takeHomeEstimate, firstPhoto, fitReason.",
+    "Required fields: title, description, firstPhoto, fitReason. Return pricing fields only when grounded evidence or the provided marketplace comparison supports them.",
     "Optional fields: missingPhotoPrompt, missingInfoWarnings, postingNotes, itemSpecifics, tags, researchSummary, usefulFindings, officialSources, searchedFor.",
     "Optional evidence fields: compLowPrice, compHighPrice, compMedianPrice, feeSummary, pricingStrategy, evidenceSummary, referenceImageURL, publicImageQuery, evidenceSources.",
     "title must be body text only and description must be body text only.",
@@ -576,9 +576,6 @@ function listingDraftResponseSchema(): Record<string, unknown> {
     required: [
       "title",
       "description",
-      "listPrice",
-      "likelySalePrice",
-      "takeHomeEstimate",
       "firstPhoto",
       "fitReason",
     ],
@@ -594,21 +591,21 @@ function deterministicListingDraft(
 ): Record<string, unknown> {
   const displayName = marketplaceDisplayNames[platform] ?? platform;
   const condition = displayCondition(item.condition);
-  const listPrice = positiveNumberOrFallback(item.currentPrice, item.originalPrice);
-  const likelySalePrice = positiveNumberOrFallback(listPrice * 0.9, listPrice);
-  const takeHomeEstimate = positiveNumberOrFallback(likelySalePrice * 0.85, likelySalePrice);
+  const startingEstimate = optionalPositiveNumber(item.currentPrice);
   const title = `${item.name} - ${condition}`.slice(0, profile.titleMaxCharacters).trim();
 
   return {
     title,
     description: [
       `${item.name} in ${condition.toLowerCase()} condition.`,
-      `Asking $${formatPlainPrice(listPrice)}.`,
+      startingEstimate
+        ? `A starting estimate of $${formatPlainPrice(startingEstimate)} was provided, but current market pricing still needs verification.`
+        : "Current market pricing still needs verification.",
       "Please check the photos for condition, scale, and any visible wear.",
     ].join(" "),
-    listPrice,
-    likelySalePrice,
-    takeHomeEstimate,
+    listPrice: null,
+    likelySalePrice: null,
+    takeHomeEstimate: null,
     firstPhoto: profile.photoGuidance,
     missingPhotoPrompt: null,
     missingInfoWarnings: requiredFieldWarnings(profile, item, details, identificationProfile),
@@ -1683,15 +1680,6 @@ function requireStructuredListingDraft(
 ): StructuredListingDraft {
   const title = cleanDraftText(result.title, "title", profile.titleMaxCharacters);
   const description = cleanDraftText(result.description, "description", 1_500);
-  const listPrice = positiveNumberOrFallback(result.listPrice, priorComparison?.listPrice ?? item.currentPrice);
-  const likelySalePrice = positiveNumberOrFallback(
-    result.likelySalePrice,
-    priorComparisonLikelySalePrice(priorComparison) ?? Math.max(item.currentPrice * 0.9, 1),
-  );
-  const takeHomeEstimate = positiveNumberOrFallback(
-    result.takeHomeEstimate,
-    priorComparison?.takeHomeEstimate ?? Math.max(likelySalePrice * 0.85, 1),
-  );
   const firstPhoto = optionalCleanDraftText(result.firstPhoto, 180) ?? profile.photoGuidance;
   const missingPhotoPrompt = optionalCleanDraftText(result.missingPhotoPrompt, 140);
   const fitReason = optionalCleanDraftText(result.fitReason, 220) ??
@@ -1703,6 +1691,15 @@ function requireStructuredListingDraft(
   );
   const soldPrices = soldEvidencePrices(evidenceSources);
   const hasPricedSoldCompEvidence = soldPrices.length > 0;
+  const listPrice = hasPricedSoldCompEvidence
+    ? optionalPositiveNumber(result.listPrice) ?? priorComparison?.listPrice ?? null
+    : null;
+  const likelySalePrice = hasPricedSoldCompEvidence
+    ? optionalPositiveNumber(result.likelySalePrice) ?? priorComparisonLikelySalePrice(priorComparison)
+    : null;
+  const takeHomeEstimate = hasPricedSoldCompEvidence
+    ? optionalPositiveNumber(result.takeHomeEstimate) ?? priorComparison?.takeHomeEstimate ?? null
+    : null;
   const compLowPrice = hasPricedSoldCompEvidence ? lowEvidencePrice(soldPrices) : null;
   const compHighPrice = hasPricedSoldCompEvidence ? highEvidencePrice(soldPrices) : null;
   const compMedianPrice = hasPricedSoldCompEvidence ? medianEvidencePrice(soldPrices) : null;

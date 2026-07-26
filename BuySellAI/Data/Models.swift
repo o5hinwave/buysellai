@@ -2078,6 +2078,10 @@ struct GeneratedListingDraft: Codable, Sendable, Equatable, Hashable {
     var publicImageQuery: String? = nil
     var evidenceSources: [ListingEvidenceSource]? = nil
 
+    var hasVerifiedSoldEvidence: Bool {
+        Self.hasVerifiedSoldEvidence(in: evidenceSources)
+    }
+
     var copyableListingText: String? {
         guard let title = clean(title, maxLength: 120),
               let description = clean(description, maxLength: 1_500)
