@@ -1760,5 +1760,19 @@
 	<string>Check these if you can see them: %@.</string>
 	<key>Check these if you can see them: %@, plus one more.</key>
 	<string>Check these if you can see them: %@, plus one more.</string>
+	<key>Narrows what BuySell searches next.</key>
+	<string>Narrows what BuySell searches next.</string>
+	<key>Checks if this is a version worth more.</key>
+	<string>Checks if this is a version worth more.</string>
+	<key>Helps compare the right sold prices.</key>
+	<string>Helps compare the right sold prices.</string>
+	<key>Helps the %@ post use the right fields.</key>
+	<string>Helps the %@ post use the right fields.</string>
+	<key>Helps choose the right marketplace.</key>
+	<string>Helps choose the right marketplace.</string>
+	<key>Keeps the listing honest without guessing.</key>
+	<string>Keeps the listing honest without guessing.</string>
+	<key>One clue is enough. Skip if you do not know.</key>
+	<string>One clue is enough. Skip if you do not know.</string>
 </dict>
 </plist>

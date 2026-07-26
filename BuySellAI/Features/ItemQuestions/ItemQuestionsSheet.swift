@@ -314,7 +314,9 @@ struct ItemQuestionsSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if isCompact == false {
+                if isCompact {
+                    compactQuestionImpactLine(for: question)
+                } else {
                     questionImpactStrip(for: question)
                 }
 
@@ -507,6 +509,26 @@ struct ItemQuestionsSheet: View {
             item: context.item,
             marketplace: context.preferredMarketplace
         )
+    }
+
+    private func compactQuestionImpactLine(for question: DetailQuestion) -> some View {
+        let impact = Self.compactQuestionImpactText(for: question, context: context, answers: answers)
+        return Label {
+            Text(impact.localized)
+                .font(.footnote)
+                .foregroundStyle(Color.brand.foregroundSecondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "sparkle.magnifyingglass")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.brand.primaryText)
+                .accessibilityHidden(true)
+        }
+        .padding(.top, Spacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(impact.localized)
+        .accessibilityIdentifier("ItemQuestions.CompactImpactLine")
     }
 
     private func questionEvidenceSummary(_ summary: QuestionEvidenceSummary) -> some View {
@@ -2245,6 +2267,33 @@ struct ItemQuestionsSheet: View {
         }
 
         return Array(rows.prefix(2))
+    }
+
+    private static func compactQuestionImpactText(
+        for question: DetailQuestion,
+        context: ItemQuestionsContext,
+        answers: ItemDetailAnswers
+    ) -> String {
+        let score = adaptiveQuestionScore(for: question, context: context, answers: answers)
+        if score.identityInformationGain >= 50 || score.likelyMatchDisambiguation >= 30 {
+            return "Narrows what BuySell searches next."
+        }
+        if score.valuableVariantDetection >= 30 {
+            return "Checks if this is a version worth more."
+        }
+        if score.pricingImpact >= 38 {
+            return "Helps compare the right sold prices."
+        }
+        if score.marketplaceEligibilityImpact >= 40 {
+            if let marketplace = context.preferredMarketplace {
+                return String.localizedFormat("Helps the %@ post use the right fields.".localized, marketplace.displayName)
+            }
+            return "Helps choose the right marketplace."
+        }
+        if score.buyerTrustImpact >= 34 {
+            return "Keeps the listing honest without guessing."
+        }
+        return "One clue is enough. Skip if you do not know."
     }
 
     private static func aiUnknownFollowUp(
