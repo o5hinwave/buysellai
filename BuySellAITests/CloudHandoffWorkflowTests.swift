@@ -17,6 +17,8 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "git diff --check",
             "Scripts/check_supabase_schema.sh",
             "Scripts/check_supabase_functions.sh",
+            "Scripts/ci_boot_simulator.sh",
+            "IOS_TEST_DESTINATION",
             "xcodebuild test",
             "WorkspaceMaterializationScriptTests",
             "CloudHandoffWorkflowTests",
@@ -33,11 +35,62 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         for text in [readme, m10] {
             XCTAssertNotNil(text.range(of: ".github/workflows/cloud-handoff.yml"))
             XCTAssertNotNil(text.range(of: "Cloud Handoff Check"))
+            XCTAssertNotNil(text.range(of: ".github/workflows/app-store-preflight.yml"))
+            XCTAssertNotNil(text.range(of: "App Store Preflight"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_schema.sh"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_functions.sh"))
             XCTAssertNotNil(text.range(of: "AppStoreSite"))
             XCTAssertNotNil(text.range(of: "Sites"))
         }
+    }
+
+    func testAppStorePreflightWorkflowRunsReleaseLaneFromCloud() throws {
+        let workflowURL = projectURL(".github/workflows/app-store-preflight.yml")
+        let workflow = try String(contentsOf: workflowURL, encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workflowURL.path))
+        [
+            "name: App Store Preflight",
+            "workflow_dispatch:",
+            "allow_missing_credentials",
+            "runs-on: macos-15",
+            "actions/checkout@v4",
+            "Scripts/scan_m10_secrets.sh",
+            "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
+            "Scripts/check_supabase_schema.sh",
+            "Scripts/check_supabase_functions.sh",
+            "M10_DEVELOPMENT_TEAM: ${{ secrets.M10_DEVELOPMENT_TEAM }}",
+            "ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}",
+            "ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}",
+            "ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}",
+            "IOS_DISTRIBUTION_CERTIFICATE_BASE64",
+            "IOS_PROVISIONING_PROFILE_BASE64",
+            "Scripts/preflight_m10_signed_archive.sh",
+            "Scripts/preflight_m10_app_store_export.sh",
+            "Scripts/preflight_m10_app_store_validate.sh",
+            "actions/upload-artifact@v4",
+        ].forEach { expected in
+            XCTAssertNotNil(workflow.range(of: expected), "Missing expected App Store workflow step: \(expected)")
+        }
+    }
+
+    func testCloudWorkflowsCreateAnAvailableSimulatorInsteadOfPinningRuntime() throws {
+        let ci = try String(contentsOf: projectURL(".github/workflows/ios-ci.yml"), encoding: .utf8)
+        let handoff = try String(contentsOf: projectURL(".github/workflows/cloud-handoff.yml"), encoding: .utf8)
+        let helper = try String(contentsOf: projectURL("Scripts/ci_boot_simulator.sh"), encoding: .utf8)
+
+        for workflow in [ci, handoff] {
+            XCTAssertNotNil(workflow.range(of: "Scripts/ci_boot_simulator.sh"))
+            XCTAssertNotNil(workflow.range(of: "IOS_TEST_DESTINATION"))
+            XCTAssertNotNil(workflow.range(of: #"-destination "$IOS_TEST_DESTINATION""#))
+            XCTAssertNil(workflow.range(of: "OS=18.5"))
+        }
+
+        XCTAssertNotNil(helper.range(of: #""xcrun", "simctl", "list", "runtimes", "--json""#))
+        XCTAssertNotNil(helper.range(of: "iPhone 16 Pro"))
+        XCTAssertNotNil(helper.range(of: "xcrun simctl create"))
+        XCTAssertNotNil(helper.range(of: "xcrun simctl bootstatus"))
+        XCTAssertNotNil(helper.range(of: "id=%s"))
     }
 
     func testWorkspaceMaterializationDoesNotRequireALocalMainBranchInCloudCheckouts() throws {

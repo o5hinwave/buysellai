@@ -1,0 +1,134 @@
+name: App Store Preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      allow_missing_credentials:
+        description: "Report pending instead of failing when Apple credentials are not configured"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  preflight:
+    name: Signed Archive, IPA, and Validation
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    env:
+      M10_DEVELOPMENT_TEAM: ${{ secrets.M10_DEVELOPMENT_TEAM }}
+      ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+      ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
+      IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      M10_SIGNED_ARCHIVE: /tmp/BuySellAI-signed.xcarchive
+      M10_APP_STORE_ARCHIVE: /tmp/BuySellAI-appstore.xcarchive
+      M10_APP_STORE_EXPORT: /tmp/BuySellAI-appstore-export
+
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
+
+      - name: Install scan tools
+        run: brew install ripgrep
+
+      - name: Guard against leaked secrets
+        run: Scripts/scan_m10_secrets.sh
+
+      - name: Verify portable source checkout
+        run: M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh
+
+      - name: Check Supabase backend source
+        run: |
+          Scripts/check_supabase_schema.sh
+          Scripts/check_supabase_functions.sh
+
+      - name: Prepare App Store Connect API key
+        run: |
+          if [[ -z "${ASC_API_PRIVATE_KEY:-}" || -z "${ASC_API_KEY_ID:-}" ]]; then
+            echo "App Store Connect API key secret not configured; validation can report pending."
+            exit 0
+          fi
+          mkdir -p /tmp/app-store-connect-private-keys
+          printf '%s' "$ASC_API_PRIVATE_KEY" > "/tmp/app-store-connect-private-keys/AuthKey_${ASC_API_KEY_ID}.p8"
+          chmod 600 "/tmp/app-store-connect-private-keys/AuthKey_${ASC_API_KEY_ID}.p8"
+          echo "ASC_API_PRIVATE_KEYS_DIR=/tmp/app-store-connect-private-keys" >> "$GITHUB_ENV"
+
+      - name: Install Apple signing certificate
+        run: |
+          if [[ -z "${IOS_DISTRIBUTION_CERTIFICATE_BASE64:-}" || -z "${IOS_DISTRIBUTION_CERTIFICATE_PASSWORD:-}" ]]; then
+            echo "Apple distribution certificate secret not configured; signing can report pending."
+            exit 0
+          fi
+          keychain_password="${IOS_KEYCHAIN_PASSWORD:-$GITHUB_RUN_ID}"
+          keychain_path="$RUNNER_TEMP/app-signing.keychain-db"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          printf '%s' "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/distribution.p12"
+          security import "$RUNNER_TEMP/distribution.p12" -P "$IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain_path"
+          security list-keychain -d user -s "$keychain_path"
+          security default-keychain -s "$keychain_path"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain_path"
+
+      - name: Install provisioning profile
+        run: |
+          if [[ -z "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]]; then
+            echo "Provisioning profile secret not configured; signing can report pending."
+            exit 0
+          fi
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/BuySellAI.mobileprovision"
+          profile_plist="$RUNNER_TEMP/BuySellAI.mobileprovision.plist"
+          security cms -D -i "$RUNNER_TEMP/BuySellAI.mobileprovision" > "$profile_plist"
+          profile_uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$profile_plist")
+          cp "$RUNNER_TEMP/BuySellAI.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/${profile_uuid}.mobileprovision"
+
+      - name: Run signed archive preflight
+        run: |
+          if [[ "${{ inputs.allow_missing_credentials }}" == "true" ]]; then
+            export ALLOW_MISSING_TEAM=1
+          fi
+          Scripts/preflight_m10_signed_archive.sh "$M10_SIGNED_ARCHIVE" | tee /tmp/buysell-signed-archive-preflight.log
+
+      - name: Run App Store export preflight
+        run: |
+          if [[ "${{ inputs.allow_missing_credentials }}" == "true" ]]; then
+            export ALLOW_MISSING_TEAM=1
+          fi
+          Scripts/preflight_m10_app_store_export.sh "$M10_APP_STORE_ARCHIVE" "$M10_APP_STORE_EXPORT" | tee /tmp/buysell-app-store-export-preflight.log
+
+      - name: Run App Store validation preflight
+        run: |
+          if [[ "${{ inputs.allow_missing_credentials }}" == "true" ]]; then
+            export ALLOW_MISSING_ASC=1
+          fi
+          Scripts/preflight_m10_app_store_validate.sh "$M10_APP_STORE_EXPORT" | tee /tmp/buysell-app-store-validation-preflight.log
+
+      - name: Upload preflight logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppStorePreflightLogs
+          path: |
+            /tmp/buysell-signed-archive-preflight.log
+            /tmp/buysell-app-store-export-preflight.log
+            /tmp/buysell-app-store-validation-preflight.log
+          if-no-files-found: ignore
+
+      - name: Upload App Store export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BuySellAI-AppStore-Export
+          path: /tmp/BuySellAI-appstore-export
+          if-no-files-found: ignore

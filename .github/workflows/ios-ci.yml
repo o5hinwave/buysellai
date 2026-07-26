@@ -28,6 +28,9 @@ jobs:
       - name: Guard against leaked secrets
         run: Scripts/scan_m10_secrets.sh
 
+      - name: Prepare iOS simulator
+        run: echo "IOS_TEST_DESTINATION=$(Scripts/ci_boot_simulator.sh)" >> "$GITHUB_ENV"
+
       - name: Check formatting whitespace
         run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md
 
@@ -37,7 +40,7 @@ jobs:
           xcodebuild test \
             -project BuySellAI.xcodeproj \
             -scheme BuySellAI \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -destination "$IOS_TEST_DESTINATION" \
             -parallel-testing-enabled NO \
             -maximum-concurrent-test-simulator-destinations 1 \
             -only-testing:BuySellAITests/DesignAccessibilityTests/testHomePrimaryActionUsesAppleSimpleOneTwoThreeFrontDoor \

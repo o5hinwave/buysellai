@@ -41,13 +41,16 @@ jobs:
       - name: Check Supabase Edge Function source
         run: Scripts/check_supabase_functions.sh
 
+      - name: Prepare iOS simulator
+        run: echo "IOS_TEST_DESTINATION=$(Scripts/ci_boot_simulator.sh)" >> "$GITHUB_ENV"
+
       - name: Build and run native iOS smoke tests
         run: |
           set -o pipefail
           xcodebuild test \
             -project BuySellAI.xcodeproj \
             -scheme BuySellAI \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -destination "$IOS_TEST_DESTINATION" \
             -parallel-testing-enabled NO \
             -maximum-concurrent-test-simulator-destinations 1 \
             -only-testing:BuySellAITests/WorkspaceMaterializationScriptTests \
