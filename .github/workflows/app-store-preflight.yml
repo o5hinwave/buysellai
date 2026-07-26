@@ -52,6 +52,13 @@ jobs:
           Scripts/check_supabase_schema.sh
           Scripts/check_supabase_functions.sh
 
+      - name: Check App Store cloud credentials
+        run: |
+          if [[ "${{ inputs.allow_missing_credentials }}" == "true" ]]; then
+            export ALLOW_MISSING_APP_STORE_CREDENTIALS=1
+          fi
+          Scripts/verify_app_store_cloud_credentials.sh | tee /tmp/buysell-app-store-cloud-credentials.log
+
       - name: Prepare App Store Connect API key
         run: |
           if [[ -z "${ASC_API_PRIVATE_KEY:-}" || -z "${ASC_API_KEY_ID:-}" ]]; then
@@ -120,6 +127,7 @@ jobs:
         with:
           name: AppStorePreflightLogs
           path: |
+            /tmp/buysell-app-store-cloud-credentials.log
             /tmp/buysell-signed-archive-preflight.log
             /tmp/buysell-app-store-export-preflight.log
             /tmp/buysell-app-store-validation-preflight.log

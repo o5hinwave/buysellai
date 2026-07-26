@@ -67,6 +67,8 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}",
             "IOS_DISTRIBUTION_CERTIFICATE_BASE64",
             "IOS_PROVISIONING_PROFILE_BASE64",
+            "Scripts/verify_app_store_cloud_credentials.sh",
+            "/tmp/buysell-app-store-cloud-credentials.log",
             "Scripts/preflight_m10_signed_archive.sh",
             "Scripts/preflight_m10_app_store_export.sh",
             "Scripts/preflight_m10_app_store_validate.sh",
