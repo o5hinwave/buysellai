@@ -725,6 +725,7 @@ final class AppStore {
     func saveListing(
         item: DetectedItem,
         imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset] = [],
         marketplace: Marketplace,
         listingText: String,
         details: ItemDetailAnswers? = nil,
@@ -743,6 +744,12 @@ final class AppStore {
         let thumbnail = imageData.flatMap {
             ImageTools.jpegDataDownscaled(from: $0, maxLongEdge: 200, compression: 0.75)
         } ?? existingEntry?.imageThumbnail
+        let historyPhotos = Self.historySupplementalPhotos(
+            item: item,
+            imageData: imageData,
+            supplementalPhotos: supplementalPhotos,
+            existingEntry: existingEntry
+        )
         let entry = HistoryEntry(
             id: existingEntry?.id ?? UUID(),
             createdAt: existingEntry?.createdAt ?? Date(),
@@ -756,7 +763,8 @@ final class AppStore {
             itemDetails: details?.sanitizedForUse ?? existingEntry?.itemDetails,
             marketplaceComparison: marketplaceComparison?.sanitizedForDisplay() ?? existingEntry?.marketplaceComparison,
             listingDraft: listingDraft?.sanitizedForDisplay() ?? existingEntry?.listingDraft,
-            identificationProfile: identificationProfile?.sanitizedForDisplay() ?? existingEntry?.identificationProfile
+            identificationProfile: identificationProfile?.sanitizedForDisplay() ?? existingEntry?.identificationProfile,
+            supplementalPhotos: historyPhotos
         )
 
         let previousHistory = history
@@ -798,6 +806,42 @@ final class AppStore {
                 showToast("Couldn't save this listing.".localized, style: .error)
             }
         }
+    }
+
+    private static func historySupplementalPhotos(
+        item: DetectedItem,
+        imageData: Data?,
+        supplementalPhotos: [ItemPhotoAsset],
+        existingEntry: HistoryEntry?
+    ) -> [ItemPhotoAsset] {
+        var photos: [ItemPhotoAsset] = []
+        if let original = ItemPhotoAsset.originalUserPhoto(item: item, imageData: imageData) {
+            photos.append(original)
+        }
+        photos.append(contentsOf: supplementalPhotos.filter { $0.itemID == item.id })
+
+        let compactPhotos = photos.compactMap { photo -> ItemPhotoAsset? in
+            guard photo.canExportToListing,
+                  let imageData = photo.imageData,
+                  imageData.isEmpty == false,
+                  let compactData = ImageTools.jpegDataDownscaled(from: imageData, maxLongEdge: 1200, compression: 0.82)
+            else { return nil }
+
+            return ItemPhotoAsset(
+                id: photo.id,
+                itemID: photo.itemID,
+                imageData: compactData,
+                source: photo.source,
+                role: photo.role,
+                dateAdded: photo.dateAdded,
+                verifies: photo.verifies,
+                isListingSafe: photo.isListingSafe,
+                isAIEdited: photo.isAIEdited,
+                relatedOriginalID: photo.relatedOriginalID
+            )
+        }
+
+        return compactPhotos.isEmpty ? existingEntry?.supplementalPhotos ?? [] : compactPhotos
     }
 
     func deleteHistory(_ entry: HistoryEntry, emitsFeedback: Bool = true) {
@@ -904,12 +948,15 @@ final class AppStore {
     }
 
     func reopenListing(_ entry: HistoryEntry) {
+        let reopenedItemID = entry.supplementalPhotos.first?.itemID ?? UUID()
         let item = DetectedItem(
+            id: reopenedItemID,
             name: entry.itemName,
             category: entry.category ?? .other,
             condition: entry.condition ?? .good,
             priceEstimate: entry.suggestedPrice ?? Decimal(1)
         )
+        let reopenedImageData = entry.supplementalPhotos.first { $0.role == .cover }?.imageData ?? entry.imageThumbnail
         let analysis = entry.identificationProfile.map {
             AnalyzeIntelligence(
                 itemFacts: [],
@@ -920,7 +967,8 @@ final class AppStore {
         }
         presentListing(
             item: item,
-            imageData: entry.imageThumbnail,
+            imageData: reopenedImageData,
+            supplementalPhotos: entry.supplementalPhotos,
             marketplace: entry.marketplace,
             details: entry.itemDetails,
             marketplaceComparison: entry.marketplaceComparison,

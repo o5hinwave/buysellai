@@ -31,7 +31,7 @@ Apply the bundled schema migrations before deploying functions:
 supabase db push
 ```
 
-The migrations create signed-in history sync storage, harden history rows with native category/condition/marketplace/listing constraints, store listing memory JSON for answers, generated drafts, identification profiles, and marketplace comparisons, and create the private Apple token table with RLS, least-privilege grants, and unique Apple subject storage. The history policy wraps `auth.uid()` in `select` so Postgres can evaluate it once per statement while enforcing user-owned rows. The hardening deploy marker is `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. The Apple token table shape is:
+The migrations create signed-in history sync storage, harden history rows with native category/condition/marketplace/listing constraints, store listing memory JSON for answers, generated drafts, identification profiles, marketplace comparisons, and listing-safe supplemental photo collections, and create the private Apple token table with RLS, least-privilege grants, and unique Apple subject storage. The history policy wraps `auth.uid()` in `select` so Postgres can evaluate it once per statement while enforcing user-owned rows. The hardening deploy marker is `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. The Apple token table shape is:
 
 ```sql
 create table public.apple_auth_tokens (
@@ -55,7 +55,7 @@ ALLOW_MISSING_SUPABASE_DEPLOY=1 bash Scripts/deploy_supabase_backend.sh prefligh
 CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy | tee /tmp/buysell-submit-readiness-supabase-deploy.log
 ```
 
-The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. Manual equivalent commands are:
+The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. Manual equivalent commands are:
 
 ```sh
 supabase functions deploy analyze-image

@@ -199,7 +199,7 @@ final class M10SubmitReadinessScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "Supabase schema static check log"))
         XCTAssertNotNil(script.range(of: "/tmp/buysell-submit-readiness-supabase-schema.log"))
         XCTAssertNotNil(script.range(of: "project ref:"))
-        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
+        XCTAssertNotNil(script.range(of: "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
         XCTAssertNotNil(script.range(of: "secrets: required names present"))
         XCTAssertNotNil(script.range(of: "rls: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events forced"))
         XCTAssertNotNil(script.range(of: "policy: history authenticated select-auth-uid"))

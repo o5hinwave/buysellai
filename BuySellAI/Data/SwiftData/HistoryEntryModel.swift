@@ -17,6 +17,7 @@ final class HistoryEntryModel {
     @Attribute(.externalStorage) var marketplaceComparisonJSON: Data?
     @Attribute(.externalStorage) var listingDraftJSON: Data?
     @Attribute(.externalStorage) var identificationProfileJSON: Data?
+    @Attribute(.externalStorage) var supplementalPhotosJSON: Data?
 
     init(entry: HistoryEntry) {
         self.id = entry.id
@@ -33,6 +34,7 @@ final class HistoryEntryModel {
         self.marketplaceComparisonJSON = Self.encoded(entry.marketplaceComparison)
         self.listingDraftJSON = Self.encoded(entry.listingDraft)
         self.identificationProfileJSON = Self.encoded(entry.identificationProfile)
+        self.supplementalPhotosJSON = Self.encoded(entry.supplementalPhotos)
     }
 
     func update(from entry: HistoryEntry) {
@@ -50,6 +52,7 @@ final class HistoryEntryModel {
         marketplaceComparisonJSON = Self.encoded(entry.marketplaceComparison)
         listingDraftJSON = Self.encoded(entry.listingDraft)
         identificationProfileJSON = Self.encoded(entry.identificationProfile)
+        supplementalPhotosJSON = Self.encoded(entry.supplementalPhotos)
     }
 
     var entry: HistoryEntry {
@@ -66,7 +69,8 @@ final class HistoryEntryModel {
             itemDetails: Self.decoded(ItemDetailAnswers.self, from: itemDetailsJSON)?.sanitizedForUse,
             marketplaceComparison: Self.decoded(MarketplaceComparison.self, from: marketplaceComparisonJSON)?.sanitizedForDisplay(),
             listingDraft: Self.decoded(GeneratedListingDraft.self, from: listingDraftJSON)?.sanitizedForDisplay(),
-            identificationProfile: Self.decoded(AnalyzeIdentificationProfile.self, from: identificationProfileJSON)?.sanitizedForDisplay()
+            identificationProfile: Self.decoded(AnalyzeIdentificationProfile.self, from: identificationProfileJSON)?.sanitizedForDisplay(),
+            supplementalPhotos: Self.decoded([ItemPhotoAsset].self, from: supplementalPhotosJSON) ?? []
         )
     }
 

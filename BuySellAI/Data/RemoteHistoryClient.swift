@@ -192,7 +192,7 @@ actor RemoteHistoryClient {
 }
 
 private struct RemoteHistoryRecord: Codable {
-    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text,item_details,marketplace_comparison,listing_draft,identification_profile"
+    static let selectColumns = "id,created_at,item_name,category,condition,suggested_price,image_thumbnail_base64,marketplace,listing_text,item_details,marketplace_comparison,listing_draft,identification_profile,supplemental_photos"
 
     let id: UUID
     let createdAt: Date
@@ -207,6 +207,7 @@ private struct RemoteHistoryRecord: Codable {
     let marketplaceComparison: MarketplaceComparison?
     let listingDraft: GeneratedListingDraft?
     let identificationProfile: AnalyzeIdentificationProfile?
+    let supplementalPhotos: [ItemPhotoAsset]?
 
     init(entry: HistoryEntry) {
         self.id = entry.id
@@ -222,6 +223,7 @@ private struct RemoteHistoryRecord: Codable {
         self.marketplaceComparison = entry.marketplaceComparison?.sanitizedForDisplay()
         self.listingDraft = entry.listingDraft?.sanitizedForDisplay()
         self.identificationProfile = entry.identificationProfile?.sanitizedForDisplay()
+        self.supplementalPhotos = entry.supplementalPhotos
     }
 
     var entry: HistoryEntry {
@@ -238,7 +240,8 @@ private struct RemoteHistoryRecord: Codable {
             itemDetails: itemDetails?.sanitizedForUse,
             marketplaceComparison: marketplaceComparison?.sanitizedForDisplay(),
             listingDraft: listingDraft?.sanitizedForDisplay(),
-            identificationProfile: identificationProfile?.sanitizedForDisplay()
+            identificationProfile: identificationProfile?.sanitizedForDisplay(),
+            supplementalPhotos: supplementalPhotos ?? []
         )
     }
 
@@ -256,6 +259,7 @@ private struct RemoteHistoryRecord: Codable {
         case marketplaceComparison = "marketplace_comparison"
         case listingDraft = "listing_draft"
         case identificationProfile = "identification_profile"
+        case supplementalPhotos = "supplemental_photos"
     }
 }
 

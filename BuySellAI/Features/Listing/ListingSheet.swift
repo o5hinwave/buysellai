@@ -1208,6 +1208,7 @@ struct ListingSheet: View {
         appStore.saveListing(
             item: context.item,
             imageData: context.imageData,
+            supplementalPhotos: context.supplementalPhotos,
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,
@@ -1241,6 +1242,7 @@ struct ListingSheet: View {
             appStore.saveListing(
                 item: context.item,
                 imageData: context.imageData,
+                supplementalPhotos: context.supplementalPhotos,
                 marketplace: context.marketplace,
                 listingText: copyableListingText,
                 details: context.details,
@@ -1283,6 +1285,7 @@ struct ListingSheet: View {
                         appStore.saveListing(
                             item: context.item,
                             imageData: context.imageData,
+                            supplementalPhotos: context.supplementalPhotos,
                             marketplace: context.marketplace,
                             listingText: copyableListingText,
                             details: context.details,
@@ -1379,6 +1382,7 @@ struct ListingSheet: View {
         appStore.saveListing(
             item: context.item,
             imageData: context.imageData,
+            supplementalPhotos: context.supplementalPhotos,
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,

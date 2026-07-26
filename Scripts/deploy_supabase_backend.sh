@@ -55,7 +55,7 @@ print_pending_and_exit() {
         printf 'project: %s\n' "$supabase_url"
         printf 'project ref: %s\n' "$project_ref"
         printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
-        printf 'constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection\n'
+        printf 'constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection\n'
         printf 'functions: %s\n' "${functions[*]}"
     fi
     printf 'Complete app config, Supabase CLI login/link, server-side secrets, and then rerun without ALLOW_MISSING_SUPABASE_DEPLOY=1.\n'
@@ -315,6 +315,6 @@ printf 'config: %s\n' "${config_path#$repo_root/}"
 printf 'project: %s\n' "$supabase_url"
 printf 'project ref: %s\n' "$project_ref"
 printf 'schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events\n'
-printf 'constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection\n'
+printf 'constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection\n'
 printf 'functions: %s\n' "${functions[*]}"
 printf 'secrets: required names present\n'

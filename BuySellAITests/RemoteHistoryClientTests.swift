@@ -19,6 +19,7 @@ final class RemoteHistoryClientTests: XCTestCase {
             let select = try XCTUnwrap(components.queryItems?.first(where: { $0.name == "select" })?.value)
             XCTAssertTrue(select.contains("identification_profile"))
             XCTAssertTrue(select.contains("marketplace_comparison"))
+            XCTAssertTrue(select.contains("supplemental_photos"))
             XCTAssertEqual(request.httpMethod, "GET")
             XCTAssertEqual(request.timeoutInterval, 20)
             XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "anon-test-key")
@@ -58,6 +59,7 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].imageThumbnail, Data([1, 2, 3]))
         XCTAssertEqual(entries[0].marketplace, .ebay)
         XCTAssertEqual(entries[0].listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
+        XCTAssertTrue(entries[0].supplementalPhotos.isEmpty)
     }
 
     func testFetchHistoryDeduplicatesRowsByIDKeepingNewestServerOrder() async throws {
@@ -203,7 +205,19 @@ final class RemoteHistoryClientTests: XCTestCase {
                 "evidenceNeeded": ["Photo of fabric tag"],
                 "previousCorrections": ["User rejected trench coat"],
                 "confidenceState": "stillChecking"
-              }
+              },
+              "supplemental_photos": [{
+                "id": "55555555-5555-5555-5555-555555555555",
+                "itemID": "\(entryID.uuidString)",
+                "imageData": "BwgJ",
+                "source": "camera",
+                "role": "label",
+                "dateAdded": "2026-07-24T12:00:00Z",
+                "verifies": "Fabric tag: wool",
+                "isListingSafe": true,
+                "isAIEdited": false,
+                "relatedOriginalID": null
+              }]
             }]
             """.utf8)
             return (response, data)
@@ -226,6 +240,11 @@ final class RemoteHistoryClientTests: XCTestCase {
         XCTAssertEqual(entries[0].identificationProfile?.confirmedFacts, ["Brand: Wool"])
         XCTAssertEqual(entries[0].identificationProfile?.unknownDetails, ["material blend"])
         XCTAssertEqual(entries[0].identificationProfile?.confidenceState, .stillChecking)
+        XCTAssertEqual(entries[0].supplementalPhotos.count, 1)
+        XCTAssertEqual(entries[0].supplementalPhotos.first?.itemID, entryID)
+        XCTAssertEqual(entries[0].supplementalPhotos.first?.imageData, Data([7, 8, 9]))
+        XCTAssertEqual(entries[0].supplementalPhotos.first?.role, .label)
+        XCTAssertEqual(entries[0].supplementalPhotos.first?.verifies, "Fabric tag: wool")
     }
 
     func testUpsertHistoryBuildsBatchPostgRESTRequest() async throws {
@@ -286,7 +305,19 @@ final class RemoteHistoryClientTests: XCTestCase {
                 potentiallyValuableVariants: ["Mid-century maker"],
                 evidenceNeeded: ["Photo of underside mark"],
                 confidenceState: .likely
-            )
+            ),
+            supplementalPhotos: [
+                ItemPhotoAsset(
+                    id: UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID(),
+                    itemID: entryID,
+                    imageData: Data([7, 8, 9]),
+                    source: .camera,
+                    role: .label,
+                    dateAdded: createdAt,
+                    verifies: "Maker mark: Oak Co",
+                    isListingSafe: true
+                )
+            ]
         )
         let client = try makeClient { request in
             let components = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
@@ -326,6 +357,12 @@ final class RemoteHistoryClientTests: XCTestCase {
             XCTAssertEqual(identificationProfile["confirmedFacts"] as? [String], ["Material: oak"])
             XCTAssertEqual(identificationProfile["unknownDetails"] as? [String], ["maker stamp"])
             XCTAssertEqual(identificationProfile["confidenceState"] as? String, "likely")
+            let supplementalPhotos = try XCTUnwrap(row["supplemental_photos"] as? [[String: Any]])
+            XCTAssertEqual(supplementalPhotos.count, 1)
+            XCTAssertEqual(supplementalPhotos.first?["itemID"] as? String, entryID.uuidString)
+            XCTAssertEqual(supplementalPhotos.first?["imageData"] as? String, "BwgJ")
+            XCTAssertEqual(supplementalPhotos.first?["role"] as? String, "label")
+            XCTAssertEqual(supplementalPhotos.first?["verifies"] as? String, "Maker mark: Oak Co")
 
             let response = try XCTUnwrap(HTTPURLResponse(
                 url: try XCTUnwrap(request.url),

@@ -69,7 +69,17 @@ final class HistorySwiftDataTests: XCTestCase {
                     )
                 ]
             ),
-            identificationProfile: identificationProfile
+            identificationProfile: identificationProfile,
+            supplementalPhotos: [
+                ItemPhotoAsset(
+                    itemID: UUID(uuidString: "11111111-1111-1111-1111-111111111111") ?? UUID(),
+                    imageData: ImageTools.sampleJPEG(),
+                    source: .camera,
+                    role: .label,
+                    verifies: "Model label: BL-42",
+                    isListingSafe: true
+                )
+            ]
         )
 
         context.insert(HistoryEntryModel(entry: entry))
@@ -92,5 +102,9 @@ final class HistorySwiftDataTests: XCTestCase {
         XCTAssertEqual(fetched[0].entry.identificationProfile?.confirmedFacts, ["Brand: BrightHome", "Material: brass"])
         XCTAssertEqual(fetched[0].entry.identificationProfile?.unknownDetails, ["Check base stamp"])
         XCTAssertEqual(fetched[0].entry.identificationProfile?.confidenceState, .stillChecking)
+        XCTAssertEqual(fetched[0].entry.supplementalPhotos.count, 1)
+        XCTAssertEqual(fetched[0].entry.supplementalPhotos.first?.role, .label)
+        XCTAssertEqual(fetched[0].entry.supplementalPhotos.first?.verifies, "Model label: BL-42")
+        XCTAssertFalse(fetched[0].entry.supplementalPhotos.first?.imageData?.isEmpty ?? true)
     }
 }

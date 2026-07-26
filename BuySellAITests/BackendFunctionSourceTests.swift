@@ -21,7 +21,8 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/migrations/20260724233029_early_access_entitlements.sql",
             "supabase/migrations/20260725001000_add_history_listing_metadata.sql",
             "supabase/migrations/20260725141629_add_history_identification_profile.sql",
-            "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql"
+            "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
+            "supabase/migrations/20260726051236_add_history_supplemental_photos.sql"
         ] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL(path).path), "\(path) should exist")
         }
@@ -116,6 +117,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         let listingMetadata = try read("supabase/migrations/20260725001000_add_history_listing_metadata.sql")
         let identificationProfile = try read("supabase/migrations/20260725141629_add_history_identification_profile.sql")
         let marketplaceComparison = try read("supabase/migrations/20260726045209_add_history_marketplace_comparison.sql")
+        let supplementalPhotos = try read("supabase/migrations/20260726051236_add_history_supplemental_photos.sql")
 
         XCTAssertNotNil(listingMetadata.range(of: "add column if not exists item_details jsonb"))
         XCTAssertNotNil(listingMetadata.range(of: "add column if not exists listing_draft jsonb"))
@@ -134,6 +136,11 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(marketplaceComparison.range(of: "history_marketplace_comparison_object"))
         XCTAssertNotNil(marketplaceComparison.range(of: "jsonb_typeof(marketplace_comparison) = 'object'"))
         XCTAssertNil(marketplaceComparison.range(of: "add constraint if not exists", options: .caseInsensitive))
+
+        XCTAssertNotNil(supplementalPhotos.range(of: "add column if not exists supplemental_photos jsonb"))
+        XCTAssertNotNil(supplementalPhotos.range(of: "history_supplemental_photos_array"))
+        XCTAssertNotNil(supplementalPhotos.range(of: "jsonb_typeof(supplemental_photos) = 'array'"))
+        XCTAssertNil(supplementalPhotos.range(of: "add constraint if not exists", options: .caseInsensitive))
     }
 
     func testAnonymousAnalyzeAndGenerateFunctionsUseGeminiServerSideSecret() throws {
@@ -837,7 +844,7 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(backendReadme.range(of: "analyze rejection contract: missing jpeg base64"))
         XCTAssertNotNil(backendReadme.range(of: "listing rejection contract: platform category condition"))
         XCTAssertNotNil(readme.range(of: "create index history_user_created_at_idx"))
-        XCTAssertNotNil(readme.range(of: "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
+        XCTAssertNotNil(readme.range(of: "constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection"))
         XCTAssertNotNil(readme.range(of: "alter table public.history force row level security"))
         XCTAssertNotNil(readme.range(of: "using ((select auth.uid()) = user_id)"))
         XCTAssertNotNil(readme.range(of: "with check ((select auth.uid()) = user_id)"))

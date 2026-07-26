@@ -70,6 +70,24 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         store.saveListing(
             item: item,
             imageData: ImageTools.sampleJPEG(),
+            supplementalPhotos: [
+                ItemPhotoAsset(
+                    itemID: item.id,
+                    imageData: Self.sampleJPEG(fill: .systemBlue),
+                    source: .camera,
+                    role: .label,
+                    verifies: "Model label: LX-45",
+                    isListingSafe: true
+                ),
+                ItemPhotoAsset(
+                    itemID: item.id,
+                    imageData: Self.sampleJPEG(fill: .systemRed),
+                    source: .internetReference,
+                    role: .reference,
+                    verifies: "Reference image",
+                    isListingSafe: false
+                )
+            ],
             marketplace: .ebay,
             listingText: "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition."
         )
@@ -78,6 +96,9 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(store.history.count, 1)
         XCTAssertEqual(immediateEntry.itemName, "Lamp")
         XCTAssertEqual(immediateEntry.marketplace, .ebay)
+        XCTAssertEqual(immediateEntry.supplementalPhotos.map(\.role), [.cover, .label])
+        XCTAssertEqual(immediateEntry.supplementalPhotos.last?.verifies, "Model label: LX-45")
+        XCTAssertLessThanOrEqual(maxPhotoEdge(immediateEntry.supplementalPhotos.last?.imageData), 1200)
         try assertThumbnailIsCappedAtListingSize(immediateEntry.imageThumbnail)
 
         let models = try context.fetch(FetchDescriptor<HistoryEntryModel>())
@@ -85,6 +106,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         let persistedEntry = try XCTUnwrap(models.first?.entry)
         XCTAssertEqual(persistedEntry.id, immediateEntry.id)
         XCTAssertEqual(persistedEntry.listingText, "TITLE:\nLamp\n\nDESCRIPTION:\nLamp in good condition.")
+        XCTAssertEqual(persistedEntry.supplementalPhotos.map(\.role), [.cover, .label])
         try assertThumbnailIsCappedAtListingSize(persistedEntry.imageThumbnail)
 
         store.history.removeAll()
@@ -95,6 +117,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(reloadedEntry.id, immediateEntry.id)
         XCTAssertEqual(reloadedEntry.itemName, "Lamp")
         XCTAssertEqual(store.historySyncState, .idle)
+        XCTAssertEqual(reloadedEntry.supplementalPhotos.map(\.role), [.cover, .label])
         try assertThumbnailIsCappedAtListingSize(reloadedEntry.imageThumbnail)
     }
 
@@ -156,6 +179,7 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         let suiteName = "AppStoreLocalHistoryReopenTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
+        let originalItemID = UUID(uuidString: "FAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA") ?? UUID()
         let originalEntry = historyEntry(
             id: UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF") ?? UUID(),
             createdAt: Date(timeIntervalSince1970: 1_700_000_000),
@@ -163,7 +187,25 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             marketplace: .ebay,
             listingText: "TITLE:\nDesk lamp\n\nDESCRIPTION:\nDesk lamp in good condition.",
             marketplaceComparison: Self.sampleMarketplaceComparison,
-            identificationProfile: Self.sampleIdentificationProfile
+            identificationProfile: Self.sampleIdentificationProfile,
+            supplementalPhotos: [
+                ItemPhotoAsset(
+                    itemID: originalItemID,
+                    imageData: Self.sampleJPEG(fill: .systemYellow),
+                    source: .unknownUserPhoto,
+                    role: .cover,
+                    verifies: "The actual item photo.",
+                    isListingSafe: true
+                ),
+                ItemPhotoAsset(
+                    itemID: originalItemID,
+                    imageData: Self.sampleJPEG(fill: .systemGreen),
+                    source: .camera,
+                    role: .label,
+                    verifies: "Base stamp: Lumina",
+                    isListingSafe: true
+                )
+            ]
         )
         context.insert(HistoryEntryModel(entry: originalEntry))
         try context.save()
@@ -181,6 +223,10 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(listingContext.marketplaceComparison?.compMedianPrice, Decimal(42))
         XCTAssertEqual(listingContext.analysis?.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
         XCTAssertEqual(listingContext.analysis?.identificationProfile?.unknownDetails, ["Check base stamp"])
+        XCTAssertEqual(listingContext.item.id, originalEntry.supplementalPhotos.first?.itemID)
+        XCTAssertEqual(listingContext.supplementalPhotos.map(\.role), [.cover, .label])
+        XCTAssertEqual(listingContext.supplementalPhotos.last?.verifies, "Base stamp: Lumina")
+        XCTAssertEqual(listingContext.imageData, originalEntry.supplementalPhotos.first?.imageData)
 
         let updatedItem = DetectedItem(
             name: "Desk lamp",
@@ -207,6 +253,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(visibleEntry.marketplaceComparison?.evidenceSources?.first?.listingStatus, "sold")
         XCTAssertEqual(visibleEntry.identificationProfile?.confirmedFacts, ["Brand: Lumina"])
         XCTAssertEqual(visibleEntry.identificationProfile?.confidenceState, .stillChecking)
+        XCTAssertEqual(visibleEntry.supplementalPhotos.map(\.role), [.cover, .label])
+        XCTAssertEqual(visibleEntry.supplementalPhotos.last?.verifies, "Base stamp: Lumina")
 
         let models = try context.fetch(FetchDescriptor<HistoryEntryModel>())
         XCTAssertEqual(models.count, 1)
@@ -217,6 +265,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         XCTAssertEqual(persistedEntry.listingText, "TITLE:\nUpdated desk lamp\n\nDESCRIPTION:\nUpdated desk lamp in like new condition.")
         XCTAssertEqual(persistedEntry.marketplaceComparison?.compMedianPrice, Decimal(42))
         XCTAssertEqual(persistedEntry.identificationProfile?.unknownDetails, ["Check base stamp"])
+        XCTAssertEqual(persistedEntry.supplementalPhotos.map(\.role), [.cover, .label])
+        XCTAssertEqual(persistedEntry.supplementalPhotos.last?.verifies, "Base stamp: Lumina")
     }
 
     func testClearHistoryWithoutModelContextStillClearsVisibleRowsAndShowsToast() throws {
@@ -252,7 +302,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         marketplace: Marketplace,
         listingText: String? = nil,
         marketplaceComparison: MarketplaceComparison? = nil,
-        identificationProfile: AnalyzeIdentificationProfile? = nil
+        identificationProfile: AnalyzeIdentificationProfile? = nil,
+        supplementalPhotos: [ItemPhotoAsset] = []
     ) -> HistoryEntry {
         HistoryEntry(
             id: id,
@@ -265,7 +316,8 @@ final class AppStoreLocalHistoryTests: XCTestCase {
             marketplace: marketplace,
             listingText: listingText ?? "TITLE:\n\(itemName)\n\nDESCRIPTION:\n\(itemName) in good condition.",
             marketplaceComparison: marketplaceComparison,
-            identificationProfile: identificationProfile
+            identificationProfile: identificationProfile,
+            supplementalPhotos: supplementalPhotos
         )
     }
 
@@ -315,6 +367,25 @@ final class AppStoreLocalHistoryTests: XCTestCase {
         let decoded = try XCTUnwrap(UIImage(data: thumbnail)?.cgImage, file: file, line: line)
         XCTAssertEqual(max(decoded.width, decoded.height), 200, file: file, line: line)
         XCTAssertEqual(min(decoded.width, decoded.height), 150, file: file, line: line)
+    }
+
+    private func maxPhotoEdge(_ data: Data?) -> Int {
+        guard let data, let image = UIImage(data: data)?.cgImage else { return 0 }
+        return max(image.width, image.height)
+    }
+
+    private static func sampleJPEG(fill: UIColor) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let size = CGSize(width: 720, height: 540)
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let image = renderer.image { context in
+            fill.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            UIColor.white.setFill()
+            context.cgContext.fill(CGRect(x: 120, y: 120, width: 320, height: 120))
+        }
+        return image.jpegData(compressionQuality: 0.9) ?? Data()
     }
 
     private func clearStoredSession() {

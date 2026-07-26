@@ -1269,6 +1269,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
     let marketplaceComparison: MarketplaceComparison?
     let listingDraft: GeneratedListingDraft?
     let identificationProfile: AnalyzeIdentificationProfile?
+    let supplementalPhotos: [ItemPhotoAsset]
 
     init(
         id: UUID,
@@ -1283,7 +1284,8 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
         itemDetails: ItemDetailAnswers? = nil,
         marketplaceComparison: MarketplaceComparison? = nil,
         listingDraft: GeneratedListingDraft? = nil,
-        identificationProfile: AnalyzeIdentificationProfile? = nil
+        identificationProfile: AnalyzeIdentificationProfile? = nil,
+        supplementalPhotos: [ItemPhotoAsset] = []
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -1298,6 +1300,7 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
         self.marketplaceComparison = marketplaceComparison?.sanitizedForDisplay()
         self.listingDraft = listingDraft?.sanitizedForDisplay()
         self.identificationProfile = identificationProfile?.sanitizedForDisplay()
+        self.supplementalPhotos = Self.sanitizedSupplementalPhotos(supplementalPhotos)
     }
 
     func sanitizedForHistory() -> HistoryEntry? {
@@ -1322,8 +1325,25 @@ struct HistoryEntry: Codable, Identifiable, Sendable, Hashable {
             itemDetails: itemDetails?.sanitizedForUse,
             marketplaceComparison: marketplaceComparison?.sanitizedForDisplay(),
             listingDraft: listingDraft?.sanitizedForDisplay(),
-            identificationProfile: identificationProfile?.sanitizedForDisplay()
+            identificationProfile: identificationProfile?.sanitizedForDisplay(),
+            supplementalPhotos: Self.sanitizedSupplementalPhotos(supplementalPhotos)
         )
+    }
+
+    private static func sanitizedSupplementalPhotos(_ photos: [ItemPhotoAsset]) -> [ItemPhotoAsset] {
+        var seen = Set<String>()
+        var sanitized: [ItemPhotoAsset] = []
+        for photo in photos {
+            guard photo.canExportToListing,
+                  let imageData = photo.imageData,
+                  imageData.isEmpty == false
+            else { continue }
+            let key = photo.duplicateSignature ?? photo.id.uuidString
+            guard seen.insert(key).inserted else { continue }
+            sanitized.append(photo)
+            if sanitized.count == 8 { break }
+        }
+        return sanitized
     }
 }
 
