@@ -107,6 +107,9 @@ jobs:
               | tee /tmp/buysell-supabase-backend-deploy.log
           fi
 
+      - name: Verify live early access entitlements
+        run: Scripts/verify_supabase_remote_entitlements.sh
+
       - name: Upload Supabase deploy log
         if: always()
         uses: actions/upload-artifact@v4

@@ -202,8 +202,12 @@ final class M10BackendPreflightScriptTests: XCTestCase {
     func testSupabaseDeployHelperGuardsRemoteSchemaAndFunctionDeployment() throws {
         let scriptURL = projectURL("Scripts/deploy_supabase_backend.sh")
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
+        let workflow = try String(contentsOf: projectURL(".github/workflows/supabase-backend-deploy.yml"), encoding: .utf8)
+        let remoteVerifierURL = projectURL("Scripts/verify_supabase_remote_entitlements.sh")
+        let remoteVerifier = try String(contentsOf: remoteVerifierURL, encoding: .utf8)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: remoteVerifierURL.path))
         XCTAssertNotNil(script.range(of: "ALLOW_MISSING_SUPABASE_DEPLOY"))
         XCTAssertNotNil(script.range(of: "M10 Supabase deploy preflight pending"))
         XCTAssertNotNil(script.range(of: "bash Scripts/deploy_supabase_backend.sh functions"))
@@ -261,6 +265,24 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNil(script.range(of: "GEMINI_API_KEY="))
         XCTAssertNil(script.range(of: "SUPABASE_SERVICE_ROLE_KEY="))
         XCTAssertNil(script.range(of: "APPLE_PRIVATE_KEY="))
+
+        XCTAssertNotNil(workflow.range(of: "Verify live early access entitlements"))
+        XCTAssertNotNil(workflow.range(of: "Scripts/verify_supabase_remote_entitlements.sh"))
+
+        XCTAssertNotNil(remoteVerifier.range(of: "supabase db query --linked --output json"))
+        XCTAssertNotNil(remoteVerifier.range(of: "public.entitlement_config"))
+        XCTAssertNotNil(remoteVerifier.range(of: "supabase_migrations.schema_migrations"))
+        XCTAssertNotNil(remoteVerifier.range(of: "20260724233029"))
+        XCTAssertNotNil(remoteVerifier.range(of: "20260726132434"))
+        XCTAssertNotNil(remoteVerifier.range(of: "20260726134945"))
+        XCTAssertNotNil(remoteVerifier.range(of: #""entitlement_state": "earlyAccess""#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""complete_feature_access": True"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""future_paid_access_enabled": False"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""daily_analysis_limit": 18"#))
+        XCTAssertNotNil(remoteVerifier.range(of: #""daily_ai_action_limit": 54"#))
+        XCTAssertNotNil(remoteVerifier.range(of: "Supabase remote entitlement check passed"))
+        XCTAssertNil(remoteVerifier.range(of: "SUPABASE_DB_PASSWORD"))
+        XCTAssertNil(remoteVerifier.range(of: "SUPABASE_SERVICE_ROLE_KEY"))
     }
 
     func testSupabaseSecretSetupScriptKeepsProviderSecretsOutOfSourceAndAppConfig() throws {
