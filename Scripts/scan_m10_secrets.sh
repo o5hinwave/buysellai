@@ -14,19 +14,46 @@ scan_root() (
     local scan_root="$1"
     local matches
     local status
+    local search_paths
 
     cd "$scan_root"
+    search_paths=(.)
+    if [[ -d BuySellAI || -d supabase || -d Scripts ]]; then
+        search_paths=()
+        for path in \
+            .github \
+            BuySellAI \
+            BuySellAITests \
+            BuySellAIUITests \
+            Scripts \
+            supabase \
+            README.md \
+            M10_ACCEPTANCE.md \
+            M10_APP_STORE_METADATA.md \
+            M10_TODAY_FEATURE_NOMINATION.md \
+            M12_MARKETPLACE_PHOTO_INTELLIGENCE.md \
+            .env \
+            .env.*
+        do
+            [[ -e "$path" ]] && search_paths+=("$path")
+        done
+    fi
 
     set +e
     matches="$(
         rg -l -I --hidden \
+            --no-ignore \
             --glob '!.git/*' \
+            --glob '!node_modules/**' \
+            --glob '!.build/**' \
+            --glob '!.swiftpm/**' \
+            --glob '!AppStoreSite/**' \
             --glob '!DerivedData/**' \
             --glob '!*.xcresult/**' \
             --glob '!*.xcarchive/**' \
             --glob '!*.dSYM/**' \
             "$pattern" \
-            .
+            "${search_paths[@]}"
     )"
     status=$?
     set -e
