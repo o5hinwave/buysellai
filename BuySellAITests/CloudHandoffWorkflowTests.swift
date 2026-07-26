@@ -188,13 +188,19 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         [
             "command -v rg",
             "rg --version",
-            "brew tap --list",
-            "brew untap aws/tap",
-            "brew install ripgrep",
+            "RIPGREP_VERSION:-15.2.0",
+            "aarch64",
+            "x86_64",
+            "curl -fsSL",
+            "BurntSushi/ripgrep/releases/download",
+            "RUNNER_TEMP",
+            "GITHUB_PATH",
             "sudo apt-get install -y ripgrep",
         ].forEach { expected in
             XCTAssertNotNil(script.range(of: expected), "Missing expected scan-tool setup marker: \(expected)")
         }
+
+        XCTAssertNil(script.range(of: "brew "))
 
         for workflow in [ci, handoff, appStore, supabase] {
             XCTAssertNotNil(workflow.range(of: "Scripts/install_scan_tools.sh"))
