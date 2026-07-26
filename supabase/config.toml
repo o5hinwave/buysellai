@@ -1,0 +1,14 @@
+[functions.analyze-image]
+verify_jwt = false
+
+[functions.generate-listing]
+verify_jwt = false
+
+[functions.compare-marketplaces]
+verify_jwt = false
+
+[functions.store-apple-token]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

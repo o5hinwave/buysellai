@@ -1,1 +1,487 @@
-# buysellai
+# BuySell AI iOS
+
+Native SwiftUI rebuild of BuySell AI for iOS 17+.
+
+## Open
+
+Open `BuySellAI.xcodeproj` in Xcode 16.4 or newer.
+
+## Cloud Source
+
+The cloud source of truth is the GitHub repository at `https://github.com/o5hinwave/buysellai`.
+
+Use the `codex/m10-submit-readiness` branch for active agent work until it is reviewed and merged into `main`. The repository includes `.github/workflows/ios-ci.yml`, which runs a hosted macOS iOS check on pushes and pull requests so the app can be worked on away from this Mac. The broader `.github/workflows/cloud-handoff.yml` workflow is named `Cloud Handoff Check`; it can also be launched manually from GitHub Actions and verifies the portable checkout, secret scan, Supabase schema/function sources, release docs, and a native iOS smoke bundle. `.github/workflows/app-store-preflight.yml` is the manual `App Store Preflight` lane for GitHub's macOS cloud runner; it verifies the same portable source and Supabase inputs, then runs the signed archive, App Store Connect IPA export, and App Store validation preflights with retained logs/artifacts. Run it with `allow_missing_credentials=true` while Apple signing and App Store Connect secrets are pending, then with `allow_missing_credentials=false` once the encrypted GitHub secrets are configured. Those hosted checks are the quick proof that the iOS app, backend templates, and release lane are present in the cloud repo rather than living only on this computer. The App Store support site remains in the nested `AppStoreSite` Sites project and deploys from its own cloud-backed Sites source, not from this iOS GitHub repository. Store signing credentials, App Store Connect API keys, Supabase service-role secrets, Gemini keys, and Apple private-key material only in the cloud provider's encrypted secret store. Do not commit those values.
+
+The current local SDK is Xcode 16.4 with the iOS 18.5 SDK. The app's native material layer centralizes latest-iOS presentation behavior through `BuySellAI/Design/NativeMaterialSurface.swift` using `ultraThinMaterial` and `regularMaterial` as compiler-safe fallbacks while keeping compiler-gated iOS 26+ hooks for `glassEffect`, `GlassEffectContainer`, `GlassButtonStyle`, `.buttonStyle(.glass)`, and `.buttonStyle(.glassProminent)` in the same wrapper. Home now uses a native `NavigationStack`, plain-list command surface, restrained camera hero, promise strip, toolbar account/settings actions, and swipeable recent history instead of the legacy floating hero artwork, pill stack, and glow treatment. Camera controls route through shared native material wrappers where the preview needs foreground legibility, and the Camera surface includes tap focus, camera switching, scene-phase recovery, and capture controls. The Result, Marketplace, and Listing flow uses native SwiftUI sheets with system detents instead of hand-built bottom-sheet chrome; focused inputs, Settings row icons, chips, toasts, generated-listing panels, marketplace badges, and first-launch tutorial controls continue to route through shared native material wrappers where a material layer has a functional purpose. Auth setup uses native inset grouped rows and system bars instead of a custom material control cluster. `Info.plist` intentionally omits `UIDesignRequiresCompatibility` so iOS 26+ can use the current system presentation instead of design compatibility mode. Final M10 readiness requires `Scripts/verify_m10_latest_design_sdk.sh` to pass with an Xcode/iPhoneOS SDK 27+ latest-design toolchain by default; the Xcode 16.4 fallback evidence is not treated as the final App Store design proof.
+
+On iOS 26+ builds, `nativeSystemSheetPresentationChrome()` leaves Auth and Settings sheet backgrounds to the native Liquid Glass presentation; on older SDK/runtime paths it preserves the current `.regularMaterial` fallback. The latest-design verifier records this as `system sheet background: iOS 26+ native Liquid Glass, regularMaterial fallback`.
+
+Typography setup is guarded end to end: app screens use native San Francisco semantic Dynamic Type roles directly, the wordmark maps to semantic title roles with Bold Text-aware weights, `Info.plist` does not register runtime custom fonts, user-facing text avoids raw fixed-size font overrides, and SF Symbol sizing routes through shared `BrandSymbolStyle` tokens. Legacy Space Grotesk and Inter font assets have been removed so the synchronized app target cannot bundle obsolete custom typefaces.
+
+To connect the real Supabase backend, write the app-side public config with:
+
+```sh
+bash Scripts/setup_supabase_config.sh
+```
+
+The helper prompts for these values, or reads them from environment variables with the same names for noninteractive setup. Set `SUPABASE_CONFIG_FROM_ENV` to `1` on CI/release machines so missing public config values fail fast instead of prompting:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY` containing the public anon key or `sb_publishable_...` publishable key
+
+It writes only those public keys to `BuySellAI/App/Config.plist`, rejects copied placeholders and provider/server-secret-shaped values, and never prints the anon key. `Config.plist` is git-ignored.
+
+Keep AI provider secrets, Supabase `sb_secret_...` keys, JWT signing secrets, service-role keys, and Apple private-key material out of the iOS bundle. Add them to Supabase Edge Function or project secret storage instead, using the variable names expected by the deployed functions, then let the app call the existing `analyze-image` and `generate-listing` functions through Supabase. Rotate any provider or server-side key that was pasted into chat, logs, or git before using it for production. The bundled config parser accepts only `SUPABASE_URL` and `SUPABASE_ANON_KEY` and rejects provider/server-secret-shaped values.
+
+Current submit-readiness state: the local, git-ignored `BuySellAI/App/Config.plist` is configured for Supabase project `czuoebqjajupghivqkch` with a public publishable key, and `supabase/.temp/project-ref` is linked to the same project. The remote schema and all four Edge Functions are deployed, required remote secret names are present in retained deploy evidence, and the latest live backend smoke evidence passes at `/tmp/buysell-submit-readiness-backend.log`. The secret setup and deploy helpers still bound Supabase CLI secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls cannot hang release checks. The Gemini key, Supabase `sb_secret_...` key, JWT secret, service-role key, and Apple private-key material must be set only through the server-side secret helpers or Supabase dashboard; they must not be copied into `Config.plist`, source, tests, README examples, or shell history.
+
+Deployable Supabase Edge Function templates live in `supabase/functions/` for the app's `analyze-image`, `generate-listing`, `store-apple-token`, and `delete-account` routes. They preserve the native iOS contracts while keeping `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and Sign in with Apple private-key material server-side.
+
+Safe secret setup for the existing Edge Functions:
+
+```sh
+SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh preflight
+SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full
+```
+
+The `preflight` mode resolves the target project and verifies Supabase CLI secret access before any secret values are requested. The `full` helper prompts for `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, and an Apple private-key `.p8` path, or reads those values from CI secret environment variables when `SUPABASE_SECRETS_FROM_ENV` is set to `1`. It resolves the target from `SUPABASE_PROJECT_REF`, `BuySellAI/App/Config.plist`, or the linked Supabase project before prompting for secrets, validates that the Apple private-key path resolves outside the repository and must be a `.p8` private-key file, writes a 0600 temporary env file outside the repository, calls `supabase secrets set --project-ref <project-ref> --env-file`, and removes the temp file on exit. The Supabase release helpers default `SUPABASE_TELEMETRY_DISABLED=1` so CLI telemetry cannot make release checks flaky. Use `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh gemini-only` only for an early guest analyze/listing smoke test; full App Store readiness still requires the service-role and Apple secrets. Do not paste provider or server-side secrets into `Config.plist`, Xcode build settings, source files, test fixtures, or shell commands that would remain in history.
+
+Apple Developer account state: team `RHODES MCALLEN COONS COONS` (`ZVFG6KC7KA`) is selected in the Xcode project for Bundle ID `com.despia.buysellai`. The Apple Developer portal has Sign in with Apple enabled for the primary App ID and Services ID `com.despia.buysellai.signin` configured for domain `czuoebqjajupghivqkch.supabase.co` with return URL `https://czuoebqjajupghivqkch.supabase.co/auth/v1/callback`. A replacement Sign in with Apple key is registered as `BuySell AI SIWA Codex` with Key ID `XGFG4R742L`; its one-time `.p8` file is stored outside the repository at `~/.config/buysellai/secrets/AuthKey_XGFG4R742L.p8` with private file permissions. Supabase Auth's Apple provider is enabled for `com.despia.buysellai.signin,com.despia.buysellai`, and the Edge Function server-side Apple secrets are set:
+
+- Keep the `.p8` outside the repository with private file permissions; do not copy its contents into source, docs, tests, or shell history.
+- In Supabase Auth's Apple provider, keep `com.despia.buysellai.signin` first in Client IDs, with `com.despia.buysellai` also listed for native token audiences.
+- For this app's `store-apple-token` Edge Function, server-side secret storage must retain `APPLE_TEAM_ID=ZVFG6KC7KA`, `APPLE_CLIENT_ID=com.despia.buysellai`, `APPLE_KEY_ID=XGFG4R742L`, and the `.p8` content.
+
+Optional backend tuning:
+
+```sh
+# Optional: override the stable production default only after collecting fresh release evidence.
+supabase secrets set GEMINI_MODEL=gemini-2.5-flash
+supabase secrets set GEMINI_TIMEOUT_MS=18000
+supabase secrets set APPLE_TIMEOUT_MS=8000
+supabase secrets set SUPABASE_SERVICE_TIMEOUT_MS=8000
+```
+
+`GEMINI_MODEL` defaults to Google's stable `gemini-2.5-flash` model so App Store evidence is repeatable while keeping listing research fast and low-cost. The `analyze-image` function now returns optional structured item facts with confidence, missing facts, and one simple photo prompt while preserving the original name/category/condition/price contract. The `generate-listing` function plans at most three marketplace research questions, reuses fresh rows from `marketplace_research_cache`, and only enables live Google Search plus URL Context when saved research is missing or stale. Gemini returns structured draft fields, while BuySell code validates and formats the final copyable `TITLE`/`DESCRIPTION` listing text without appending price-plan or photo-guidance metadata. Native marketplace estimates also carry a bounded item-aware fit score from the deterministic ranking formula, shown as plain cues such as `Strong fit` or `Good fit` instead of technical scoring language. Marketplace playbook metadata stores current fee/rule source URLs, checked dates, and active/retired status; recommendation lists exclude retired standalone services such as Kidizen and Tradesy while preserving enum/API compatibility. Override the model only for a deliberate model change, then rerun the backend smoke preflight, Deno check, unit/UI evidence, and M10 submit-readiness gate before submission.
+
+Apply the bundled Supabase schema migration from `supabase/migrations/` before deploying functions:
+
+```sh
+supabase db push
+```
+
+The migrations create the signed-in `history` table, harden it with native value/listing constraints, and create the private `apple_auth_tokens` table with RLS, least-privilege grants, and unique Apple subject storage. To check the deployment inputs without making remote changes:
+
+```sh
+ALLOW_MISSING_SUPABASE_DEPLOY=1 bash Scripts/deploy_supabase_backend.sh preflight
+```
+
+After `Scripts/setup_supabase_config.sh`, `SUPABASE_PROJECT_REF=<project-ref> bash Scripts/setup_supabase_secrets.sh full`, and `supabase link --project-ref <project-ref>` are complete, deploy the schema and functions with:
+
+```sh
+CONFIRM_SUPABASE_DEPLOY=<project-ref> bash Scripts/deploy_supabase_backend.sh deploy | tee /tmp/buysell-submit-readiness-supabase-deploy.log
+```
+
+The deploy helper validates the public app config, linked project, required server-side secret names, migrations, and Edge Function sources, then runs `supabase db push --linked --yes` and deploys each function with `--use-api`. It bounds secret-name listing with `M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS` so local CLI stalls become explicit pending evidence instead of indefinite waits, and it never prints secret values. Passing deploy evidence includes `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`. Manual equivalent commands are:
+
+```sh
+supabase functions deploy analyze-image
+supabase functions deploy generate-listing
+supabase functions deploy store-apple-token
+supabase functions deploy delete-account
+```
+
+Local Supabase schema static check:
+
+```sh
+bash Scripts/check_supabase_schema.sh | tee /tmp/buysell-submit-readiness-supabase-schema.log
+```
+
+The schema checker verifies the migration files without connecting to Supabase. It checks forced RLS on `history`, `apple_auth_tokens`, `marketplace_research_cache`, `entitlement_config`, and `entitlement_usage_events`, the cached `(select auth.uid())` authenticated history policy, RLS/filter indexes, least-privilege grants, idempotent hardening constraints, unique Apple subject storage, service-only marketplace research storage, server-controlled early-access entitlements, and parity between the Swift `Category`, `Condition`, and `Marketplace` raw values and the SQL check constraints. Passing output includes `Supabase schema static check passed`, `tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events`, `rls: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events forced`, `policy: history authenticated select-auth-uid`, `indexes: history_user_created_at_idx apple_auth_tokens_apple_user_id_unique entitlement_usage_identity_day_idx entitlement_usage_user_day_idx entitlement_usage_device_day_idx entitlement_usage_ip_day_idx`, `grants: history authenticated service_role apple_auth_tokens service_role marketplace_research_cache service_role entitlement_config service_role entitlement_usage_events service_role`, `constraints: history category condition marketplace listing metadata identification-profile marketplace-comparison supplemental-photos apple-token-identity marketplace-research-cache early-access-entitlements usage-protection`, and `swift parity: category condition marketplace`. Retain the log for the combined M10 gate; it is local schema evidence and does not replace `supabase db push`, deploy evidence, or the live backend smoke preflight.
+
+Signed-in history sync expects the migrated PostgREST `history` table protected by RLS:
+
+```sql
+create table public.history (
+  id uuid primary key,
+  user_id uuid not null default auth.uid(),
+  created_at timestamptz not null,
+  item_name text not null,
+  category text,
+  condition text,
+  suggested_price numeric,
+  image_thumbnail_base64 text,
+  marketplace text not null,
+  listing_text text not null,
+  constraint history_item_name_not_blank check (btrim(item_name) <> ''),
+  constraint history_marketplace_not_blank check (btrim(marketplace) <> ''),
+  constraint history_listing_text_not_blank check (btrim(listing_text) <> ''),
+  constraint history_suggested_price_positive check (suggested_price is null or suggested_price > 0)
+);
+
+create index history_user_created_at_idx
+on public.history (user_id, created_at desc);
+
+alter table public.history enable row level security;
+alter table public.history force row level security;
+
+create policy "Users can manage their own history"
+on public.history
+for all
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+```
+
+The follow-up hardening migrations add `history_category_known`, `history_condition_known`, `history_marketplace_known`, and `history_listing_text_has_sections` constraints so signed-in history rows stay aligned with the native `Category`, `Condition`, `Marketplace`, and generated listing contracts. They also add `apple_auth_tokens_apple_user_id_unique` so private Apple token storage cannot duplicate a Sign in with Apple subject across account rows.
+
+Sign in with Apple token revocation expects the migrated private service-role-only table:
+
+```sql
+create table public.apple_auth_tokens (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  apple_user_id text not null,
+  refresh_token text not null,
+  access_token text,
+  access_token_expires_at timestamptz,
+  updated_at timestamptz not null default now(),
+  constraint apple_auth_tokens_apple_user_id_unique unique (apple_user_id)
+);
+
+alter table public.apple_auth_tokens enable row level security;
+```
+
+Account deletion calls a Supabase Edge Function:
+
+```txt
+POST /functions/v1/delete-account
+Authorization: Bearer <supabaseAccessToken>
+apikey: <SUPABASE_ANON_KEY>
+Content-Type: application/json
+
+{}
+```
+
+The `store-apple-token` function verifies the bearer token, checks whether the Apple subject is already owned by another Supabase user before exchanging the one-time Apple code, requires Apple's token response subject to match the submitted Apple user ID, and returns a 409 conflict instead of hiding duplicate identity storage behind a generic server error. The delete function verifies the bearer token, attempts to revoke stored Sign in with Apple tokens through Apple's `/auth/revoke` endpoint when present, deletes the private token row and user-owned data covered by RLS, then deletes the auth user server-side with privileged credentials. BuySell account deletion still completes if Apple token cleanup is stale or temporarily unavailable, but missing or malformed Apple private-key secrets remain hard backend errors so release evidence cannot hide a revocation misconfiguration.
+
+## Verify
+
+```sh
+xcodebuild test \
+  -project BuySellAI.xcodeproj \
+  -scheme BuySellAI \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+  -parallel-testing-enabled NO \
+  -maximum-concurrent-test-simulator-destinations 1
+```
+
+Release archive compile/package check:
+
+```sh
+bash Scripts/verify_m10_local_archive.sh /tmp/buysell-submit-readiness-nosign.xcarchive
+```
+
+If Xcode stalls while loading the project from the full checkout, run the no-sign archive check from a lean iOS snapshot:
+
+```sh
+M10_LOCAL_ARCHIVE_SNAPSHOT_ROOT=/tmp/buysell-m10-archive-worktree \
+bash Scripts/verify_m10_local_archive.sh /tmp/buysell-submit-readiness-nosign.xcarchive
+```
+
+Signed archive preflight:
+
+```sh
+M10_DEVELOPMENT_TEAM=<team-id> \
+bash Scripts/preflight_m10_signed_archive.sh /tmp/BuySellAI-signed.xcarchive \
+  | tee /tmp/buysell-submit-readiness-signed-preflight.log
+```
+
+If Xcode stalls while loading the project from the full checkout, run the signed archive preflight from a lean iOS snapshot:
+
+```sh
+M10_SIGNED_ARCHIVE_SNAPSHOT_ROOT=/tmp/buysell-m10-signed-worktree \
+M10_DEVELOPMENT_TEAM=<team-id> \
+bash Scripts/preflight_m10_signed_archive.sh /tmp/BuySellAI-signed.xcarchive \
+  | tee /tmp/buysell-submit-readiness-signed-preflight.log
+```
+
+App Store Connect export preflight:
+
+```sh
+M10_DEVELOPMENT_TEAM=<team-id> \
+bash Scripts/preflight_m10_app_store_export.sh /tmp/BuySellAI-appstore.xcarchive /tmp/BuySellAI-appstore-export \
+  | tee /tmp/buysell-submit-readiness-export-preflight.log
+```
+
+If Xcode stalls while loading the project from the full checkout, run the App Store export preflight from a lean iOS snapshot:
+
+```sh
+M10_APP_STORE_EXPORT_SNAPSHOT_ROOT=/tmp/buysell-m10-appstore-export-worktree \
+M10_DEVELOPMENT_TEAM=<team-id> \
+bash Scripts/preflight_m10_app_store_export.sh /tmp/BuySellAI-appstore.xcarchive /tmp/BuySellAI-appstore-export \
+  | tee /tmp/buysell-submit-readiness-export-preflight.log
+```
+
+App Store Connect validation preflight after export and API-key setup:
+
+```sh
+ASC_API_KEY_ID=<key-id> \
+ASC_API_ISSUER_ID=<issuer-id> \
+ASC_API_PRIVATE_KEYS_DIR=<directory-containing-AuthKey_key-id.p8> \
+bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export \
+  | tee /tmp/buysell-submit-readiness-app-store-validation-preflight.log
+```
+
+App Store Connect metadata evidence after product-page metadata, screenshots, privacy/support/accessibility URLs, app privacy answers, Accessibility Nutrition Labels, age rating, DSA status, account-owner legal confirmation, and review notes are recorded:
+
+```sh
+bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
+```
+
+The metadata verifier checks concrete App Store Connect fields, unauthenticated public HTTPS privacy/support/accessibility URLs, screenshot evidence, account-owner legal confirmation, review notes, the 100-byte keyword limit, privacy answers matching `PrivacyInfo.xcprivacy`, and Accessibility Nutrition Label evidence for the claimed iPhone/iPad accessibility features and common tasks. It rejects assumption, pending, and confirm-before-submission wording in legal/account-owner fields. It also verifies the retained PNG screenshot files exist for the required iPhone 6.9-inch and iPad 13-inch display classes, match `1320x2868` and `2064x2752` dimensions, pass blank/dark-strip artifact checks, and came from retained xcresults where `testM10AppStoreScreenshotsCanBeCaptured()` passed. Passing logs include `file:`, `app name:`, `bundle id:`, `version:`, `privacy policy:`, `support:`, `accessibility url:`, `screenshots:`, `legal:`, `screenshot sets:`, `screenshot directory:`, `screenshot files:`, `screenshot dimensions:`, `screenshot quality:`, `screenshot result bundle:`, `screenshot capture test:`, `app privacy:`, `accessibility labels:`, and `accessibility evidence:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-app-store-metadata.log` for the combined gate. Allowed-pending output still emits the recorded evidence markers, but keeps the legal/account-owner blocker visible. Until those fields are complete, record the known blocker:
+
+Screenshot metadata logs also include `screenshot brand signal: warm orange present`, proving the retained App Store screenshots carry the BuySell orange visual signal.
+
+```sh
+ALLOW_PENDING_METADATA=1 bash Scripts/verify_m10_app_store_metadata.sh M10_APP_STORE_METADATA.md
+```
+
+The App Store support/privacy/accessibility site source lives in `AppStoreSite/`. Sites version 7 was saved from support-site commit `14d6355e7a28484c513ecee29487602c18c21c6b` and deployed at `https://buysell-ai-support.o5hinwavve.chatgpt.site`; site access is public, and unauthenticated home, support, privacy, accessibility, and terms requests return `200` in `/tmp/buysell-support-site-live.log`. A fresh `npm run build` in `AppStoreSite/` now clears stale local Wrangler deploy state, rebuilds the Vinext/Sites output, validates fresh `dist/server/index.js`, `dist/client`, and `dist/.openai/hosting.json` output, and renders `/`, `/support`, `/privacy`, `/accessibility`, and `/terms` before printing `BuySell support site build passed`; retain `/tmp/buysell-support-site-build.log`, `/tmp/buysell-support-site-test.log`, and `/tmp/buysell-support-site-live.log` as support-site evidence. The iOS Settings legal links use the same Sites host, so the App Store Support URL, Privacy Policy URL, and Accessibility URL fields point at the public `/support`, `/privacy`, and `/accessibility` pages. Required App Store screenshot evidence is retained in `AppStoreAssets/Screenshots/iPhone-16-Pro-Max/` and `AppStoreAssets/Screenshots/iPad-Pro-13-inch-M4/` from passing simulator captures. Metadata now records age rating `4+`, export compliance from `ITSAppUsesNonExemptEncryption=false`, and copyright `© 2026 RHODES MCALLEN COONS COONS`; the verifier intentionally keeps metadata pending until DSA trader status and final App Store Connect account-owner legal confirmation are recorded.
+
+Apple Today/App Store editorial nomination package:
+
+```sh
+bash Scripts/verify_m10_today_feature_nomination.sh M10_TODAY_FEATURE_NOMINATION.md \
+  | tee /tmp/buysell-submit-readiness-today-feature.log
+```
+
+The Today feature verifier checks `M10_TODAY_FEATURE_NOMINATION.md` for Apple guidance links, the App Store Connect Featuring Nominations path, the two-week minimum and three-month wider-consideration lead-time note, eligible App Store Connect roles, concrete launch-story copy, native technology/accessibility/privacy angles, retained iPhone 6.9-inch and iPad 13-inch screenshot assets, public support/privacy/accessibility URL references, and the text-free 1024x1024 App Store icon. Passing logs include `M10 Today feature nomination package passed`, `file:`, `placement:`, `story:`, `lead time:`, `role:`, `assets:`, and `source:` markers; retain the output as `/tmp/buysell-submit-readiness-today-feature.log` for the combined gate. It proves the nomination package is ready to submit after the signed binary, App Store metadata, backend, real-device, and legal gates are complete; Apple editorial placement remains discretionary.
+
+Backend smoke preflight after `Config.plist`, the migrated Supabase schema, the deployed Edge Functions, and a retained JPEG sample are available:
+
+```sh
+bash Scripts/setup_supabase_config.sh
+
+M10_ANALYZE_IMAGE_JPEG=/path/to/common-item.jpg \
+bash Scripts/preflight_m10_backend.sh BuySellAI/App/Config.plist
+```
+
+Type-check the local Supabase Edge Function sources before deploying them:
+
+```sh
+bash Scripts/check_supabase_functions.sh | tee /tmp/buysell-submit-readiness-supabase-functions.log
+```
+
+The Deno checker uses a local `deno` binary when available, or a temporary `npx --yes deno` fallback with `DENO_DIR` outside the repo. Passing output includes `Supabase function Deno check passed`, `functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account`, `listing research tools: google_search url_context gated-by-cache`, `listing research cache: Gemini grounding saved`, `listing draft: structured fields formatted deterministically`, and `listing evidence sources: sold-comp guarded structured source/date/status/comparability`. Retain the passing output as `/tmp/buysell-submit-readiness-supabase-functions.log` for the combined gate.
+
+The backend preflight reads only the public Supabase URL and anon/publishable key from `Config.plist`; it does not print the key or any provider/server-side secret. The app and preflight both reject copied `Config.plist.example` placeholders before making backend requests. It verifies `analyze-image` and `generate-listing` with live responses, including the plain-text `TITLE:` and `DESCRIPTION:` listing contract, then verifies `analyze-image` rejects missing image data, non-JPEG data URLs, and malformed base64 while `generate-listing` rejects unsupported platform, category, and condition values. It then probes `store-apple-token` and `delete-account` to confirm the protected account functions are deployed and reject anonymous requests. It also probes the migrated `history`, `apple_auth_tokens`, `marketplace_research_cache`, `entitlement_config`, and `entitlement_usage_events` PostgREST tables to confirm the schema is deployed and rejects anonymous reads. Passing logs include `config:`, `project:`, `schema: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events`, `functions: analyze-image compare-marketplaces generate-listing store-apple-token delete-account`, `protected functions: store-apple-token delete-account`, `protected tables: history apple_auth_tokens marketplace_research_cache entitlement_config entitlement_usage_events`, `analyze item:`, `analyze rejection contract: missing jpeg base64`, `listing contract:`, `listing rejection contract: platform category condition`, and `listing bytes:` markers. Retain the passing output as `/tmp/buysell-submit-readiness-backend.log` for the combined gate. On a fresh machine where the deployed schema/functions or sample image have not been restored yet, record the known blocker:
+
+```sh
+ALLOW_MISSING_BACKEND=1 bash Scripts/preflight_m10_backend.sh
+```
+
+`M10_DEVELOPMENT_TEAM` lets local release preflights use a personal Apple Team ID without committing it to the Xcode project. You can also select the team in Xcode instead. The signing, export, and real-device preflights bound the `xcodebuild -showBuildSettings` probe with `M10_XCODEBUILD_SETTINGS_TIMEOUT` (default `60` seconds); raise it only after confirming the checkout is fully local and Xcode is responsive. Snapshot-based release and UI checks also bound each `rsync` copy with `M10_SNAPSHOT_COPY_TIMEOUT` (default `20` seconds) and fall back to the system copy tool when file-provider I/O stalls.
+
+Until the Apple team, exported IPA, and App Store Connect API-key credentials are available, record the known blockers:
+
+```sh
+ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_signed_archive.sh \
+  | tee /tmp/buysell-submit-readiness-signed-preflight.log
+ALLOW_MISSING_TEAM=1 bash Scripts/preflight_m10_app_store_export.sh \
+  | tee /tmp/buysell-submit-readiness-export-preflight.log
+ALLOW_MISSING_ASC=1 bash Scripts/preflight_m10_app_store_validate.sh /tmp/BuySellAI-appstore-export \
+  | tee /tmp/buysell-submit-readiness-app-store-validation-preflight.log
+```
+
+Real-device preflight after connecting a trusted iPhone or iPad with Developer Mode enabled:
+
+```sh
+M10_DEVELOPMENT_TEAM=<team-id> bash Scripts/preflight_m10_real_device.sh \
+  | tee /tmp/buysell-submit-readiness-real-device-preflight.log
+```
+
+If Xcode stalls while loading the project from the full checkout, run the real-device preflight from a lean iOS snapshot:
+
+```sh
+M10_REAL_DEVICE_SNAPSHOT_ROOT=/tmp/buysell-m10-real-device-worktree \
+M10_DEVELOPMENT_TEAM=<team-id> \
+bash Scripts/preflight_m10_real_device.sh \
+  | tee /tmp/buysell-submit-readiness-real-device-preflight.log
+```
+
+To target a specific connected device:
+
+```sh
+M10_DEVELOPMENT_TEAM=<team-id> DEVICE_ID=<devicectl-identifier> bash Scripts/preflight_m10_real_device.sh \
+  | tee /tmp/buysell-submit-readiness-real-device-preflight.log
+```
+
+The preflight ignores non-iOS `devicectl` entries. A supplied `DEVICE_ID` must match a connected iPhone or iPad. Passing logs include `device:`, `device name:`, `device id:`, optional `snapshot root:`, `app:`, `bundle id:`, `sign in with apple:`, and `release build:` markers so final acceptance and Instruments metadata can point back to the same trusted device and Release build. Allowed no-device pending logs still include source-level `bundle id:`, `sign in with apple:`, and `release build:` markers while leaving the true device and built-app markers pending.
+
+Until a trusted physical device is connected, record the known hardware blocker:
+
+```sh
+ALLOW_MISSING_DEVICE=1 bash Scripts/preflight_m10_real_device.sh \
+  | tee /tmp/buysell-submit-readiness-real-device-preflight.log
+```
+
+Real-device acceptance evidence check after the manual device pass:
+
+```sh
+bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
+```
+
+Each real-device acceptance Evidence cell must include the observed proof terms documented in `M10_ACCEPTANCE.md`; generic "passed" notes are intentionally rejected. Metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, release-build metadata matching the signed-preflight `release build:` marker before final submit-readiness, signed-archive wording with the signed-preflight `archive:` path, signed archive validation proof from Xcode Organizer with that same `archive:` path, and App Store validation proof.
+
+Until the manual device pass is complete, record the known acceptance blocker:
+
+```sh
+ALLOW_PENDING_ACCEPTANCE=1 bash Scripts/verify_m10_real_device_acceptance.sh M10_ACCEPTANCE.md
+```
+
+Secret-pattern scan:
+
+```sh
+bash Scripts/scan_m10_secrets.sh
+```
+
+The scan prints both `M10 secret scan self-test passed` and `M10 secret scan passed`; retain that output in the M10 secret-scan log.
+
+Local source typecheck when `xcodebuild` project loading is slow or blocked:
+
+```sh
+Scripts/typecheck_local_sources.sh | tee /tmp/buysell-local-source-typecheck.log
+```
+
+This first emits a non-DEBUG `BuySellAIRelease` Swift module from all app sources so release builds cannot reference UI-test sample fixtures, then emits a DEBUG `BuySellAI` module and typechecks the unit-test and UI-test Swift sources against the iPhone Simulator SDK and XCTest Swift overlay. Passing output includes `BuySellAI local source typecheck passed`, `target:`, `sdk:`, `sources: app unit ui`, and `modes: release app debug app unit ui`; retain it as `/tmp/buysell-local-source-typecheck.log` for the combined gate. It is fast source-level evidence only; it does not replace the retained `.xcresult` bundles, no-sign archive, signed archive, real-device, Supabase backend, or App Store validation gates.
+
+Workspace materialization preflight for file-provider-backed checkouts:
+
+```sh
+bash Scripts/check_workspace_materialization.sh \
+  | tee /tmp/buysell-submit-readiness-workspace-materialization.log
+```
+
+This verifies Git metadata, app sources, tests, Supabase sources, support-site sources, retained screenshots, and M10 docs are locally readable before the heavier Xcode and readiness checks run. Passing output includes `M10 workspace materialization passed`; use `ALLOW_DATALLESS_WORKSPACE=1` only to record a visible pending blocker while cloud-only files download.
+
+Hosted cloud handoff check:
+
+```sh
+gh workflow run "Cloud Handoff Check" --ref codex/m10-submit-readiness
+```
+
+The workflow source is `.github/workflows/cloud-handoff.yml`. It runs on GitHub's hosted macOS runner and checks `M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh`, `Scripts/scan_m10_secrets.sh`, `Scripts/check_supabase_schema.sh`, `Scripts/check_supabase_functions.sh`, and a focused native iOS smoke bundle. The hosted iOS workflows call `Scripts/ci_boot_simulator.sh` so the runner creates and boots an available iPhone simulator instead of relying on a preinstalled `OS=18.5` destination. It does not deploy Supabase, submit to App Store Connect, expose secrets, or build the nested `AppStoreSite` Sites project; those remain behind their existing release credentials and deploy/preflight gates.
+
+Run the hosted App Store release preflight after adding Apple signing and App Store Connect secrets to GitHub:
+
+```sh
+gh workflow run "App Store Preflight" --ref codex/m10-submit-readiness -f allow_missing_credentials=false
+```
+
+The workflow source is `.github/workflows/app-store-preflight.yml`. It expects encrypted GitHub secrets named `M10_DEVELOPMENT_TEAM`, `IOS_DISTRIBUTION_CERTIFICATE_BASE64`, `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`, and `ASC_API_PRIVATE_KEY`. It uploads retained preflight logs and, when signing succeeds, the App Store export directory.
+
+Chunked M10 UI runner for isolating simulator UI failures or Xcode result-bundle hangs:
+
+```sh
+bash Scripts/run_m10_ui_tests.sh
+```
+
+The runner executes every `BuySellAIUITests` test in its own non-parallel `xcodebuild` invocation, writes one `.xcresult` and `.log` per test, and retains the rollup at `/tmp/buysell-m10-ui-tests/summary.log`. It retries simulator launch/preflight/install-worker infrastructure failures once by default (`M10_UI_MAX_ATTEMPTS=2`) while still failing immediately for app assertions; use `M10_UI_CONTINUE_ON_FAILURE=1 bash Scripts/run_m10_ui_tests.sh` to collect all failures in one pass. This is resumable UI evidence and does not replace the full-suite result bundle required by the performance and combined submit-readiness gates.
+
+If Xcode project loading stalls while the checkout sits in a coordinated folder such as `Documents`, run the same evidence through a lean iOS snapshot:
+
+```sh
+M10_UI_SNAPSHOT_ROOT=/tmp/buysell-m10-ui-worktree bash Scripts/run_m10_ui_tests.sh
+```
+
+The snapshot mode copies the app, Xcode project, tests, scripts, Supabase sources, screenshot assets, and M10 docs into `/tmp`, skips support-site build artifacts such as `AppStoreSite/node_modules`, bounds each copy with `M10_SNAPSHOT_COPY_TIMEOUT` before falling back to the system copy tool, and writes normal result bundles/logs under `M10_UI_RESULT_ROOT`.
+
+Chunked UI evidence verifier after the runner finishes:
+
+```sh
+bash Scripts/verify_m10_ui_evidence.sh \
+  /tmp/buysell-m10-ui-tests \
+  | tee /tmp/buysell-submit-readiness-ui.log
+```
+
+The verifier derives the current UI-test list from `BuySellAIUITests.swift`, checks the runner summary, verifies every per-test `.xcresult` reports one passing test, and retains `M10 UI evidence passed`, `summary:`, `result root:`, `tests:`, and per-test `test:` markers for the combined gate.
+
+M10 performance evidence verifier after the full simulator suite and no-sign archive verifier finish:
+
+```sh
+bash Scripts/verify_m10_performance_evidence.sh \
+  /tmp/buysell-submit-readiness-full.xcresult \
+  /tmp/buysell-submit-readiness-nosign.log
+```
+
+M10 Instruments evidence verifier after profiling a signed Release build on trusted physical hardware:
+
+```sh
+bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
+```
+
+Each Instruments criteria Evidence cell must include the observed proof terms documented in `M10_INSTRUMENTS.md`; generic "passed" notes are intentionally rejected. Instruments metadata is validated too: use a `YYYY-MM-DD` date, an iPhone or iPad device model that includes the real-device preflight `device name:` value, numeric iOS and release-build values, signed-archive wording with the signed-preflight `archive:` path, and release-build metadata matching the signed-preflight `release build:` marker before final submit-readiness. The Time Profiler and Allocations trace metadata must point to retained files or directories, with relative paths resolved from the evidence file.
+
+Until signed physical-device Instruments profiling is complete, record the known profiler blocker:
+
+```sh
+ALLOW_PENDING_INSTRUMENTS=1 bash Scripts/verify_m10_instruments_evidence.sh M10_INSTRUMENTS.md
+```
+
+Latest-design SDK evidence gate:
+
+```sh
+bash Scripts/verify_m10_latest_design_sdk.sh
+```
+
+This verifier requires Xcode and the iPhoneOS SDK major version to be `27` or newer by default and confirms the shared native material wrapper contains compiler-gated iOS 26+ Liquid Glass hooks for `glassEffect`, `GlassEffectContainer`, `GlassButtonStyle`, `.buttonStyle(.glass)`, and `.buttonStyle(.glassProminent)` while `Info.plist` omits `UIDesignRequiresCompatibility`. It also verifies obsolete primary, secondary, and ghost pill helpers plus their primary/standard background modifiers remain removed, active controls use iOS 26+ standard glass or restrained system/material fallbacks, Home uses a native plain list command surface with hero, promise strip, and toolbar account/settings actions, Camera controls preserve compiler-gated `GlassEffectContainer` support on iOS 26+, Auth uses native inset grouped sign-in rows with system bottom bars, primary flow sheets use system detents, Tutorial uses a concise first-use guide with one Start selling action, three native steps, keyboard dismissal, and no carousel pager, and Snap Result category/condition menus use SF Symbol rows with selected checkmarks. On the current Xcode 16.4/iOS 18.5 SDK machine, retain the known toolchain blocker log with:
+
+```sh
+ALLOW_MISSING_LIQUID_GLASS_SDK=1 bash Scripts/verify_m10_latest_design_sdk.sh > /tmp/buysell-submit-readiness-latest-design-sdk.log
+```
+
+Combined M10 submit-readiness evidence gate:
+
+```sh
+bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
+```
+
+The performance verifier carries forward the no-sign archive log's `bundle id:`, `release build:`, and `app size:` markers, and records each required simulator budget test as a `performance test:` marker. The combined gate expects retained artifact markers in the preflight logs and requires the local simulator result bundles, local source typecheck log, no-sign archive, no-sign verifier log, latest-design SDK evidence log, Today feature nomination log, Supabase schema static check log, Supabase function type-check log, secret-scan log, chunked UI evidence log, and performance evidence log to be fresh for the current HEAD commit; passing signed/App Store/Supabase deploy/backend/real-device/Instruments artifacts must be fresh too. It confirms the no-sign archive log retains the `app icon:`, `system design:`, `custom fonts:`, and `release fixtures:` markers, confirms the latest-design SDK log retains `M10 latest design SDK passed`, `xcode:`, `iphoneos sdk:`, `liquid glass sdk:`, `source:`, `source liquid glass:`, `obsolete button primitives:`, `active control glass:`, `home setup:`, `camera setup:`, `auth setup:`, `tutorial setup:`, `menu item icons:`, and `system sheet background:` markers, confirms the local source typecheck log retains `BuySellAI local source typecheck passed`, `target:`, `sdk:`, `sources: app unit ui`, and `modes: release app debug app unit ui` markers, confirms the App Store validation log references the same `ipa:` path produced by the export preflight, confirms the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `bundle id:` marker, confirms the signed archive, App Store export, App Store validation, and real-device preflight logs retain the same `sign in with apple:` entitlement marker, confirms the no-sign archive, signed archive, App Store export, App Store validation, and real-device preflight logs record the same `release build:` value, confirms the App Store metadata log retains `app name:`, `bundle id:`, `privacy policy:`, `support:`, `accessibility url:`, `screenshots:`, `legal:`, `screenshot directory:`, `screenshot files:`, `screenshot dimensions:`, `screenshot quality:`, `screenshot result bundle:`, `screenshot capture test:`, `app privacy:`, `accessibility labels:`, and `accessibility evidence:` markers, confirms the Today feature nomination log retains `M10 Today feature nomination package passed`, `file:`, `placement:`, `story:`, `lead time:`, `role:`, `assets:`, and `source:` markers, confirms the secret-scan log retained the scanner self-test and repo-clean markers, confirms the chunked UI evidence log retains `M10 UI evidence passed` plus the runner summary and App Store screenshot UI test markers, confirms the performance evidence log retains the same no-sign archive `bundle id:` and `release build:` values plus every required simulator budget test name, confirms the Supabase deploy log retains `M10 Supabase deploy passed`, `config:`, `project:`, `project ref:`, `schema:`, `constraints:`, `functions:`, and `secrets:` markers, confirms the Supabase schema static check log retains `Supabase schema static check passed`, `tables:`, `rls:`, `policy:`, `indexes:`, `grants:`, `constraints:`, and `swift parity:` markers, confirms the Supabase function type-check log retains `Supabase function Deno check passed`, every deployed function entrypoint, `listing research cache: Gemini grounding saved`, and `listing draft: structured fields formatted deterministically`, and confirms the backend preflight log proves the live migrated `history` and `apple_auth_tokens` tables plus the `analyze-image`, `generate-listing`, `store-apple-token`, and `delete-account` Edge Functions, including the live analyze rejection contract, plain-text listing contract, and unsupported listing-value rejection contract, without exposing secrets. The combined gate also confirms the Supabase deploy log and backend preflight log use the same `project:` marker, and confirms the manual acceptance and Instruments metadata reference the real-device preflight `device name:` value and signed-preflight `archive:` path while acceptance also references signed archive validation proof from Xcode Organizer and the validated `ipa:` path. The manual acceptance and Instruments evidence must also record matching iOS version and release build metadata for the same physical-device pass, and that release build must match the signed-preflight `release build:` marker. If you use non-default artifact paths, set the matching environment variables before running it: `M10_SOURCE_TYPECHECK_LOG`, `M10_NOSIGN_ARCHIVE`, `M10_LATEST_DESIGN_SDK_LOG`, `M10_SIGNED_ARCHIVE`, `M10_APP_STORE_ARCHIVE`, `M10_APP_STORE_EXPORT`, `M10_APP_STORE_METADATA`, `M10_APP_STORE_METADATA_LOG`, `M10_TODAY_FEATURE_NOMINATION`, `M10_TODAY_FEATURE_LOG`, `M10_BACKEND_LOG`, `M10_SUPABASE_DEPLOY_LOG`, `M10_SUPABASE_SCHEMA_CHECK_LOG`, `M10_SUPABASE_FUNCTION_CHECK_LOG`, `M10_UI_EVIDENCE_LOG`, and `M10_INSTRUMENTS_EVIDENCE`.
+
+The combined gate also requires the App Store metadata log's `screenshot brand signal: warm orange present` marker and the Today feature nomination log's Apple source, placement, lead-time, role, story, and asset markers. It requires a clean git worktree, so every release source, screenshot, script, and evidence-document change must be committed or intentionally stashed before final submit-readiness can pass.
+
+The combined gate checks a retained unit test suite result bundle; the current default evidence is `/tmp/buysell-full-unit-tests.xcresult` with `480` passing unit-target tests. If a newer refreshed unit bundle is collected, set `M10_UNIT_XCRESULT` and `M10_MIN_UNIT_TESTS` to that concrete artifact and count before running the gate.
+
+Until every latest-design SDK, signed archive, App Store metadata/submission, real-device, and manual evidence item is complete, record the known readiness blocker:
+
+```sh
+ALLOW_PENDING_M10=1 bash Scripts/verify_m10_submit_readiness.sh M10_ACCEPTANCE.md
+```
+
+The no-sign archive verifier validates the Release iPhoneOS build, text-free camera-first 1024x1024 non-alpha source App Store icon plus archived iPhone/iPad icon PNGs, the archived `Info.plist` current-system design marker with no `UIDesignRequiresCompatibility`, privacy manifest content, privacy/package metadata, camera capture plus read-only photo import permissions, the archived executable's absence of UI-test sample fixture markers with `release fixtures: none bundled`, and the `<20 MB` app bundle target. The latest-design SDK verifier is separate and must pass with Xcode/iPhoneOS SDK 27+ by default before final submit-readiness. A fully signed App Store archive, App Store Connect IPA export, and App Store Connect validation still require App Store Connect API-key credentials and Apple signing assets.
+
+Track final signed-archive and real-device acceptance in `M10_ACCEPTANCE.md`. The final `Result Log` must include a complete `Pass` row with concrete Date, Tester, Device, iOS, Backend, Result, and Notes fields before the combined submit-readiness gate can pass. At least one Pass row must match the recorded Date, Tester, Device model, iOS version, and Backend project metadata. The Notes field must mention the signed archive, Xcode Organizer signed archive validation, App Store validation, real-device acceptance, and Instruments evidence used for the pass.
+
+## Assumptions
+
+- Supabase project values were not present in the blank repository. The API client is implemented against the requested `analyze-image` and `generate-listing` contracts, and the app shows friendly configuration errors until `Config.plist` is supplied.
+- Supabase Auth is enabled for full server-backed Sign in with Apple. Guest mode still leaves history local when the user is not signed in.
+- The active app typography uses San Francisco system Dynamic Type roles directly; legacy custom font files have been removed and are not registered through `UIAppFonts`.
+- Sign in with Apple has a native nonce-based coordinator, Supabase token exchange, server-side Apple token storage through `store-apple-token`, Keychain persistence, signed-in remote history sync, and guest-to-account migration. Delete account is wired to a `delete-account` Edge Function that attempts Apple token revocation, removes the private token row and history, then deletes the Supabase auth user; Apple provider secret configuration and final secret-name deployment evidence are complete for project `czuoebqjajupghivqkch` and must be refreshed if the Apple key is rotated.
+- `Config.plist.example` is kept in the repo for setup instructions but excluded from the app target so placeholder backend values are not shipped in the bundle.
+- Real-device camera latency, Accessibility Inspector contrast checks, latest-design SDK verification without `ALLOW_MISSING_LIQUID_GLASS_SDK=1`, signed App Store archive validation, the signed-archive and App Store export preflights without `ALLOW_MISSING_TEAM=1`, the App Store validation preflight without `ALLOW_MISSING_ASC=1`, App Store Connect account-owner legal field confirmation, the real-device preflight without `ALLOW_MISSING_DEVICE=1`, the real-device acceptance evidence check without `ALLOW_PENDING_ACCEPTANCE=1`, the Instruments evidence check without `ALLOW_PENDING_INSTRUMENTS=1`, and the combined submit-readiness gate without `ALLOW_PENDING_M10=1` still need physical-device/account QA. The performance evidence verifier covers only repeatable simulator and package-size evidence; final Time Profiler and Allocations evidence is tracked separately in `M10_INSTRUMENTS.md`.
+
+## Milestone Status
+
+- M1 Skeleton: built. Xcode project, design tokens, typography, launch screen, Home shell.
+- M2 Camera: built. AVCapture preview, permission handling, torch, capture, downscale.
+- M3 Analyze: built. API client contract, loading/success/error result sheet, inline editing.
+- M4 Marketplace picker: built. Full marketplace list, metadata, fee table, estimator, sticky summary.
+- M5 Listing: built. API contract, listing sheet, copy, haptics, toast.
+- M6 History: built. SwiftData guest persistence, Home list, delete, reopen listing.
+- M7 Auth: built. Native optional auth UI, Apple sign-in token exchange, Keychain persistence, signed-in remote history sync, and guest-to-account migration.
+- M8 Tutorial: built. First launch uses a concise native first-use guide with Skip, one Start selling action, three clear selling steps, keyboard dismissal, and no carousel pager.
+- M9 Settings + polish: built. Theme, app-wide reduce motion, history clearing, once-per-version review prompt gating, about links, account actions.
+- M10 QA: partial. Simulator unit/UI coverage, source checks, no-sign archive/package-size checks, Supabase source guardrails, Supabase deploy evidence, production backend smoke, screenshot evidence, and local submit-readiness scripts have passed in retained evidence, but the full App Store gate remains pending external inputs. The current M11 redesign work updates those guardrails as screens move to the first-party system direction. Signed archive, App Store Connect export/validation, App Store Connect legal/account-owner confirmation, latest-SDK proof, Instruments proof, and real-device acceptance remain blocked until App Store Connect API-key credentials, confirmed metadata, a latest design SDK toolchain, and trusted physical hardware are available.
+
+A signed archive, App Store Connect IPA export, App Store Connect validation, App Store Connect legal/account-owner confirmation, and Instruments pass are blocked until App Store Connect API-key credentials, confirmed account-owner/product-page metadata, Apple signing assets, and trusted physical hardware are available; real-device acceptance pass remains blocked until the acceptance evidence table is recorded.

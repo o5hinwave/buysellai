@@ -1,0 +1,604 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7D8F10012D40B00100A00001 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F10022D40B00100A00001 /* Supabase */; };
+		7D3C4A952C3E11A700F10A01 /* BuySellAI.app in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D3C4A942C3E11A700F10A01 /* BuySellAI.app */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7D3C4AA82C3E11A700F10A01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7D3C4A812C3E11A700F10A01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7D3C4A932C3E11A700F10A01;
+			remoteInfo = BuySellAI;
+		};
+		7D3C4AB42C3E11A700F10A01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7D3C4A812C3E11A700F10A01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7D3C4A932C3E11A700F10A01;
+			remoteInfo = BuySellAI;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		7D3C4A942C3E11A700F10A01 /* BuySellAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BuySellAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D3C4AA32C3E11A700F10A01 /* BuySellAITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BuySellAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D3C4AAF2C3E11A700F10A01 /* BuySellAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BuySellAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7D3C4AC52C3E11A700F10A01 /* Exceptions for "BuySellAI" folder in "BuySellAI" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				App/Config.plist.example,
+				BuySellAI.entitlements,
+				Info.plist,
+			);
+			target = 7D3C4A932C3E11A700F10A01 /* BuySellAI */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		7D3C4A842C3E11A700F10A01 /* BuySellAI */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7D3C4AC52C3E11A700F10A01 /* Exceptions for "BuySellAI" folder in "BuySellAI" target */,
+			);
+			path = BuySellAI;
+			sourceTree = "<group>";
+		};
+		7D3C4AA02C3E11A700F10A01 /* BuySellAITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BuySellAITests;
+			sourceTree = "<group>";
+		};
+		7D3C4AAC2C3E11A700F10A01 /* BuySellAIUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BuySellAIUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7D3C4A912C3E11A700F10A01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D8F10012D40B00100A00001 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4A9D2C3E11A700F10A01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4AB02C3E11A700F10A01 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7D3C4A802C3E11A700F10A01 = {
+			isa = PBXGroup;
+			children = (
+				7D3C4A842C3E11A700F10A01 /* BuySellAI */,
+				7D3C4AA02C3E11A700F10A01 /* BuySellAITests */,
+				7D3C4AAC2C3E11A700F10A01 /* BuySellAIUITests */,
+				7D3C4A962C3E11A700F10A01 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7D3C4A962C3E11A700F10A01 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7D3C4A942C3E11A700F10A01 /* BuySellAI.app */,
+				7D3C4AA32C3E11A700F10A01 /* BuySellAITests.xctest */,
+				7D3C4AAF2C3E11A700F10A01 /* BuySellAIUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7D3C4A932C3E11A700F10A01 /* BuySellAI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D3C4ABC2C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAI" */;
+			buildPhases = (
+				7D3C4A902C3E11A700F10A01 /* Sources */,
+				7D3C4A912C3E11A700F10A01 /* Frameworks */,
+				7D3C4A922C3E11A700F10A01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7D3C4A842C3E11A700F10A01 /* BuySellAI */,
+			);
+			name = BuySellAI;
+			packageProductDependencies = (
+				7D8F10022D40B00100A00001 /* Supabase */,
+			);
+			productName = BuySellAI;
+			productReference = 7D3C4A942C3E11A700F10A01 /* BuySellAI.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7D3C4AA22C3E11A700F10A01 /* BuySellAITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D3C4ABF2C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAITests" */;
+			buildPhases = (
+				7D3C4A9C2C3E11A700F10A01 /* Sources */,
+				7D3C4A9D2C3E11A700F10A01 /* Frameworks */,
+				7D3C4A9E2C3E11A700F10A01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7D3C4AA92C3E11A700F10A01 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7D3C4AA02C3E11A700F10A01 /* BuySellAITests */,
+			);
+			name = BuySellAITests;
+			packageProductDependencies = (
+			);
+			productName = BuySellAITests;
+			productReference = 7D3C4AA32C3E11A700F10A01 /* BuySellAITests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		7D3C4AAE2C3E11A700F10A01 /* BuySellAIUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D3C4AC22C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAIUITests" */;
+			buildPhases = (
+				7D3C4AAA2C3E11A700F10A01 /* Sources */,
+				7D3C4AB02C3E11A700F10A01 /* Frameworks */,
+				7D3C4AAB2C3E11A700F10A01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7D3C4AB52C3E11A700F10A01 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7D3C4AAC2C3E11A700F10A01 /* BuySellAIUITests */,
+			);
+			name = BuySellAIUITests;
+			packageProductDependencies = (
+			);
+			productName = BuySellAIUITests;
+			productReference = 7D3C4AAF2C3E11A700F10A01 /* BuySellAIUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7D3C4A812C3E11A700F10A01 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					7D3C4A932C3E11A700F10A01 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					7D3C4AA22C3E11A700F10A01 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 7D3C4A932C3E11A700F10A01;
+					};
+					7D3C4AAE2C3E11A700F10A01 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 7D3C4A932C3E11A700F10A01;
+					};
+				};
+			};
+			buildConfigurationList = 7D3C4A842C3E11A700F10A02 /* Build configuration list for PBXProject "BuySellAI" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 7D3C4A802C3E11A700F10A01;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7D3C4A962C3E11A700F10A01 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7D3C4A932C3E11A700F10A01 /* BuySellAI */,
+				7D3C4AA22C3E11A700F10A01 /* BuySellAITests */,
+				7D3C4AAE2C3E11A700F10A01 /* BuySellAIUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7D3C4A922C3E11A700F10A01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4A9E2C3E11A700F10A01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4AAB2C3E11A700F10A01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7D3C4A902C3E11A700F10A01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4A9C2C3E11A700F10A01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D3C4AAA2C3E11A700F10A01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7D3C4AA92C3E11A700F10A01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7D3C4A932C3E11A700F10A01 /* BuySellAI */;
+			targetProxy = 7D3C4AA82C3E11A700F10A01 /* PBXContainerItemProxy */;
+		};
+		7D3C4AB52C3E11A700F10A01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7D3C4A932C3E11A700F10A01 /* BuySellAI */;
+			targetProxy = 7D3C4AB42C3E11A700F10A01 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		7D3C4AB62C3E11A700F10A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		7D3C4AB72C3E11A700F10A01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES_AGGRESSIVE;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		7D3C4ABD2C3E11A700F10A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BuySellAI/BuySellAI.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BuySellAI/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7D3C4ABE2C3E11A700F10A01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BuySellAI/BuySellAI.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BuySellAI/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7D3C4AC02C3E11A700F10A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BuySellAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BuySellAI";
+			};
+			name = Debug;
+		};
+		7D3C4AC12C3E11A700F10A01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BuySellAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BuySellAI";
+			};
+			name = Release;
+		};
+		7D3C4AC32C3E11A700F10A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = BuySellAI;
+			};
+			name = Debug;
+		};
+		7D3C4AC42C3E11A700F10A01 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZVFG6KC7KA;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.despia.buysellai.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = BuySellAI;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7D3C4A842C3E11A700F10A02 /* Build configuration list for PBXProject "BuySellAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D3C4AB62C3E11A700F10A01 /* Debug */,
+				7D3C4AB72C3E11A700F10A01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7D3C4ABC2C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D3C4ABD2C3E11A700F10A01 /* Debug */,
+				7D3C4ABE2C3E11A700F10A01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7D3C4ABF2C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D3C4AC02C3E11A700F10A01 /* Debug */,
+				7D3C4AC12C3E11A700F10A01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7D3C4AC22C3E11A700F10A01 /* Build configuration list for PBXNativeTarget "BuySellAIUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D3C4AC32C3E11A700F10A01 /* Debug */,
+				7D3C4AC42C3E11A700F10A01 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.53.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7D8F10022D40B00100A00001 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8F10032D40B00100A00001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 7D3C4A812C3E11A700F10A01 /* Project object */;
+}

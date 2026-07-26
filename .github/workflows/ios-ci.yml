@@ -1,0 +1,57 @@
+name: iOS Cloud Check
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ios:
+    name: Build and Test
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
+
+      - name: Install scan tools
+        run: brew install ripgrep
+
+      - name: Guard against leaked secrets
+        run: Scripts/scan_m10_secrets.sh
+
+      - name: Prepare iOS simulator
+        run: echo "IOS_TEST_DESTINATION=$(Scripts/ci_boot_simulator.sh)" >> "$GITHUB_ENV"
+
+      - name: Check formatting whitespace
+        run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md
+
+      - name: Build and run smoke tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project BuySellAI.xcodeproj \
+            -scheme BuySellAI \
+            -destination "$IOS_TEST_DESTINATION" \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomePrimaryActionUsesAppleSimpleOneTwoThreeFrontDoor \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomeUsesNativeInsetGroupedTaskRowsInsteadOfCustomWidthClamps \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomeRemovesDecorativePrimaryGlowAndUsesNativeTaskRows \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Upload test result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults.xcresult
+          path: TestResults.xcresult
+          if-no-files-found: ignore
