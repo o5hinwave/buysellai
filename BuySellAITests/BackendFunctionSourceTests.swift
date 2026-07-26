@@ -22,7 +22,8 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/migrations/20260725001000_add_history_listing_metadata.sql",
             "supabase/migrations/20260725141629_add_history_identification_profile.sql",
             "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
-            "supabase/migrations/20260726051236_add_history_supplemental_photos.sql"
+            "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
+            "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql"
         ] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL(path).path), "\(path) should exist")
         }
@@ -141,6 +142,20 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(supplementalPhotos.range(of: "history_supplemental_photos_array"))
         XCTAssertNotNil(supplementalPhotos.range(of: "jsonb_typeof(supplemental_photos) = 'array'"))
         XCTAssertNil(supplementalPhotos.range(of: "add constraint if not exists", options: .caseInsensitive))
+    }
+
+    func testSupabaseEntitlementLimitMigrationKeepsEarlyAccessGenerousButBounded() throws {
+        let migration = try read("supabase/migrations/20260726092634_raise_early_access_usage_limits.sql")
+
+        XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_analysis_limit_range"))
+        XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_ai_action_limit_range"))
+        XCTAssertNotNil(migration.range(of: "alter column daily_analysis_limit set default 100"))
+        XCTAssertNotNil(migration.range(of: "alter column daily_ai_action_limit set default 300"))
+        XCTAssertNotNil(migration.range(of: "daily_analysis_limit = 100"))
+        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit = 300"))
+        XCTAssertNotNil(migration.range(of: "daily_analysis_limit between 10 and 250"))
+        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit between 10 and 500"))
+        XCTAssertNil(migration.range(of: "add constraint if not exists", options: .caseInsensitive))
     }
 
     func testAnonymousAnalyzeAndGenerateFunctionsUseGeminiServerSideSecret() throws {

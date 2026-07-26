@@ -29,8 +29,8 @@ Deno.test("early access usage resolves to full free access without service crede
     assertEquals(entitlement.state, "earlyAccess");
     assertEquals(entitlement.completeFeatureAccess, true);
     assertEquals(entitlement.futurePaidAccessEnabled, false);
-    assertEquals(entitlement.remainingAnalyses, 18);
-    assertEquals(entitlement.remainingAiActions, 54);
+    assertEquals(entitlement.remainingAnalyses, 100);
+    assertEquals(entitlement.remainingAiActions, 300);
     assertEquals(fetchCalls, 0);
   } finally {
     restoreEnv("SUPABASE_URL", previousUrl);
@@ -52,8 +52,8 @@ Deno.test("early access usage records service-side user, device, and IP-aware us
             entitlement_state: "earlyAccess",
             complete_feature_access: true,
             future_paid_access_enabled: false,
-            daily_analysis_limit: 18,
-            daily_ai_action_limit: 54,
+            daily_analysis_limit: 100,
+            daily_ai_action_limit: 300,
             cooldown_message:
               "You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.",
           },
@@ -95,8 +95,8 @@ Deno.test("early access usage records service-side user, device, and IP-aware us
     assertEquals(entitlement.state, "earlyAccess");
     assertEquals(entitlement.completeFeatureAccess, true);
     assertEquals(entitlement.futurePaidAccessEnabled, false);
-    assertEquals(entitlement.remainingAnalyses, 17);
-    assertEquals(entitlement.remainingAiActions, 53);
+    assertEquals(entitlement.remainingAnalyses, 99);
+    assertEquals(entitlement.remainingAiActions, 299);
 
     const usageInsert = captured.find((request) =>
       request.method === "POST" && request.url.endsWith("/rest/v1/entitlement_usage_events")
@@ -144,8 +144,8 @@ Deno.test("early access usage keeps AI available when entitlement config is unav
     assertEquals(entitlement.state, "earlyAccess");
     assertEquals(entitlement.completeFeatureAccess, true);
     assertEquals(entitlement.futurePaidAccessEnabled, false);
-    assertEquals(entitlement.remainingAnalyses, 18);
-    assertEquals(entitlement.remainingAiActions, 54);
+    assertEquals(entitlement.remainingAnalyses, 100);
+    assertEquals(entitlement.remainingAiActions, 300);
     assert(
       captured.some((request) =>
         request.method === "GET" && request.url.includes("/rest/v1/entitlement_config")
@@ -167,8 +167,8 @@ Deno.test("early access usage keeps AI available when usage recording is unavail
             entitlement_state: "earlyAccess",
             complete_feature_access: true,
             future_paid_access_enabled: false,
-            daily_analysis_limit: 18,
-            daily_ai_action_limit: 54,
+            daily_analysis_limit: 100,
+            daily_ai_action_limit: 300,
             cooldown_message:
               "You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.",
           },
@@ -190,8 +190,8 @@ Deno.test("early access usage keeps AI available when usage recording is unavail
     assertEquals(entitlement.state, "earlyAccess");
     assertEquals(entitlement.completeFeatureAccess, true);
     assertEquals(entitlement.futurePaidAccessEnabled, false);
-    assertEquals(entitlement.remainingAnalyses, 18);
-    assertEquals(entitlement.remainingAiActions, 54);
+    assertEquals(entitlement.remainingAnalyses, 100);
+    assertEquals(entitlement.remainingAiActions, 300);
     assert(
       captured.some((request) =>
         request.method === "GET" && request.url.includes("/rest/v1/entitlement_usage_events?")
@@ -214,7 +214,7 @@ Deno.test("early access usage returns a friendly cooldown before inserting over-
             complete_feature_access: true,
             future_paid_access_enabled: false,
             daily_analysis_limit: 10,
-            daily_ai_action_limit: 54,
+            daily_ai_action_limit: 300,
             cooldown_message:
               "You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.",
           },

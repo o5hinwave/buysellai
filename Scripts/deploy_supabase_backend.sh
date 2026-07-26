@@ -178,6 +178,9 @@ require_source_files() {
         "$repo_root/supabase/migrations/20260724233029_early_access_entitlements.sql" \
         "$repo_root/supabase/migrations/20260725001000_add_history_listing_metadata.sql" \
         "$repo_root/supabase/migrations/20260725141629_add_history_identification_profile.sql" \
+        "$repo_root/supabase/migrations/20260726045209_add_history_marketplace_comparison.sql" \
+        "$repo_root/supabase/migrations/20260726051236_add_history_supplemental_photos.sql" \
+        "$repo_root/supabase/migrations/20260726092634_raise_early_access_usage_limits.sql" \
         "$repo_root/supabase/functions/analyze-image/index.ts" \
         "$repo_root/supabase/functions/compare-marketplaces/index.ts" \
         "$repo_root/supabase/functions/generate-listing/index.ts" \

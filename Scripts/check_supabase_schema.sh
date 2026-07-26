@@ -20,6 +20,7 @@ migration_paths = [
     repo_root / "supabase/migrations/20260725141629_add_history_identification_profile.sql",
     repo_root / "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
     repo_root / "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
+    repo_root / "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql",
 ]
 swift_paths = {
     "marketplace": repo_root / "BuySellAI/Data/Marketplace.swift",
@@ -117,6 +118,14 @@ require_sql(
 require_sql(
     r"conname\s*=\s*'apple_auth_tokens_apple_user_id_unique'.*?unique\s*\(\s*apple_user_id\s*\)",
     "apple_auth_tokens.apple_user_id must be unique",
+)
+require_sql(
+    r"daily_analysis_limit\s+integer\s+not\s+null\s+default\s+18.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+100.*?daily_analysis_limit\s+between\s+10\s+and\s+250",
+    "entitlement_config daily analysis limit must be raised by migration while preserving a bounded range",
+)
+require_sql(
+    r"daily_ai_action_limit\s+integer\s+not\s+null\s+default\s+54.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+300.*?daily_ai_action_limit\s+between\s+10\s+and\s+500",
+    "entitlement_config daily AI action limit must be raised by migration while preserving a bounded range",
 )
 
 for constraint in (
