@@ -12,16 +12,11 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "workflow_dispatch:",
             "runs-on: macos-15",
             "actions/checkout@v4",
-            "actions/setup-node@v4",
-            "node-version: \"22\"",
             "Scripts/scan_m10_secrets.sh",
             "Scripts/check_workspace_materialization.sh",
             "git diff --check",
             "Scripts/check_supabase_schema.sh",
             "Scripts/check_supabase_functions.sh",
-            "working-directory: AppStoreSite",
-            "npm ci",
-            "npm test",
             "xcodebuild test",
             "WorkspaceMaterializationScriptTests",
             "CloudHandoffWorkflowTests",
@@ -41,6 +36,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_schema.sh"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_functions.sh"))
             XCTAssertNotNil(text.range(of: "AppStoreSite"))
+            XCTAssertNotNil(text.range(of: "Sites"))
         }
     }
 

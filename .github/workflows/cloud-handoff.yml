@@ -12,9 +12,9 @@ on:
 
 jobs:
   package:
-    name: App, Backend, and App Store Sources
+    name: App, Backend, and Release Sources
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 45
 
     steps:
       - name: Check out app
@@ -22,13 +22,6 @@ jobs:
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: AppStoreSite/package-lock.json
 
       - name: Install scan tools
         run: brew install ripgrep
@@ -40,19 +33,13 @@ jobs:
         run: Scripts/check_workspace_materialization.sh
 
       - name: Check formatting whitespace
-        run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase AppStoreSite README.md M10_ACCEPTANCE.md .github/workflows
+        run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md M10_ACCEPTANCE.md .github/workflows
 
       - name: Check Supabase schema source
         run: Scripts/check_supabase_schema.sh
 
       - name: Check Supabase Edge Function source
         run: Scripts/check_supabase_functions.sh
-
-      - name: Build and test App Store support site
-        working-directory: AppStoreSite
-        run: |
-          npm ci
-          npm test
 
       - name: Build and run native iOS smoke tests
         run: |
