@@ -60,11 +60,6 @@ jobs:
             fi
           done
 
-          if [[ "${{ inputs.mode }}" == "deploy" && -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
-            echo "::error::SUPABASE_DB_PASSWORD GitHub secret is required for deploy mode"
-            missing=1
-          fi
-
           if [[ "${{ inputs.mode }}" == "deploy" && "${{ inputs.confirm_project_ref }}" != "$SUPABASE_PROJECT_REF" ]]; then
             echo "::error::confirm_project_ref must match SUPABASE_PROJECT_REF for deploy mode"
             missing=1
@@ -78,15 +73,19 @@ jobs:
       - name: Write public app config
         run: Scripts/setup_supabase_config.sh
 
-      - name: Record Supabase project for preflight or functions deploy
-        if: ${{ inputs.mode == 'preflight' || inputs.mode == 'functions' }}
+      - name: Record Supabase project
         run: |
           mkdir -p supabase/.temp
           printf '%s' "$SUPABASE_PROJECT_REF" > supabase/.temp/project-ref
 
-      - name: Link Supabase project for deploy
+      - name: Link Supabase project with database password
         if: ${{ inputs.mode == 'deploy' }}
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --yes
+        run: |
+          if [[ -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
+            supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --yes
+          else
+            echo "SUPABASE_DB_PASSWORD is not configured; using access-token linked project metadata."
+          fi
 
       - name: Check backend sources
         run: |
