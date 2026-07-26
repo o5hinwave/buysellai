@@ -3,6 +3,7 @@ set -euo pipefail
 
 allow_pending="${ALLOW_DATALLESS_WORKSPACE:-0}"
 max_tree_examples="${M10_MATERIALIZATION_MAX_EXAMPLES:-12}"
+git_check_timeout_seconds="${M10_GIT_CHECK_TIMEOUT:-20}"
 
 case "$max_tree_examples" in
     ''|*[!0-9]*)
@@ -12,6 +13,16 @@ esac
 
 if (( max_tree_examples < 1 )); then
     max_tree_examples=1
+fi
+
+case "$git_check_timeout_seconds" in
+    ''|*[!0-9]*)
+        git_check_timeout_seconds=20
+        ;;
+esac
+
+if (( git_check_timeout_seconds < 1 )); then
+    git_check_timeout_seconds=20
 fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,6 +39,12 @@ path_has_dataless_flag() {
     local path="$1"
 
     ls -ldO "$path" 2>/dev/null | grep -q 'dataless'
+}
+
+git_with_timeout() {
+    env LC_ALL=C LANG=C perl -e 'alarm shift @ARGV; exec @ARGV' \
+        "$git_check_timeout_seconds" \
+        git -c core.fsmonitor=false "$@"
 }
 
 materialize_if_dataless() {
@@ -123,9 +140,18 @@ check_tree_not_dataless() {
     fi
 }
 
+check_git_head_resolves() {
+    if ! git_with_timeout rev-parse --verify HEAD >/dev/null 2>&1; then
+        pending "git HEAD could not be resolved; fetch or repair the checkout before release verification"
+    fi
+}
+
 check_text_readable ".git/HEAD" "git HEAD"
 check_text_readable ".git/config" "git config"
-check_text_readable ".git/refs/heads/main" "git main ref"
+if [[ -f ".git/refs/heads/main" ]]; then
+    check_text_readable ".git/refs/heads/main" "git main ref"
+fi
+check_git_head_resolves
 check_text_readable "README.md" "README"
 check_text_readable "M10_ACCEPTANCE.md" "M10 acceptance checklist"
 check_text_readable "M10_APP_STORE_METADATA.md" "App Store metadata evidence"
@@ -158,7 +184,7 @@ for device in iPhone-16-Pro-Max iPad-Pro-13-inch-M4; do
     done
 done
 
-if ! { git status --short >/dev/null 2>&1; } 2>/dev/null; then
+if ! git_with_timeout status --short >/dev/null 2>&1; then
     pending "git status could not index the worktree; materialize dataless tracked files before release verification"
 fi
 

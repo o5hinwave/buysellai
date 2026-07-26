@@ -1,0 +1,76 @@
+name: Cloud Handoff Check
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: App, Backend, and App Store Sources
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: AppStoreSite/package-lock.json
+
+      - name: Install scan tools
+        run: brew install ripgrep
+
+      - name: Guard against leaked secrets
+        run: Scripts/scan_m10_secrets.sh
+
+      - name: Verify checkout is fully usable
+        run: Scripts/check_workspace_materialization.sh
+
+      - name: Check formatting whitespace
+        run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase AppStoreSite README.md M10_ACCEPTANCE.md .github/workflows
+
+      - name: Check Supabase schema source
+        run: Scripts/check_supabase_schema.sh
+
+      - name: Check Supabase Edge Function source
+        run: Scripts/check_supabase_functions.sh
+
+      - name: Build and test App Store support site
+        working-directory: AppStoreSite
+        run: |
+          npm ci
+          npm test
+
+      - name: Build and run native iOS smoke tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project BuySellAI.xcodeproj \
+            -scheme BuySellAI \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            -only-testing:BuySellAITests/WorkspaceMaterializationScriptTests \
+            -only-testing:BuySellAITests/CloudHandoffWorkflowTests \
+            -resultBundlePath CloudHandoff.xcresult
+
+      - name: Upload cloud handoff result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloudHandoff.xcresult
+          path: CloudHandoff.xcresult
+          if-no-files-found: ignore
