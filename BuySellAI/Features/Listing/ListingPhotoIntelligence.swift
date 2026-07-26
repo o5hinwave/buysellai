@@ -173,7 +173,62 @@ struct ListingPhotoRecommendationPackage: Hashable, Sendable {
     }
 }
 
+struct ListingPhotoEnhancementPlan: Hashable, Sendable {
+    let sourcePhotoID: UUID
+    let relatedOriginalID: UUID
+    let targetRole: ListingPhotoRole
+    let prompt: String
+    let safetyRules: [String]
+
+    var outputSource: ListingPhotoSource { .aiEnhanced }
+    var outputIsAIEdited: Bool { true }
+    var outputIsListingSafe: Bool { true }
+}
+
 enum ListingPhotoIntelligence {
+    static func enhancementPlan(
+        for candidate: ListingPhotoCandidate,
+        item: DetectedItem,
+        marketplace: Marketplace,
+        targetRole: ListingPhotoRole = .enhancedCover,
+        confirmedFacts: [String] = [],
+        visibleConditionNotes: [String] = [],
+        qualityProblems: [String] = []
+    ) -> ListingPhotoEnhancementPlan? {
+        guard candidate.imageData.isEmpty == false,
+              candidate.isListingSafe,
+              candidate.isAIEdited == false,
+              candidate.role != .referenceOnly,
+              candidate.source != .internetReference
+        else { return nil }
+
+        let safetyRules = enhancementSafetyRules()
+        let sourceFacts = cleanList(candidate.verifies + confirmedFacts, fallback: ["actual user photo"])
+        let conditionNotes = cleanList(visibleConditionNotes, fallback: [item.condition.display])
+        let photoIssues = cleanList(qualityProblems, fallback: ["make only gentle listing-photo improvements"])
+        let targetPhotoLabel = targetRole.plainLabel.lowercased()
+
+        let promptLines = [
+            "Improve this user-owned BuySell listing photo into a \(targetPhotoLabel) for \(marketplace.displayName).",
+            "Item: \(cleanText(item.name, fallback: item.category.display)). Category: \(item.category.display). Condition: \(item.condition.display).",
+            "Verified details to preserve: \(sourceFacts.joined(separator: "; ")).",
+            "Visible condition to preserve: \(conditionNotes.joined(separator: "; ")).",
+            "Allowed edits: improve exposure, white balance, careful sharpness, straightening, crop, background cleanup, marketplace-appropriate aspect ratio, and a realistic contact shadow.",
+            "Photo issues to address: \(photoIssues.joined(separator: "; ")).",
+            "Marketplace photo guidance: \(marketplace.optimizationProfile.photoGuidance)",
+            "Safety rules: \(safetyRules.joined(separator: " "))",
+            "Return one realistic edited image derived from the provided photo. Do not generate a different item."
+        ]
+
+        return ListingPhotoEnhancementPlan(
+            sourcePhotoID: candidate.id,
+            relatedOriginalID: candidate.id,
+            targetRole: targetRole,
+            prompt: promptLines.joined(separator: "\n"),
+            safetyRules: safetyRules
+        )
+    }
+
     static func recommendedPackage(
         for marketplace: Marketplace,
         candidates: [ListingPhotoCandidate],
@@ -388,5 +443,29 @@ enum ListingPhotoIntelligence {
             sequence = [.enhancedCover, .fullItem, .alternateAngle, .labelOrModel, .includedAccessories, .packaging, .conditionDetail, .flaw]
         }
         return sequence.firstIndex(of: role) ?? 99
+    }
+
+    private static func enhancementSafetyRules() -> [String] {
+        [
+            "Preserve the exact product, shape, color, materials, proportions, labels, serial marks, included parts, wear, damage, and condition.",
+            "Do not remove defects, scratches, stains, dents, chips, missing parts, patina, wear, or damage.",
+            "Do not change colors, materials, logos, labels, serial numbers, authenticity marks, model numbers, sizes, text, or packaging details.",
+            "Do not invent accessories, boxes, certificates, features, rarity, authenticity, or a newer-looking condition.",
+            "Do not make a used item appear new, unused, sealed, or more valuable than the original photo supports."
+        ]
+    }
+
+    private static func cleanList(_ values: [String], fallback: [String]) -> [String] {
+        let cleaned = values
+            .map { cleanText($0, fallback: "") }
+            .filter { $0.isEmpty == false }
+        return cleaned.isEmpty ? fallback : Array(cleaned.prefix(5))
+    }
+
+    private static func cleanText(_ value: String, fallback: String) -> String {
+        let cleanValue = value
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleanValue.isEmpty ? fallback : String(cleanValue.prefix(180))
     }
 }
