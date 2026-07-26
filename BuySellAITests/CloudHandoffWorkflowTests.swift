@@ -83,14 +83,17 @@ final class CloudHandoffWorkflowTests: XCTestCase {
         for text in [readme, m10] {
             XCTAssertNotNil(text.range(of: ".github/workflows/cloud-handoff.yml"))
             XCTAssertNotNil(text.range(of: "Cloud Handoff Check"))
+            XCTAssertNotNil(text.range(of: #"gh workflow run "Cloud Handoff Check" --ref main"#))
             XCTAssertNotNil(text.range(of: ".github/workflows/app-store-preflight.yml"))
             XCTAssertNotNil(text.range(of: "App Store Preflight"))
+            XCTAssertNotNil(text.range(of: #"gh workflow run "App Store Preflight" --ref main"#))
             XCTAssertNotNil(text.range(of: ".github/workflows/supabase-backend-deploy.yml"))
             XCTAssertNotNil(text.range(of: "Supabase Backend Deploy"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_schema.sh"))
             XCTAssertNotNil(text.range(of: "Scripts/check_supabase_functions.sh"))
             XCTAssertNotNil(text.range(of: "AppStoreSite"))
             XCTAssertNotNil(text.range(of: "Sites"))
+            XCTAssertNil(text.range(of: "codex/m10-submit-readiness"))
         }
     }
 

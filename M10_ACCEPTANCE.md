@@ -341,7 +341,7 @@ The workflow source is `.github/workflows/cloud-handoff.yml` and covers `M10_EXP
 Run the hosted App Store preflight from GitHub Actions after adding Apple signing and App Store Connect secrets:
 
 ```sh
-gh workflow run "App Store Preflight" --ref codex/m10-submit-readiness -f allow_missing_credentials=false
+gh workflow run "App Store Preflight" --ref main -f allow_missing_credentials=false
 ```
 
 The workflow source is `.github/workflows/app-store-preflight.yml` and covers `Scripts/verify_app_store_cloud_credentials.sh`, the signed archive, App Store Connect IPA export, App Store validation preflight, and retained artifact upload from the cloud runner. It retains `/tmp/buysell-app-store-cloud-credentials.log` as the no-secret-value credential checklist. Use `allow_missing_credentials=true` to keep the workflow as pending evidence while the encrypted Apple credentials are not yet available.
