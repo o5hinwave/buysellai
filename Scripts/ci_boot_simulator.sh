@@ -50,24 +50,39 @@ raise SystemExit("no supported iPhone simulator device type")
 PY
 read -r device_type runtime_id existing_udid <"$simulator_choice"
 
-if [[ -n "${existing_udid:-}" ]]; then
-    udid="$existing_udid"
-else
-    udid="$(xcrun simctl create "$device_name" "$device_type" "$runtime_id")"
-fi
-xcrun simctl boot "$udid" >/dev/null 2>&1 || true
-python3 - "$udid" <<'PY'
+udid="$(python3 - "$device_name" "$device_type" "$runtime_id" "${existing_udid:-}" <<'PY'
 import subprocess
 import sys
 
+device_name, device_type, runtime_id, existing_udid = sys.argv[1:5]
+if existing_udid:
+    udid = existing_udid
+else:
+    udid = subprocess.check_output(
+        ["xcrun", "simctl", "create", device_name, device_type, runtime_id],
+        text=True,
+        timeout=60,
+    ).strip()
+
+subprocess.run(
+    ["xcrun", "simctl", "boot", udid],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    timeout=30,
+    check=False,
+)
+
 try:
     subprocess.run(
-        ["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"],
+        ["xcrun", "simctl", "bootstatus", udid, "-b"],
         check=True,
         stdout=subprocess.DEVNULL,
         timeout=120,
     )
 except subprocess.TimeoutExpired:
     raise SystemExit("timed out waiting for simulator boot")
+
+print(udid)
 PY
+)"
 printf 'id=%s\n' "$udid"
