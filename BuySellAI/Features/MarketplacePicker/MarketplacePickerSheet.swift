@@ -284,6 +284,15 @@ struct MarketplacePickerSheet: View {
                 marketCheckMessage = "Current market check unavailable. Showing quick estimates."
             }
         } catch {
+            ProductAnalytics.recordFailure(
+                .groundedResearchFailed,
+                endpoint: "compare-marketplaces",
+                error: error,
+                extra: [
+                    "category": context.item.category.rawValue,
+                    "candidate_count": "\(candidates.count)"
+                ]
+            )
             marketCheckMessage = "Current market check unavailable. Showing quick estimates."
             computedEstimates = localEstimates
         }

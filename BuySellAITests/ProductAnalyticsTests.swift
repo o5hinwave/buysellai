@@ -14,15 +14,18 @@ final class ProductAnalyticsTests: XCTestCase {
             "follow_up_questions_completed",
             "grounded_research_started",
             "grounded_research_completed",
+            "grounded_research_failed",
             "marketplace_selected",
             "listing_generated",
+            "listing_generation_failed",
             "listing_copied_or_exported",
             "item_saved",
             "user_created_second_listing",
             "user_returned_after_1_day",
             "user_returned_after_7_days",
             "user_returned_after_30_days",
-            "rate_limit_reached"
+            "rate_limit_reached",
+            "identification_failed"
         ]))
     }
 
@@ -32,6 +35,10 @@ final class ProductAnalyticsTests: XCTestCase {
             "email": "person@example.com",
             "item_name": "Grandma's private lamp",
             "listing_title": "Signed private collectible",
+            "error_message": "The private listing title failed",
+            "localized_error": "Grandma's private lamp timed out",
+            "raw_error": "https://example.com/private-error",
+            "message": "private details",
             "photo_url": "https://example.com/private-photo.jpg",
             "source_url": "https://example.com/sold-comp",
             "serial_number": "ABC123PRIVATE",
@@ -52,6 +59,10 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertFalse(payload.contains("email="))
         XCTAssertFalse(payload.contains("item_name="))
         XCTAssertFalse(payload.contains("listing_title="))
+        XCTAssertFalse(payload.contains("error_message="))
+        XCTAssertFalse(payload.contains("localized_error="))
+        XCTAssertFalse(payload.contains("raw_error="))
+        XCTAssertFalse(payload.contains("message="))
         XCTAssertFalse(payload.contains("photo_url="))
         XCTAssertFalse(payload.contains("source_url="))
         XCTAssertFalse(payload.contains("serial_number="))
@@ -59,6 +70,51 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertFalse(payload.contains("private"))
         XCTAssertFalse(payload.contains("@"))
         XCTAssertFalse(payload.contains("'"))
+    }
+
+    func testAnalyticsSupportsCoarseFailureRateSignalsWithoutRawMessages() {
+        let source = try! String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("BuySellAI/Data/ProductAnalytics.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertNotNil(source.range(of: "static func recordFailure"))
+        XCTAssertNotNil(source.range(of: #"properties["error_kind"] = errorKind(error)"#))
+        XCTAssertNotNil(source.range(of: "case .offline"))
+        XCTAssertNotNil(source.range(of: #""offline""#))
+        XCTAssertNotNil(source.range(of: "case .timeout"))
+        XCTAssertNotNil(source.range(of: #""timeout""#))
+        XCTAssertNotNil(source.range(of: "case .server(let code)"))
+        XCTAssertNotNil(source.range(of: #""server_\(code)""#))
+        XCTAssertNil(source.range(of: "error.localizedDescription"))
+    }
+
+    func testCriticalFlowFailuresRecordPrivacySafeAnalytics() throws {
+        let snapResultStore = try String(
+            contentsOf: projectURL("BuySellAI/Features/SnapResult/SnapResultStore.swift"),
+            encoding: .utf8
+        )
+        let marketplacePicker = try String(
+            contentsOf: projectURL("BuySellAI/Features/MarketplacePicker/MarketplacePickerSheet.swift"),
+            encoding: .utf8
+        )
+        let listingStore = try String(
+            contentsOf: projectURL("BuySellAI/Features/Listing/ListingStore.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertNotNil(snapResultStore.range(of: #"ProductAnalytics.recordFailure("#))
+        XCTAssertNotNil(snapResultStore.range(of: #".identificationFailed"#))
+        XCTAssertNotNil(snapResultStore.range(of: #"endpoint: "analyze-image""#))
+        XCTAssertNotNil(marketplacePicker.range(of: #"ProductAnalytics.recordFailure("#))
+        XCTAssertNotNil(marketplacePicker.range(of: #".groundedResearchFailed"#))
+        XCTAssertNotNil(marketplacePicker.range(of: #"endpoint: "compare-marketplaces""#))
+        XCTAssertNotNil(listingStore.range(of: #"ProductAnalytics.recordFailure("#))
+        XCTAssertNotNil(listingStore.range(of: #".listingGenerationFailed"#))
+        XCTAssertNotNil(listingStore.range(of: #"endpoint: "generate-listing""#))
     }
 
     func testAppOpenedRecordsReturnBucketsWithoutCrashing() {
@@ -95,5 +151,12 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertTrue(defaults.bool(forKey: "BuySell.analytics.returnedAfter1Day"))
         XCTAssertTrue(defaults.bool(forKey: "BuySell.analytics.returnedAfter7Days"))
         XCTAssertTrue(defaults.bool(forKey: "BuySell.analytics.returnedAfter30Days"))
+    }
+
+    private func projectURL(_ path: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent(path)
     }
 }

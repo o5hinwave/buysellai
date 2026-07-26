@@ -10,8 +10,10 @@ enum ProductAnalyticsEvent: String, CaseIterable, Sendable {
     case followUpQuestionsCompleted = "follow_up_questions_completed"
     case groundedResearchStarted = "grounded_research_started"
     case groundedResearchCompleted = "grounded_research_completed"
+    case groundedResearchFailed = "grounded_research_failed"
     case marketplaceSelected = "marketplace_selected"
     case listingGenerated = "listing_generated"
+    case listingGenerationFailed = "listing_generation_failed"
     case listingCopiedOrExported = "listing_copied_or_exported"
     case itemSaved = "item_saved"
     case userCreatedSecondListing = "user_created_second_listing"
@@ -19,6 +21,7 @@ enum ProductAnalyticsEvent: String, CaseIterable, Sendable {
     case userReturnedAfter7Days = "user_returned_after_7_days"
     case userReturnedAfter30Days = "user_returned_after_30_days"
     case rateLimitReached = "rate_limit_reached"
+    case identificationFailed = "identification_failed"
 }
 
 enum ProductAnalytics {
@@ -93,6 +96,18 @@ enum ProductAnalytics {
         record(.rateLimitReached, properties: ["endpoint": safeEndpoint(endpoint)])
     }
 
+    static func recordFailure(
+        _ event: ProductAnalyticsEvent,
+        endpoint: String,
+        error: Error,
+        extra: [String: String] = [:]
+    ) {
+        var properties = extra
+        properties["endpoint"] = safeEndpoint(endpoint)
+        properties["error_kind"] = errorKind(error)
+        record(event, properties: properties)
+    }
+
     static func recordEstimatedCost(
         event: ProductAnalyticsEvent,
         endpoint: String,
@@ -132,10 +147,14 @@ enum ProductAnalytics {
         "listing_description",
         "listing_text",
         "description",
+        "error_message",
         "image",
         "image_data",
         "image_url",
+        "localized_error",
+        "message",
         "photo_url",
+        "raw_error",
         "url",
         "source_url",
         "serial",
@@ -153,9 +172,12 @@ enum ProductAnalytics {
         "listingdescription",
         "listingtext",
         "description",
+        "errormessage",
         "imagedata",
         "imageurl",
+        "localizederror",
         "photourl",
+        "rawerror",
         "sourceurl",
         "serialnumber",
         "pickupaddress",
@@ -195,6 +217,29 @@ enum ProductAnalytics {
 
     private static func decimalString(_ value: Decimal) -> String {
         NSDecimalNumber(decimal: max(value, Decimal(0))).stringValue
+    }
+
+    private static func errorKind(_ error: Error) -> String {
+        switch APIError.mapTransport(error) {
+        case .offline:
+            "offline"
+        case .timeout:
+            "timeout"
+        case .rateLimited:
+            "rate_limited"
+        case .server(let code):
+            "server_\(code)"
+        case .decoding:
+            "decoding"
+        case .notConfigured:
+            "not_configured"
+        case .sessionExpired:
+            "session_expired"
+        case .accountAlreadyLinked:
+            "account_already_linked"
+        case .unknown:
+            "unknown"
+        }
     }
 }
 

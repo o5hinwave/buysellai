@@ -125,6 +125,17 @@ final class ListingStore {
             phase = .idle
         } catch {
             guard currentGeneration == generation else { return }
+            ProductAnalytics.recordFailure(
+                .listingGenerationFailed,
+                endpoint: "generate-listing",
+                error: error,
+                extra: [
+                    "marketplace": marketplace.rawValue,
+                    "category": item.category.rawValue,
+                    "has_marketplace_comparison": marketplaceComparison == nil ? "false" : "true",
+                    "has_answers": details == nil ? "false" : "true"
+                ]
+            )
             draft = nil
             phase = .failed(APIError.userMessage(for: error))
         }

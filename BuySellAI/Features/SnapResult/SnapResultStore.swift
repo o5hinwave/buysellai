@@ -137,6 +137,15 @@ final class SnapResultStore {
         } catch {
             guard generation == analysisGeneration else { return }
             cancelStillWorkingTask()
+            ProductAnalytics.recordFailure(
+                .identificationFailed,
+                endpoint: "analyze-image",
+                error: error,
+                extra: [
+                    "image_bytes_bucket": Self.imageSizeBucket(for: imageData.count),
+                    "native_scan_evidence": nativeScanEvidence == nil ? "false" : "true"
+                ]
+            )
             phase = .failed(APIError.userMessage(for: error))
             analysisDetails = nil
             analysisGuidance = nil
@@ -251,6 +260,19 @@ final class SnapResultStore {
         guard value > 0 else { return nil }
         let rounded = value.rounded(scale: 0)
         return max(rounded, Decimal(1))
+    }
+
+    private static func imageSizeBucket(for byteCount: Int) -> String {
+        switch byteCount {
+        case ..<250_000:
+            "under_250kb"
+        case ..<1_000_000:
+            "250kb_1mb"
+        case ..<3_000_000:
+            "1mb_3mb"
+        default:
+            "over_3mb"
+        }
     }
 
     private func cancelStillWorkingTask() {
