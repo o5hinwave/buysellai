@@ -627,6 +627,10 @@ final class APIClientTests: XCTestCase {
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
             let playbook = try XCTUnwrap(json["marketplacePlaybook"] as? [String: Any])
             let expectedPlaybook = Marketplace.ebay.listingPlaybook
+            XCTAssertEqual(playbook["playbookVersionIdentifier"] as? String, expectedPlaybook.version.identifier)
+            XCTAssertEqual(playbook["playbookSchemaVersion"] as? Int, expectedPlaybook.version.schemaVersion)
+            XCTAssertEqual(playbook["playbookFeeSourcesLastChecked"] as? String, expectedPlaybook.version.feeSourcesLastChecked)
+            XCTAssertEqual(playbook["playbookRuleSourcesLastVerified"] as? String, expectedPlaybook.version.ruleSourcesLastVerified)
             XCTAssertEqual(playbook["titleCharacterLimit"] as? Int, expectedPlaybook.titleCharacterLimit)
             XCTAssertEqual(playbook["titleFormula"] as? String, expectedPlaybook.titleFormula)
             XCTAssertEqual(playbook["descriptionGuidance"] as? String, expectedPlaybook.descriptionGuidance)

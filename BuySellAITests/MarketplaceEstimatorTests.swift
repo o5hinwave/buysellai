@@ -89,6 +89,10 @@ final class MarketplaceEstimatorTests: XCTestCase {
             let playbook = marketplace.listingPlaybook
 
             XCTAssertEqual(playbook.marketplace, marketplace)
+            XCTAssertEqual(playbook.version.identifier, "marketplace-playbook-v1-2026-07-25", marketplace.displayName)
+            XCTAssertEqual(playbook.version.schemaVersion, 1, marketplace.displayName)
+            XCTAssertEqual(playbook.version.feeSourcesLastChecked, "2026-07-23", marketplace.displayName)
+            XCTAssertEqual(playbook.version.ruleSourcesLastVerified, "2026-07-25", marketplace.displayName)
             XCTAssertGreaterThan(playbook.titleCharacterLimit, 0, marketplace.displayName)
             XCTAssertEqual(playbook.titleCharacterLimit, marketplace.optimizationProfile.titleMaxCharacters, marketplace.displayName)
             XCTAssertFalse(playbook.titleFormula.isEmpty, marketplace.displayName)

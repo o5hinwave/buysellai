@@ -30,4 +30,4 @@ Official sources checked for the first handoff slice:
 - Mercari fees/listing policy: https://www.mercari.com/us/help_center/article/169/
 - Poshmark listing how-to: https://support.poshmark.com/s/article/894455911?language=en_US
 
-Next implementation slice: turn the existing `MarketplaceOptimizationProfile` and `MarketplacePlaybookEvidence` into one versioned marketplace playbook with official post destination, official how-to destination, required fields, title limits, photo rules, and source dates for every active marketplace.
+Implementation slice completed: `MarketplaceOptimizationProfile`, `MarketplacePlaybookEvidence`, and `MarketplacePostingDestination` now flow into one versioned `MarketplaceListingPlaybook`. The app sends the playbook version identifier, schema version, fee-source date, rule-source date, official post destination, official how-to destination, required fields, title limit, photo sequence, and posting surface to the `generate-listing` Edge Function so final listing generation can respect current marketplace guidance without exposing that complexity in the UI.

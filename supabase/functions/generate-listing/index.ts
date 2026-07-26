@@ -75,6 +75,9 @@ serve(async (request) => {
     const promptParts = [{
         text: [
           `Marketplace: ${platform}`,
+          `Marketplace playbook version: ${profile.playbookVersionIdentifier ?? "server default"}`,
+          `Marketplace playbook schema: ${profile.playbookSchemaVersion ?? "server default"}`,
+          `Marketplace playbook source dates: fees ${profile.playbookFeeSourcesLastChecked ?? "server default"}, rules ${profile.playbookRuleSourcesLastVerified ?? "server default"}`,
           `Marketplace title formula: ${profile.titleFormula}`,
           `Marketplace search focus: ${profile.searchFocus}`,
           `Photo guidance to mention if helpful: ${profile.photoGuidance}`,
@@ -324,6 +327,10 @@ const marketplaceDisplayNames: Record<MarketplaceId, string> = {
 };
 
 type MarketplaceListingProfile = {
+  playbookVersionIdentifier?: string;
+  playbookSchemaVersion?: number;
+  playbookFeeSourcesLastChecked?: string;
+  playbookRuleSourcesLastVerified?: string;
   titleMaxCharacters: number;
   titleFormula: string;
   searchFocus: string;
@@ -342,6 +349,10 @@ type MarketplaceListingProfile = {
 };
 
 type MarketplaceListingPlaybookInput = {
+  playbookVersionIdentifier?: string;
+  playbookSchemaVersion?: number;
+  playbookFeeSourcesLastChecked?: string;
+  playbookRuleSourcesLastVerified?: string;
   titleCharacterLimit?: number;
   titleFormula?: string;
   descriptionGuidance?: string;
@@ -365,6 +376,10 @@ function profileWithClientPlaybook(
 
   return {
     ...base,
+    playbookVersionIdentifier: playbook.playbookVersionIdentifier ?? base.playbookVersionIdentifier,
+    playbookSchemaVersion: playbook.playbookSchemaVersion ?? base.playbookSchemaVersion,
+    playbookFeeSourcesLastChecked: playbook.playbookFeeSourcesLastChecked ?? base.playbookFeeSourcesLastChecked,
+    playbookRuleSourcesLastVerified: playbook.playbookRuleSourcesLastVerified ?? base.playbookRuleSourcesLastVerified,
     titleMaxCharacters: playbook.titleCharacterLimit ?? base.titleMaxCharacters,
     titleFormula: playbook.titleFormula ?? base.titleFormula,
     featuredGuidance: playbook.descriptionGuidance ?? base.featuredGuidance,
@@ -1415,6 +1430,10 @@ function optionalMarketplacePlaybook(value: unknown): MarketplaceListingPlaybook
   if (!record) return null;
 
   const playbook: MarketplaceListingPlaybookInput = {
+    playbookVersionIdentifier: optionalString(record.playbookVersionIdentifier, 80) ?? undefined,
+    playbookSchemaVersion: optionalPositiveInteger(record.playbookSchemaVersion, 10) ?? undefined,
+    playbookFeeSourcesLastChecked: optionalString(record.playbookFeeSourcesLastChecked, 32) ?? undefined,
+    playbookRuleSourcesLastVerified: optionalString(record.playbookRuleSourcesLastVerified, 32) ?? undefined,
     titleCharacterLimit: optionalTitleCharacterLimit(record.titleCharacterLimit),
     titleFormula: optionalString(record.titleFormula, 180) ?? undefined,
     descriptionGuidance: optionalString(record.descriptionGuidance, 260) ?? undefined,
@@ -1431,6 +1450,10 @@ function optionalMarketplacePlaybook(value: unknown): MarketplaceListingPlaybook
   };
 
   const hasGuidance = [
+    playbook.playbookVersionIdentifier,
+    playbook.playbookSchemaVersion,
+    playbook.playbookFeeSourcesLastChecked,
+    playbook.playbookRuleSourcesLastVerified,
     playbook.titleCharacterLimit,
     playbook.titleFormula,
     playbook.descriptionGuidance,
@@ -1531,6 +1554,12 @@ function optionalFitScore(value: unknown): number | null {
 function optionalTitleCharacterLimit(value: unknown): number | undefined {
   const number = Number(value);
   if (!Number.isInteger(number) || number < 20 || number > 160) return undefined;
+  return number;
+}
+
+function optionalPositiveInteger(value: unknown, maxValue: number): number | undefined {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 1 || number > maxValue) return undefined;
   return number;
 }
 

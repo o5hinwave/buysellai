@@ -1907,6 +1907,10 @@ private struct ListingEvidenceSourcePayload: Encodable {
 }
 
 private struct MarketplaceListingPlaybookPayload: Encodable {
+    let playbookVersionIdentifier: String
+    let playbookSchemaVersion: Int
+    let playbookFeeSourcesLastChecked: String
+    let playbookRuleSourcesLastVerified: String
     let titleCharacterLimit: Int
     let titleFormula: String
     let descriptionGuidance: String
@@ -1922,6 +1926,10 @@ private struct MarketplaceListingPlaybookPayload: Encodable {
     let postingSurface: String
 
     init(playbook: MarketplaceListingPlaybook) {
+        playbookVersionIdentifier = playbook.version.identifier
+        playbookSchemaVersion = playbook.version.schemaVersion
+        playbookFeeSourcesLastChecked = playbook.version.feeSourcesLastChecked
+        playbookRuleSourcesLastVerified = playbook.version.ruleSourcesLastVerified
         titleCharacterLimit = playbook.titleCharacterLimit
         titleFormula = playbook.titleFormula
         descriptionGuidance = playbook.descriptionGuidance

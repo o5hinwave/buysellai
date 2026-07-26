@@ -115,6 +115,7 @@ struct MarketplaceOptimizationProfile: Sendable, Hashable {
 }
 
 struct MarketplaceListingPlaybook: Sendable, Hashable {
+    let version: MarketplacePlaybookVersion
     let marketplace: Marketplace
     let titleCharacterLimit: Int
     let titleFormula: String
@@ -133,6 +134,20 @@ struct MarketplaceListingPlaybook: Sendable, Hashable {
     let postingSurface: MarketplacePostingSurface
 }
 
+struct MarketplacePlaybookVersion: Sendable, Hashable {
+    static let current = MarketplacePlaybookVersion(
+        identifier: "marketplace-playbook-v1-2026-07-25",
+        schemaVersion: 1,
+        feeSourcesLastChecked: "2026-07-23",
+        ruleSourcesLastVerified: "2026-07-25"
+    )
+
+    let identifier: String
+    let schemaVersion: Int
+    let feeSourcesLastChecked: String
+    let ruleSourcesLastVerified: String
+}
+
 extension Marketplace {
     var listingPlaybook: MarketplaceListingPlaybook {
         let profile = optimizationProfile
@@ -140,6 +155,7 @@ extension Marketplace {
         let destination = postingDestination
 
         return MarketplaceListingPlaybook(
+            version: .current,
             marketplace: self,
             titleCharacterLimit: profile.titleMaxCharacters,
             titleFormula: profile.titleFormula,
