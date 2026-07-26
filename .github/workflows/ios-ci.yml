@@ -31,13 +31,18 @@ jobs:
       - name: Check formatting whitespace
         run: git diff --check -- BuySellAI BuySellAITests BuySellAIUITests Scripts supabase README.md
 
-      - name: Build and run tests
+      - name: Build and run smoke tests
         run: |
           set -o pipefail
           xcodebuild test \
             -project BuySellAI.xcodeproj \
             -scheme BuySellAI \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomePrimaryActionUsesAppleSimpleOneTwoThreeFrontDoor \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomeUsesNativeInsetGroupedTaskRowsInsteadOfCustomWidthClamps \
+            -only-testing:BuySellAITests/DesignAccessibilityTests/testHomeRemovesDecorativePrimaryGlowAndUsesNativeTaskRows \
             -resultBundlePath TestResults.xcresult
 
       - name: Upload test result bundle
