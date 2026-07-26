@@ -114,8 +114,7 @@ serve(async (request) => {
     });
     const visualEvidence = await fetchVisionWebDetectionEvidence(imageDataUrl);
 
-    const result = await generateJsonWithGemini(
-      [
+    const systemInstruction = [
         "You identify household resale items for BuySell AI.",
         "Return one JSON object only.",
         "Use a short concrete item name.",
@@ -151,8 +150,8 @@ serve(async (request) => {
         "When native scan evidence includes useful text or codes, include them in analysis.itemFacts with confidence that reflects whether the value is exact or only a clue.",
         "When native scan evidence includes photoQuality.issue, return the matching plain photoPrompt instead of asking a new question: Move it into better light. Tilt the item to remove glare. Use more light. Step back so the whole item fits.",
         "Ignore tax and deductible concepts.",
-      ].join(" "),
-      [
+      ].join(" ");
+    const promptParts = [
         {
           text: [
             "Analyze this item photo for a simple resale listing.",
@@ -161,8 +160,8 @@ serve(async (request) => {
           ].join("\n"),
         },
         { inline_data: { mime_type: "image/jpeg", data: imageDataUrl.base64 } },
-      ],
-      {
+      ];
+    const responseSchema = {
         type: "OBJECT",
         properties: {
           name: { type: "STRING" },
@@ -239,8 +238,14 @@ serve(async (request) => {
           },
         },
         required: ["name", "category", "condition", "currentPrice", "analysis"],
-      },
-      { maxOutputTokens: 3_200 },
+      };
+
+    const result = await resilientAnalyzeJson(
+      systemInstruction,
+      promptParts,
+      responseSchema,
+      visualEvidence,
+      nativeScanEvidence,
     );
 
     return jsonResponse({
@@ -254,6 +259,148 @@ serve(async (request) => {
     return errorResponse("Analyze failed", 500);
   }
 });
+
+async function resilientAnalyzeJson(
+  systemInstruction: string,
+  promptParts: unknown[],
+  responseSchema: Record<string, unknown>,
+  visualEvidence: VisualWebEvidence | null,
+  nativeScanEvidence: NativeScanEvidence | null,
+): Promise<Record<string, unknown>> {
+  try {
+    return await generateJsonWithGemini(
+      systemInstruction,
+      promptParts,
+      responseSchema,
+      { maxOutputTokens: 3_200 },
+    );
+  } catch (error) {
+    if (!isRecoverableAnalyzeProviderError(error)) throw error;
+    return deterministicAnalyzeFallback(visualEvidence, nativeScanEvidence);
+  }
+}
+
+function isRecoverableAnalyzeProviderError(error: unknown): boolean {
+  return error instanceof HttpError &&
+    error.status === 502 &&
+    (
+      error.message === "Provider response was not valid JSON" ||
+      error.message === "Provider returned an empty response" ||
+      error.message === "Provider response was not valid model JSON" ||
+      error.message === "Provider response was not a JSON object" ||
+      error.message === "Provider transport failed"
+    );
+}
+
+function deterministicAnalyzeFallback(
+  visualEvidence: VisualWebEvidence | null,
+  nativeScanEvidence: NativeScanEvidence | null,
+): Record<string, unknown> {
+  const visualGuess = bestVisualGuess(visualEvidence);
+  const scanClue = bestNativeScanClue(nativeScanEvidence);
+  const name = visualGuess ? possibleItemName(visualGuess) : "Item to identify";
+  const category = categoryFromEvidenceText([name, visualGuess, scanClue].filter(Boolean).join(" "));
+  const photoPrompt = nativeScanEvidence?.photoQuality?.issue
+    ? photoPromptForQualityIssue(nativeScanEvidence.photoQuality.issue)
+    : "Show the label.";
+
+  return {
+    name,
+    category,
+    condition: "good",
+    currentPrice: 1,
+    analysis: {
+      itemFacts: [
+        {
+          label: "AI check",
+          value: "Identification needs one more clue",
+          confidence: 0.25,
+        },
+        ...(visualGuess
+          ? [{
+            label: "Possible visual match",
+            value: visualGuess,
+            confidence: 0.35,
+          }]
+          : []),
+        ...(scanClue
+          ? [{
+            label: "Visible text clue",
+            value: scanClue,
+            confidence: 0.55,
+          }]
+          : []),
+      ],
+      missingFacts: [
+        "Exact item name",
+        "Brand or maker",
+        "Model, size, or label",
+        "Working condition",
+        "Visible flaws",
+      ],
+      photoPrompt,
+      likelyMatches: [],
+      valueQuestions: [
+        {
+          question: "Can you find a label, tag, stamp, or model number?",
+          reason: "That clue helps BuySell identify and price the item without guessing.",
+          answerField: "spec",
+          choices: ["Back label", "Bottom mark", "Tag or sticker", "I don't know"],
+          unknownFollowUpQuestion: "Check the bottom, back, inside tag, or package.",
+          unknownFollowUpChoices: ["Back label", "Bottom mark", "No label"],
+        },
+      ],
+      referenceImages: [],
+    },
+  };
+}
+
+function bestVisualGuess(visualEvidence: VisualWebEvidence | null): string | null {
+  return visualEvidence?.bestGuessLabels[0] ??
+    visualEvidence?.matchingPageTitles[0] ??
+    null;
+}
+
+function bestNativeScanClue(nativeScanEvidence: NativeScanEvidence | null): string | null {
+  return nativeScanEvidence?.modelOrSerialCandidates[0] ??
+    nativeScanEvidence?.recognizedText[0] ??
+    nativeScanEvidence?.barcodes[0]?.payload ??
+    null;
+}
+
+function possibleItemName(value: string): string {
+  const clean = value
+    .replace(/\s+/g, " ")
+    .replace(/[|•].*$/, "")
+    .trim();
+  return clean.length > 80 ? clean.slice(0, 80).trim() : clean;
+}
+
+function categoryFromEvidenceText(text: string): string {
+  const lower = text.toLowerCase();
+  if (/\b(phone|laptop|tablet|camera|console|controller|headphones|speaker|keyboard)\b/.test(lower)) return "Electronics";
+  if (/\b(chair|table|desk|sofa|couch|dresser|cabinet|nightstand|shelf)\b/.test(lower)) return "Furniture";
+  if (/\b(shoe|sneaker|boot|heel|loafer)\b/.test(lower)) return "Shoes";
+  if (/\b(shirt|jacket|coat|dress|pants|jeans|sweater|hoodie)\b/.test(lower)) return "Clothing";
+  if (/\b(bag|purse|handbag|wallet|backpack)\b/.test(lower)) return "Bags";
+  if (/\b(ring|necklace|bracelet|earring|watch|jewelry)\b/.test(lower)) return "Jewelry";
+  if (/\b(lamp|vase|rug|mirror|decor|kitchen|mug|plate|glass)\b/.test(lower)) return "Home";
+  if (/\b(drill|saw|tool|wrench|battery|charger)\b/.test(lower)) return "Tools";
+  if (/\b(book|novel|textbook)\b/.test(lower)) return "Books";
+  if (/\b(record|cd|dvd|blu-ray|game)\b/.test(lower)) return "Media";
+  if (/\b(guitar|keyboard|amp|microphone|pedal)\b/.test(lower)) return "Music";
+  if (/\b(card|comic|figure|collectible|antique|vintage)\b/.test(lower)) return "Collectibles";
+  if (/\b(painting|print|sculpture|art)\b/.test(lower)) return "Art";
+  return "Other";
+}
+
+function photoPromptForQualityIssue(issue: string): string {
+  const lower = issue.toLowerCase();
+  if (lower.includes("glare")) return "Tilt the item to remove glare.";
+  if (lower.includes("dark") || lower.includes("light")) return "Use more light.";
+  if (lower.includes("crop") || lower.includes("frame")) return "Step back so the whole item fits.";
+  return "Show the label.";
+}
 
 function requireImageDataUrl(value: unknown): ImageDataUrl {
   if (typeof value !== "string" || !value.startsWith("data:image/jpeg;base64,")) {
