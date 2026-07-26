@@ -407,6 +407,12 @@ final class ModelFormattingTests: XCTestCase {
             "Oak-Cabinet-03-Included.jpg",
             "Oak-Cabinet-04-Condition.jpg"
         ])
+
+        let selectedExport = try XCTUnwrap(package.exportFile(for: item, photoID: package.listingReadyPhotos[1].id))
+        XCTAssertEqual(selectedExport.role, .label)
+        XCTAssertEqual(selectedExport.fileName, "Oak-Cabinet-02-Label.jpg")
+        XCTAssertEqual(selectedExport.verifies, "Maker label")
+        XCTAssertNil(package.exportFile(for: item, photoID: UUID()))
     }
 
     func testTargetedScanEvidenceFillsMatchingDetailAndPhotoVerification() throws {

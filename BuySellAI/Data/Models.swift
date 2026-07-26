@@ -448,6 +448,21 @@ struct ListingPhotoPackage: Codable, Sendable, Hashable {
         }
     }
 
+    func exportFile(for item: DetectedItem, photoID: UUID) -> ListingPhotoExport? {
+        listingReadyPhotos.enumerated().compactMap { index, photo -> ListingPhotoExport? in
+            guard photo.id == photoID,
+                  let imageData = photo.imageData,
+                  imageData.isEmpty == false else { return nil }
+            return ListingPhotoExport(
+                imageData: imageData,
+                fileName: photo.exportFileName(for: item, index: index + 1),
+                role: photo.role,
+                verifies: photo.verifies
+            )
+        }
+        .first
+    }
+
     private func bestPhoto(
         for role: ItemPhotoRole,
         in photos: [ItemPhotoAsset],

@@ -1324,6 +1324,41 @@ struct ListingSheet: View {
         sharePayload = ListingSharePayload(items: exportURLs)
     }
 
+    private func shareOrExportPhoto(photoID: UUID) {
+        guard let export = photoPackage.exportFile(for: context.item, photoID: photoID) else {
+            appStore.showToast("Add a real item photo before posting.".localized, style: .error)
+            return
+        }
+        guard let exportURLs = makePhotoExportURLs(from: [export]) else { return }
+        Haptics.impact(.light)
+        ProductAnalytics.record(
+            .listingCopiedOrExported,
+            properties: [
+                "marketplace": context.marketplace.rawValue,
+                "category": context.item.category.rawValue,
+                "export_type": "photo_single",
+                "photo_scope": "single",
+                "photo_role": export.role.rawValue,
+                "photo_count": "1"
+            ]
+        )
+        if copyableListingText.isEmpty == false {
+            appStore.saveListing(
+                item: context.item,
+                imageData: context.imageData,
+                supplementalPhotos: context.supplementalPhotos,
+                marketplace: context.marketplace,
+                listingText: copyableListingText,
+                details: context.details,
+                marketplaceComparison: context.marketplaceComparison,
+                listingDraft: store.draft,
+                identificationProfile: context.analysis?.identificationProfile,
+                replacing: context.existingHistoryEntry
+            )
+        }
+        sharePayload = ListingSharePayload(items: exportURLs)
+    }
+
     private func savePhotosToLibrary(scope: ListingPhotoExportScope) {
         let exports = photoPackage.exportFiles(for: context.item, scope: scope)
         guard exports.isEmpty == false else {
@@ -1364,7 +1399,7 @@ struct ListingSheet: View {
                             replacing: context.existingHistoryEntry
                         )
                     }
-                    appStore.showToast(String.localizedFormat("%d photos saved", count), style: .success)
+                    appStore.showToast(photoSavedMessage(count: count), style: .success)
                 case .denied:
                     appStore.showToast("Allow photo saving in Settings, or use Share to Files.".localized, style: .error)
                 case .failed:
@@ -1372,6 +1407,60 @@ struct ListingSheet: View {
                 }
             }
         }
+    }
+
+    private func savePhotoToLibrary(photoID: UUID) {
+        guard let export = photoPackage.exportFile(for: context.item, photoID: photoID) else {
+            appStore.showToast("Add a real item photo before posting.".localized, style: .error)
+            return
+        }
+        guard isSavingPhotos == false else { return }
+        isSavingPhotos = true
+        Haptics.impact(.light)
+        Task {
+            let result = await ListingPhotoLibrarySaver.save([export])
+            await MainActor.run {
+                isSavingPhotos = false
+                switch result {
+                case .saved(let count):
+                    Haptics.notify(.success)
+                    ProductAnalytics.record(
+                        .listingCopiedOrExported,
+                        properties: [
+                            "marketplace": context.marketplace.rawValue,
+                            "category": context.item.category.rawValue,
+                            "export_type": "apple_photos_single",
+                            "photo_scope": "single",
+                            "photo_role": export.role.rawValue,
+                            "photo_count": "\(count)"
+                        ]
+                    )
+                    if copyableListingText.isEmpty == false {
+                        appStore.saveListing(
+                            item: context.item,
+                            imageData: context.imageData,
+                            supplementalPhotos: context.supplementalPhotos,
+                            marketplace: context.marketplace,
+                            listingText: copyableListingText,
+                            details: context.details,
+                            marketplaceComparison: context.marketplaceComparison,
+                            listingDraft: store.draft,
+                            identificationProfile: context.analysis?.identificationProfile,
+                            replacing: context.existingHistoryEntry
+                        )
+                    }
+                    appStore.showToast(photoSavedMessage(count: count), style: .success)
+                case .denied:
+                    appStore.showToast("Allow photo saving in Settings, or use Share to Files.".localized, style: .error)
+                case .failed:
+                    appStore.showToast("Couldn't save photos. Try again.".localized, style: .error)
+                }
+            }
+        }
+    }
+
+    private func photoSavedMessage(count: Int) -> String {
+        count == 1 ? "1 photo saved".localized : String.localizedFormat("%d photos saved", count)
     }
 
     private func makePhotoExportURLs(from exports: [ListingPhotoExport]) -> [URL]? {
@@ -1679,8 +1768,9 @@ struct ListingSheet: View {
     }
 
     private var listingPhotoPackageRow: some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
-            PhotoThumbnail(data: photoPackage.recommendedListingPhotos.first?.imageData, size: 56, category: context.item.category)
+        let coverPhoto = photoPackage.recommendedListingPhotos.first
+        return HStack(alignment: .center, spacing: Spacing.md) {
+            PhotoThumbnail(data: coverPhoto?.imageData, size: 56, category: context.item.category)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: Spacing.xxs) {
@@ -1701,9 +1791,33 @@ struct ListingSheet: View {
                 .frame(minWidth: 36, minHeight: 36)
                 .background(Color.brand.primaryMuted, in: Circle())
                 .accessibilityHidden(true)
+
+            if let coverPhoto {
+                Menu {
+                    Button {
+                        savePhotoToLibrary(photoID: coverPhoto.id)
+                    } label: {
+                        Label("Save cover photo".localized, systemImage: "photo")
+                    }
+                    .disabled(isSavingPhotos)
+
+                    Button {
+                        shareOrExportPhoto(photoID: coverPhoto.id)
+                    } label: {
+                        Label("Share cover photo".localized, systemImage: "square.and.arrow.up")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .brandSymbol(.controlIcon)
+                        .foregroundStyle(Color.brand.foregroundSecondary)
+                        .frame(width: 36, height: 36)
+                }
+                .accessibilityLabel("Photo actions".localized)
+                .accessibilityHint("Save or share this selected listing photo.".localized)
+            }
         }
         .padding(.vertical, Spacing.xxs)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(String.localizedFormat("%@, %@", photoPackage.statusTitle.localized, photoPackage.recommendation))
     }
 }

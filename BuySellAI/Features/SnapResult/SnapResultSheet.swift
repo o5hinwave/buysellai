@@ -1382,7 +1382,16 @@ struct SnapResultSheet: View {
         return words[startIndex..<endIndex].joined(separator: " ").count
     }
 
+    @ViewBuilder
     private func errorView(message: String) -> some View {
+        if isAnalysisProtectionCooldown(message) {
+            protectionCooldownView(message: message)
+        } else {
+            standardErrorView(message: message)
+        }
+    }
+
+    private func standardErrorView(message: String) -> some View {
         VStack(spacing: Spacing.md) {
             PhotoThumbnail(data: context.imageData, size: 112, category: store.item?.category)
 
@@ -1419,6 +1428,47 @@ struct SnapResultSheet: View {
         .accessibilitySortPriority(3)
     }
 
+    private func protectionCooldownView(message: String) -> some View {
+        VStack(spacing: Spacing.md) {
+            PhotoThumbnail(data: context.imageData, size: 96, category: store.item?.category)
+
+            VStack(spacing: Spacing.xs) {
+                Image(systemName: "clock.badge.checkmark")
+                    .brandSymbol(.controlIcon)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.brand.primaryText)
+                    .accessibilityHidden(true)
+
+                Text("Short break".localized)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.brand.foreground)
+                    .multilineTextAlignment(.center)
+
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(Color.brand.foregroundSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: Spacing.sm) {
+                    viewSavedListingsButton
+                    errorRetakeButton
+                }
+            } else {
+                HStack(spacing: Spacing.sm) {
+                    viewSavedListingsButton
+                    errorRetakeButton
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 280)
+        .padding(.vertical, Spacing.sm)
+        .accessibilityElement(children: .contain)
+        .accessibilitySortPriority(3)
+    }
+
     private var errorRetakeButton: some View {
         Button {
             Haptics.impact(.light)
@@ -1444,6 +1494,25 @@ struct SnapResultSheet: View {
         .buttonStyle(.bordered)
         .controlSize(.regular)
         .accessibilityLabel("Try again".localized)
+    }
+
+    private var viewSavedListingsButton: some View {
+        Button {
+            Haptics.impact(.light)
+            appStore.closeFlow()
+        } label: {
+            Label("View saved listings".localized, systemImage: "list.bullet.rectangle")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.regular)
+        .tint(Color.brand.primary)
+        .accessibilityLabel("View saved listings".localized)
+        .accessibilityHint("Closes this scan and keeps your saved listings available.".localized)
+    }
+
+    private func isAnalysisProtectionCooldown(_ message: String) -> Bool {
+        message == APIError.rateLimited.localizedDescription
     }
 
     private enum Field {

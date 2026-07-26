@@ -624,6 +624,12 @@
 	<string>Try again</string>
 	<key>Try a clearer photo, or retry this one.</key>
 	<string>Try a clearer photo, or retry this one.</string>
+	<key>Short break</key>
+	<string>Short break</string>
+	<key>View saved listings</key>
+	<string>View saved listings</string>
+	<key>Closes this scan and keeps your saved listings available.</key>
+	<string>Closes this scan and keeps your saved listings available.</string>
 	<key>Turn stuff into cash in three taps.</key>
 	<string>Turn stuff into cash in three taps.</string>
 	<key>Turn flash off</key>
@@ -1412,6 +1418,14 @@
 	<string>Save recommended to Photos</string>
 	<key>Save all to Photos</key>
 	<string>Save all to Photos</string>
+	<key>Save cover photo</key>
+	<string>Save cover photo</string>
+	<key>Share cover photo</key>
+	<string>Share cover photo</string>
+	<key>Photo actions</key>
+	<string>Photo actions</string>
+	<key>Save or share this selected listing photo.</key>
+	<string>Save or share this selected listing photo.</string>
 	<key>Share recommended to Files</key>
 	<string>Share recommended to Files</string>
 	<key>Share all to Files</key>
@@ -1426,6 +1440,8 @@
 	<string>Posting link isn't available right now.</string>
 	<key>Couldn't save photos. Try again.</key>
 	<string>Couldn't save photos. Try again.</string>
+	<key>1 photo saved</key>
+	<string>1 photo saved</string>
 	<key>More</key>
 	<string>More</string>
 	<key>Photos</key>
