@@ -28,8 +28,6 @@
 	<string>BuySell uses your camera to snap photos of items you want to sell.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BuySell lets you choose existing item photos from your library.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>BuySell saves your listing-ready item photos to your photo library when you ask.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
