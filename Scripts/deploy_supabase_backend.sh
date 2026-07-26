@@ -96,7 +96,7 @@ run_secret_list_with_timeout() {
 
     [[ "$secret_list_timeout" =~ ^[0-9]+$ && "$secret_list_timeout" -gt 0 ]] || fail "M10_SUPABASE_SECRET_LIST_TIMEOUT_SECONDS must be a positive integer"
 
-    supabase secrets list --project-ref "$project_ref" --output json > "$output_path" 2>/dev/null &
+    supabase secrets list --project-ref "$project_ref" --output-format json > "$output_path" 2>/dev/null &
     pid="$!"
     while kill -0 "$pid" 2>/dev/null; do
         if (( elapsed >= secret_list_timeout )); then
