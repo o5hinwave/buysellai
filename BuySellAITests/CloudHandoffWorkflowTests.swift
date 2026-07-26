@@ -12,6 +12,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "workflow_dispatch:",
             "runs-on: macos-15",
             "actions/checkout@v7",
+            "Scripts/install_scan_tools.sh",
             "Scripts/scan_m10_secrets.sh",
             "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
             "git diff --check",
@@ -104,6 +105,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "allow_missing_credentials",
             "runs-on: macos-15",
             "actions/checkout@v7",
+            "Scripts/install_scan_tools.sh",
             "Scripts/scan_m10_secrets.sh",
             "M10_EXPECT_SUPPORT_SITE=0 Scripts/check_workspace_materialization.sh",
             "Scripts/check_supabase_schema.sh",
@@ -143,6 +145,7 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "contents: read",
             "actions/checkout@v7",
             "supabase/setup-cli@v1",
+            "Scripts/install_scan_tools.sh",
             "SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}",
             "SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}",
             "SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}",
@@ -170,6 +173,36 @@ final class CloudHandoffWorkflowTests: XCTestCase {
             "SupabaseBackendDeployLog",
         ].forEach { expected in
             XCTAssertNotNil(workflow.range(of: expected), "Missing expected Supabase deploy workflow step: \(expected)")
+        }
+    }
+
+    func testCloudScanToolSetupAvoidsNoisyMacOSReinstallWhenRipgrepExists() throws {
+        let scriptURL = projectURL("Scripts/install_scan_tools.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+        let ci = try String(contentsOf: projectURL(".github/workflows/ios-ci.yml"), encoding: .utf8)
+        let handoff = try String(contentsOf: projectURL(".github/workflows/cloud-handoff.yml"), encoding: .utf8)
+        let appStore = try String(contentsOf: projectURL(".github/workflows/app-store-preflight.yml"), encoding: .utf8)
+        let supabase = try String(contentsOf: projectURL(".github/workflows/supabase-backend-deploy.yml"), encoding: .utf8)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        [
+            "command -v rg",
+            "rg --version",
+            "brew tap --list",
+            "brew untap aws/tap",
+            "brew install ripgrep",
+            "sudo apt-get install -y ripgrep",
+        ].forEach { expected in
+            XCTAssertNotNil(script.range(of: expected), "Missing expected scan-tool setup marker: \(expected)")
+        }
+
+        for workflow in [ci, handoff, appStore, supabase] {
+            XCTAssertNotNil(workflow.range(of: "Scripts/install_scan_tools.sh"))
+        }
+
+        for workflow in [ci, handoff, appStore] {
+            XCTAssertNil(workflow.range(of: "brew install ripgrep"))
+            XCTAssertNil(workflow.range(of: "sudo apt-get install -y ripgrep"))
         }
     }
 

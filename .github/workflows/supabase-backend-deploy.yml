@@ -46,9 +46,7 @@ jobs:
           version: latest
 
       - name: Install scan tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ripgrep
+        run: Scripts/install_scan_tools.sh
 
       - name: Validate cloud deploy inputs
         run: |

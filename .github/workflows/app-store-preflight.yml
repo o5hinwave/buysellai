@@ -39,7 +39,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_16.4.app
 
       - name: Install scan tools
-        run: brew install ripgrep
+        run: Scripts/install_scan_tools.sh
 
       - name: Guard against leaked secrets
         run: Scripts/scan_m10_secrets.sh
