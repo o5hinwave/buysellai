@@ -13,6 +13,7 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/functions/delete-account/index.ts",
             "supabase/functions/_shared/apple.ts",
             "supabase/functions/_shared/gemini.ts",
+            "supabase/functions/_shared/gemini_test.ts",
             "supabase/functions/_shared/http.ts",
             "supabase/migrations/20260717000100_create_remote_history_and_apple_auth_tokens.sql",
             "supabase/migrations/20260718000100_harden_history_constraints.sql",
@@ -183,6 +184,13 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNotNil(gemini.range(of: "parseProviderPayload"))
         XCTAssertNotNil(gemini.range(of: "Provider response was not valid JSON"))
         XCTAssertNotNil(gemini.range(of: "Provider response was not valid model JSON"))
+        XCTAssertNotNil(gemini.range(of: "const maxAttempts = 2"))
+        XCTAssertNotNil(gemini.range(of: "generateJsonWithGeminiAttempt"))
+        XCTAssertNotNil(gemini.range(of: "instructionForAttempt"))
+        XCTAssertNotNil(gemini.range(of: "shouldRetryGeminiJson"))
+        XCTAssertNotNil(gemini.range(of: "The previous provider response was not valid JSON for the app contract."))
+        XCTAssertNotNil(gemini.range(of: #"error.status === 502"#))
+        XCTAssertNotNil(gemini.range(of: #"error.message === "Provider response was not valid model JSON""#))
         XCTAssertNotNil(gemini.range(of: "jsonObjectText(unfenced)"))
         XCTAssertNotNil(gemini.range(of: "text.indexOf(\"{\")"))
         XCTAssertNotNil(gemini.range(of: "text.lastIndexOf(\"}\")"))

@@ -27,7 +27,7 @@ fi
 export DENO_DIR="${DENO_DIR:-${TMPDIR:-/tmp}/buysell-deno-cache}"
 
 "${deno_cmd[@]}" check "${entrypoints[@]}"
-"${deno_cmd[@]}" test --allow-env supabase/functions/_shared/entitlements_test.ts
+"${deno_cmd[@]}" test --allow-env supabase/functions/_shared/entitlements_test.ts supabase/functions/_shared/gemini_test.ts
 
 require_source_contains() {
     local file="$1"
@@ -87,6 +87,14 @@ require_source_contains \
     "supabase/functions/_shared/gemini.ts" \
     "attachGroundingMetadata" \
     "Gemini grounding metadata capture"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "shouldRetryGeminiJson" \
+    "Gemini malformed JSON retry guard"
+require_source_contains \
+    "supabase/functions/_shared/gemini.ts" \
+    "The previous provider response was not valid JSON for the app contract." \
+    "Gemini retry repair instruction"
 require_source_contains \
     "supabase/functions/_shared/gemini.ts" \
     "geminiGroundingSearchQueriesKey" \

@@ -47,6 +47,36 @@ export async function generateJsonWithGemini(
   responseSchema: JsonSchema,
   options: GeminiRequestOptions = {},
 ): Promise<Record<string, unknown>> {
+  const maxAttempts = 2;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await generateJsonWithGeminiAttempt(
+        systemInstruction,
+        parts,
+        responseSchema,
+        options,
+        attempt,
+      );
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetryGeminiJson(error) || attempt >= maxAttempts) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+async function generateJsonWithGeminiAttempt(
+  systemInstruction: string,
+  parts: unknown[],
+  responseSchema: JsonSchema,
+  options: GeminiRequestOptions,
+  attempt: number,
+): Promise<Record<string, unknown>> {
   const apiKey = requireEnv("GEMINI_API_KEY");
   const model = options.model?.trim() || Deno.env.get("GEMINI_MODEL")?.trim() ||
     geminiDefaultTextModel;
@@ -63,7 +93,7 @@ export async function generateJsonWithGemini(
     },
     body: JSON.stringify({
       system_instruction: {
-        parts: [{ text: systemInstruction }],
+        parts: [{ text: instructionForAttempt(systemInstruction, attempt) }],
       },
       contents: [{
         role: "user",
@@ -105,6 +135,27 @@ export async function generateJsonWithGemini(
   }
 
   return attachGroundingMetadata(parseModelJson(text), payload);
+}
+
+function instructionForAttempt(systemInstruction: string, attempt: number): string {
+  if (attempt <= 1) return systemInstruction;
+  return [
+    systemInstruction,
+    "The previous provider response was not valid JSON for the app contract.",
+    "Retry once and return only one strict JSON object. Do not include markdown, comments, prose, or trailing text.",
+  ].join(" ");
+}
+
+function shouldRetryGeminiJson(error: unknown): boolean {
+  return error instanceof HttpError &&
+    error.status === 502 &&
+    (
+      error.message === "Provider response was not valid JSON" ||
+      error.message === "Provider returned an empty response" ||
+      error.message === "Provider response was not valid model JSON" ||
+      error.message === "Provider response was not a JSON object" ||
+      error.message === "Provider transport failed"
+    );
 }
 
 function parseProviderPayload(text: string): GeminiResponse {
