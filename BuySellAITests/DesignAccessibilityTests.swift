@@ -2911,8 +2911,23 @@ final class DesignAccessibilityTests: XCTestCase {
         XCTAssertNotNil(photosSource.range(of: #"detail: missingPhotoPrompt"#))
         XCTAssertNotNil(photosSource.range(of: #"Label("Add missing photo".localized, systemImage: AppSymbol.Action.addPhoto)"#))
         XCTAssertNotNil(photosSource.range(of: #"handlePhotoBlocker()"#))
+        XCTAssertNotNil(photosSource.range(of: #"if photoEnhancementPlan != nil"#))
+        XCTAssertNotNil(photosSource.range(of: #"Label("#))
+        XCTAssertNotNil(photosSource.range(of: #"Improve with AI"#))
+        XCTAssertNotNil(photosSource.range(of: #"systemImage: "wand.and.sparkles""#))
+        XCTAssertNotNil(photosSource.range(of: #"improveCoverPhoto()"#))
+        XCTAssertNotNil(photosSource.range(of: #".accessibilityHint("Creates a listing-safe cover photo from your original item photo.".localized)"#))
         XCTAssertNotNil(listing.range(of: #"private func photoChecklistRow(title: String, systemImage: String, detail: String) -> some View"#))
         XCTAssertNotNil(listing.range(of: #"private var primaryPhotoGuidance: String"#))
+        XCTAssertNotNil(listing.range(of: #"@State private var supplementalPhotos: [ItemPhotoAsset]"#))
+        XCTAssertNotNil(listing.range(of: #"_supplementalPhotos = State(initialValue: context.supplementalPhotos)"#))
+        XCTAssertNotNil(listing.range(of: #"private func improveCoverPhoto()"#))
+        XCTAssertNotNil(listing.range(of: #"APIClient.shared.enhanceListingPhoto("#))
+        XCTAssertNotNil(listing.range(of: #"private func upsertEnhancedPhoto(_ enhanced: EnhancedListingPhoto)"#))
+        XCTAssertNotNil(listing.range(of: #""export_type": "photo_ai_enhanced""#))
+        XCTAssertNotNil(listing.range(of: #"appStore.updateEntitlementSnapshot(enhanced.entitlement)"#))
+        XCTAssertNotNil(listing.range(of: #"private var photoEnhancementSourcePhoto: ItemPhotoAsset?"#))
+        XCTAssertNotNil(listing.range(of: #"private var photoEnhancementPlan: ListingPhotoEnhancementPlan?"#))
         XCTAssertNotNil(listing.range(of: #"private var marketplacePhotoChecklistText: String?"#))
         XCTAssertNotNil(listing.range(of: #"private var marketplacePhotoChecklistSteps: [String]"#))
         XCTAssertNotNil(listing.range(of: #"context.marketplace.listingPlaybook.recommendedPhotoSequence"#))
@@ -3221,7 +3236,7 @@ final class DesignAccessibilityTests: XCTestCase {
         appStore.presentMarketplacePicker(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             details: context.details
         )
         """#))

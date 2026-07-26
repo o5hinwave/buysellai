@@ -15,11 +15,15 @@ struct ListingSheet: View {
     @State private var isEvidenceExpanded = false
     @State private var isEditingListingText = false
     @State private var isSavingPhotos = false
+    @State private var isEnhancingPhoto = false
+    @State private var supplementalPhotos: [ItemPhotoAsset]
     @State private var sharePayload: ListingSharePayload?
+    @State private var enhancementTask: Task<Void, Never>?
     @FocusState private var isListingEditorFocused: Bool
 
     init(context: ListingContext) {
         self.context = context
+        _supplementalPhotos = State(initialValue: context.supplementalPhotos)
         _store = State(initialValue: ListingStore(
             item: context.item,
             marketplace: context.marketplace,
@@ -65,6 +69,7 @@ struct ListingSheet: View {
         }
         .onDisappear {
             cancelGenerationTask()
+            cancelEnhancementTask()
         }
         .sheet(item: $sharePayload) { payload in
             ListingShareSheet(items: payload.items)
@@ -289,6 +294,23 @@ struct ListingSheet: View {
     private var photosDisclosure: some View {
         DisclosureGroup {
             listingPhotoPackageRow
+            if photoEnhancementPlan != nil {
+                Button {
+                    improveCoverPhoto()
+                } label: {
+                    Label(
+                        isEnhancingPhoto ? "Improving photo…".localized : "Improve with AI".localized,
+                        systemImage: "wand.and.sparkles"
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .tint(Color.brand.foregroundSecondary)
+                .disabled(isEnhancingPhoto)
+                .accessibilityLabel("Improve with AI".localized)
+                .accessibilityHint("Creates a listing-safe cover photo from your original item photo.".localized)
+            }
             if let marketplacePhotoChecklistText {
                 photoChecklistRow(
                     title: "Photos to take",
@@ -1162,7 +1184,7 @@ struct ListingSheet: View {
             for: context.marketplace,
             item: context.item,
             answers: context.details ?? ItemDetailAnswers(),
-            supplementalPhotos: context.supplementalPhotos
+            supplementalPhotos: supplementalPhotos
         )
     }
 
@@ -1181,7 +1203,7 @@ struct ListingSheet: View {
         appStore.presentMarketplacePicker(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             details: context.details,
             analysis: context.analysis
         )
@@ -1208,7 +1230,7 @@ struct ListingSheet: View {
         appStore.presentItemQuestions(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             preferredMarketplace: context.marketplace,
             marketplaceComparison: context.marketplaceComparison,
             listingDraft: store.draft,
@@ -1222,7 +1244,7 @@ struct ListingSheet: View {
         let questionsContext = ItemQuestionsContext(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             preferredMarketplace: context.marketplace,
             marketplaceComparison: context.marketplaceComparison,
             listingDraft: store.draft,
@@ -1277,7 +1299,7 @@ struct ListingSheet: View {
         appStore.saveListing(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,
@@ -1311,7 +1333,7 @@ struct ListingSheet: View {
             appStore.saveListing(
                 item: context.item,
                 imageData: context.imageData,
-                supplementalPhotos: context.supplementalPhotos,
+                supplementalPhotos: supplementalPhotos,
                 marketplace: context.marketplace,
                 listingText: copyableListingText,
                 details: context.details,
@@ -1346,7 +1368,7 @@ struct ListingSheet: View {
             appStore.saveListing(
                 item: context.item,
                 imageData: context.imageData,
-                supplementalPhotos: context.supplementalPhotos,
+                supplementalPhotos: supplementalPhotos,
                 marketplace: context.marketplace,
                 listingText: copyableListingText,
                 details: context.details,
@@ -1389,7 +1411,7 @@ struct ListingSheet: View {
                         appStore.saveListing(
                             item: context.item,
                             imageData: context.imageData,
-                            supplementalPhotos: context.supplementalPhotos,
+                            supplementalPhotos: supplementalPhotos,
                             marketplace: context.marketplace,
                             listingText: copyableListingText,
                             details: context.details,
@@ -1439,7 +1461,7 @@ struct ListingSheet: View {
                         appStore.saveListing(
                             item: context.item,
                             imageData: context.imageData,
-                            supplementalPhotos: context.supplementalPhotos,
+                            supplementalPhotos: supplementalPhotos,
                             marketplace: context.marketplace,
                             listingText: copyableListingText,
                             details: context.details,
@@ -1540,7 +1562,7 @@ struct ListingSheet: View {
         appStore.saveListing(
             item: context.item,
             imageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             marketplace: context.marketplace,
             listingText: cleanText,
             details: context.details,
@@ -1571,7 +1593,7 @@ struct ListingSheet: View {
             appStore.saveListing(
                 item: context.item,
                 imageData: context.imageData,
-                supplementalPhotos: context.supplementalPhotos,
+                supplementalPhotos: supplementalPhotos,
                 marketplace: context.marketplace,
                 listingText: copyableListingText,
                 details: context.details,
@@ -1582,6 +1604,88 @@ struct ListingSheet: View {
             )
         }
         appStore.showToast(String.localizedFormat("Copied %@", field.title.localized), style: .success)
+    }
+
+    private func improveCoverPhoto() {
+        guard isEnhancingPhoto == false else { return }
+        guard let sourcePhoto = photoEnhancementSourcePhoto,
+              let plan = photoEnhancementPlan
+        else {
+            appStore.showToast("Add a real item photo before posting.".localized, style: .error)
+            return
+        }
+
+        isEnhancingPhoto = true
+        Haptics.impact(.light)
+        let task = Task { @MainActor in
+            do {
+                let enhanced = try await APIClient.shared.enhanceListingPhoto(
+                    plan: plan,
+                    photo: sourcePhoto,
+                    item: context.item,
+                    marketplace: context.marketplace,
+                    accessToken: await appStore.authenticatedAccessToken()
+                )
+                guard Task.isCancelled == false else {
+                    isEnhancingPhoto = false
+                    enhancementTask = nil
+                    return
+                }
+                upsertEnhancedPhoto(enhanced)
+                appStore.updateEntitlementSnapshot(enhanced.entitlement)
+                Haptics.notify(.success)
+                ProductAnalytics.record(
+                    .listingCopiedOrExported,
+                    properties: [
+                        "marketplace": context.marketplace.rawValue,
+                        "category": context.item.category.rawValue,
+                        "export_type": "photo_ai_enhanced",
+                        "photo_scope": "cover"
+                    ]
+                )
+                if copyableListingText.isEmpty == false {
+                    appStore.saveListing(
+                        item: context.item,
+                        imageData: context.imageData,
+                        supplementalPhotos: supplementalPhotos,
+                        marketplace: context.marketplace,
+                        listingText: copyableListingText,
+                        details: context.details,
+                        marketplaceComparison: context.marketplaceComparison,
+                        listingDraft: store.draft,
+                        identificationProfile: context.analysis?.identificationProfile,
+                        replacing: context.existingHistoryEntry
+                    )
+                }
+                appStore.showToast("Improved photo ready".localized, style: .success)
+            } catch let error where APIError.isCancellation(error) {
+                isEnhancingPhoto = false
+                enhancementTask = nil
+                return
+            } catch {
+                guard Task.isCancelled == false else {
+                    isEnhancingPhoto = false
+                    enhancementTask = nil
+                    return
+                }
+                Haptics.notify(.error)
+                appStore.showToast(APIError.userMessage(for: error), style: .error)
+            }
+            isEnhancingPhoto = false
+            enhancementTask = nil
+        }
+        enhancementTask = task
+    }
+
+    private func upsertEnhancedPhoto(_ enhanced: EnhancedListingPhoto) {
+        let photo = enhanced.itemPhotoAsset(itemID: context.item.id)
+        supplementalPhotos.removeAll {
+            $0.itemID == context.item.id &&
+                $0.source == .aiEdited &&
+                $0.role == .cover &&
+                $0.relatedOriginalID == enhanced.relatedOriginalID
+        }
+        supplementalPhotos.append(photo)
     }
 
     private var copyableListingText: String {
@@ -1597,8 +1701,29 @@ struct ListingSheet: View {
             item: context.item,
             marketplace: context.marketplace,
             originalImageData: context.imageData,
-            supplementalPhotos: context.supplementalPhotos,
+            supplementalPhotos: supplementalPhotos,
             referenceImageURL: store.draft?.referenceImageURL
+        )
+    }
+
+    private var photoEnhancementSourcePhoto: ItemPhotoAsset? {
+        photoPackage.listingReadyPhotos.first { photo in
+            photo.source != .aiEdited &&
+                photo.source != .internetReference &&
+                photo.role != .reference &&
+                photo.isAIEdited == false
+        }
+    }
+
+    private var photoEnhancementPlan: ListingPhotoEnhancementPlan? {
+        guard let sourcePhoto = photoEnhancementSourcePhoto else { return nil }
+        return ListingPhotoIntelligence.enhancementPlan(
+            for: sourcePhoto.listingPhotoCandidate,
+            item: context.item,
+            marketplace: context.marketplace,
+            confirmedFacts: context.analysis?.identificationProfile?.confirmedFacts ?? [],
+            visibleConditionNotes: [context.item.condition.display],
+            qualityProblems: ["make only gentle listing-photo improvements"]
         )
     }
 
@@ -1765,6 +1890,12 @@ struct ListingSheet: View {
     private func cancelGenerationTask() {
         generationTask?.cancel()
         generationTask = nil
+    }
+
+    private func cancelEnhancementTask() {
+        enhancementTask?.cancel()
+        enhancementTask = nil
+        isEnhancingPhoto = false
     }
 
     private var listingPhotoPackageRow: some View {
