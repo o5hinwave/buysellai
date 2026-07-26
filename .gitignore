@@ -5,6 +5,8 @@ BuySellAI/App/Config.plist
 .env
 .env.*
 !.env.example
+.git.dataless-backup-*/
+.git.incomplete-repair-*/
 supabase/.temp/
 *.xcresult/
 *.xcarchive/

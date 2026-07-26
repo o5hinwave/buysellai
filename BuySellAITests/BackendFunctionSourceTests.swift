@@ -24,7 +24,8 @@ final class BackendFunctionSourceTests: XCTestCase {
             "supabase/migrations/20260725141629_add_history_identification_profile.sql",
             "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
             "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
-            "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql"
+            "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql",
+            "supabase/migrations/20260726132434_restore_early_access_usage_window.sql"
         ] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: projectURL(path).path), "\(path) should exist")
         }
@@ -145,18 +146,24 @@ final class BackendFunctionSourceTests: XCTestCase {
         XCTAssertNil(supplementalPhotos.range(of: "add constraint if not exists", options: .caseInsensitive))
     }
 
-    func testSupabaseEntitlementLimitMigrationKeepsEarlyAccessGenerousButBounded() throws {
-        let migration = try read("supabase/migrations/20260726092634_raise_early_access_usage_limits.sql")
+    func testSupabaseEntitlementLimitMigrationRestoresEarlyAccessDailyWindow() throws {
+        let migration = try read("supabase/migrations/20260726132434_restore_early_access_usage_window.sql")
 
         XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_analysis_limit_range"))
         XCTAssertNotNil(migration.range(of: "drop constraint if exists entitlement_config_ai_action_limit_range"))
-        XCTAssertNotNil(migration.range(of: "alter column daily_analysis_limit set default 100"))
-        XCTAssertNotNil(migration.range(of: "alter column daily_ai_action_limit set default 300"))
-        XCTAssertNotNil(migration.range(of: "daily_analysis_limit = 100"))
-        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit = 300"))
-        XCTAssertNotNil(migration.range(of: "daily_analysis_limit between 10 and 250"))
-        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit between 10 and 500"))
+        XCTAssertNotNil(migration.range(of: "alter column daily_analysis_limit set default 18"))
+        XCTAssertNotNil(migration.range(of: "alter column daily_ai_action_limit set default 54"))
+        XCTAssertNotNil(migration.range(of: "daily_analysis_limit = least(greatest(daily_analysis_limit, 10), 20)"))
+        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit = least(greatest(daily_ai_action_limit, 10), 120)"))
+        XCTAssertNotNil(migration.range(of: "daily_analysis_limit between 10 and 20"))
+        XCTAssertNotNil(migration.range(of: "daily_ai_action_limit between 10 and 120"))
         XCTAssertNil(migration.range(of: "add constraint if not exists", options: .caseInsensitive))
+
+        let entitlements = try read("supabase/functions/_shared/entitlements.ts")
+        XCTAssertNotNil(entitlements.range(of: "dailyAnalysisLimit: 18"))
+        XCTAssertNotNil(entitlements.range(of: "dailyAiActionLimit: 54"))
+        XCTAssertNotNil(entitlements.range(of: "boundedInteger(row.daily_analysis_limit, defaultConfig.dailyAnalysisLimit, 10, 20)"))
+        XCTAssertNotNil(entitlements.range(of: "boundedInteger(row.daily_ai_action_limit, defaultConfig.dailyAiActionLimit, 10, 120)"))
     }
 
     func testAnonymousAnalyzeAndGenerateFunctionsUseGeminiServerSideSecret() throws {

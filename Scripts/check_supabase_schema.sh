@@ -21,6 +21,7 @@ migration_paths = [
     repo_root / "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql",
     repo_root / "supabase/migrations/20260726051236_add_history_supplemental_photos.sql",
     repo_root / "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql",
+    repo_root / "supabase/migrations/20260726132434_restore_early_access_usage_window.sql",
 ]
 swift_paths = {
     "marketplace": repo_root / "BuySellAI/Data/Marketplace.swift",
@@ -120,12 +121,12 @@ require_sql(
     "apple_auth_tokens.apple_user_id must be unique",
 )
 require_sql(
-    r"daily_analysis_limit\s+integer\s+not\s+null\s+default\s+18.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+100.*?daily_analysis_limit\s+between\s+10\s+and\s+250",
-    "entitlement_config daily analysis limit must be raised by migration while preserving a bounded range",
+    r"daily_analysis_limit\s+integer\s+not\s+null\s+default\s+18.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+100.*?alter\s+column\s+daily_analysis_limit\s+set\s+default\s+18.*?daily_analysis_limit\s+between\s+10\s+and\s+20",
+    "entitlement_config daily analysis limit must end in the early-access 10-20 analysis window",
 )
 require_sql(
-    r"daily_ai_action_limit\s+integer\s+not\s+null\s+default\s+54.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+300.*?daily_ai_action_limit\s+between\s+10\s+and\s+500",
-    "entitlement_config daily AI action limit must be raised by migration while preserving a bounded range",
+    r"daily_ai_action_limit\s+integer\s+not\s+null\s+default\s+54.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+300.*?alter\s+column\s+daily_ai_action_limit\s+set\s+default\s+54.*?daily_ai_action_limit\s+between\s+10\s+and\s+120",
+    "entitlement_config daily AI action limit must end in a bounded early-access full-flow window",
 )
 
 for constraint in (

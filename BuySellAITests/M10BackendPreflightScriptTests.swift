@@ -163,6 +163,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
             "20260726045209_add_history_marketplace_comparison.sql",
             "20260726051236_add_history_supplemental_photos.sql",
             "20260726092634_raise_early_access_usage_limits.sql",
+            "20260726132434_restore_early_access_usage_window.sql",
             "BuySellAI/Data/Marketplace.swift",
             "BuySellAI/Data/Models.swift",
             "Postgres does not support ADD CONSTRAINT IF NOT EXISTS",
@@ -224,6 +225,7 @@ final class M10BackendPreflightScriptTests: XCTestCase {
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260726045209_add_history_marketplace_comparison.sql"))
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260726051236_add_history_supplemental_photos.sql"))
         XCTAssertNotNil(script.range(of: "supabase/migrations/20260726092634_raise_early_access_usage_limits.sql"))
+        XCTAssertNotNil(script.range(of: "supabase/migrations/20260726132434_restore_early_access_usage_window.sql"))
         XCTAssertNotNil(script.range(of: "supabase secrets list --project-ref \"$project_ref\" --output-format json"))
         XCTAssertNotNil(script.range(of: "Supabase secret names could not be listed within"))
         XCTAssertNotNil(script.range(of: "CONFIG_INPUT_PATH=\"$config_path\" CONFIG_INPUT_KEY=\"$key\" python3"))

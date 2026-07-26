@@ -49,8 +49,8 @@ const defaultConfig: EntitlementConfig = {
   state: "earlyAccess",
   completeFeatureAccess: true,
   futurePaidAccessEnabled: false,
-  dailyAnalysisLimit: 100,
-  dailyAiActionLimit: 300,
+  dailyAnalysisLimit: 18,
+  dailyAiActionLimit: 54,
   cooldownMessage:
     "You've analyzed a lot of items today. BuySell needs a little time before the next one. Your saved listings are still available.",
 };
@@ -148,8 +148,8 @@ async function fetchEntitlementConfig(service: SupabaseServiceConfig | null): Pr
   const state = typeof row.entitlement_state === "string" && knownStates.has(row.entitlement_state as EntitlementState)
     ? (row.entitlement_state as EntitlementState)
     : defaultConfig.state;
-  const dailyAnalysisLimit = boundedInteger(row.daily_analysis_limit, defaultConfig.dailyAnalysisLimit, 10, 250);
-  const dailyAiActionLimit = boundedInteger(row.daily_ai_action_limit, defaultConfig.dailyAiActionLimit, 10, 500);
+  const dailyAnalysisLimit = boundedInteger(row.daily_analysis_limit, defaultConfig.dailyAnalysisLimit, 10, 20);
+  const dailyAiActionLimit = boundedInteger(row.daily_ai_action_limit, defaultConfig.dailyAiActionLimit, 10, 120);
   const cooldownMessage = cleanText(row.cooldown_message, 220) ?? defaultConfig.cooldownMessage;
 
   return {
